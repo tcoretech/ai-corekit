@@ -69,6 +69,16 @@ if is_profile_active "flowise"; then
   echo "Password: ${FLOWISE_PASSWORD:-<not_set_in_env>}"
 fi
 
+if is_profile_active "openhands"; then
+  echo
+  echo "================================= OpenHands ============================"
+  echo
+  echo "Host: ${OPENHANDS_HOSTNAME:-<hostname_not_set>}"
+  echo "Description: AI-powered autonomous coding assistant"
+  echo "Features: Autonomous development, Docker integration, Ollama support"
+  echo "Documentation: https://github.com/All-Hands-AI/OpenHands"
+fi
+
 if is_profile_active "dify"; then
   echo
   echo "================================= Dify ================================="

@@ -91,6 +91,23 @@ services:
       - ~/.flowise:/root/.flowise
     entrypoint: /bin/sh -c "sleep 3; flowise start"
 
+  openhands:
+    image: docker.all-hands.dev/all-hands-ai/openhands:0.54
+    restart: unless-stopped
+    container_name: openhands
+    profiles: ["openhands"]
+    environment:
+      - SANDBOX_RUNTIME_CONTAINER_IMAGE=docker.all-hands.dev/all-hands-ai/runtime:0.54-nikolaik
+      - LOG_ALL_EVENTS=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.openhands:/.openhands
+      - ./shared:/workspace
+    ports:
+      - "3002:3000"
+
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     restart: unless-stopped

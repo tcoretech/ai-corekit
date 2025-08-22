@@ -73,9 +73,12 @@ if is_profile_active "openhands"; then
   echo
   echo "================================= OpenHands ============================"
   echo
+  echo "⚠️  WARNING: Requires Docker Desktop - May not work on this server!"
+  echo
   echo "Host: ${OPENHANDS_HOSTNAME:-<hostname_not_set>}"
   echo "Description: AI-powered autonomous coding assistant"
-  echo "Features: Autonomous development, Docker integration, Ollama support"
+  echo "Note: If runtime connection fails, this is a known Linux limitation"
+  echo "Alternative: Consider using bolt.diy instead (coming soon)"
   echo "Documentation: https://github.com/All-Hands-AI/OpenHands"
 fi
 

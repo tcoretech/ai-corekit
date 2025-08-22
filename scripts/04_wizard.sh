@@ -53,7 +53,7 @@ base_services_data=(
     "n8n" "n8n, n8n-worker, n8n-import (Workflow Automation)"
     "dify" "Dify (AI Application Development Platform with LLMOps)"
     "flowise" "Flowise (AI Agent Builder)"
-    "openhands" "OpenHands (AI Autonomous Developer)"
+    "openhands" "OpenHands (AI Autonomous Developer) !! Requires Docker Desktop !!"
     "monitoring" "Monitoring Suite (Prometheus, Grafana, cAdvisor, Node-Exporter)"
     "portainer" "Portainer (Docker management UI)"
     "cloudflare-tunnel" "Cloudflare Tunnel (Zero-Trust Secure Access)"

@@ -20,6 +20,11 @@
     reverse_proxy flowise:3001
 }
 
+# OpenHands
+{$OPENHANDS_HOSTNAME} {
+    reverse_proxy openhands:3000
+}
+
 # Dify
 {$DIFY_HOSTNAME} {
     reverse_proxy nginx:80

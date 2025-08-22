@@ -222,6 +222,7 @@ services:
       - COMFYUI_USERNAME=${COMFYUI_USERNAME}
       - DIFY_HOSTNAME=${DIFY_HOSTNAME}
       - FLOWISE_HOSTNAME=${FLOWISE_HOSTNAME}
+      - OPENHANDS_HOSTNAME=${OPENHANDS_HOSTNAME}
       - GRAFANA_HOSTNAME=${GRAFANA_HOSTNAME}
       - LANGFUSE_HOSTNAME=${LANGFUSE_HOSTNAME}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-internal}
@@ -433,7 +434,7 @@ services:
       - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
       - UWSGI_WORKERS=${SEARXNG_UWSGI_WORKERS:-4}
       - UWSGI_THREADS=${SEARXNG_UWSGI_THREADS:-4}
-    # cap_drop: - ALL  # Temporarily commented out for first run
+    # # cap_drop: - ALL  # Temporarily commented out for first run  # Temporarily commented out for first run
     cap_add:
       - CHOWN
       - SETGID

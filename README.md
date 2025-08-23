@@ -1,6 +1,37 @@
-# n8n Installer
+# n8n Installer - Enhanced Fork 🚀
 
-**n8n Installer** is an open-source Docker Compose template designed to significantly simplify setting up a comprehensive, self-hosted environment for n8n and Flowise. It bundles essential supporting tools like Open WebUI (as an interface for n8n agents), Supabase (database, vector information storage, authentication), Qdrant (high-performance vector information storage), Langfuse (to observe AI model performance), SearXNG (private metasearch), Grafana/Prometheus (monitoring), Crawl4ai (web crawling), and Caddy (for managed HTTPS). Plus, during setup, you can optionally import over 300 community workflows into your n8n instance!
+[![Original Repository](https://img.shields.io/badge/Original-n8n--installer-blue)](https://github.com/kossakovsky/n8n-installer)
+[![Enhanced Fork](https://img.shields.io/badge/Enhanced-AI_Dev_Tools-green)](https://github.com/freddy-schuetz/n8n-installer-enhanced)
+
+**Enhanced and maintained by [Friedemann Schuetz](https://www.linkedin.com/in/friedemann-schuetz)**
+
+**n8n Installer Enhanced** is an open-source Docker Compose template designed to significantly simplify setting up a comprehensive, self-hosted environment for n8n and Flowise. It bundles essential supporting tools like Open WebUI (as an interface for n8n agents), Supabase (database, vector information storage, authentication), Qdrant (high-performance vector information storage), Langfuse (to observe AI model performance), SearXNG (private metasearch), Grafana/Prometheus (monitoring), Crawl4ai (web crawling), and Caddy (for managed HTTPS). Plus, during setup, you can optionally import over 300 community workflows into your n8n instance!
+
+## 🆕 What's New in This Enhanced Fork
+
+This fork maintains 100% compatibility with the original n8n-installer while adding cutting-edge AI development tools:
+
+### New AI Development Tools
+
+✨ **[bolt.diy](https://github.com/stackblitz-labs/bolt.diy)** - AI-powered web development directly in your browser
+- Build full-stack NodeJS applications with natural language
+- Integrated with your local Ollama for private LLM usage
+- Works perfectly on Linux servers (no Docker Desktop required)
+- Access at: `bolt.yourdomain.com`
+
+✨ **[OpenHands](https://github.com/All-Hands-AI/OpenHands)** - Autonomous AI developer
+- Can write, debug, and deploy code autonomously
+- Integrates with multiple LLM providers
+- Access at: `openhands.yourdomain.com`
+- ⚠️ **Note:** Limited functionality on Linux servers without Docker Desktop due to runtime container connectivity requirements
+
+### Technical Improvements
+
+- **Dynamic hostname configuration** for Vite-based applications (solves reverse proxy issues)
+- **Production-tested** configurations for all new services
+- **Automatic SSL certificates** for AI tools via Caddy
+
+---
 
 ### Why This Setup?
 
@@ -10,6 +41,8 @@ This installer helps you create your own powerful, private AI workshop. Imagine 
 - Build smart assistants tailored to your needs.
 - Analyze information and gain insights.
 - Generate creative content.
+- **[NEW]** Build complete web applications with AI assistance.
+- **[NEW]** Have an AI developer that can autonomously code for you.
 
 This setup provides a comprehensive suite of cutting-edge services, all pre-configured to work together. Key advantages include:
 
@@ -24,6 +57,14 @@ This setup provides a comprehensive suite of cutting-edge services, all pre-conf
 
 The installer also makes the following powerful open-source tools **available for you to select and deploy** via an interactive wizard during setup:
 
+#### AI Development Tools (NEW in this fork!)
+
+✅ [**bolt.diy**](https://github.com/stackblitz-labs/bolt.diy) - Browser-based AI web development. Create full-stack applications using natural language prompts. Perfect for rapid prototyping and learning.
+
+✅ [**OpenHands**](https://github.com/All-Hands-AI/OpenHands) - Autonomous AI developer that can understand requirements, write code, fix bugs, and deploy applications. *(Note: Limited on Linux servers)*
+
+#### Original AI & Automation Tools
+
 ✅ [**Supabase**](https://supabase.com/) - An open-source alternative to Firebase, providing database storage, user authentication, and more. It's a popular choice for AI applications.
 
 ✅ [**Open WebUI**](https://openwebui.com/) - A user-friendly, ChatGPT-like interface to interact privately with your AI models and n8n agents.
@@ -33,7 +74,6 @@ The installer also makes the following powerful open-source tools **available fo
 ✅ [**ComfyUI**](https://github.com/comfyanonymous/ComfyUI) - A powerful, node-based UI for Stable Diffusion workflows. Build and run image-generation pipelines visually, with support for custom nodes and extensions.
 
 ✅ [**RAGApp**](https://github.com/ragapp/ragapp) - Open-source application to build Retrieval-Augmented Generation (RAG) assistants over your data. Provides a web UI for chat and an HTTP API for integration with your workflows.
-
 
 ✅ [**Dify**](https://dify.ai/) - An open-source AI application development platform that provides comprehensive LLMOps capabilities, including workflow management, prompt engineering, RAG pipelines, and AI agent orchestration. Perfect for building production-ready AI applications.
 
@@ -100,7 +140,11 @@ The recommended way to install is using the provided main installation script.
 2.  Run the following command:
 
     ```bash
-    git clone https://github.com/kossakovsky/n8n-installer && cd n8n-installer && sudo bash ./scripts/install.sh
+    # For the enhanced version with AI development tools:
+    git clone https://github.com/freddy-schuetz/n8n-installer-enhanced && cd n8n-installer-enhanced && sudo bash ./scripts/install.sh
+    
+    # Or for the original version:
+    # git clone https://github.com/kossakovsky/n8n-installer && cd n8n-installer && sudo bash ./scripts/install.sh
     ```
 
 This single command automates the entire setup process, including:
@@ -114,12 +158,31 @@ During the installation, the script will prompt you for:
 
 1.  Your **primary domain name** (Required, e.g., `yourdomain.com`). This is the domain for which you've configured the wildcard DNS record.
 2.  Your **email address** (Required, used for service logins like Flowise, Supabase dashboard, Grafana, and for SSL certificate registration with Let's Encrypt).
-3.  An optional **OpenAI API key** (Not required. If provided, it can be used by Supabase AI features and Crawl4ai. Press Enter to skip).
+3.  An optional **OpenAI API key** (Not required. If provided, it can be used by Supabase AI features, Crawl4ai, and the new AI development tools. Press Enter to skip).
 4.  Whether you want to **import ~300 ready-made n8n community workflows** (y/n, Optional. This can take 20-30 minutes, depending on your server and network speed).
 5.  The **number of n8n workers** you want to run (Required, e.g., 1, 2, 3, 4. This determines how many workflows can be processed in parallel. Defaults to 1 if not specified).
-6.  A **Service Selection Wizard** will then appear, allowing you to choose which of the available services (like Flowise, Supabase, Qdrant, Open WebUI, etc.) you want to deploy. Core services (Caddy, Postgres, Redis) will be set up to support your selections.
+6.  A **Service Selection Wizard** will then appear, allowing you to choose which of the available services (like Flowise, Supabase, Qdrant, Open WebUI, bolt.diy, OpenHands, etc.) you want to deploy. Core services (Caddy, Postgres, Redis) will be set up to support your selections.
 
 Upon successful completion, the script will display a summary report. This report contains the access URLs and credentials for the deployed services. **Save this information in a safe place!**
+
+### 🎯 AI Development Tools Configuration (NEW!)
+
+After installation, configure API keys for the AI development tools:
+
+```bash
+# Edit the .env file to add your API keys
+nano .env
+
+# Add/update these lines:
+OPENAI_API_KEY=your_openai_key_here
+ANTHROPIC_API_KEY=your_anthropic_key_here  # Optional for bolt.diy
+GROQ_API_KEY=your_groq_key_here           # Optional for bolt.diy
+```
+
+After updating, restart the services:
+```bash
+docker compose restart bolt openhands
+```
 
 ## ⚡️ Quick Start and Usage
 
@@ -129,6 +192,8 @@ After successful installation, your services are up and running! Here's how to g
     The installation script provided a summary report with all access URLs and credentials. Please refer to that report. The main services will be available at the following addresses (replace `yourdomain.com` with your actual domain):
 
     - **n8n:** `n8n.yourdomain.com` (Log in with the email address you provided during installation and the initial password from the summary report. You may be prompted to change this password on first login.)
+    - **bolt.diy:** `bolt.yourdomain.com` (AI-powered web development - NEW!)
+    - **OpenHands:** `openhands.yourdomain.com` (Autonomous AI developer - NEW!)
     - **Open WebUI:** `webui.yourdomain.com`
     - **Flowise:** `flowise.yourdomain.com` (Log in with the email address you provided during installation and the initial password from the summary report.)
     - **Dify:** `dify.yourdomain.com` (AI application development platform with comprehensive LLMOps capabilities)
@@ -147,7 +212,7 @@ After successful installation, your services are up and running! Here's how to g
 ### Optional Internal Utility: Python Runner
 
 - **What it is**: An internal-only service to run your custom Python code inside the same Docker network as your other services (n8n, Postgres, Qdrant, etc.). No external ports are exposed, and it is not proxied by Caddy.
-- **How to enable**: Select “Python Runner” in the Service Selection Wizard during install/update, or add the profile manually: `COMPOSE_PROFILES=...,python-runner`.
+- **How to enable**: Select "Python Runner" in the Service Selection Wizard during install/update, or add the profile manually: `COMPOSE_PROFILES=...,python-runner`.
 - **Where to put code**: Place your Python files in `python-runner/`. The default entry point is `python-runner/main.py`.
 - **Dependencies**: Add them to `python-runner/requirements.txt`; they will be installed automatically on container start.
 
@@ -159,6 +224,8 @@ After successful installation, your services are up and running! Here's how to g
 
 3.  **Utilize Integrated AI Tools:**
 
+    - **Build with bolt.diy (NEW):** Access bolt.diy at `bolt.yourdomain.com` to create full-stack web applications using natural language. Perfect for rapid prototyping and building n8n webhook endpoints!
+    - **Deploy with OpenHands (NEW):** Use OpenHands at `openhands.yourdomain.com` for autonomous code generation and deployment. Note: Full functionality requires Docker Desktop.
     - **Connect n8n with Vector Stores:** Use n8n to connect to Qdrant (accessible via its own endpoint if needed, typically `qdrant.yourdomain.com`), Supabase, or Weaviate (`weaviate.yourdomain.com`) to store and retrieve information for your AI tasks like Retrieval Augmented Generation (RAG).
     - **Build with Flowise:** Access Flowise at `flowise.yourdomain.com` to create AI agents and applications. You can trigger Flowise agents from n8n or vice-versa.
     - **Interact with Open WebUI:** Use Open WebUI at `webui.yourdomain.com` as a chat interface for your local AI models or n8n agents (e.g., using the n8n_pipe integration if configured).
@@ -221,15 +288,39 @@ This can be useful for removing old images and freeing up space, but be aware th
 
 ## Important Links
 
+- **This Enhanced Fork**: [n8n-installer-enhanced](https://github.com/freddy-schuetz/n8n-installer-enhanced)
+- **Original Repository**: [n8n-installer](https://github.com/kossakovsky/n8n-installer) by kossakovsky
 - Based on a project by [coleam00](https://github.com/coleam00/local-ai-packaged)
 - [Original Starter Kit](https://github.com/n8n-io/self-hosted-ai-starter-kit) by the n8n team
 - [Community forum](https://thinktank.ottomator.ai/c/local-ai/18) over in the oTTomator Think Tank for discussions and support.
 - [GitHub Kanban board](https://github.com/users/coleam00/projects/2/views/1) for tracking new features and bug fixes.
 - Download an N8N + OpenWebUI integration [directly on the Open WebUI site.](https://openwebui.com/f/coleam/n8n_pipe/) (More instructions may be available on that page).
 
+### AI Development Tools Documentation
+- **bolt.diy**: [GitHub Repository](https://github.com/stackblitz-labs/bolt.diy) | [Documentation](https://github.com/stackblitz-labs/bolt.diy#readme)
+- **OpenHands**: [GitHub Repository](https://github.com/All-Hands-AI/OpenHands) | [Documentation](https://docs.all-hands.dev/)
+
 ## Troubleshooting
 
 Here are solutions to common issues you might encounter:
+
+### AI Development Tools Issues (NEW!)
+
+#### bolt.diy Not Loading
+- **Symptom:** bolt.diy shows "blocked request" or doesn't load
+- **Cause:** This is typically a Vite configuration issue with reverse proxy
+- **Solution:** This fork includes a dynamic hostname configuration that automatically resolves this. If you still have issues:
+  1. Check that BOLT_HOSTNAME is set correctly in your .env file
+  2. Restart the service: `docker compose restart bolt`
+  3. Clear browser cache and try again
+
+#### OpenHands Runtime Issues
+- **Symptom:** OpenHands shows "Failed to connect to runtime" after ~125 seconds
+- **Cause:** OpenHands requires Docker Desktop for `host.docker.internal` networking
+- **Solution:** 
+  - On Linux servers without Docker Desktop, this is a known limitation
+  - Consider using bolt.diy as an alternative for AI-assisted development
+  - For full OpenHands functionality, use a system with Docker Desktop installed
 
 ### Sites not loading even after following the instructions
 
@@ -307,7 +398,9 @@ When you build automations in n8n that need to read or write files on your serve
 
 ## 🙌 Contributors
 
-Want to see who has contributed to this project? Check out the [**GitHub Contributors Page**](https://github.com/kossakovsky/n8n-installer/graphs/contributors)!
+Want to see who has contributed to this project? Check out the [**GitHub Contributors Page**](https://github.com/freddy-schuetz/n8n-installer-enhanced/graphs/contributors)!
+
+Original project contributors: [**Original Contributors**](https://github.com/kossakovsky/n8n-installer/graphs/contributors)
 
 ## 📜 License
 

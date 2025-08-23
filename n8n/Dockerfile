@@ -19,8 +19,11 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     Pillow \
     && rm -rf /root/.cache
 
-# Create media directories for processing
+# Create media directories with proper permissions for node user
+# UID 1000 is the node user in the n8n container
 RUN mkdir -p /data/media /data/temp && \
-    chown -R node:node /data/media /data/temp
+    chown -R 1000:1000 /data/media /data/temp && \
+    chmod 775 /data/media /data/temp
 
 USER node
+WORKDIR /data

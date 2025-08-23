@@ -30,6 +30,7 @@ This fork maintains 100% compatibility with the original n8n-installer while add
 - **Dynamic hostname configuration** for Vite-based applications (solves reverse proxy issues)
 - **Production-tested** configurations for all new services
 - **Automatic SSL certificates** for AI tools via Caddy
+- **Enhanced Media Processing** capabilities with ffmpeg, ImageMagick, and more tools pre-installed
 
 ---
 
@@ -43,6 +44,7 @@ This installer helps you create your own powerful, private AI workshop. Imagine 
 - Generate creative content.
 - **[NEW]** Build complete web applications with AI assistance.
 - **[NEW]** Have an AI developer that can autonomously code for you.
+- **[NEW]** Process media files (video, audio, images) with professional tools.
 
 This setup provides a comprehensive suite of cutting-edge services, all pre-configured to work together. Key advantages include:
 
@@ -120,6 +122,67 @@ Get started quickly with a vast library of pre-built automations (optional impor
 - **Social Media:** LinkedIn, Pinterest, Instagram, Twitter/X, YouTube, TikTok automations
 - **Telegram, WhatsApp, Discord:** Bots, notifications, voice, and image workflows
 - **WordPress, WooCommerce:** AI content, chatbots, auto-tagging
+
+## 🎬 Enhanced Media Processing
+
+The n8n-installer-enhanced includes comprehensive media processing capabilities out of the box:
+
+### Included Tools:
+- **ffmpeg 6.1.2** - Video/audio conversion, streaming, transcoding
+- **ImageMagick 7.1.2** - Image manipulation, conversion, effects
+- **ExifTool 13.30** - Read/write metadata for images, videos, documents
+- **MediaInfo** - Detailed media file analysis
+- **SoX** - Sound processing and effects
+- **Ghostscript** - PDF processing and conversion
+- **Python3 + pydub/Pillow** - Advanced media automation
+
+### Media Directories:
+- `/data/media` - Main media processing directory (mapped to `./media`)
+- `/data/temp` - Temporary processing files (mapped to `./temp`)
+
+### Example n8n Workflows:
+
+#### Video to Audio Conversion:
+```javascript
+// Execute Command Node
+Command: ffmpeg
+Arguments: -i /data/media/input.mp4 -vn -codec:a mp3 /data/media/output.mp3
+```
+
+#### Generate Video Thumbnail:
+```javascript
+// Execute Command Node
+Command: ffmpeg
+Arguments: -i /data/media/video.mp4 -ss 00:00:05 -vframes 1 /data/media/thumbnail.jpg
+```
+
+#### Read Image Metadata:
+```javascript
+// Execute Command Node
+Command: exiftool
+Arguments: -json /data/media/image.jpg
+```
+
+#### Resize Image:
+```javascript
+// Execute Command Node
+Command: magick
+Arguments: /data/media/input.jpg -resize 800x600 /data/media/output.jpg
+```
+
+#### Extract Text from PDF:
+```javascript
+// Execute Command Node
+Command: gs
+Arguments: -sDEVICE=txtwrite -o /data/media/output.txt /data/media/input.pdf
+```
+
+#### Process Audio with SoX:
+```javascript
+// Execute Command Node
+Command: sox
+Arguments: /data/media/input.wav /data/media/output.wav reverb 50 50 100
+```
 
 ## Installation
 

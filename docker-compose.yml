@@ -114,6 +114,31 @@ services:
     ports:
       - "3002:3000"
 
+  bolt:
+    build:
+      context: ./docker/bolt-diy
+      dockerfile: Dockerfile
+    container_name: bolt
+    profiles: ["bolt"]
+    # KEIN command hier!
+    ports:
+      - "3003:5173"
+    environment:
+      - BOLT_HOSTNAME=${BOLT_HOSTNAME}
+      - OLLAMA_API_BASE_URL=http://ollama:11434
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+    volumes:
+      - ./bolt-data:/app/data
+      - ./shared:/workspace
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     restart: unless-stopped
@@ -229,6 +254,7 @@ services:
       - DIFY_HOSTNAME=${DIFY_HOSTNAME}
       - FLOWISE_HOSTNAME=${FLOWISE_HOSTNAME}
       - OPENHANDS_HOSTNAME=${OPENHANDS_HOSTNAME}
+      - BOLT_HOSTNAME=${BOLT_HOSTNAME}
       - GRAFANA_HOSTNAME=${GRAFANA_HOSTNAME}
       - LANGFUSE_HOSTNAME=${LANGFUSE_HOSTNAME}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-internal}

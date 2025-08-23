@@ -78,8 +78,18 @@ if is_profile_active "openhands"; then
   echo "Host: ${OPENHANDS_HOSTNAME:-<hostname_not_set>}"
   echo "Description: AI-powered autonomous coding assistant"
   echo "Note: If runtime connection fails, this is a known Linux limitation"
-  echo "Alternative: Consider using bolt.diy instead (coming soon)"
+  echo "Alternative: Consider using bolt.diy instead"
   echo "Documentation: https://github.com/All-Hands-AI/OpenHands"
+fi
+
+if is_profile_active "bolt"; then
+  echo
+  echo "================================= bolt.diy ============================="
+  echo
+  echo "Host: ${BOLT_HOSTNAME:-<hostname_not_set>}"
+  echo "Description: AI-powered web development in the browser"
+  echo "Features: Full-stack NodeJS apps, Ollama support, multiple LLM providers"
+  echo "Documentation: https://github.com/stackblitz-labs/bolt.diy"
 fi
 
 if is_profile_active "dify"; then

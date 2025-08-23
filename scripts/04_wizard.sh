@@ -54,6 +54,7 @@ base_services_data=(
     "dify" "Dify (AI Application Development Platform with LLMOps)"
     "flowise" "Flowise (AI Agent Builder)"
     "openhands" "OpenHands (AI Autonomous Developer) !! Requires Docker Desktop !!"
+    "bolt" "bolt.diy (AI Web Development)"
     "monitoring" "Monitoring Suite (Prometheus, Grafana, cAdvisor, Node-Exporter)"
     "portainer" "Portainer (Docker management UI)"
     "cloudflare-tunnel" "Cloudflare Tunnel (Zero-Trust Secure Access)"

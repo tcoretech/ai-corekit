@@ -25,6 +25,11 @@
     reverse_proxy openhands:3000
 }
 
+# bolt.diy
+{$BOLT_HOSTNAME} {
+    reverse_proxy bolt:5173
+}
+
 # Dify
 {$DIFY_HOSTNAME} {
     reverse_proxy nginx:80

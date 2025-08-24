@@ -55,6 +55,7 @@ base_services_data=(
     "flowise" "Flowise (AI Agent Builder)"
     "openhands" "OpenHands (AI Autonomous Developer) !! Requires Docker Desktop !!"
     "bolt" "bolt.diy (AI Web Development)"
+    "openui" "OpenUI (AI Frontend/UI Generator - EXPERIMENTAL, best with Claude/GPT-4)"
     "monitoring" "Monitoring Suite (Prometheus, Grafana, cAdvisor, Node-Exporter)"
     "portainer" "Portainer (Docker management UI)"
     "cloudflare-tunnel" "Cloudflare Tunnel (Zero-Trust Secure Access)"

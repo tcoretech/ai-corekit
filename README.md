@@ -25,6 +25,13 @@ This fork maintains 100% compatibility with the original n8n-installer while add
 - Access at: `openhands.yourdomain.com`
 - ⚠️ **Note:** Limited functionality on Linux servers without Docker Desktop due to runtime container connectivity requirements
 
+🧪 **[OpenUI](https://github.com/wandb/openui)** - AI-powered UI component generator (EXPERIMENTAL)
+- Generate UI components from natural language descriptions
+- Supports React, Vue, Angular, and vanilla HTML/CSS
+- Best results with Claude 4 Sonnet or GPT-4 models
+- Access at: `openui.yourdomain.com`
+- ⚠️ **Note:** Quality varies significantly by model; Ollama support is available but may produce inconsistent results
+
 ### Technical Improvements
 
 - **Dynamic hostname configuration** for Vite-based applications (solves reverse proxy issues)
@@ -44,6 +51,7 @@ This installer helps you create your own powerful, private AI workshop. Imagine 
 - Generate creative content.
 - **[NEW]** Build complete web applications with AI assistance.
 - **[NEW]** Have an AI developer that can autonomously code for you.
+- **[NEW]** Generate UI components from simple descriptions.
 - **[NEW]** Process media files (video, audio, images) with professional tools.
 
 This setup provides a comprehensive suite of cutting-edge services, all pre-configured to work together. Key advantages include:
@@ -64,6 +72,8 @@ The installer also makes the following powerful open-source tools **available fo
 ✅ [**bolt.diy**](https://github.com/stackblitz-labs/bolt.diy) - Browser-based AI web development. Create full-stack applications using natural language prompts. Perfect for rapid prototyping and learning.
 
 ✅ [**OpenHands**](https://github.com/All-Hands-AI/OpenHands) - Autonomous AI developer that can understand requirements, write code, fix bugs, and deploy applications. *(Note: Limited on Linux servers)*
+
+✅ [**OpenUI**](https://github.com/wandb/openui) - **EXPERIMENTAL** - AI-powered UI component generator. Transform natural language descriptions into working UI components. Supports multiple frameworks including React, Vue, and Angular. Best results with advanced models like Claude 4 Sonnet or GPT-4.
 
 #### Original AI & Automation Tools
 
@@ -224,7 +234,7 @@ During the installation, the script will prompt you for:
 3.  An optional **OpenAI API key** (Not required. If provided, it can be used by Supabase AI features, Crawl4ai, and the new AI development tools. Press Enter to skip).
 4.  Whether you want to **import ~300 ready-made n8n community workflows** (y/n, Optional. This can take 20-30 minutes, depending on your server and network speed).
 5.  The **number of n8n workers** you want to run (Required, e.g., 1, 2, 3, 4. This determines how many workflows can be processed in parallel. Defaults to 1 if not specified).
-6.  A **Service Selection Wizard** will then appear, allowing you to choose which of the available services (like Flowise, Supabase, Qdrant, Open WebUI, bolt.diy, OpenHands, etc.) you want to deploy. Core services (Caddy, Postgres, Redis) will be set up to support your selections.
+6.  A **Service Selection Wizard** will then appear, allowing you to choose which of the available services (like Flowise, Supabase, Qdrant, Open WebUI, bolt.diy, OpenHands, OpenUI, etc.) you want to deploy. Core services (Caddy, Postgres, Redis) will be set up to support your selections.
 
 Upon successful completion, the script will display a summary report. This report contains the access URLs and credentials for the deployed services. **Save this information in a safe place!**
 
@@ -238,13 +248,13 @@ nano .env
 
 # Add/update these lines:
 OPENAI_API_KEY=your_openai_key_here
-ANTHROPIC_API_KEY=your_anthropic_key_here  # Optional for bolt.diy
-GROQ_API_KEY=your_groq_key_here           # Optional for bolt.diy
+ANTHROPIC_API_KEY=your_anthropic_key_here  # Optional for bolt.diy and OpenUI
+GROQ_API_KEY=your_groq_key_here           # Optional for bolt.diy and OpenUI
 ```
 
 After updating, restart the services:
 ```bash
-docker compose restart bolt openhands
+docker compose restart bolt openhands openui
 ```
 
 ## ⚡️ Quick Start and Usage
@@ -257,6 +267,7 @@ After successful installation, your services are up and running! Here's how to g
     - **n8n:** `n8n.yourdomain.com` (Log in with the email address you provided during installation and the initial password from the summary report. You may be prompted to change this password on first login.)
     - **bolt.diy:** `bolt.yourdomain.com` (AI-powered web development - NEW!)
     - **OpenHands:** `openhands.yourdomain.com` (Autonomous AI developer - NEW!)
+    - **OpenUI:** `openui.yourdomain.com` (AI UI component generator - EXPERIMENTAL!)
     - **Open WebUI:** `webui.yourdomain.com`
     - **Flowise:** `flowise.yourdomain.com` (Log in with the email address you provided during installation and the initial password from the summary report.)
     - **Dify:** `dify.yourdomain.com` (AI application development platform with comprehensive LLMOps capabilities)
@@ -289,6 +300,7 @@ After successful installation, your services are up and running! Here's how to g
 
     - **Build with bolt.diy (NEW):** Access bolt.diy at `bolt.yourdomain.com` to create full-stack web applications using natural language. Perfect for rapid prototyping and building n8n webhook endpoints!
     - **Deploy with OpenHands (NEW):** Use OpenHands at `openhands.yourdomain.com` for autonomous code generation and deployment. Note: Full functionality requires Docker Desktop.
+    - **Generate UI Components with OpenUI (EXPERIMENTAL):** Visit OpenUI at `openui.yourdomain.com` to transform text descriptions into working UI components. For best results, use with Claude 4 Sonnet or GPT-4 models.
     - **Connect n8n with Vector Stores:** Use n8n to connect to Qdrant (accessible via its own endpoint if needed, typically `qdrant.yourdomain.com`), Supabase, or Weaviate (`weaviate.yourdomain.com`) to store and retrieve information for your AI tasks like Retrieval Augmented Generation (RAG).
     - **Build with Flowise:** Access Flowise at `flowise.yourdomain.com` to create AI agents and applications. You can trigger Flowise agents from n8n or vice-versa.
     - **Interact with Open WebUI:** Use Open WebUI at `webui.yourdomain.com` as a chat interface for your local AI models or n8n agents (e.g., using the n8n_pipe integration if configured).
@@ -362,6 +374,7 @@ This can be useful for removing old images and freeing up space, but be aware th
 ### AI Development Tools Documentation
 - **bolt.diy**: [GitHub Repository](https://github.com/stackblitz-labs/bolt.diy) | [Documentation](https://github.com/stackblitz-labs/bolt.diy#readme)
 - **OpenHands**: [GitHub Repository](https://github.com/All-Hands-AI/OpenHands) | [Documentation](https://docs.all-hands.dev/)
+- **OpenUI**: [GitHub Repository](https://github.com/wandb/openui) | [Documentation](https://github.com/wandb/openui#readme)
 
 ## Troubleshooting
 
@@ -384,6 +397,16 @@ Here are solutions to common issues you might encounter:
   - On Linux servers without Docker Desktop, this is a known limitation
   - Consider using bolt.diy as an alternative for AI-assisted development
   - For full OpenHands functionality, use a system with Docker Desktop installed
+
+#### OpenUI Quality Issues (EXPERIMENTAL)
+- **Symptom:** OpenUI generates poor quality or unusable UI components
+- **Cause:** OpenUI's output quality varies significantly based on the LLM model used
+- **Solution:**
+  - For best results, use Claude 4 Sonnet or GPT-4 models
+  - Groq models provide faster generation but may sacrifice quality
+  - Ollama models are supported but may produce inconsistent results
+  - Consider using bolt.diy for more complex UI requirements
+  - Always test generated components thoroughly before production use
 
 ### Sites not loading even after following the instructions
 

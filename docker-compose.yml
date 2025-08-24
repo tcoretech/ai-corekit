@@ -139,6 +139,25 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  openui:
+    image: ghcr.io/wandb/openui:latest
+    container_name: openui
+    profiles: ["openui"]
+    restart: unless-stopped
+    ports:
+      - "${OPENUI_PORT:-7878}:7878"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-xxx}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - OPENAI_COMPATIBLE_ENDPOINT=${OPENAI_COMPATIBLE_ENDPOINT:-}
+    volumes:
+      - ./openui-data:/app/data
+      - ./shared:/workspace
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     restart: unless-stopped

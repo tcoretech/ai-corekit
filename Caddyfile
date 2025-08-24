@@ -30,6 +30,14 @@
     reverse_proxy bolt:5173
 }
 
+# OpenUI - AI UI Generator
+(openui) {
+        @openui host {$OPENUI_HOSTNAME}
+        handle @openui {
+                reverse_proxy openui:7878
+        }
+}
+
 # Dify
 {$DIFY_HOSTNAME} {
     reverse_proxy nginx:80
@@ -180,3 +188,4 @@ import /etc/caddy/addons/*.conf
         header_up Connection "close"
     }
 }
+

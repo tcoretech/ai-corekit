@@ -31,11 +31,8 @@
 }
 
 # OpenUI - AI UI Generator
-(openui) {
-        @openui host {$OPENUI_HOSTNAME}
-        handle @openui {
-                reverse_proxy openui:7878
-        }
+{$OPENUI_HOSTNAME} {
+    reverse_proxy openui:7878
 }
 
 # Dify

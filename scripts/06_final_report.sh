@@ -200,6 +200,24 @@ if is_profile_active "comfyui"; then
   echo "Password: ${COMFYUI_PASSWORD:-<not_set_in_env>}"
 fi
 
+if is_profile_active "speech"; then
+  echo
+  echo "================================= Speech Stack ========================="
+  echo
+  echo "=== Whisper (Speech-to-Text) ==="
+  echo "Host: ${WHISPER_HOSTNAME:-<hostname_not_set>}"
+  echo "API Endpoint: https://${WHISPER_HOSTNAME:-<hostname_not_set>}/v1/audio/transcriptions"
+  echo "Model: ${WHISPER_MODEL:-Systran/faster-distil-whisper-large-v3}"
+  echo "Internal Access: http://faster-whisper:8000"
+  echo
+  echo "=== Piper (Text-to-Speech) ==="
+  echo "Host: ${PIPER_HOSTNAME:-<hostname_not_set>}"
+  echo "Voice: ${PIPER_VOICE:-en_US-lessac-medium}"
+  echo "Internal Access: http://wyoming-piper:10200"
+  echo
+  echo "Note: Both services are CPU-optimized for best performance on VPS"
+fi
+
 if is_profile_active "qdrant"; then
   echo
   echo "================================= Qdrant =============================="

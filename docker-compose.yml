@@ -4,6 +4,8 @@ volumes:
   qdrant_storage:
   open-webui:
   flowise:
+  whisper-models:
+  piper-voices:
   caddy-data:
   caddy-config:
   valkey-data:
@@ -280,6 +282,8 @@ services:
       - BOLT_HOSTNAME=${BOLT_HOSTNAME}
       - OPENUI_HOSTNAME=${OPENUI_HOSTNAME}
       - GRAFANA_HOSTNAME=${GRAFANA_HOSTNAME}
+      - PIPER_HOSTNAME=${PIPER_HOSTNAME}
+      - WHISPER_HOSTNAME=${WHISPER_HOSTNAME}
       - LANGFUSE_HOSTNAME=${LANGFUSE_HOSTNAME}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-internal}
       - LETTA_HOSTNAME=${LETTA_HOSTNAME}
@@ -760,6 +764,45 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  faster-whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: faster-whisper
+    profiles: ["speech"]
+    restart: unless-stopped
+    ports:
+      - "${WHISPER_PORT:-8000}:8000"
+    environment:
+      - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-distil-whisper-large-v3}
+      - WHISPER__COMPUTE_TYPE=int8
+      - WHISPER__DEVICE=cpu
+      - WHISPER__CPU_THREADS=4
+    volumes:
+      - whisper-models:/root/.cache/huggingface
+      - ./shared:/data/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  wyoming-piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: wyoming-piper
+    profiles: ["speech"]
+    restart: unless-stopped
+    ports:
+      - "${PIPER_PORT:-10200}:10200"
+    environment:
+      - PIPER_VOICE=${PIPER_VOICE:-en_US-lessac-medium}
+      - PIPER_UPDATE_VOICES=1
+      - PIPER_LENGTH_SCALE=1.0
+      - PIPER_NOISE_SCALE=0.667
+      - PIPER_NOISE_W=0.333
+    volumes:
+      - piper-voices:/data
+      - ./shared:/data/shared
+    command: --voice ${PIPER_VOICE:-en_US-lessac-medium}
 
   python-runner:
     image: python:3.11-slim

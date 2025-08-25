@@ -109,6 +109,16 @@
     reverse_proxy comfyui:8188
 }
 
+# Whisper (Speech-to-Text)
+{$WHISPER_HOSTNAME} {
+    reverse_proxy faster-whisper:8000
+}
+
+# Piper (Text-to-Speech)
+{$PIPER_HOSTNAME} {
+    reverse_proxy wyoming-piper:10200
+}
+
 # Neo4j
 {$NEO4J_HOSTNAME} {
     reverse_proxy neo4j:7474

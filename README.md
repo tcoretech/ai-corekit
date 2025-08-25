@@ -46,6 +46,15 @@ sudo bash ./scripts/install.sh
 | **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** | Node-based Stable Diffusion interface | `comfyui.yourdomain.com` |
 | **[Dify](https://dify.ai)** | LLMOps platform for AI applications | `dify.yourdomain.com` |
 
+### 🎙️ Speech Stack (NEW!)
+
+| Tool | Description | Access URL |
+|------|-------------|------------|
+| **[Faster-Whisper](https://github.com/SYSTRAN/faster-whisper)** | OpenAI-compatible Speech-to-Text API | Port 8001 |
+| **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech API | Port 5001 |
+
+Both services are CPU-optimized and work seamlessly with n8n for voice automation workflows.
+
 ### 🔧 Automation & Workflow
 
 | Tool | Description | Access URL |
@@ -138,7 +147,7 @@ The installer will ask you for:
 3. **API keys** (optional) - OpenAI, Anthropic, Groq for enhanced AI features
 4. **Community workflows** - Import 300+ n8n templates (optional, 20-30 min)
 5. **Worker count** - Number of n8n workers for parallel processing (1-4)
-6. **Service selection** - Choose which tools to install
+6. **Service selection** - Choose which tools to install (including Speech Stack)
 
 **Installation time:** 10-15 minutes (plus optional workflow import)
 
@@ -186,6 +195,107 @@ Arguments: -i /data/media/input.mp4 -vn -codec:a mp3 /data/media/output.mp3
 2. Describe: "Modern pricing card with gradient"
 3. Get React/Vue/HTML component instantly
 ```
+
+### 🎙️ Speech Stack Integration
+
+The Speech Stack provides OpenAI-compatible APIs for speech-to-text and text-to-speech, perfect for building voice-enabled workflows in n8n.
+
+#### Speech-to-Text with Whisper (n8n HTTP Request Node)
+
+**Configuration:**
+- **Method:** POST
+- **URL:** `http://faster-whisper:8001/v1/audio/transcriptions`
+- **Send Body:** Form Data Multipart
+- **Body Parameters:**
+  1. Binary File:
+     - Parameter Type: `n8n Binary File`
+     - Name: `file`
+     - Input Data Field Name: `data`
+  2. Model:
+     - Parameter Type: `Form Data`
+     - Name: `model`
+     - Value: `Systran/faster-whisper-large-v3`
+  3. Language (optional):
+     - Parameter Type: `Form Data`
+     - Name: `language`
+     - Value: `en` (or `de` for German, etc.)
+
+#### Text-to-Speech with OpenedAI-Speech (n8n HTTP Request Node)
+
+**Configuration:**
+- **Method:** POST
+- **URL:** `http://openedai-speech:8000/v1/audio/speech`
+- **Send Headers:** ON
+  - `Content-Type`: `application/json`
+  - `Authorization`: `Bearer sk-dummy`
+- **Send Body:** JSON
+  ```json
+  {
+    "model": "tts-1",
+    "input": "{{ $json.text }}",
+    "voice": "alloy"
+  }
+  ```
+- **Response Format:** `File`
+- **Put Output in Field:** `data`
+
+**Available English voices:** alloy, echo, fable, onyx, nova, shimmer
+
+#### Example: Voice-to-Voice Workflow
+
+```
+1. Telegram Trigger → Receive voice message
+2. Get File → Download voice file from Telegram
+3. HTTP Request → Transcribe with Whisper
+4. AI Agent → Process text with ChatGPT/Claude
+5. HTTP Request → Generate speech with TTS
+6. Telegram → Send audio response
+```
+
+### 🇩🇪 Adding German Voices to TTS
+
+To add German voices (or other languages) to the Text-to-Speech service:
+
+1. **Locate the configuration file:**
+   ```bash
+   cd ~/ai-launchkit
+   nano openedai-config/voice_to_speaker.yaml
+   ```
+
+2. **Add German voices to the `tts-1` section:**
+   ```yaml
+   # Add these lines under the existing voices
+   thorsten:
+     model: de_DE-thorsten-medium
+     speaker: # default speaker
+   eva:
+     model: de_DE-eva_k-x_low
+     speaker: # default speaker
+   kerstin:
+     model: de_DE-kerstin-low
+     speaker: # default speaker
+   ```
+
+3. **Restart the TTS service:**
+   ```bash
+   docker compose -p localai restart openedai-speech
+   ```
+
+4. **Use German voices in n8n:**
+   ```json
+   {
+     "model": "tts-1",
+     "input": "Hallo, dies ist ein Test der deutschen Sprachausgabe.",
+     "voice": "thorsten"
+   }
+   ```
+
+The voice models will be automatically downloaded on first use. Available German voices:
+- **thorsten**: High-quality male voice (medium quality)
+- **eva**: Female voice (extra low quality, very fast)
+- **kerstin**: Female voice (low quality, fast)
+
+You can find more voices at [Piper Voice Samples](https://rhasspy.github.io/piper-samples/).
 
 ### 📁 File System Access
 
@@ -271,6 +381,37 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
 - **Video Guide**: [AI Starter Kit Walkthrough](https://youtu.be/pOsO40HSbOo)
 
 ### Troubleshooting
+
+<details>
+<summary><b>🎙️ Speech Stack Issues</b></summary>
+
+#### Port Conflicts
+- **Symptom:** "Port already allocated" error during startup
+- **Common cause:** Port 8000 is used by Kong/Supabase
+- **Solution:** Speech Stack uses port 8001 for Whisper and 5001 for TTS to avoid conflicts
+
+#### TTS Not Working
+- **Symptom:** HTTP Request to TTS service fails
+- **Solution:** 
+  - Use the internal Docker network URL: `http://openedai-speech:8000/v1/audio/speech`
+  - Not `localhost:5001` from within n8n
+  - Ensure the Authorization header is set (even with dummy value like `Bearer sk-dummy`)
+
+#### German Speech Recognition Issues
+- **Symptom:** German audio transcribed as English gibberish
+- **Solution:** 
+  - Use the full model `Systran/faster-whisper-large-v3` instead of `distil` version
+  - Add `"language": "de"` parameter to the transcription request
+  - The full model will be downloaded on first use (~6GB)
+
+#### Voice Models Not Loading
+- **Symptom:** TTS voice not found error
+- **Solution:**
+  - Voice models are downloaded automatically on first use
+  - Check logs: `docker logs openedai-speech`
+  - Ensure the voice name matches exactly (case-sensitive)
+  - For custom voices, edit `openedai-config/voice_to_speaker.yaml`
+</details>
 
 <details>
 <summary><b>🤖 AI Development Tools Issues</b></summary>
@@ -501,6 +642,9 @@ graph TD
     B --> G[PostgreSQL]
     B --> H[Redis Queue]
     B --> I[Shared Storage]
+    
+    B --> M[Whisper ASR]
+    B --> N[OpenedAI TTS]
     
     C --> J[Ollama - Local LLMs]
     D --> J

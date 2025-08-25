@@ -74,6 +74,7 @@ base_services_data=(
     "python-runner" "Python Runner (Run your custom Python code from ./python-runner)"
     "ollama" "Ollama (Local LLM Runner - select hardware in next step)"
     "comfyui" "ComfyUI (Node-based Stable Diffusion UI)"
+    "speech" "Speech Stack (Whisper ASR + Piper TTS - CPU optimized)"
 )
 
 services=() # This will be the final array for whiptail

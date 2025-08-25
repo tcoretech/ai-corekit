@@ -46,12 +46,12 @@ sudo bash ./scripts/install.sh
 | **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** | Node-based Stable Diffusion interface | `comfyui.yourdomain.com` |
 | **[Dify](https://dify.ai)** | LLMOps platform for AI applications | `dify.yourdomain.com` |
 
-### 🎙️ Speech Stack (NEW!)
+### 🎙️ Speech Stack
 
 | Tool | Description | Access URL |
 |------|-------------|------------|
-| **[Faster-Whisper](https://github.com/SYSTRAN/faster-whisper)** | OpenAI-compatible Speech-to-Text API | Port 8001 |
-| **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech API | Port 5001 |
+| **[Faster-Whisper](https://github.com/SYSTRAN/faster-whisper)** | OpenAI-compatible Speech-to-Text API | Port 8000/8001 |
+| **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech API | Port 5001/8000 |
 
 Both services are CPU-optimized and work seamlessly with n8n for voice automation workflows.
 
@@ -204,7 +204,7 @@ The Speech Stack provides OpenAI-compatible APIs for speech-to-text and text-to-
 
 **Configuration:**
 - **Method:** POST
-- **URL:** `http://faster-whisper:8001/v1/audio/transcriptions`
+- **URL:** `http://faster-whisper:8000/v1/audio/transcriptions`
 - **Send Body:** Form Data Multipart
 - **Body Parameters:**
   1. Binary File:

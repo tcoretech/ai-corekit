@@ -494,7 +494,8 @@ services:
       - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
       - UWSGI_WORKERS=${SEARXNG_UWSGI_WORKERS:-4}
       - UWSGI_THREADS=${SEARXNG_UWSGI_THREADS:-4}
-    # # # # # cap_drop: - ALL  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run
+    # # # # cap_drop:
+      - ALL  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run
     cap_add:
       - CHOWN
       - SETGID
@@ -786,23 +787,19 @@ services:
       timeout: 10s
       retries: 3
 
-  wyoming-piper:
-    image: rhasspy/wyoming-piper:latest
-    container_name: wyoming-piper
+  openedai-speech:
+    image: ghcr.io/matatonic/openedai-speech-min:latest
+    container_name: openedai-speech
     profiles: ["speech"]
     restart: unless-stopped
     ports:
-      - "${PIPER_PORT:-10200}:10200"
-    environment:
-      - PIPER_VOICE=${PIPER_VOICE:-en_US-lessac-medium}
-      - PIPER_UPDATE_VOICES=1
-      - PIPER_LENGTH_SCALE=1.0
-      - PIPER_NOISE_SCALE=0.667
-      - PIPER_NOISE_W=0.333
+      - "${TTS_PORT:-5001}:8000"
     volumes:
-      - piper-voices:/data
-      - ./shared:/data/shared
-    command: --voice ${PIPER_VOICE:-en_US-lessac-medium}
+      - ./openedai-voices:/app/voices
+      - ./openedai-config:/app/config
+    environment:
+      - TTS_HOME=voices
+      - HF_HOME=voices
 
   python-runner:
     image: python:3.11-slim

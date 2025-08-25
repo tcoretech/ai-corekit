@@ -10,3 +10,5 @@ shared/
 supabase/
 dify/
 volumes/bolt-data/
+openedai-config/
+openedai-voices/

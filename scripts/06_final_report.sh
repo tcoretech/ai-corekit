@@ -210,12 +210,10 @@ if is_profile_active "speech"; then
   echo "Model: ${WHISPER_MODEL:-Systran/faster-distil-whisper-large-v3}"
   echo "Internal Access: http://faster-whisper:8000"
   echo
-  echo "=== Piper (Text-to-Speech) ==="
-  echo "Host: ${PIPER_HOSTNAME:-<hostname_not_set>}"
-  echo "Voice: ${PIPER_VOICE:-en_US-lessac-medium}"
-  echo "Internal Access: http://wyoming-piper:10200"
+  echo "=== OpenedAI-Speech (Text-to-Speech) ==="
+  echo "Internal Access: http://openedai-speech:8000/v1/audio/speech"
   echo
-  echo "Note: Both services are CPU-optimized for best performance on VPS"
+  echo "Note: Services are CPU-optimized for VPS"
 fi
 
 if is_profile_active "qdrant"; then

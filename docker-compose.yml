@@ -494,7 +494,7 @@ services:
       - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
       - UWSGI_WORKERS=${SEARXNG_UWSGI_WORKERS:-4}
       - UWSGI_THREADS=${SEARXNG_UWSGI_THREADS:-4}
-    # # # # cap_drop: - ALL  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run
+    # # # # # cap_drop: - ALL  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run  # Temporarily commented out for first run
     cap_add:
       - CHOWN
       - SETGID
@@ -771,7 +771,7 @@ services:
     profiles: ["speech"]
     restart: unless-stopped
     ports:
-      - "${WHISPER_PORT:-8000}:8000"
+      - "${WHISPER_PORT:-8001}:8000"
     environment:
       - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-distil-whisper-large-v3}
       - WHISPER__COMPUTE_TYPE=int8

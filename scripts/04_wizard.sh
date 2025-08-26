@@ -53,7 +53,6 @@ base_services_data=(
     "n8n" "n8n, n8n-worker, n8n-import (Workflow Automation)"
     "dify" "Dify (AI Application Development Platform with LLMOps)"
     "flowise" "Flowise (AI Agent Builder)"
-    "openhands" "OpenHands (AI Autonomous Developer) !! Requires Docker Desktop !!"
     "bolt" "bolt.diy (AI Web Development)"
     "openui" "OpenUI (AI Frontend/UI Generator - EXPERIMENTAL, best with Claude/GPT-4)"
     "monitoring" "Monitoring Suite (Prometheus, Grafana, cAdvisor, Node-Exporter)"

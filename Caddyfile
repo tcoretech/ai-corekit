@@ -20,11 +20,6 @@
     reverse_proxy flowise:3001
 }
 
-# OpenHands
-{$OPENHANDS_HOSTNAME} {
-    reverse_proxy openhands:3000
-}
-
 # bolt.diy
 {$BOLT_HOSTNAME} {
     reverse_proxy bolt:5173

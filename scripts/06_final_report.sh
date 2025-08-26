@@ -69,19 +69,6 @@ if is_profile_active "flowise"; then
   echo "Password: ${FLOWISE_PASSWORD:-<not_set_in_env>}"
 fi
 
-if is_profile_active "openhands"; then
-  echo
-  echo "================================= OpenHands ============================"
-  echo
-  echo "⚠️  WARNING: Requires Docker Desktop - May not work on this server!"
-  echo
-  echo "Host: ${OPENHANDS_HOSTNAME:-<hostname_not_set>}"
-  echo "Description: AI-powered autonomous coding assistant"
-  echo "Note: If runtime connection fails, this is a known Linux limitation"
-  echo "Alternative: Consider using bolt.diy instead"
-  echo "Documentation: https://github.com/All-Hands-AI/OpenHands"
-fi
-
 if is_profile_active "bolt"; then
   echo
   echo "================================= bolt.diy ============================="

@@ -41,7 +41,6 @@ sudo bash ./scripts/install.sh
 | Tool | Description | Access URL |
 |------|-------------|------------|
 | **[bolt.diy](https://github.com/stackblitz-labs/bolt.diy)** | Build full-stack apps with natural language | `bolt.yourdomain.com` |
-| **[OpenHands](https://github.com/All-Hands-AI/OpenHands)** | Autonomous AI developer assistant | `openhands.yourdomain.com` |
 | **[OpenUI](https://github.com/wandb/openui)** 🧪 | Generate UI components from descriptions | `openui.yourdomain.com` |
 | **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** | Node-based Stable Diffusion interface | `comfyui.yourdomain.com` |
 | **[Dify](https://dify.ai)** | LLMOps platform for AI applications | `dify.yourdomain.com` |
@@ -423,14 +422,6 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
   1. Check that BOLT_HOSTNAME is set correctly in your .env file
   2. Restart the service: `docker compose restart bolt`
   3. Clear browser cache and try again
-
-#### OpenHands Runtime Issues
-- **Symptom:** OpenHands shows "Failed to connect to runtime" after ~125 seconds
-- **Cause:** OpenHands requires Docker Desktop for `host.docker.internal` networking
-- **Solution:** 
-  - On Linux servers without Docker Desktop, this is a known limitation
-  - Consider using bolt.diy as an alternative for AI-assisted development
-  - For full OpenHands functionality, use a system with Docker Desktop installed
 
 #### OpenUI Quality Issues (EXPERIMENTAL)
 - **Symptom:** OpenUI generates poor quality or unusable UI components

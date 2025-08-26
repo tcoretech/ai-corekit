@@ -112,11 +112,6 @@
     reverse_proxy faster-whisper:8000
 }
 
-# Piper (Text-to-Speech)
-{$PIPER_HOSTNAME} {
-    reverse_proxy wyoming-piper:10200
-}
-
 # OpenedAI-Speech (Text-to-Speech) - Protected with Basic Auth
 {$TTS_HOSTNAME} {
     basicauth {

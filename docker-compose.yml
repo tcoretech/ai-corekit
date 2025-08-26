@@ -5,7 +5,6 @@
   open-webui:
   flowise:
   whisper-models:
-  piper-voices:
   caddy-data:
   caddy-config:
   valkey-data:
@@ -258,7 +257,6 @@ services:
       - BOLT_HOSTNAME=${BOLT_HOSTNAME}
       - OPENUI_HOSTNAME=${OPENUI_HOSTNAME}
       - GRAFANA_HOSTNAME=${GRAFANA_HOSTNAME}
-      - PIPER_HOSTNAME=${PIPER_HOSTNAME}
       - WHISPER_HOSTNAME=${WHISPER_HOSTNAME}
       - LANGFUSE_HOSTNAME=${LANGFUSE_HOSTNAME}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-internal}

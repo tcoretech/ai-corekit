@@ -1,5 +1,4 @@
 FROM node:20-slim
-
 WORKDIR /app
 
 # Install git and required libraries
@@ -15,15 +14,13 @@ RUN git clone -b stable --depth 1 https://github.com/stackblitz-labs/bolt.diy.gi
 RUN npm install -g pnpm@9.15.9
 RUN pnpm install --frozen-lockfile
 
-# Copy our external startup script (NO MORE HEREDOC!)
+# Copy our startup script (patches at runtime)
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# Use existing node user for security (already in base image)
+# Use existing node user for security
 RUN chown -R node:node /app
-
 USER node
 
 EXPOSE 5173
-
 CMD ["/app/start.sh"]

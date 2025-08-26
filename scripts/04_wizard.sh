@@ -288,9 +288,9 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",speech,"* ]]; then
             
             # Add new entries
             echo "WHISPER_AUTH_USER=$speech_user" >> "$ENV_FILE"
-            echo "WHISPER_AUTH_PASSWORD_HASH=$whisper_hash" >> "$ENV_FILE"
+            echo "WHISPER_AUTH_PASSWORD_HASH=${whisper_hash//\$/\$\$}" >> "$ENV_FILE"
             echo "TTS_AUTH_USER=$speech_user" >> "$ENV_FILE"
-            echo "TTS_AUTH_PASSWORD_HASH=$tts_hash" >> "$ENV_FILE"
+            echo "TTS_AUTH_PASSWORD_HASH=${tts_hash//\$/\$\$}" >> "$ENV_FILE"
             
             log_success "Speech services authentication configured successfully."
             log_info "Username: $speech_user"

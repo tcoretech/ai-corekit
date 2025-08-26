@@ -99,9 +99,9 @@ services:
       dockerfile: Dockerfile
     container_name: bolt
     profiles: ["bolt"]
-    # KEIN command hier!
-    ports:
-      - "3003:5173"
+    # NO command here!
+    expose:
+      - "5173"
     environment:
       - BOLT_HOSTNAME=${BOLT_HOSTNAME}
       - OLLAMA_API_BASE_URL=http://ollama:11434

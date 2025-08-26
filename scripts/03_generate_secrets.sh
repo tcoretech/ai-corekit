@@ -201,6 +201,48 @@ else
     read -p "OpenAI API Key: " OPENAI_API_KEY
 fi
 
+# Prompt for Anthropic API key (optional)
+if [[ ! -v existing_env_vars[ANTHROPIC_API_KEY] || -z "${existing_env_vars[ANTHROPIC_API_KEY]}" ]]; then
+    echo ""
+    echo "Anthropic API Key (optional). This key will be used for:"
+    echo "   - bolt.diy: Claude AI models for web development"
+    echo "   You can skip this by leaving it empty."
+fi
+
+if [[ -v existing_env_vars[ANTHROPIC_API_KEY] ]]; then
+    ANTHROPIC_API_KEY="${existing_env_vars[ANTHROPIC_API_KEY]}"
+    if [[ -n "$ANTHROPIC_API_KEY" ]]; then : 
+    else
+      log_info "Found empty Anthropic API Key in .env. You can provide one now or leave empty."
+      echo ""
+      read -p "Anthropic API Key: " ANTHROPIC_API_KEY
+    fi
+else
+    echo ""
+    read -p "Anthropic API Key: " ANTHROPIC_API_KEY
+fi
+
+# Prompt for Groq API key (optional)
+if [[ ! -v existing_env_vars[GROQ_API_KEY] || -z "${existing_env_vars[GROQ_API_KEY]}" ]]; then
+    echo ""
+    echo "Groq API Key (optional). This key will be used for:"
+    echo "   - bolt.diy: Fast inference with Groq's LLM models"
+    echo "   You can skip this by leaving it empty."
+fi
+
+if [[ -v existing_env_vars[GROQ_API_KEY] ]]; then
+    GROQ_API_KEY="${existing_env_vars[GROQ_API_KEY]}"
+    if [[ -n "$GROQ_API_KEY" ]]; then :
+    else
+      log_info "Found empty Groq API Key in .env. You can provide one now or leave empty."
+      echo ""
+      read -p "Groq API Key: " GROQ_API_KEY
+    fi
+else
+    echo ""
+    read -p "Groq API Key: " GROQ_API_KEY
+fi
+
 # Logic for n8n workflow import (RUN_N8N_IMPORT)
 echo ""
 
@@ -416,6 +458,14 @@ if [[ -n "$OPENAI_API_KEY" ]]; then
     generated_values["OPENAI_API_KEY"]="$OPENAI_API_KEY"
 fi
 
+if [[ -n "$ANTHROPIC_API_KEY" ]]; then
+    generated_values["ANTHROPIC_API_KEY"]="$ANTHROPIC_API_KEY"
+fi
+
+if [[ -n "$GROQ_API_KEY" ]]; then
+    generated_values["GROQ_API_KEY"]="$GROQ_API_KEY"
+fi
+
 if [[ -n "$CLOUDFLARE_TUNNEL_TOKEN" ]]; then
     generated_values["CLOUDFLARE_TUNNEL_TOKEN"]="$CLOUDFLARE_TUNNEL_TOKEN"
 fi
@@ -434,6 +484,8 @@ found_vars["RUN_N8N_IMPORT"]=0
 found_vars["PROMETHEUS_USERNAME"]=0
 found_vars["SEARXNG_USERNAME"]=0
 found_vars["OPENAI_API_KEY"]=0
+found_vars["ANTHROPIC_API_KEY"]=0
+found_vars["GROQ_API_KEY"]=0
 found_vars["CLOUDFLARE_TUNNEL_TOKEN"]=0
 found_vars["LANGFUSE_INIT_USER_EMAIL"]=0
 found_vars["N8N_WORKER_COUNT"]=0
@@ -569,7 +621,7 @@ if [[ -z "${generated_values[SERVICE_ROLE_KEY]}" ]]; then
 fi
 
 # Add any custom variables that weren't found in the template
-for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "CLOUDFLARE_TUNNEL_TOKEN"; do
+for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "CLOUDFLARE_TUNNEL_TOKEN"; do
     if [[ ${found_vars["$var"]} -eq 0 && -v generated_values["$var"] ]]; then
         # Before appending, check if it's already in TMP_ENV_FILE to avoid duplicates
         if ! grep -q -E "^${var}=" "$TMP_ENV_FILE"; then

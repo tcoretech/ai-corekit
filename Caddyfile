@@ -20,11 +20,6 @@
     reverse_proxy flowise:3001
 }
 
-# OpenHands
-{$OPENHANDS_HOSTNAME} {
-    reverse_proxy openhands:3000
-}
-
 # bolt.diy
 {$BOLT_HOSTNAME} {
     reverse_proxy bolt:5173
@@ -109,14 +104,20 @@
     reverse_proxy comfyui:8188
 }
 
-# Whisper (Speech-to-Text)
+# Whisper (Speech-to-Text) - Protected with Basic Auth
 {$WHISPER_HOSTNAME} {
+    basicauth {
+        {$WHISPER_AUTH_USER} {$WHISPER_AUTH_PASSWORD_HASH}
+    }
     reverse_proxy faster-whisper:8000
 }
 
-# Piper (Text-to-Speech)
-{$PIPER_HOSTNAME} {
-    reverse_proxy wyoming-piper:10200
+# OpenedAI-Speech (Text-to-Speech) - Protected with Basic Auth
+{$TTS_HOSTNAME} {
+    basicauth {
+        {$TTS_AUTH_USER} {$TTS_AUTH_PASSWORD_HASH}
+    }
+    reverse_proxy openedai-speech:8000
 }
 
 # Neo4j

@@ -69,19 +69,6 @@ if is_profile_active "flowise"; then
   echo "Password: ${FLOWISE_PASSWORD:-<not_set_in_env>}"
 fi
 
-if is_profile_active "openhands"; then
-  echo
-  echo "================================= OpenHands ============================"
-  echo
-  echo "⚠️  WARNING: Requires Docker Desktop - May not work on this server!"
-  echo
-  echo "Host: ${OPENHANDS_HOSTNAME:-<hostname_not_set>}"
-  echo "Description: AI-powered autonomous coding assistant"
-  echo "Note: If runtime connection fails, this is a known Linux limitation"
-  echo "Alternative: Consider using bolt.diy instead"
-  echo "Documentation: https://github.com/All-Hands-AI/OpenHands"
-fi
-
 if is_profile_active "bolt"; then
   echo
   echo "================================= bolt.diy ============================="
@@ -207,12 +194,17 @@ if is_profile_active "speech"; then
   echo "=== Whisper (Speech-to-Text) ==="
   echo "Host: ${WHISPER_HOSTNAME:-<hostname_not_set>}"
   echo "API Endpoint: https://${WHISPER_HOSTNAME:-<hostname_not_set>}/v1/audio/transcriptions"
+  echo "Auth User: ${WHISPER_AUTH_USER:-<not_set_in_env>}"
   echo "Model: ${WHISPER_MODEL:-Systran/faster-distil-whisper-large-v3}"
-  echo "Internal Access: http://faster-whisper:8000"
+  echo "Internal Access (no auth): http://faster-whisper:8000"
   echo
   echo "=== OpenedAI-Speech (Text-to-Speech) ==="
-  echo "Internal Access: http://openedai-speech:8000/v1/audio/speech"
+  echo "Host: ${TTS_HOSTNAME:-<hostname_not_set>}"
+  echo "API Endpoint: https://${TTS_HOSTNAME:-<hostname_not_set>}/v1/audio/speech"
+  echo "Auth User: ${TTS_AUTH_USER:-<not_set_in_env>}"
+  echo "Internal Access (no auth): http://openedai-speech:8000/v1/audio/speech"
   echo
+  echo "Note: External access requires Basic Auth. Internal access from n8n is auth-free."
   echo "Note: Services are CPU-optimized for VPS"
 fi
 

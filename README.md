@@ -199,6 +199,41 @@ Arguments: -i /data/media/input.mp4 -vn -codec:a mp3 /data/media/output.mp3
 
 The Speech Stack provides OpenAI-compatible APIs for speech-to-text and text-to-speech, perfect for building voice-enabled workflows in n8n.
 
+#### Speech Services Authentication
+
+The speech services (Whisper STT and OpenedAI TTS) are protected by Basic Authentication when accessed from the internet for security.
+
+**Configuring Authentication:**
+
+1. **Generate password hashes for `.env`:**
+   ```bash
+   # Generate hash for Whisper
+   docker run --rm caddy:alpine caddy hash-password --plaintext your_secure_password
+   # Copy the hash to WHISPER_AUTH_PASSWORD_HASH in .env
+   
+   # Generate hash for TTS (can use same or different password)
+   docker run --rm caddy:alpine caddy hash-password --plaintext your_secure_password  
+   # Copy the hash to TTS_AUTH_PASSWORD_HASH in .env
+   ```
+
+2. **Set in `.env`:**
+   ```env
+   WHISPER_AUTH_USER=admin
+   WHISPER_AUTH_PASSWORD_HASH=$2a$14$xxxxx
+   TTS_AUTH_USER=admin
+   TTS_AUTH_PASSWORD_HASH=$2a$14$xxxxx
+   ```
+
+**Access Methods:**
+- **Internal from n8n (no auth required):** 
+  - Whisper: `http://faster-whisper:8000`
+  - TTS: `http://openedai-speech:8000`
+- **External via browser/API (auth required):**
+  - Whisper: `https://asr.yourdomain.com` (use Basic Auth)
+  - TTS: `https://tts.yourdomain.com` (use Basic Auth)
+
+The internal Docker network allows n8n to access these services directly without authentication, while external access is secured.
+
 #### Speech-to-Text with Whisper (n8n HTTP Request Node)
 
 **Configuration:**

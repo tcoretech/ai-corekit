@@ -1,4 +1,4 @@
-volumes:
+#volumes:
   n8n_storage:
   ollama_storage:
   qdrant_storage:
@@ -278,8 +278,13 @@ services:
       - SEARXNG_PASSWORD_HASH=${SEARXNG_PASSWORD_HASH}
       - SEARXNG_USERNAME=${SEARXNG_USERNAME}
       - SUPABASE_HOSTNAME=${SUPABASE_HOSTNAME}
+      - TTS_AUTH_USER=${TTS_AUTH_USER}
+      - TTS_AUTH_PASSWORD_HASH=${TTS_AUTH_PASSWORD_HASH}
+      - TTS_HOSTNAME=${TTS_HOSTNAME}
       - WEAVIATE_HOSTNAME=${WEAVIATE_HOSTNAME}
       - WEBUI_HOSTNAME=${WEBUI_HOSTNAME}
+      - WHISPER_AUTH_USER=${WHISPER_AUTH_USER}
+      - WHISPER_AUTH_PASSWORD_HASH=${WHISPER_AUTH_PASSWORD_HASH}
     cap_drop:
       - ALL
     cap_add:
@@ -747,8 +752,8 @@ services:
     container_name: faster-whisper
     profiles: ["speech"]
     restart: unless-stopped
-    ports:
-      - "${WHISPER_PORT:-8001}:8000"
+    expose:
+      - "8000"
     environment:
       - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-distil-whisper-large-v3}
       - WHISPER__COMPUTE_TYPE=int8
@@ -768,8 +773,8 @@ services:
     container_name: openedai-speech
     profiles: ["speech"]
     restart: unless-stopped
-    ports:
-      - "${TTS_PORT:-5001}:8000"
+    expose:
+      - "8000"
     volumes:
       - ./openedai-voices:/app/voices
       - ./openedai-config:/app/config

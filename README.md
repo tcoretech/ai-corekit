@@ -56,7 +56,7 @@ sudo bash ./scripts/install.sh
 |------|-------------|-----------|--------|
 | **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** | Node-based Stable Diffusion interface | Image generation, AI art, photo editing, workflows | `comfyui.yourdomain.com` |
 
-### 💻 AI-Powered Development
+### 💻 AI-Powered Development / Vibe Coding
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|

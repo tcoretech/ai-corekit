@@ -72,15 +72,74 @@ def clone_supabase_repo():
         run_command(["git", "pull"])
         os.chdir("..")
 
+def ensure_clean_supabase_db():
+    """Ensure Supabase DB starts fresh if passwords don't match."""
+    if not is_supabase_enabled():
+        return
+        
+    supabase_data_dir = os.path.join("supabase", "docker", "volumes", "db", "data")
+    
+    # Check if data directory exists and has content
+    if os.path.exists(supabase_data_dir) and os.listdir(supabase_data_dir):
+        print("WARNING: Existing Supabase database data found.")
+        print("If you have password authentication issues, consider removing:")
+        print(f"  sudo rm -rf {supabase_data_dir}")
+        print("Note: This will DELETE all existing Supabase data!")
+
 def prepare_supabase_env():
-    """Copy .env to .env in supabase/docker."""
+    """Create proper Supabase .env with correct password configuration."""
     if not is_supabase_enabled():
         print("Supabase is not enabled, skipping env preparation.")
         return
-    env_path = os.path.join("supabase", "docker", ".env")
-    env_example_path = os.path.join(".env")
-    print("Copying .env in root to .env in supabase/docker...")
-    shutil.copyfile(env_example_path, env_path)
+    
+    supabase_docker_dir = os.path.join("supabase", "docker")
+    
+    # First, copy the example file
+    env_example_path = os.path.join(supabase_docker_dir, ".env.example")
+    env_path = os.path.join(supabase_docker_dir, ".env")
+    
+    if os.path.exists(env_example_path):
+        print(f"Creating {env_path} from {env_example_path}...")
+        shutil.copyfile(env_example_path, env_path)
+    
+    # Load values from root .env
+    root_env = dotenv_values(".env")
+    
+    # Get the postgres password from root env
+    postgres_password = root_env.get("POSTGRES_PASSWORD", "")
+    
+    # Read the Supabase .env file
+    with open(env_path, 'r') as f:
+        lines = f.readlines()
+    
+    # Update with our values
+    new_lines = []
+    for line in lines:
+        if line.startswith("POSTGRES_PASSWORD="):
+            new_lines.append(f"POSTGRES_PASSWORD={postgres_password}\n")
+        elif line.startswith("JWT_SECRET="):
+            jwt_secret = root_env.get("JWT_SECRET", "")
+            new_lines.append(f"JWT_SECRET={jwt_secret}\n")
+        elif line.startswith("ANON_KEY="):
+            anon_key = root_env.get("ANON_KEY", "")
+            new_lines.append(f"ANON_KEY={anon_key}\n")
+        elif line.startswith("SERVICE_ROLE_KEY="):
+            service_key = root_env.get("SERVICE_ROLE_KEY", "")
+            new_lines.append(f"SERVICE_ROLE_KEY={service_key}\n")
+        elif line.startswith("DASHBOARD_USERNAME="):
+            dashboard_user = root_env.get("DASHBOARD_USERNAME", "supabase")
+            new_lines.append(f"DASHBOARD_USERNAME={dashboard_user}\n")
+        elif line.startswith("DASHBOARD_PASSWORD="):
+            dashboard_pass = root_env.get("DASHBOARD_PASSWORD", "")
+            new_lines.append(f"DASHBOARD_PASSWORD={dashboard_pass}\n")
+        else:
+            new_lines.append(line)
+    
+    # Write back
+    with open(env_path, 'w') as f:
+        f.writelines(new_lines)
+    
+    print("Supabase .env prepared with correct passwords.")
 
 def clone_dify_repo():
     """Clone the Dify repository using sparse checkout if not already present."""
@@ -197,6 +256,13 @@ def start_supabase():
         print("Supabase is not enabled, skipping start.")
         return
     print("Starting Supabase services...")
+    # Explicitly start the db service first
+    run_command([
+        "docker", "compose", "-p", "localai", "-f", "supabase/docker/docker-compose.yml", "up", "-d", "db"
+    ])
+    # Wait for db to be ready
+    time.sleep(5)
+    # Then start all other services
     run_command([
         "docker", "compose", "-p", "localai", "-f", "supabase/docker/docker-compose.yml", "up", "-d"
     ])
@@ -371,6 +437,7 @@ def main():
     if is_supabase_enabled():
         clone_supabase_repo()
         prepare_supabase_env()
+        ensure_clean_supabase_db()
     
     if is_dify_enabled():
         clone_dify_repo()

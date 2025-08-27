@@ -17,7 +17,7 @@
 
 ## 🎯 What is AI LaunchKit?
 
-AI LaunchKit is a comprehensive, self-hosted AI development environment that deploys **20+ pre-configured tools** with a single command. Build AI applications, automate workflows, generate images, and develop with AI assistance - all running on your own infrastructure.
+AI LaunchKit is a comprehensive, self-hosted AI development environment that deploys **25+ pre-configured tools** with a single command. Build AI applications, automate workflows, generate images, and develop with AI assistance - all running on your own infrastructure.
 
 Originally forked from [n8n-installer](https://github.com/kossakovsky/n8n-installer), AI LaunchKit has evolved into a complete AI development platform, maintained by [Friedemann Schuetz](https://www.linkedin.com/in/friedemann-schuetz).
 
@@ -25,9 +25,7 @@ Originally forked from [n8n-installer](https://github.com/kossakovsky/n8n-instal
 
 ```bash
 # One command to rule them all
-git clone https://github.com/freddy-schuetz/ai-launchkit
-cd ai-launchkit
-sudo bash ./scripts/install.sh
+git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && sudo bash ./scripts/install.sh
 ```
 
 **That's it!** Your AI development stack is ready in ~10-15 minutes.
@@ -56,7 +54,7 @@ sudo bash ./scripts/install.sh
 |------|-------------|-----------|--------|
 | **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** | Node-based Stable Diffusion interface | Image generation, AI art, photo editing, workflows | `comfyui.yourdomain.com` |
 
-### 💻 AI-Powered Development
+### 💻 AI-Powered Development / Vibe Coding
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
@@ -91,7 +89,7 @@ sudo bash ./scripts/install.sh
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[SearXNG](https://github.com/searxng/searxng)** | Privacy-respecting metasearch engine | Web search for agents, no tracking, multiple sources | `searxng.yourdomain.com` |
-| **[Crawl4ai](https://github.com/unclecode/crawl4ai)** | AI-optimized web crawler | Web scraping, data extraction, site monitoring | Internal API |
+| **[Crawl4Ai](https://github.com/unclecode/crawl4ai)** | AI-optimized web crawler | Web scraping, data extraction, site monitoring | Internal API |
 
 ### 🧠 Knowledge Graphs
 
@@ -101,29 +99,33 @@ sudo bash ./scripts/install.sh
 
 ### 🎬 Media Processing Suite
 
+Pre-installed in the n8n container for seamless media manipulation:
+
 | Tool | Description | Use Cases |
 |------|-------------|-----------|
-| **ffmpeg** | Industry-standard multimedia framework | Video conversion, streaming, audio extraction |
-| **ImageMagick** | Image manipulation toolkit | Format conversion, resizing, effects, thumbnails |
-| **ExifTool** | Metadata management | Read/write EXIF, IPTC, XMP metadata |
-| **MediaInfo** | Technical media analysis | Codec detection, bitrate analysis, format info |
-| **SoX** | Sound processing toolkit | Audio effects, format conversion, synthesis |
-| **Ghostscript** | PostScript/PDF processor | PDF manipulation, conversion, rendering |
-| **Python3** | With pydub & Pillow libraries | Custom media processing scripts |
+| **[FFmpeg](https://github.com/FFmpeg/FFmpeg)** | Industry-standard multimedia framework | Video conversion, streaming, audio extraction |
+| **[ImageMagick](https://github.com/ImageMagick/ImageMagick)** | Image manipulation toolkit | Format conversion, resizing, effects, thumbnails |
+| **[ExifTool](https://github.com/exiftool/exiftool)** | Metadata management | Read/write EXIF, IPTC, XMP metadata |
+| **[MediaInfo](https://github.com/MediaArea/MediaInfo)** | Technical media analysis | Codec detection, bitrate analysis, format info |
+| **[SoX](https://github.com/chirlu/sox)** | Sound processing toolkit | Audio effects, format conversion, synthesis |
+| **[Ghostscript](https://github.com/ArtifexSoftware/ghostpdl)** | PostScript/PDF processor | PDF manipulation, conversion, rendering |
+| **[Python3](https://github.com/python/cpython)** | With pydub & Pillow libraries | Custom media processing scripts |
 
 ### 💾 Data Infrastructure
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[Supabase](https://github.com/supabase/supabase)** | Open-source Firebase alternative | User auth, realtime data, file storage, vector embeddings | `supabase.yourdomain.com` |
-| **PostgreSQL** | Relational database | Structured data, transactions, n8n backend | Internal |
-| **Redis** | In-memory data store | Caching, queues, session management | Internal |
+| **[PostgreSQL](https://github.com/postgres/postgres)** | Relational database | Structured data, transactions, n8n backend | Internal |
+| **[Redis](https://github.com/redis/redis)** | In-memory data store | Caching, queues, session management | Internal |
 
 ### 📊 System Management
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[Caddy](https://github.com/caddyserver/caddy)** | Modern web server | Automatic HTTPS, reverse proxy, load balancing | All domains |
+| **[Cloudflare Tunnel](https://github.com/cloudflare/cloudflared)** | Secure tunnel to Cloudflare | Zero-trust access, no exposed ports, DDoS protection | Internal |
+| **Python Runner** | Python execution environment for n8n | Custom scripts, data processing, automation tasks | Internal |
 | **[Grafana](https://github.com/grafana/grafana)** | Metrics visualization platform | Performance dashboards, alerts, analytics | `grafana.yourdomain.com` |
 | **[Prometheus](https://github.com/prometheus/prometheus)** | Time-series monitoring | Metrics collection, alerting rules, scraping | `prometheus.yourdomain.com` |
 | **[Portainer](https://github.com/portainer/portainer)** | Container management UI | Docker admin, logs, resource monitoring | `portainer.yourdomain.com` |
@@ -157,9 +159,7 @@ sudo bash ./scripts/install.sh
 
 ```bash
 # Clone and run the installer
-git clone https://github.com/freddy-schuetz/ai-launchkit
-cd ai-launchkit
-sudo bash ./scripts/install.sh
+git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && sudo bash ./scripts/install.sh
 ```
 
 ### Installation Process
@@ -663,9 +663,12 @@ graph TD
     A --> E[Open WebUI - Chat]
     A --> F[Other Services]
     
+    CF[Cloudflare Tunnel] -.-> A
+    
     B --> G[PostgreSQL]
     B --> H[Redis Queue]
     B --> I[Shared Storage]
+    B --> PR[Python Runner]
     
     B --> M[Whisper ASR]
     B --> N[OpenedAI TTS]

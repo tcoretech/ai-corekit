@@ -40,15 +40,15 @@ sudo bash ./scripts/install.sh
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
-| **[n8n](https://n8n.io)** | Visual workflow automation platform | API integrations, data pipelines, business automation | `n8n.yourdomain.com` |
+| **[n8n](https://github.com/n8n-io/n8n)** | Visual workflow automation platform | API integrations, data pipelines, business automation | `n8n.yourdomain.com` |
 | **300+ Workflows** | Pre-built n8n templates | Email automation, social media, data sync, AI workflows | Imported on install |
 
 ### 🎯 User Interfaces
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
-| **[Open WebUI](https://openwebui.com)** | ChatGPT-like interface for LLMs | AI chat, model switching, conversation management | `webui.yourdomain.com` |
-| **[Postiz](https://postiz.com)** | Social media management platform | Content scheduling, analytics, multi-platform posting | `postiz.yourdomain.com` |
+| **[Open WebUI](https://github.com/open-webui/open-webui)** | ChatGPT-like interface for LLMs | AI chat, model switching, conversation management | `webui.yourdomain.com` |
+| **[Postiz](https://github.com/gitroomhq/postiz-app)** | Social media management platform | Content scheduling, analytics, multi-platform posting | `postiz.yourdomain.com` |
 
 ### 🎨 AI Content Generation
 
@@ -56,7 +56,7 @@ sudo bash ./scripts/install.sh
 |------|-------------|-----------|--------|
 | **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** | Node-based Stable Diffusion interface | Image generation, AI art, photo editing, workflows | `comfyui.yourdomain.com` |
 
-### 💻 AI-Powered Development / Vibe Coding
+### 💻 AI-Powered Development
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
@@ -67,17 +67,17 @@ sudo bash ./scripts/install.sh
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
-| **[Flowise](https://flowiseai.com)** | Visual AI agent builder | Chatbots, customer support, AI workflows | `flowise.yourdomain.com` |
-| **[Dify](https://dify.ai)** | LLMOps platform for AI apps | Production AI apps, model management, prompt engineering | `dify.yourdomain.com` |
-| **[Letta](https://docs.letta.com)** | Stateful agent server | Persistent AI assistants, memory management | `letta.yourdomain.com` |
+| **[Flowise](https://github.com/FlowiseAI/Flowise)** | Visual AI agent builder | Chatbots, customer support, AI workflows | `flowise.yourdomain.com` |
+| **[Dify](https://github.com/langgenius/dify)** | LLMOps platform for AI apps | Production AI apps, model management, prompt engineering | `dify.yourdomain.com` |
+| **[Letta](https://github.com/letta-ai/letta)** | Stateful agent server | Persistent AI assistants, memory management | `letta.yourdomain.com` |
 
 ### 📚 RAG Systems
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[RAGApp](https://github.com/ragapp/ragapp)** | Build RAG assistants over your data | Knowledge bases, document Q&A, research tools | `ragapp.yourdomain.com` |
-| **[Qdrant](https://qdrant.tech)** | High-performance vector database | Semantic search, recommendations, RAG storage | `qdrant.yourdomain.com` |
-| **[Weaviate](https://weaviate.io)** | AI-native vector database | Hybrid search, multi-modal data, GraphQL API | `weaviate.yourdomain.com` |
+| **[Qdrant](https://github.com/qdrant/qdrant)** | High-performance vector database | Semantic search, recommendations, RAG storage | `qdrant.yourdomain.com` |
+| **[Weaviate](https://github.com/weaviate/weaviate)** | AI-native vector database | Hybrid search, multi-modal data, GraphQL API | `weaviate.yourdomain.com` |
 
 ### 🎙️ Speech Processing
 
@@ -90,14 +90,14 @@ sudo bash ./scripts/install.sh
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
-| **[SearXNG](https://searxng.org)** | Privacy-respecting metasearch engine | Web search for agents, no tracking, multiple sources | `searxng.yourdomain.com` |
+| **[SearXNG](https://github.com/searxng/searxng)** | Privacy-respecting metasearch engine | Web search for agents, no tracking, multiple sources | `searxng.yourdomain.com` |
 | **[Crawl4ai](https://github.com/unclecode/crawl4ai)** | AI-optimized web crawler | Web scraping, data extraction, site monitoring | Internal API |
 
 ### 🧠 Knowledge Graphs
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
-| **[Neo4j](https://neo4j.com)** | Graph database platform | Knowledge graphs, entity relationships, fraud detection, recommendations | `neo4j.yourdomain.com` |
+| **[Neo4j](https://github.com/neo4j/neo4j)** | Graph database platform | Knowledge graphs, entity relationships, fraud detection, recommendations | `neo4j.yourdomain.com` |
 
 ### 🎬 Media Processing Suite
 
@@ -115,7 +115,7 @@ sudo bash ./scripts/install.sh
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
-| **[Supabase](https://supabase.com)** | Open-source Firebase alternative | User auth, realtime data, file storage, vector embeddings | `supabase.yourdomain.com` |
+| **[Supabase](https://github.com/supabase/supabase)** | Open-source Firebase alternative | User auth, realtime data, file storage, vector embeddings | `supabase.yourdomain.com` |
 | **PostgreSQL** | Relational database | Structured data, transactions, n8n backend | Internal |
 | **Redis** | In-memory data store | Caching, queues, session management | Internal |
 
@@ -123,18 +123,18 @@ sudo bash ./scripts/install.sh
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
-| **[Caddy](https://caddyserver.com)** | Modern web server | Automatic HTTPS, reverse proxy, load balancing | All domains |
-| **[Grafana](https://grafana.com)** | Metrics visualization platform | Performance dashboards, alerts, analytics | `grafana.yourdomain.com` |
-| **[Prometheus](https://prometheus.io)** | Time-series monitoring | Metrics collection, alerting rules, scraping | `prometheus.yourdomain.com` |
-| **[Portainer](https://portainer.io)** | Container management UI | Docker admin, logs, resource monitoring | `portainer.yourdomain.com` |
-| **[Langfuse](https://langfuse.com)** | LLM observability platform | AI performance tracking, cost analysis, debugging | `langfuse.yourdomain.com` |
+| **[Caddy](https://github.com/caddyserver/caddy)** | Modern web server | Automatic HTTPS, reverse proxy, load balancing | All domains |
+| **[Grafana](https://github.com/grafana/grafana)** | Metrics visualization platform | Performance dashboards, alerts, analytics | `grafana.yourdomain.com` |
+| **[Prometheus](https://github.com/prometheus/prometheus)** | Time-series monitoring | Metrics collection, alerting rules, scraping | `prometheus.yourdomain.com` |
+| **[Portainer](https://github.com/portainer/portainer)** | Container management UI | Docker admin, logs, resource monitoring | `portainer.yourdomain.com` |
+| **[Langfuse](https://github.com/langfuse/langfuse)** | LLM observability platform | AI performance tracking, cost analysis, debugging | `langfuse.yourdomain.com` |
 
 ### 🔧 AI Support Tools
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
-| **[Ollama](https://ollama.com)** | Local LLM runtime | Run Llama, Mistral, Gemma models locally | `ollama.yourdomain.com` |
-| **[Gotenberg](https://gotenberg.dev)** | Document conversion API | PDF generation, HTML to PDF, Office conversions | Internal API |
+| **[Ollama](https://github.com/ollama/ollama)** | Local LLM runtime | Run Llama, Mistral, Gemma models locally | `ollama.yourdomain.com` |
+| **[Gotenberg](https://github.com/gotenberg/gotenberg)** | Document conversion API | PDF generation, HTML to PDF, Office conversions | Internal API |
 
 ---
 

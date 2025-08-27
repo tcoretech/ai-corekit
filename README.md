@@ -36,81 +36,105 @@ sudo bash ./scripts/install.sh
 
 ## ✨ What's Included
 
-### 🤖 AI Development Tools
+### 🔧 Workflow Automation
 
-| Tool | Description | Access URL |
-|------|-------------|------------|
-| **[bolt.diy](https://github.com/stackblitz-labs/bolt.diy)** | Build full-stack apps with natural language | `bolt.yourdomain.com` |
-| **[OpenHands](https://github.com/All-Hands-AI/OpenHands)** | Autonomous AI developer assistant | `openhands.yourdomain.com` |
-| **[OpenUI](https://github.com/wandb/openui)** 🧪 | Generate UI components from descriptions | `openui.yourdomain.com` |
-| **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** | Node-based Stable Diffusion interface | `comfyui.yourdomain.com` |
-| **[Dify](https://dify.ai)** | LLMOps platform for AI applications | `dify.yourdomain.com` |
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[n8n](https://n8n.io)** | Visual workflow automation platform | API integrations, data pipelines, business automation | `n8n.yourdomain.com` |
+| **300+ Workflows** | Pre-built n8n templates | Email automation, social media, data sync, AI workflows | Imported on install |
 
-### 🎙️ Speech Stack
+### 🎯 User Interfaces
 
-| Tool | Description | Access URL |
-|------|-------------|------------|
-| **[Faster-Whisper](https://github.com/SYSTRAN/faster-whisper)** | OpenAI-compatible Speech-to-Text API | Port 8000/8001 |
-| **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech API | Port 5001/8000 |
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Open WebUI](https://openwebui.com)** | ChatGPT-like interface for LLMs | AI chat, model switching, conversation management | `webui.yourdomain.com` |
+| **[Postiz](https://postiz.com)** | Social media management platform | Content scheduling, analytics, multi-platform posting | `postiz.yourdomain.com` |
 
-Both services are CPU-optimized and work seamlessly with n8n for voice automation workflows.
+### 🎨 AI Content Generation
 
-### 🔧 Automation & Workflow
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** | Node-based Stable Diffusion interface | Image generation, AI art, photo editing, workflows | `comfyui.yourdomain.com` |
 
-| Tool | Description | Access URL |
-|------|-------------|------------|
-| **[n8n](https://n8n.io)** | Workflow automation with 400+ integrations | `n8n.yourdomain.com` |
-| **[Flowise](https://flowiseai.com)** | No-code AI agent builder | `flowise.yourdomain.com` |
-| **[RAGApp](https://github.com/ragapp/ragapp)** | Build RAG assistants over your data | `ragapp.yourdomain.com` |
-| **[Letta](https://docs.letta.com)** | Agent server for LLM backends | `letta.yourdomain.com` |
+### 💻 AI-Powered Development
 
-### 💾 Databases & Vector Stores
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[bolt.diy](https://github.com/stackblitz-labs/bolt.diy)** | Build full-stack apps with prompts | Rapid prototyping, MVP creation, learning to code | `bolt.yourdomain.com` |
+| **[OpenUI](https://github.com/wandb/openui)** 🧪 | AI-powered UI component generation | Design systems, component libraries, mockups | `openui.yourdomain.com` |
 
-| Tool | Description | Access URL |
-|------|-------------|------------|
-| **[Supabase](https://supabase.com)** | Open-source Firebase alternative | `supabase.yourdomain.com` |
-| **[Qdrant](https://qdrant.tech)** | High-performance vector database | `qdrant.yourdomain.com` |
-| **[Weaviate](https://weaviate.io)** | AI-native vector database | `weaviate.yourdomain.com` |
-| **[Neo4j](https://neo4j.com)** | Graph database for relationships | `neo4j.yourdomain.com` |
-| **PostgreSQL** | Primary relational database | Internal |
-| **Redis** | Caching and queue management | Internal |
+### 🤖 AI Agents
 
-### 🎨 UI & Interfaces
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Flowise](https://flowiseai.com)** | Visual AI agent builder | Chatbots, customer support, AI workflows | `flowise.yourdomain.com` |
+| **[Dify](https://dify.ai)** | LLMOps platform for AI apps | Production AI apps, model management, prompt engineering | `dify.yourdomain.com` |
+| **[Letta](https://docs.letta.com)** | Stateful agent server | Persistent AI assistants, memory management | `letta.yourdomain.com` |
 
-| Tool | Description | Access URL |
-|------|-------------|------------|
-| **[Open WebUI](https://openwebui.com)** | ChatGPT-like interface for your models | `webui.yourdomain.com` |
-| **[Postiz](https://postiz.com)** | Social media scheduling platform | `postiz.yourdomain.com` |
+### 📚 RAG Systems
 
-### 🛠️ Infrastructure & Monitoring
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[RAGApp](https://github.com/ragapp/ragapp)** | Build RAG assistants over your data | Knowledge bases, document Q&A, research tools | `ragapp.yourdomain.com` |
+| **[Qdrant](https://qdrant.tech)** | High-performance vector database | Semantic search, recommendations, RAG storage | `qdrant.yourdomain.com` |
+| **[Weaviate](https://weaviate.io)** | AI-native vector database | Hybrid search, multi-modal data, GraphQL API | `weaviate.yourdomain.com` |
 
-| Tool | Description | Access URL |
-|------|-------------|------------|
-| **[Caddy](https://caddyserver.com)** | Automatic HTTPS & reverse proxy | Handles all domains |
-| **[Grafana](https://grafana.com)** | Metrics visualization | `grafana.yourdomain.com` |
-| **[Prometheus](https://prometheus.io)** | Monitoring & alerting | `prometheus.yourdomain.com` |
-| **[Portainer](https://portainer.io)** | Docker management UI | `portainer.yourdomain.com` |
-| **[Langfuse](https://langfuse.com)** | AI observability platform | `langfuse.yourdomain.com` |
+### 🎙️ Speech Processing
 
-### 🔍 Utilities
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Faster-Whisper](https://github.com/SYSTRAN/faster-whisper)** | OpenAI-compatible Speech-to-Text | Transcription, voice commands, meeting notes | Port 8001 |
+| **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech | Voice assistants, audiobooks, notifications | Port 5001 |
 
-| Tool | Description | Access URL |
-|------|-------------|------------|
-| **[SearXNG](https://searxng.org)** | Privacy-respecting metasearch | `searxng.yourdomain.com` |
-| **[Crawl4ai](https://github.com/unclecode/crawl4ai)** | AI-optimized web crawler | Internal API |
-| **[Gotenberg](https://gotenberg.dev)** | Document conversion API | Internal API |
-| **[Ollama](https://ollama.com)** | Run LLMs locally | `ollama.yourdomain.com` |
+### 🔍 Search & Web Data
+
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[SearXNG](https://searxng.org)** | Privacy-respecting metasearch engine | Web search for agents, no tracking, multiple sources | `searxng.yourdomain.com` |
+| **[Crawl4ai](https://github.com/unclecode/crawl4ai)** | AI-optimized web crawler | Web scraping, data extraction, site monitoring | Internal API |
+
+### 🧠 Knowledge Graphs
+
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Neo4j](https://neo4j.com)** | Graph database platform | Knowledge graphs, entity relationships, fraud detection, recommendations | `neo4j.yourdomain.com` |
 
 ### 🎬 Media Processing Suite
 
-**Pre-installed tools for media manipulation:**
-- **ffmpeg 6.1.2** - Video/audio processing
-- **ImageMagick 7.1.2** - Image manipulation
-- **ExifTool 13.30** - Metadata management
-- **MediaInfo** - Media file analysis
-- **SoX** - Audio processing
-- **Ghostscript** - PDF processing
-- **Python3** with pydub & Pillow
+| Tool | Description | Use Cases |
+|------|-------------|-----------|
+| **ffmpeg** | Industry-standard multimedia framework | Video conversion, streaming, audio extraction |
+| **ImageMagick** | Image manipulation toolkit | Format conversion, resizing, effects, thumbnails |
+| **ExifTool** | Metadata management | Read/write EXIF, IPTC, XMP metadata |
+| **MediaInfo** | Technical media analysis | Codec detection, bitrate analysis, format info |
+| **SoX** | Sound processing toolkit | Audio effects, format conversion, synthesis |
+| **Ghostscript** | PostScript/PDF processor | PDF manipulation, conversion, rendering |
+| **Python3** | With pydub & Pillow libraries | Custom media processing scripts |
+
+### 💾 Data Infrastructure
+
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Supabase](https://supabase.com)** | Open-source Firebase alternative | User auth, realtime data, file storage, vector embeddings | `supabase.yourdomain.com` |
+| **PostgreSQL** | Relational database | Structured data, transactions, n8n backend | Internal |
+| **Redis** | In-memory data store | Caching, queues, session management | Internal |
+
+### 📊 System Management
+
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Caddy](https://caddyserver.com)** | Modern web server | Automatic HTTPS, reverse proxy, load balancing | All domains |
+| **[Grafana](https://grafana.com)** | Metrics visualization platform | Performance dashboards, alerts, analytics | `grafana.yourdomain.com` |
+| **[Prometheus](https://prometheus.io)** | Time-series monitoring | Metrics collection, alerting rules, scraping | `prometheus.yourdomain.com` |
+| **[Portainer](https://portainer.io)** | Container management UI | Docker admin, logs, resource monitoring | `portainer.yourdomain.com` |
+| **[Langfuse](https://langfuse.com)** | LLM observability platform | AI performance tracking, cost analysis, debugging | `langfuse.yourdomain.com` |
+
+### 🔧 AI Support Tools
+
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Ollama](https://ollama.com)** | Local LLM runtime | Run Llama, Mistral, Gemma models locally | `ollama.yourdomain.com` |
+| **[Gotenberg](https://gotenberg.dev)** | Document conversion API | PDF generation, HTML to PDF, Office conversions | Internal API |
 
 ---
 
@@ -645,6 +669,9 @@ graph TD
     
     B --> M[Whisper ASR]
     B --> N[OpenedAI TTS]
+    
+    B --> O[Qdrant/Weaviate - Vectors]
+    B --> P[Neo4j - Knowledge Graph]
     
     C --> J[Ollama - Local LLMs]
     D --> J

@@ -74,6 +74,7 @@ base_services_data=(
     "ollama" "Ollama (Local LLM Runner - select hardware in next step)"
     "comfyui" "ComfyUI (Node-based Stable Diffusion UI)"
     "speech" "Speech Stack (Whisper ASR + OpenedAI TTS - CPU optimized)"
+    "libretranslate" "LibreTranslate (Self-hosted translation API - 50+ languages)"
 )
 
 services=() # This will be the final array for whiptail

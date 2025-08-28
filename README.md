@@ -77,12 +77,13 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 | **[Qdrant](https://github.com/qdrant/qdrant)** | High-performance vector database | Semantic search, recommendations, RAG storage | `qdrant.yourdomain.com` |
 | **[Weaviate](https://github.com/weaviate/weaviate)** | AI-native vector database | Hybrid search, multi-modal data, GraphQL API | `weaviate.yourdomain.com` |
 
-### 🎙️ Speech Processing
+### 🎙️ Speech & Language Processing
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[Faster-Whisper](https://github.com/SYSTRAN/faster-whisper)** | OpenAI-compatible Speech-to-Text | Transcription, voice commands, meeting notes | Port 8001 |
 | **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech | Voice assistants, audiobooks, notifications | Port 5001 |
+| **[LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)** | Self-hosted translation API | 50+ languages, document translation, privacy-focused | `translate.yourdomain.com` |
 
 ### 🔍 Search & Web Data
 

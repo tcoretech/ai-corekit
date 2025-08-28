@@ -107,9 +107,12 @@ while [ $idx -lt ${#base_services_data[@]} ]; do
     idx=$((idx + 2))
 done
 
+# Calculate dynamic height based on number of services
+num_services=$(( ${#services[@]} / 3 ))
+
 # Use whiptail to display the checklist
 CHOICES=$(whiptail --title "Service Selection Wizard" --checklist \
-  "Choose the services you want to deploy.\nUse ARROW KEYS to navigate, SPACEBAR to select/deselect, ENTER to confirm." 32 90 21 \
+  "Choose the services you want to deploy.\nUse ARROW KEYS to navigate, SPACEBAR to select/deselect, ENTER to confirm." 32 90 $num_services \
   "${services[@]}" \
   3>&1 1>&2 2>&3)
 

@@ -22,6 +22,7 @@ DOMAIN_PLACEHOLDER="yourdomain.com"
 # Types: password (alphanum), secret (base64), hex, base64, alphanum
 declare -A VARS_TO_GENERATE=(
     ["FLOWISE_PASSWORD"]="password:32"
+    ["BOLT_PASSWORD"]="password:32"
     ["N8N_ENCRYPTION_KEY"]="secret:64" # base64 encoded, 48 bytes -> 64 chars
     ["N8N_USER_MANAGEMENT_JWT_SECRET"]="secret:64" # base64 encoded, 48 bytes -> 64 chars
     ["POSTGRES_PASSWORD"]="password:32"
@@ -404,6 +405,7 @@ for key_from_existing in "${!existing_env_vars[@]}"; do
 done
 
 # Store user input values (potentially overwriting if user was re-prompted and gave new input)
+generated_values["BOLT_USERNAME"]="$USER_EMAIL"
 generated_values["FLOWISE_USERNAME"]="$USER_EMAIL"
 generated_values["DASHBOARD_USERNAME"]="$USER_EMAIL"
 generated_values["LETSENCRYPT_EMAIL"]="$USER_EMAIL"
@@ -702,6 +704,18 @@ if [[ -z "$FINAL_COMFYUI_HASH" && -n "$COMFYUI_PLAIN_PASS" ]]; then
     fi
 fi
 _update_or_add_env_var "COMFYUI_PASSWORD_HASH" "$FINAL_COMFYUI_HASH"
+
+# --- BOLT ---
+BOLT_PLAIN_PASS="${generated_values["BOLT_PASSWORD"]}"
+FINAL_BOLT_HASH="${generated_values[BOLT_PASSWORD_HASH]}"
+if [[ -z "$FINAL_BOLT_HASH" && -n "$BOLT_PLAIN_PASS" ]]; then
+    NEW_HASH=$(_generate_and_get_hash "$BOLT_PLAIN_PASS")
+    if [[ -n "$NEW_HASH" ]]; then
+        FINAL_BOLT_HASH="$NEW_HASH"
+        generated_values["BOLT_PASSWORD_HASH"]="$NEW_HASH"
+    fi
+fi
+_update_or_add_env_var "BOLT_PASSWORD_HASH" "$FINAL_BOLT_HASH"
 
 # --- RAGAPP ---
 RAGAPP_PLAIN_PASS="${generated_values["RAGAPP_PASSWORD"]}"

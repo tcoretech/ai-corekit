@@ -322,6 +322,89 @@ The voice models will be automatically downloaded on first use. Available German
 
 You can find more voices at [Piper Voice Samples](https://rhasspy.github.io/piper-samples/).
 
+### 🌍 LibreTranslate Integration
+
+LibreTranslate provides a self-hosted translation API with 50+ languages, perfect for privacy-conscious workflows and unlimited translations without API costs.
+
+#### Basic Translation (n8n HTTP Request Node)
+
+**Configuration:**
+- **Method:** POST
+- **URL:** `http://libretranslate:5000/translate`
+- **Authentication:** None (internal access)
+- **Send Headers:** ON
+  - `Content-Type`: `application/json`
+- **Send Body:** JSON
+  ```json
+  {
+    "q": "{{ $json.text }}",
+    "source": "auto",
+    "target": "de",
+    "format": "text"
+  }
+  ```
+
+#### Detect Language
+
+**Configuration:**
+- **Method:** POST
+- **URL:** `http://libretranslate:5000/detect`
+- **Send Body:** JSON
+  ```json
+  {
+    "q": "{{ $json.text }}"
+  }
+  ```
+
+#### Get Available Languages
+
+**Configuration:**
+- **Method:** GET
+- **URL:** `http://libretranslate:5000/languages`
+
+#### Example: Multi-Language Support Workflow
+
+```
+1. Webhook Trigger → Receive text from user
+2. HTTP Request → Detect language
+   URL: http://libretranslate:5000/detect
+   Body: {"q": "{{ $json.text }}"}
+3. IF Node → Check if language != "en"
+4. HTTP Request → Translate to English
+   URL: http://libretranslate:5000/translate
+   Body: {
+     "q": "{{ $('Webhook').item.json.text }}",
+     "source": "{{ $json[0].language }}",
+     "target": "en"
+   }
+5. OpenAI/Ollama → Process in English
+6. HTTP Request → Translate back to original language
+   URL: http://libretranslate:5000/translate
+   Body: {
+     "q": "{{ $json.response }}",
+     "source": "en",
+     "target": "{{ $node['HTTP Request'].json[0].language }}"
+   }
+7. Respond to User → Send translated response
+```
+
+#### Common Language Codes
+
+| Code | Language | Code | Language | Code | Language |
+|------|----------|------|----------|------|----------|
+| `de` | German | `fr` | French | `zh` | Chinese |
+| `en` | English | `it` | Italian | `ja` | Japanese |
+| `es` | Spanish | `pt` | Portuguese | `ar` | Arabic |
+| `ru` | Russian | `nl` | Dutch | `ko` | Korean |
+| `pl` | Polish | `tr` | Turkish | `hi` | Hindi |
+
+**Tips:**
+- Use `"source": "auto"` for automatic language detection
+- Set `"format": "html"` to preserve HTML formatting
+- Documents (docx, pdf, txt) can be translated via file upload
+- Internal access from n8n doesn't require authentication
+- External access via `https://translate.yourdomain.com` requires Basic Auth
+
 ### 📁 File System Access
 
 - **Shared folder**: `./shared` → `/data/shared` in containers

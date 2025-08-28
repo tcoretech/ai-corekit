@@ -121,4 +121,12 @@ if grep -q "supabase" .env 2>/dev/null; then
     sudo docker compose -p localai -f supabase/docker/docker-compose.yml up -d db 2>/dev/null || true
 fi
 
+# Workaround: Ensure LibreTranslate starts properly if selected
+if grep -q "libretranslate" .env 2>/dev/null || docker ps -a | grep -q libretranslate; then
+    echo "Ensuring LibreTranslate container is running properly..."
+    sudo docker compose -p localai stop libretranslate 2>/dev/null || true
+    sudo docker compose -p localai rm -f libretranslate 2>/dev/null || true
+    sudo docker compose -p localai --profile libretranslate up -d libretranslate 2>/dev/null || true
+fi
+
 exit 0 

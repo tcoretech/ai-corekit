@@ -58,4 +58,24 @@ bash "$APPLY_UPDATE_SCRIPT"
 # The final success message will now come from apply_update.sh
 log_info "Update script finished." # Changed final message
 
+# Execute the rest of the update process using the (potentially updated) apply_update.sh
+bash "$APPLY_UPDATE_SCRIPT"
+
+# Workaround: Ensure Supabase DB starts if Supabase was selected
+if grep -q "supabase" "$PROJECT_ROOT/.env" 2>/dev/null; then
+    log_info "Ensuring Supabase database container is running..."
+    cd "$PROJECT_ROOT" || true
+    sudo docker compose -p localai -f supabase/docker/docker-compose.yml up -d db 2>/dev/null || true
+fi
+
+# Workaround: Ensure LibreTranslate starts properly if selected
+if grep -q "libretranslate" "$PROJECT_ROOT/.env" 2>/dev/null || docker ps -a | grep -q libretranslate; then
+    log_info "Ensuring LibreTranslate container is running properly..."
+    sudo docker compose -p localai stop libretranslate 2>/dev/null || true
+    sudo docker compose -p localai rm -f libretranslate 2>/dev/null || true
+    sudo docker compose -p localai --profile libretranslate up -d libretranslate 2>/dev/null || true
+fi
+
+# The final success message will now come from apply_update.sh
+log_info "Update script finished." # Changed final message
 exit 0

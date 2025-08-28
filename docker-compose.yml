@@ -806,16 +806,16 @@ services:
       - LT_UPDATE_MODELS=${LIBRETRANSLATE_UPDATE_MODELS:-false}
       - LT_METRICS=${LIBRETRANSLATE_METRICS:-false}
     volumes:
-      - libretranslate_models:/home/libretranslate/.local/share
-      - libretranslate_cache:/home/libretranslate/.local/cache
+      - libretranslate_models:/home/libretranslate/.local
       - libretranslate_db:/app/db
       - ./shared:/data/shared
-    healthcheck:
-      test: ['CMD-SHELL', './venv/bin/python scripts/healthcheck.py']
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+    # Removed Healthcheck - does not work reliably with this image
+    # healthcheck:
+    #   test: ['CMD-SHELL', 'wget -q --spider http://localhost:5000/languages || exit 1']
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 120s
 
   python-runner:
     image: python:3.11-slim

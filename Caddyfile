@@ -131,6 +131,14 @@
     reverse_proxy libretranslate:5000
 }
 
+# LightRAG (Graph-based RAG)
+{$LIGHTRAG_HOSTNAME} {
+    basic_auth {
+        {$LIGHTRAG_USERNAME} {$LIGHTRAG_PASSWORD_HASH}
+    }
+    reverse_proxy lightrag:9621
+}
+
 # Neo4j
 {$NEO4J_HOSTNAME} {
     reverse_proxy neo4j:7474

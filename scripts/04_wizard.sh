@@ -63,6 +63,7 @@ base_services_data=(
     "qdrant" "Qdrant (Vector Database)"
     "supabase" "Supabase (Backend as a Service)"
     "weaviate" "Weaviate (Vector Database with API Key Auth)"
+    "lightrag" "LightRAG (Graph-based RAG with entity extraction)"
     "neo4j" "Neo4j (Graph Database)"
     "letta" "Letta (Agent Server & SDK)"
     "gotenberg" "Gotenberg (Document Conversion API)"

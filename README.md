@@ -97,6 +97,7 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[Neo4j](https://github.com/neo4j/neo4j)** | Graph database platform | Knowledge graphs, entity relationships, fraud detection, recommendations | `neo4j.yourdomain.com` |
+| **[LightRAG](https://github.com/HKUDS/LightRAG)** | Graph-based RAG with entity extraction | Automatic knowledge graph creation, relationship mapping, complex queries | `lightrag.yourdomain.com` |
 
 ### 🎬 Media Processing Suite
 
@@ -404,6 +405,100 @@ LibreTranslate provides a self-hosted translation API with 50+ languages, perfec
 - Documents (docx, pdf, txt) can be translated via file upload
 - Internal access from n8n doesn't require authentication
 - External access via `https://translate.yourdomain.com` requires Basic Auth
+
+### 🔮 LightRAG Integration
+
+LightRAG provides graph-based RAG with automatic entity and relationship extraction, creating knowledge graphs from your documents. It's perfect for complex queries that require understanding relationships between entities.
+
+#### Basic Document Processing (n8n HTTP Request Node)
+
+**Insert Document:**
+```javascript
+// HTTP Request Node Configuration
+Method: POST
+URL: http://lightrag:9621/api/insert
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer {{ $credentials.lightragToken }}
+Body:
+{
+  "text": "{{ $json.documentContent }}",
+  "metadata": {
+    "source": "{{ $json.fileName }}",
+    "timestamp": "{{ $now.toISO() }}"
+  }
+}
+```
+
+#### Query Knowledge Graph
+
+**Configuration for different query modes:**
+
+```javascript
+// Local Query - Specific entity information
+Method: POST
+URL: http://lightrag:9621/api/query
+Body:
+{
+  "query": "What is the role of Petra Hedorfer?",
+  "mode": "local",
+  "max_results": 5
+}
+
+// Global Query - High-level summaries
+Method: POST
+URL: http://lightrag:9621/api/query
+Body:
+{
+  "query": "What are the main sustainability initiatives?",
+  "mode": "global",
+  "max_results": 10
+}
+
+// Hybrid Query - Combines local and global
+Method: POST
+URL: http://lightrag:9621/api/query
+Body:
+{
+  "query": "How does DZT implement SDGs in tourism?",
+  "mode": "hybrid",
+  "stream": false
+}
+```
+
+#### Example: Building a Knowledge Graph from Documents
+
+```
+1. Trigger (Webhook/Schedule) → Start workflow
+2. Google Drive → Get new PDF documents
+3. Extract from File → Extract text from PDF
+4. Code Node → Split into chunks (3000 chars)
+5. Loop Over Items → For each chunk:
+   - HTTP Request → Insert to LightRAG
+   - Extract entities and relationships
+6. HTTP Request → Query for specific insights
+7. Format Response → Create summary report
+8. Send Email → Deliver insights
+```
+
+#### Query Modes Explained
+
+- **`local`**: Retrieves specific information about entities and their direct relationships
+- **`global`**: Provides high-level summaries and themes across the entire knowledge base  
+- **`hybrid`**: Combines both local and global retrieval for comprehensive answers
+- **`naive`**: Simple keyword-based retrieval without graph features
+
+#### Advanced: Open WebUI Integration
+
+LightRAG can be added to Open WebUI as an Ollama-compatible model:
+
+1. In Open WebUI, go to Settings → Connections
+2. Add new Ollama connection:
+   - **URL:** `http://lightrag:9621`
+   - **Model name:** `lightrag:latest`
+3. Select LightRAG from model dropdown in chat
+
+This enables chatting with your knowledge graph directly through the Open WebUI interface!
 
 ### 📁 File System Access
 
@@ -759,6 +854,7 @@ graph TD
     
     B --> O[Qdrant/Weaviate - Vectors]
     B --> P[Neo4j - Knowledge Graph]
+    B --> LR[LightRAG - Graph RAG]
     
     C --> J[Ollama - Local LLMs]
     D --> J

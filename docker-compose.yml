@@ -23,6 +23,7 @@ volumes:
   comfyui_data:
   postiz-config:
   postiz-uploads:
+  lightrag_data:
 
 x-n8n: &service-n8n
   build:
@@ -831,3 +832,29 @@ services:
     command: /bin/sh -c 'if [ -f /app/requirements.txt ]; then python -m pip install --no-cache-dir -r /app/requirements.txt; fi; python /app/main.py'
     volumes:
       - ./python-runner:/app
+
+lightrag:
+    image: ghcr.io/hkuds/lightrag:latest
+    container_name: lightrag
+    profiles: ["lightrag"]
+    restart: unless-stopped
+    volumes:
+      - lightrag_data:/app/data/rag_storage
+      - ./shared:/app/data/inputs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - EMBEDDING_MODEL=${LIGHTRAG_EMBEDDING:-all-MiniLM-L6-v2}
+      - LLM_MODEL=${LIGHTRAG_LLM:-ollama/llama3.2}
+      - WORKSPACE=${LIGHTRAG_WORKSPACE:-default}
+      - AUTH_ACCOUNTS=${LIGHTRAG_AUTH_ACCOUNTS}
+      - TOKEN_SECRET=${LIGHTRAG_TOKEN_SECRET}
+      - TOKEN_EXPIRE_HOURS=${LIGHTRAG_TOKEN_EXPIRE:-24}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9621/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - postgres
+      - ollama-cpu

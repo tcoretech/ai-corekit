@@ -57,6 +57,9 @@ declare -A VARS_TO_GENERATE=(
     ["LIBRETRANSLATE_PASSWORD"]="password:32" # Added LibreTranslate basic auth password
     ["WHISPER_AUTH_PASSWORD"]="password:32" # Added Whisper basic auth password
     ["TTS_AUTH_PASSWORD"]="password:32" # Added TTS basic auth password
+    ["LIGHTRAG_PASSWORD"]="password:32"
+    ["LIGHTRAG_TOKEN_SECRET"]="apikey:64"
+    ["LIGHTRAG_AUTH_ACCOUNTS"]="special:lightrag_auth"
 )
 
 # Initialize existing_env_vars and attempt to read .env if it exists
@@ -422,6 +425,7 @@ generated_values["RAGAPP_USERNAME"]="$USER_EMAIL" # Set RAGApp username for Cadd
 generated_values["LIBRETRANSLATE_USERNAME"]="$USER_EMAIL" # Set LibreTranslate username for Caddy
 generated_values["WHISPER_AUTH_USER"]="$USER_EMAIL" # Set Whisper username for Caddy
 generated_values["TTS_AUTH_USER"]="$USER_EMAIL" # Set TTS username for Caddy
+generated_values["LIGHTRAG_USERNAME"]="$USER_EMAIL" # Set LightRAG username for Caddy
 
 if [[ -n "$OPENAI_API_KEY" ]]; then
     generated_values["OPENAI_API_KEY"]="$OPENAI_API_KEY"
@@ -460,6 +464,7 @@ found_vars["RAGAPP_USERNAME"]=0
 found_vars["LIBRETRANSLATE_USERNAME"]=0
 found_vars["WHISPER_AUTH_USER"]=0
 found_vars["TTS_AUTH_USER"]=0
+found_vars["LIGHTRAG_USERNAME"]=0
 
 # Read template, substitute domain, generate initial values
 while IFS= read -r line || [[ -n "$line" ]]; do
@@ -487,6 +492,12 @@ while IFS= read -r line || [[ -n "$line" ]]; do
                 langfuse_pk) newValue="pk-lf-$(gen_hex "$length")" ;;
                 langfuse_sk) newValue="sk-lf-$(gen_hex "$length")" ;;
                 fixed) newValue="$length" ;; # Handle fixed type
+                special) 
+                    if [[ "$varName" == "LIGHTRAG_AUTH_ACCOUNTS" && "$length" == "lightrag_auth" ]]; then
+                        ADMIN_PASS=$(gen_password 16)
+                        newValue="admin:${ADMIN_PASS}"
+                    fi
+                    ;;
                 *) log_warning "Unknown generation type '$type' for $varName" ;;
             esac
 
@@ -588,7 +599,7 @@ if [[ -z "${generated_values[SERVICE_ROLE_KEY]}" ]]; then
 fi
 
 # Add any custom variables that weren't found in the template
-for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER"; do
+for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME"; do
     if [[ ${found_vars["$var"]} -eq 0 && -v generated_values["$var"] ]]; then
         # Before appending, check if it's already in TMP_ENV_FILE to avoid duplicates
         if ! grep -q -E "^${var}=" "$TMP_ENV_FILE"; then
@@ -770,6 +781,18 @@ if [[ -z "$FINAL_TTS_HASH" && -n "$TTS_PLAIN_PASS" ]]; then
     fi
 fi
 _update_or_add_env_var "TTS_AUTH_PASSWORD_HASH" "$FINAL_TTS_HASH"
+
+# --- LIGHTRAG ---
+LIGHTRAG_PLAIN_PASS="${generated_values["LIGHTRAG_PASSWORD"]}"
+FINAL_LIGHTRAG_HASH="${generated_values[LIGHTRAG_PASSWORD_HASH]}"
+if [[ -z "$FINAL_LIGHTRAG_HASH" && -n "$LIGHTRAG_PLAIN_PASS" ]]; then
+    NEW_HASH=$(_generate_and_get_hash "$LIGHTRAG_PLAIN_PASS")
+    if [[ -n "$NEW_HASH" ]]; then
+        FINAL_LIGHTRAG_HASH="$NEW_HASH"
+        generated_values["LIGHTRAG_PASSWORD_HASH"]="$NEW_HASH"
+    fi
+fi
+_update_or_add_env_var "LIGHTRAG_PASSWORD_HASH" "$FINAL_LIGHTRAG_HASH"
 
 if [ $? -eq 0 ]; then # This $? reflects the status of the last mv command from the last _update_or_add_env_var call.
     # For now, assuming if we reached here and mv was fine, primary operations were okay.

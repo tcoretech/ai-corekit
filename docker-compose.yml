@@ -833,7 +833,7 @@ services:
     volumes:
       - ./python-runner:/app
 
-lightrag:
+  lightrag:
     image: ghcr.io/hkuds/lightrag:latest
     container_name: lightrag
     profiles: ["lightrag"]

@@ -489,6 +489,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
                 password|alphanum) newValue=$(gen_password "$length") ;;
                 secret|base64) newValue=$(gen_base64 "$length") ;;
                 hex) newValue=$(gen_hex "$length") ;;
+                apikey) newValue=$(gen_hex "$length") ;;
                 langfuse_pk) newValue="pk-lf-$(gen_hex "$length")" ;;
                 langfuse_sk) newValue="sk-lf-$(gen_hex "$length")" ;;
                 fixed) newValue="$length" ;; # Handle fixed type

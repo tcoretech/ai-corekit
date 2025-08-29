@@ -844,18 +844,13 @@ services:
       - ./shared:/app/data/inputs
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - EMBEDDING_MODEL=${LIGHTRAG_EMBEDDING:-all-MiniLM-L6-v2}
-      - LLM_MODEL=${LIGHTRAG_LLM:-ollama/llama3.2}
+      - LLM_BINDING=ollama
+      - LLM_BINDING_HOST=http://ollama:11434
+      - EMBEDDING_BINDING=ollama
+      - EMBEDDING_BINDING_HOST=http://ollama:11434
+      - LLM_MODEL=llama3.2
+      - EMBEDDING_MODEL=nomic-embed-text
+      - EMBEDDING_DIM=768
       - WORKSPACE=${LIGHTRAG_WORKSPACE:-default}
       - AUTH_ACCOUNTS=${LIGHTRAG_AUTH_ACCOUNTS}
       - TOKEN_SECRET=${LIGHTRAG_TOKEN_SECRET}
-      - TOKEN_EXPIRE_HOURS=${LIGHTRAG_TOKEN_EXPIRE:-24}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9621/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    depends_on:
-      - postgres
-      - ollama-cpu

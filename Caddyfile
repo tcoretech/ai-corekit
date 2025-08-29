@@ -133,9 +133,6 @@
 
 # LightRAG (Graph-based RAG)
 {$LIGHTRAG_HOSTNAME} {
-    basic_auth {
-        {$LIGHTRAG_USERNAME} {$LIGHTRAG_PASSWORD_HASH}
-    }
     reverse_proxy lightrag:9621
 }
 

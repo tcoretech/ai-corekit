@@ -272,9 +272,38 @@ def start_dify():
     if not is_dify_enabled():
         print("Dify is not enabled, skipping start.")
         return
+    
     print("Starting Dify services...")
+    
+    # WICHTIG: Starte zuerst die DB
+    print("Starting Dify database first...")
     run_command([
-        "docker", "compose", "-p", "localai", "-f", "dify/docker/docker-compose.yaml", "up", "-d"
+        "docker", "compose", "-p", "localai", "-f", "dify/docker/docker-compose.yaml", 
+        "up", "-d", "db"
+    ])
+    
+    # Warte bis DB bereit ist
+    print("Waiting for Dify database to be ready...")
+    time.sleep(5)
+    
+    # Erstelle die dify_plugin Datenbank falls sie nicht existiert
+    print("Ensuring dify_plugin database exists...")
+    try:
+        # Versuche die Datenbank zu erstellen
+        subprocess.run([
+            "docker", "exec", "localai-db-1", "psql", "-U", "postgres", 
+            "-c", "CREATE DATABASE dify_plugin;"
+        ], capture_output=True, check=False)
+        print("dify_plugin database created or already exists.")
+    except Exception as e:
+        # Ignoriere Fehler falls DB schon existiert oder Container-Name anders ist
+        print(f"Note: Could not create dify_plugin database (may already exist): {e}")
+    
+    # DANN starte alle anderen Services
+    print("Starting remaining Dify services...")
+    run_command([
+        "docker", "compose", "-p", "localai", "-f", "dify/docker/docker-compose.yaml", 
+        "up", "-d"
     ])
 
 def start_local_ai():

@@ -136,6 +136,14 @@
     reverse_proxy lightrag:9621
 }
 
+# Perplexica (AI-powered search) - Protected with Basic Auth
+{$PERPLEXICA_HOSTNAME} {
+    basic_auth {
+        {$PERPLEXICA_USERNAME} {$PERPLEXICA_PASSWORD_HASH}
+    }
+    reverse_proxy perplexica-frontend:3000
+}
+
 # Neo4j
 {$NEO4J_HOSTNAME} {
     reverse_proxy neo4j:7474

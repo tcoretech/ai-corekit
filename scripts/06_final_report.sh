@@ -154,6 +154,34 @@ if is_profile_active "searxng"; then
   echo "Password: ${SEARXNG_PASSWORD:-<not_set_in_env>}"
 fi
 
+if is_profile_active "perplexica"; then
+  echo
+  echo "================================= Perplexica =========================="
+  echo
+  echo "Host: ${PERPLEXICA_HOSTNAME:-<hostname_not_set>}"
+  echo "User: ${PERPLEXICA_USERNAME:-<not_set_in_env>}"
+  echo "Password: ${PERPLEXICA_PASSWORD:-<not_set_in_env>}"
+  echo
+  echo "Access:"
+  echo "  External (HTTPS): https://${PERPLEXICA_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal API: http://perplexica-backend:3001"
+  echo
+  echo "Features:"
+  echo "  - 6 Focus Modes (Academic, YouTube, Reddit, Writing, etc.)"
+  echo "  - Uses your SearXNG instance for web search"
+  echo "  - Integrates with Ollama for local LLMs"
+  echo "  - Can also use OpenAI/Anthropic/Groq if configured"
+  echo
+  echo "n8n Integration:"
+  echo "  API Endpoint: http://perplexica-backend:3001/api/search"
+  echo "  Method: POST"
+  echo "  Body: {\"query\": \"your search\", \"mode\": \"all\"}"
+  echo
+  echo "Documentation: https://github.com/ItzCrazyKns/Perplexica"
+  echo
+  echo "Note: First start takes ~5-10 minutes to build the containers"
+fi
+
 if is_profile_active "portainer"; then
   echo
   echo "================================= Portainer ==========================="

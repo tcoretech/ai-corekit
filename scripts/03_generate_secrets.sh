@@ -60,6 +60,7 @@ declare -A VARS_TO_GENERATE=(
     ["LIGHTRAG_PASSWORD"]="password:32"
     ["LIGHTRAG_TOKEN_SECRET"]="apikey:64"
     ["LIGHTRAG_AUTH_ACCOUNTS"]="special:lightrag_auth"
+    ["PERPLEXICA_PASSWORD"]="password:32"
 )
 
 # Initialize existing_env_vars and attempt to read .env if it exists
@@ -426,6 +427,8 @@ generated_values["LIBRETRANSLATE_USERNAME"]="$USER_EMAIL" # Set LibreTranslate u
 generated_values["WHISPER_AUTH_USER"]="$USER_EMAIL" # Set Whisper username for Caddy
 generated_values["TTS_AUTH_USER"]="$USER_EMAIL" # Set TTS username for Caddy
 generated_values["LIGHTRAG_USERNAME"]="$USER_EMAIL" # Set LightRAG username for Caddy
+generated_values["PERPLEXICA_USERNAME"]="$USER_EMAIL" # Set Perplexica username for Caddy
+
 
 if [[ -n "$OPENAI_API_KEY" ]]; then
     generated_values["OPENAI_API_KEY"]="$OPENAI_API_KEY"
@@ -465,6 +468,7 @@ found_vars["LIBRETRANSLATE_USERNAME"]=0
 found_vars["WHISPER_AUTH_USER"]=0
 found_vars["TTS_AUTH_USER"]=0
 found_vars["LIGHTRAG_USERNAME"]=0
+found_vars["PERPLEXICA_USERNAME"]=0
 
 # Read template, substitute domain, generate initial values
 while IFS= read -r line || [[ -n "$line" ]]; do
@@ -600,7 +604,7 @@ if [[ -z "${generated_values[SERVICE_ROLE_KEY]}" ]]; then
 fi
 
 # Add any custom variables that weren't found in the template
-for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME"; do
+for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME"; do
     if [[ ${found_vars["$var"]} -eq 0 && -v generated_values["$var"] ]]; then
         # Before appending, check if it's already in TMP_ENV_FILE to avoid duplicates
         if ! grep -q -E "^${var}=" "$TMP_ENV_FILE"; then
@@ -803,6 +807,18 @@ else
     rm -f "$OUTPUT_FILE" # Clean up potentially broken output file
     exit 1
 fi
+
+# --- PERPLEXICA ---
+PERPLEXICA_PLAIN_PASS="${generated_values["PERPLEXICA_PASSWORD"]}"
+FINAL_PERPLEXICA_HASH="${generated_values[PERPLEXICA_PASSWORD_HASH]}"
+if [[ -z "$FINAL_PERPLEXICA_HASH" && -n "$PERPLEXICA_PLAIN_PASS" ]]; then
+    NEW_HASH=$(_generate_and_get_hash "$PERPLEXICA_PLAIN_PASS")
+    if [[ -n "$NEW_HASH" ]]; then
+        FINAL_PERPLEXICA_HASH="$NEW_HASH"
+        generated_values["PERPLEXICA_PASSWORD_HASH"]="$NEW_HASH"
+    fi
+fi
+_update_or_add_env_var "PERPLEXICA_PASSWORD_HASH" "$FINAL_PERPLEXICA_HASH"
 
 # Uninstall caddy
 apt remove -y caddy

@@ -2,7 +2,8 @@
 
 <div align="center">
 
-**Open-Source AI Development Toolkit**  
+**Open-Source AI Development Toolkit**
+
 *Deploy your complete AI stack in minutes, not weeks*
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -167,7 +168,6 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 ### Installation Process
 
 The installer will ask you for:
-
 1. **Domain name** - Your wildcard domain (e.g., `yourdomain.com`)
 2. **Email address** - For SSL certificates and service logins
 3. **API keys** (optional) - OpenAI, Anthropic, Groq for enhanced AI features
@@ -268,7 +268,6 @@ The Speech Stack provides OpenAI-compatible APIs for speech-to-text and text-to-
 **Available English voices:** alloy, echo, fable, onyx, nova, shimmer
 
 #### Example: Voice-to-Voice Workflow
-
 ```
 1. Telegram Trigger → Receive voice message
 2. Get File → Download voice file from Telegram
@@ -364,7 +363,6 @@ LibreTranslate provides a self-hosted translation API with 50+ languages, perfec
 - **URL:** `http://libretranslate:5000/languages`
 
 #### Example: Multi-Language Support Workflow
-
 ```
 1. Webhook Trigger → Receive text from user
 2. HTTP Request → Detect language
@@ -420,8 +418,7 @@ URL: http://lightrag:9621/api/insert
 Headers:
   Content-Type: application/json
   Authorization: Bearer {{ $credentials.lightragToken }}
-Body:
-{
+Body: {
   "text": "{{ $json.documentContent }}",
   "metadata": {
     "source": "{{ $json.fileName }}",
@@ -433,13 +430,11 @@ Body:
 #### Query Knowledge Graph
 
 **Configuration for different query modes:**
-
 ```javascript
 // Local Query - Specific entity information
 Method: POST
 URL: http://lightrag:9621/api/query
-Body:
-{
+Body: {
   "query": "What is the role of Petra Hedorfer?",
   "mode": "local",
   "max_results": 5
@@ -448,8 +443,7 @@ Body:
 // Global Query - High-level summaries
 Method: POST
 URL: http://lightrag:9621/api/query
-Body:
-{
+Body: {
   "query": "What are the main sustainability initiatives?",
   "mode": "global",
   "max_results": 10
@@ -458,8 +452,7 @@ Body:
 // Hybrid Query - Combines local and global
 Method: POST
 URL: http://lightrag:9621/api/query
-Body:
-{
+Body: {
   "query": "How does DZT implement SDGs in tourism?",
   "mode": "hybrid",
   "stream": false
@@ -467,7 +460,6 @@ Body:
 ```
 
 #### Example: Building a Knowledge Graph from Documents
-
 ```
 1. Trigger (Webhook/Schedule) → Start workflow
 2. Google Drive → Get new PDF documents
@@ -482,9 +474,8 @@ Body:
 ```
 
 #### Query Modes Explained
-
 - **`local`**: Retrieves specific information about entities and their direct relationships
-- **`global`**: Provides high-level summaries and themes across the entire knowledge base  
+- **`global`**: Provides high-level summaries and themes across the entire knowledge base
 - **`hybrid`**: Combines both local and global retrieval for comprehensive answers
 - **`naive`**: Simple keyword-based retrieval without graph features
 
@@ -501,13 +492,11 @@ LightRAG can be added to Open WebUI as an Ollama-compatible model:
 This enables chatting with your knowledge graph directly through the Open WebUI interface!
 
 ### 📁 File System Access
-
 - **Shared folder**: `./shared` → `/data/shared` in containers
 - **Media folder**: `./media` → `/data/media` in containers
 - **Temp folder**: `./temp` → `/data/temp` for processing
 
 ### 🔒 Security Features
-
 - ✅ **Automatic SSL/TLS** via Let's Encrypt
 - ✅ **Firewall configuration** with UFW
 - ✅ **Brute-force protection** via Fail2ban
@@ -560,7 +549,6 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
 ```
 
 ### Production-Ready Features
-
 - **Scalable**: Queue-based architecture with Redis
 - **Parallel Processing**: Multiple n8n workers
 - **Monitoring**: Built-in Grafana dashboards
@@ -572,18 +560,251 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
 ## 🤝 Support
 
 ### Community
-
 - **Discord**: [Join our community](https://discord.gg/ai-launchkit) *(coming soon)*
 - **Forum**: [oTTomator Think Tank](https://thinktank.ottomator.ai/c/local-ai/18)
 - **Issues**: [GitHub Issues](https://github.com/freddy-schuetz/ai-launchkit/issues)
 
 ### Resources
-
 - **Original n8n-installer**: [kossakovsky/n8n-installer](https://github.com/kossakovsky/n8n-installer)
 - **n8n Templates**: [Official Gallery](https://n8n.io/workflows/?categories=AI)
 - **Video Guide**: [AI Starter Kit Walkthrough](https://youtu.be/pOsO40HSbOo)
 
 ### Troubleshooting
+
+<details>
+<summary><b>🚨 502 Bad Gateway Errors</b></summary>
+
+502 errors typically indicate that Caddy (the reverse proxy) cannot reach the backend service. This is one of the most common issues, especially during initial setup or when running many services.
+
+#### Quick Diagnosis
+
+1. **Check which containers are actually running:**
+   ```bash
+   docker ps -a
+   ```
+   Look for containers with status "Exited" or "Restarting"
+
+2. **Check system resources:**
+   ```bash
+   # RAM usage
+   free -h
+   
+   # CPU usage
+   htop
+   
+   # Disk space
+   df -h
+   ```
+
+3. **Check specific service logs:**
+   ```bash
+   # For the failing service (replace SERVICE_NAME)
+   docker logs [SERVICE_NAME] --tail 100
+   
+   # For Caddy (reverse proxy)
+   docker logs caddy --tail 50
+   ```
+
+#### Common Causes and Solutions
+
+##### 1. Services Failed to Start (Most Common)
+
+**Symptoms:**
+- Service container shows "Exited" status
+- Caddy logs show "dial tcp: connection refused"
+
+**Solutions:**
+```bash
+# Check why the service crashed
+docker logs [SERVICE_NAME] --tail 200
+
+# Try restarting the service
+docker compose restart [SERVICE_NAME]
+
+# If it keeps crashing, check the .env file for missing variables
+nano .env
+```
+
+##### 2. Insufficient RAM/Resources
+
+**Symptoms:**
+- High memory usage (>90% in `free -h`)
+- OOMKiller messages in logs
+- Multiple services crashing
+
+**Solutions:**
+```bash
+# Add swap space (temporary fix)
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Reduce number of running services
+docker compose stop [SERVICE_NAME]
+
+# Or upgrade your VPS (permanent solution)
+```
+
+##### 3. Long Startup Times
+
+**Symptoms:**
+- Service works after 5-10 minutes
+- Container is running but not ready
+- Especially common with: Supabase, Dify, ComfyUI
+
+**Solution:**
+```bash
+# Be patient - some services need time to initialize
+# Check progress with:
+docker logs [SERVICE_NAME] --follow
+
+# For n8n with workflows import, this can take 30+ minutes
+```
+
+##### 4. Port Conflicts
+
+**Symptoms:**
+- "bind: address already in use" in logs
+- Service can't start on its configured port
+
+**Solutions:**
+```bash
+# Find what's using the port
+sudo lsof -i :PORT_NUMBER
+
+# Edit .env to use a different port
+nano .env
+# Change PORT_NAME=8080 to PORT_NAME=8081
+
+# Restart services
+docker compose down
+docker compose up -d
+```
+
+##### 5. Network Issues
+
+**Symptoms:**
+- Services can't communicate internally
+- "no such host" errors in logs
+
+**Solutions:**
+```bash
+# Recreate Docker network
+docker compose down
+docker network prune
+docker compose up -d
+
+# Verify network connectivity
+docker exec caddy ping [SERVICE_NAME]
+```
+
+##### 6. Database Connection Issues
+
+**Symptoms:**
+- Services depending on PostgreSQL fail
+- "connection refused" to postgres:5432
+
+**Solutions:**
+```bash
+# Check if PostgreSQL is running
+docker ps | grep postgres
+
+# Check PostgreSQL logs
+docker logs postgres --tail 100
+
+# Ensure password doesn't contain special characters like @
+# Edit .env and regenerate if needed
+```
+
+#### Service-Specific 502 Issues
+
+##### n8n
+```bash
+# Often caused by workflow import hanging
+# Solution: Skip workflows initially
+docker compose stop n8n
+# Edit .env: set IMPORT_WORKFLOWS=false
+docker compose up -d n8n
+```
+
+##### Supabase
+```bash
+# Complex service with many components
+# Check each component:
+docker ps | grep supabase
+# Kong (API Gateway) must be healthy
+docker logs supabase-kong --tail 50
+```
+
+##### bolt.diy
+```bash
+# Requires proper hostname configuration
+# Verify in .env:
+grep BOLT_HOSTNAME .env
+# Should match your domain
+```
+
+#### Prevention Tips
+
+1. **Start with minimal services:**
+   - Begin with just n8n
+   - Add services gradually
+   - Monitor resources after each addition
+
+2. **Check requirements before installation:**
+   - Each service adds ~200-500MB RAM usage
+   - Some services (ComfyUI, Dify) need 1-2GB alone
+
+3. **Use monitoring:**
+   ```bash
+   # Watch resources in real-time
+   docker stats
+   
+   # Set up alerts with Grafana (if installed)
+   ```
+
+4. **Regular maintenance:**
+   ```bash
+   # Clean up unused Docker resources
+   docker system prune -a
+   
+   # Check logs regularly
+   docker compose logs --tail 100
+   ```
+
+#### Still Getting 502 Errors?
+
+If problems persist after trying these solutions:
+
+1. **Collect diagnostic information:**
+   ```bash
+   # Save all container statuses
+   docker ps -a > docker_status.txt
+   
+   # Save resource usage
+   free -h > memory_status.txt
+   df -h > disk_status.txt
+   
+   # Save logs of failing service
+   docker logs [SERVICE_NAME] > service_logs.txt 2>&1
+   
+   # Save Caddy logs
+   docker logs caddy > caddy_logs.txt 2>&1
+   ```
+
+2. **Create a GitHub issue with:**
+   - Your VPS specifications
+   - Services selected during installation
+   - The diagnostic files above
+   - Specific error messages
+
+3. **Quick workaround:**
+   - Access services directly via ports (bypass Caddy)
+   - Example: `http://YOUR_IP:8080` instead of `https://n8n.yourdomain.com`
+   - Note: This bypasses SSL, use only for testing
+
+</details>
 
 <details>
 <summary><b>🎙️ Speech Stack Issues</b></summary>
@@ -595,14 +816,14 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
 
 #### TTS Not Working
 - **Symptom:** HTTP Request to TTS service fails
-- **Solution:** 
+- **Solution:**
   - Use the internal Docker network URL: `http://openedai-speech:8000/v1/audio/speech`
   - Not `localhost:5001` from within n8n
   - Ensure the Authorization header is set (even with dummy value like `Bearer sk-dummy`)
 
 #### German Speech Recognition Issues
 - **Symptom:** German audio transcribed as English gibberish
-- **Solution:** 
+- **Solution:**
   - Use the full model `Systran/faster-whisper-large-v3` instead of `distil` version
   - Add `"language": "de"` parameter to the transcription request
   - The full model will be downloaded on first use (~6GB)
@@ -614,6 +835,7 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
   - Check logs: `docker logs openedai-speech`
   - Ensure the voice name matches exactly (case-sensitive)
   - For custom voices, edit `openedai-config/voice_to_speaker.yaml`
+
 </details>
 
 <details>
@@ -630,7 +852,7 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
 #### OpenHands Runtime Issues
 - **Symptom:** OpenHands shows "Failed to connect to runtime" after ~125 seconds
 - **Cause:** OpenHands requires Docker Desktop for `host.docker.internal` networking
-- **Solution:** 
+- **Solution:**
   - On Linux servers without Docker Desktop, this is a known limitation
   - Consider using bolt.diy as an alternative for AI-assisted development
   - For full OpenHands functionality, use a system with Docker Desktop installed
@@ -644,6 +866,7 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
   - Ollama models are supported but may produce inconsistent results
   - Consider using bolt.diy for more complex UI requirements
   - Always test generated components thoroughly before production use
+
 </details>
 
 <details>
@@ -661,6 +884,7 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
   2. If resources are saturated, upgrade the server or reduce the number of running services
   3. Try a minimal configuration — start only `n8n` and verify it comes up
   4. If it works in this minimal setup, enable other services gradually while monitoring the load
+
 </details>
 
 <details>
@@ -670,8 +894,7 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
 - **Cause:** This can happen for a couple of reasons:
   1. **Brief use of a self-signed certificate:** When Caddy starts up for a new domain, it might briefly use a temporary certificate while requesting one from Let's Encrypt
   2. **Delay in applying the new certificate:** There might be a short delay before the newly obtained certificate is fully applied
-
-- **Solution:** 
+- **Solution:**
   - This is usually temporary and resolves within 1-24 hours
   - If the warning persists for more than 24 hours:
     ```bash
@@ -685,6 +908,7 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
     docker exec caddy caddy reload --config /etc/caddy/Caddyfile
     ```
   - Try clearing browser cache or using incognito/private window
+
 </details>
 
 <details>
@@ -697,16 +921,17 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
 #### Supabase Analytics Startup Failure
 - **Problem:** The `supabase-analytics` component fails to start after changing Postgres password
 - **Solution:** You might need to reset its data
-  - **⚠️ Warning:** This will delete your Supabase database data!
+- **⚠️ Warning:** This will delete your Supabase database data!
   - Ensure you have backups before proceeding
   - Technical step: Delete the `supabase/docker/volumes/db/data` folder
 
 #### Supabase Service Unavailable
 - **Problem:** Services like n8n cannot connect to Supabase
-- **Solution:** 
+- **Solution:**
   - Ensure your Postgres password doesn't contain special characters like "@"
   - Check logs: `docker logs supabase-db`
   - Verify network connectivity: `docker exec n8n ping supabase-db`
+
 </details>
 
 <details>
@@ -730,6 +955,7 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
   # Restart n8n
   docker restart n8n
   ```
+
 </details>
 
 <details>
@@ -760,6 +986,7 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
   
   # Kill the process or change port in .env file
   ```
+
 </details>
 
 <details>
@@ -792,6 +1019,7 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
   docker logs n8n --tail 100
   docker logs postgres --tail 100
   ```
+
 </details>
 
 <details>
@@ -828,6 +1056,7 @@ If problems persist:
    - Services selected during installation
    - Error messages from `docker logs`
    - Output of `docker ps` and `docker stats`
+
 </details>
 
 ---
@@ -848,10 +1077,8 @@ graph TD
     B --> H[Redis Queue]
     B --> I[Shared Storage]
     B --> PR[Python Runner]
-    
     B --> M[Whisper ASR]
     B --> N[OpenedAI TTS]
-    
     B --> O[Qdrant/Weaviate - Vectors]
     B --> P[Neo4j - Knowledge Graph]
     B --> LR[LightRAG - Graph RAG]

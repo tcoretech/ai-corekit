@@ -45,6 +45,11 @@ bash "$SCRIPT_DIR/04_wizard.sh" || {
 log_success "Service selection updated."
 # --- End of Service Selection Wizard ---
 
+# --- Setup Perplexica if selected ---
+log_info "Setting up Perplexica (if selected)..."
+bash "$SCRIPT_DIR/04a_setup_perplexica.sh" || { log_warning "Perplexica setup encountered issues but continuing..."; }
+# --- End of Perplexica Setup ---
+
 # Pull latest versions of selected containers based on updated .env
 log_info "Pulling latest versions of selected containers..."
 COMPOSE_FILES_FOR_PULL=("-f" "$PROJECT_ROOT/docker-compose.yml")

@@ -223,6 +223,157 @@ Arguments: -i /data/media/input.mp4 -vn -codec:a mp3 /data/media/output.mp3
 3. Get React/Vue/HTML component instantly
 ```
 
+### 🔎 Perplexica Integration with n8n
+
+Perplexica provides AI-powered search capabilities that can be integrated into n8n workflows for research automation, content generation, and intelligent data gathering.
+
+#### Basic Search Query (n8n HTTP Request Node)
+
+**Configuration:**
+- **Method:** POST
+- **URL:** `http://perplexica:3000/api/search`
+- **Headers:** `Content-Type: application/json`
+- **Body:**
+```json
+{
+  "query": "{{ $json.searchQuery }}",
+  "focusMode": "webSearch",
+  "chatHistory": []
+}
+```
+
+#### Available Focus Modes
+
+| Mode | Use Case | Example Query |
+|------|----------|---------------|
+| `webSearch` | General web search | "Latest AI developments 2025" |
+| `academicSearch` | Scientific papers & research | "CRISPR gene editing studies" |
+| `youtubeSearch` | Video content discovery | "How to build a RAG system" |
+| `redditSearch` | Community discussions | "Best practices for n8n workflows" |
+| `writingAssistant` | Content creation help | "Write an introduction about quantum computing" |
+| `wolframAlphaSearch` | Math & computational queries | "Calculate the derivative of x^3 + 2x" |
+
+#### Example: Deep Research Workflow
+
+Build an automated research assistant that performs multi-perspective analysis:
+
+```
+1. Chat Trigger → Receive research query
+2. HTTP Request → Initial Perplexica search (webSearch)
+3. Code Node → Extract key topics from response
+4. Loop Over Items → For each topic:
+   - HTTP Request → Perplexica (different focusMode)
+   - Gather multiple perspectives
+5. Code Node → Aggregate all research
+6. Send Email/Slack → Deliver research report
+```
+
+**Extract Topics Code Node:**
+```javascript
+const response = $input.first().json;
+const topics = [];
+
+// Extract key phrases from answer
+const headings = response.message.match(/### (.+)/g) || [];
+headings.forEach(h => topics.push(h.replace('### ', '')));
+
+// Create follow-up queries
+return topics.map(topic => ({
+  json: {
+    query: `${topic} detailed analysis`,
+    focusMode: "academicSearch"
+  }
+}));
+```
+
+**Aggregate Research Code Node:**
+```javascript
+const allResults = $input.all();
+const research = {
+  timestamp: new Date().toISOString(),
+  findings: {},
+  sources: []
+};
+
+// Combine all research
+allResults.forEach(item => {
+  const data = item.json;
+  research.findings[data.focusMode] = data.message;
+  research.sources.push(...(data.sources || []));
+});
+
+// Remove duplicate sources
+research.sources = [...new Map(
+  research.sources.map(s => [s.url, s])
+).values()];
+
+return { json: research };
+```
+
+#### Example: Content Generation Pipeline
+
+Combine Perplexica research with AI writing:
+
+```
+1. Schedule Trigger → Daily at 9 AM
+2. HTTP Request → Perplexica search trending topics
+3. Code Node → Select top 3 topics
+4. Loop → For each topic:
+   - HTTP Request → Deep research via Perplexica
+   - HTTP Request → Generate article with Ollama/OpenAI
+   - Markdown Node → Format article
+5. Ghost/WordPress → Publish articles
+```
+
+#### Example: Competitive Intelligence Monitor
+
+```javascript
+// Monitor competitor mentions
+const competitors = ["Competitor A", "Competitor B"];
+const results = [];
+
+for (const competitor of competitors) {
+  // Search for recent news
+  const news = await $http.request({
+    method: "POST",
+    url: "http://perplexica:3000/api/search",
+    body: {
+      query: `${competitor} latest news announcements`,
+      focusMode: "webSearch"
+    }
+  });
+  
+  // Search for community sentiment
+  const sentiment = await $http.request({
+    method: "POST",
+    url: "http://perplexica:3000/api/search",
+    body: {
+      query: `${competitor} reviews opinions`,
+      focusMode: "redditSearch"
+    }
+  });
+  
+  results.push({
+    competitor,
+    news: news.message,
+    sentiment: sentiment.message,
+    sources: [...news.sources, ...sentiment.sources]
+  });
+}
+
+return results;
+```
+
+#### Tips for Perplexica + n8n
+
+1. **Rate Limiting:** Add Wait nodes between searches to avoid overwhelming the service
+2. **Error Handling:** Use Try/Catch nodes for resilient workflows
+3. **Caching:** Store search results in Supabase/PostgreSQL to avoid duplicate queries
+4. **Enrichment:** Combine Perplexica with other services:
+   - Use Perplexica for research → LightRAG for knowledge graph
+   - Search with Perplexica → Summarize with Ollama
+   - Perplexica for sources → Crawl4ai for full content extraction
+
 ### 🎙️ Speech Stack Integration
 
 The Speech Stack provides OpenAI-compatible APIs for speech-to-text and text-to-speech, perfect for building voice-enabled workflows in n8n.

@@ -858,40 +858,24 @@ services:
       - AUTH_ACCOUNTS=${LIGHTRAG_AUTH_ACCOUNTS}
       - TOKEN_SECRET=${LIGHTRAG_TOKEN_SECRET}
 
-  perplexica-backend:
+  perplexica:
     build:
       context: ./perplexica
-      dockerfile: backend.dockerfile
-      args:
-        - SEARXNG_API_URL=http://searxng:8080
-    container_name: perplexica-backend
+      dockerfile: app.dockerfile
+    container_name: perplexica
     profiles: ["perplexica"]
     restart: unless-stopped
-    volumes:
-      - ./perplexica/backend-dbstore:/home/perplexica/data
-      - ./shared:/data/shared
     environment:
+      - SEARXNG_API_URL=http://searxng:8080
+      - DATA_DIR=/home/perplexica
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./perplexica/backend-dbstore:/home/perplexica/data
+      - ./perplexica/uploads:/home/perplexica/uploads
+      - ./perplexica/config.toml:/home/perplexica/config.toml
+      - ./shared:/data/shared
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - searxng
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  perplexica-frontend:
-    build:
-      context: ./perplexica
-      dockerfile: app.dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=http://perplexica-backend:3001/api
-        - NEXT_PUBLIC_WS_URL=ws://perplexica-backend:3001
-    container_name: perplexica-frontend
-    profiles: ["perplexica"]
-    restart: unless-stopped
-    depends_on:
-      - perplexica-backend

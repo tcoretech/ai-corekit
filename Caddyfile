@@ -141,7 +141,7 @@
     basic_auth {
         {$PERPLEXICA_USERNAME} {$PERPLEXICA_PASSWORD_HASH}
     }
-    reverse_proxy perplexica-frontend:3000
+    reverse_proxy perplexica:3000
 }
 
 # Neo4j

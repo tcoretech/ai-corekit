@@ -858,7 +858,7 @@ services:
       - AUTH_ACCOUNTS=${LIGHTRAG_AUTH_ACCOUNTS}
       - TOKEN_SECRET=${LIGHTRAG_TOKEN_SECRET}
 
-perplexica-backend:
+  perplexica-backend:
     build:
       context: ./perplexica
       dockerfile: backend.dockerfile

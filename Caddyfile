@@ -146,29 +146,18 @@
 
 # Odoo ERP/CRM
 {$ODOO_HOSTNAME} {
-    # Basic Auth only for Database Manager
     @dbmanager {
         path /web/database/*
     }
-    
     basic_auth @dbmanager {
         {$ODOO_USERNAME} {$ODOO_PASSWORD_HASH}
     }
-    
-    # Proxy settings for Odoo
     reverse_proxy odoo:8069 {
         header_up X-Forwarded-Host {host}
-        header_up X-Forwarded-For {remote}
         header_up X-Forwarded-Proto {scheme}
-        header_up X-Real-IP {remote}
+        header_up X-Real-IP {remote_host}  # Nur IP, ohne Port!
+        header_up X-Forwarded-For {remote_host}  # Nur IP, ohne Port!
     }
-    
-    # WebSocket support for Live Chat
-    @websocket {
-        header Connection *Upgrade*
-        header Upgrade websocket
-    }
-    reverse_proxy @websocket odoo:8072
 }
 
 # Neo4j

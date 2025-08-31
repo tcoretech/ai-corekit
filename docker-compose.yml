@@ -862,24 +862,43 @@ services:
       - AUTH_ACCOUNTS=${LIGHTRAG_AUTH_ACCOUNTS}
       - TOKEN_SECRET=${LIGHTRAG_TOKEN_SECRET}
 
+  # Odoo Database Init
+  odoo-init:
+    image: postgres:latest
+    container_name: odoo-init
+    profiles: ["odoo"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      echo "Creating odoo user and database..."
+      psql -h postgres -U postgres -tc "SELECT 1 FROM pg_user WHERE usename = 'odoo'" | grep -q 1 || psql -h postgres -U postgres -c "CREATE USER odoo WITH PASSWORD '${ODOO_DB_PASSWORD}';"
+      psql -h postgres -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'odoo'" | grep -q 1 || psql -h postgres -U postgres -c "CREATE DATABASE odoo OWNER odoo;"
+      echo "Done"
+    restart: "no"
+
+  # Odoo ERP/CRM System  
   odoo:
     image: odoo:18.0
     container_name: odoo
     profiles: ["odoo"]
     restart: unless-stopped
     depends_on:
-      - postgres
+      odoo-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     environment:
       - HOST=postgres
-      - USER=${ODOO_DB_USER:-odoo}
+      - USER=odoo
       - PASSWORD=${ODOO_DB_PASSWORD}
     volumes:
       - odoo_data:/var/lib/odoo
-      - ./odoo/config:/etc/odoo
-      - ./odoo/addons:/mnt/extra-addons
       - ./shared:/data/shared:ro
-    networks:
-      - localai
+    command: odoo --proxy-mode
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8069/web/login"]
       interval: 30s

@@ -25,6 +25,7 @@ volumes:
   postiz-uploads:
   lightrag_data:
   odoo_data:
+  baserow_data:
 
 x-n8n: &service-n8n
   build:
@@ -259,6 +260,9 @@ services:
       - COMFYUI_HOSTNAME=${COMFYUI_HOSTNAME}
       - COMFYUI_PASSWORD_HASH=${COMFYUI_PASSWORD_HASH}
       - COMFYUI_USERNAME=${COMFYUI_USERNAME}
+      - BASEROW_HOSTNAME=${BASEROW_HOSTNAME}
+      - BASEROW_USERNAME=${BASEROW_USERNAME}
+      - BASEROW_PASSWORD_HASH=${BASEROW_PASSWORD_HASH}
       - DIFY_HOSTNAME=${DIFY_HOSTNAME}
       - FLOWISE_HOSTNAME=${FLOWISE_HOSTNAME}
       - BOLT_HOSTNAME=${BOLT_HOSTNAME}
@@ -480,6 +484,42 @@ services:
       interval: 3s
       timeout: 10s
       retries: 10
+
+  baserow:
+    image: baserow/baserow:1.35.0
+    container_name: baserow
+    profiles: ["baserow"]
+    restart: unless-stopped
+    environment:
+      - BASEROW_PUBLIC_URL=https://${BASEROW_HOSTNAME}
+      - SECRET_KEY=${BASEROW_SECRET_KEY}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/baserow
+      - REDIS_URL=redis://redis:6379
+      - DISABLE_VOLUME_CHECK=yes
+      # Memory optimization for AI LaunchKit
+      - BASEROW_RUN_MINIMAL=yes
+      - BASEROW_AMOUNT_OF_WORKERS=1
+      # Email configuration (uses existing AI LaunchKit settings)
+      - FROM_EMAIL=${EMAIL_FROM}
+      - EMAIL_SMTP=${EMAIL_SMTP_HOST}
+      - EMAIL_SMTP_HOST=${EMAIL_SMTP_HOST}
+      - EMAIL_SMTP_USER=${EMAIL_SMTP_USER}
+      - EMAIL_SMTP_PASSWORD=${EMAIL_SMTP_PASSWORD}
+      - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT}
+      - EMAIL_SMTP_USE_TLS=${EMAIL_SMTP_USE_TLS}
+    volumes:
+      - baserow_data:/baserow/data
+      - ./shared:/data/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/api/_health/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   searxng:
     container_name: searxng

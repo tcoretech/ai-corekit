@@ -160,6 +160,11 @@
     }
 }
 
+# Baserow (Airtable Alternative)
+{$BASEROW_HOSTNAME} {
+    reverse_proxy baserow:80
+}
+
 # Neo4j
 {$NEO4J_HOSTNAME} {
     reverse_proxy neo4j:7474

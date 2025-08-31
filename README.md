@@ -55,6 +55,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
+| **[Baserow](https://github.com/bram2w/baserow)** | Airtable Alternative with real-time collaboration | Database management, project tracking, collaborative workflows | `baserow.yourdomain.com` |
 | **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
 
 ### 🎨 AI Content Generation
@@ -230,6 +231,211 @@ Arguments: -i /data/media/input.mp4 -vn -codec:a mp3 /data/media/output.mp3
 2. Describe: "Modern pricing card with gradient"
 3. Get React/Vue/HTML component instantly
 ```
+
+### 💾 Baserow Integration with n8n
+
+Baserow provides an Airtable-like database experience with real-time collaboration, making it perfect for data management workflows in n8n. The native Baserow node in n8n offers seamless integration.
+
+#### Initial Setup
+
+**First Login to Baserow:**
+1. Navigate to `https://baserow.yourdomain.com`
+2. Register as the first user (becomes admin automatically)
+3. Create your first workspace and database
+4. Generate API token in user settings
+
+#### Native n8n Baserow Node Setup
+
+**Create Baserow Credentials in n8n:**
+```javascript
+// Baserow API Credentials
+Host: http://baserow:80
+Database ID: 1 (from database URL)
+Token: your-api-token-from-baserow-settings
+```
+
+#### Example: Customer Data Management Pipeline
+
+Automate customer data collection and enrichment:
+
+```javascript
+// 1. Webhook Trigger: Receive new customer data
+// 2. Baserow Node: Create new customer record
+Operation: Create
+Database: customers
+Table ID: 1
+Fields: {
+  "Name": "{{ $json.name }}",
+  "Email": "{{ $json.email }}",
+  "Company": "{{ $json.company }}",
+  "Status": "New Lead"
+}
+
+// 3. Perplexica Node: Research company information
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.company }} company information",
+  "focusMode": "webSearch"
+}
+
+// 4. Baserow Node: Update customer with research
+Operation: Update
+Database: customers
+Row ID: "{{ $('Create Customer').json.id }}"
+Fields: {
+  "Company Info": "{{ $json.research_summary }}",
+  "Industry": "{{ $json.detected_industry }}",
+  "Status": "Researched"
+}
+```
+
+#### Example: Project Task Management
+
+Sync project tasks between multiple systems:
+
+```javascript
+// 1. Schedule Trigger: Daily at 9 AM
+// 2. Baserow Node: Get pending tasks
+Operation: List
+Database: projects
+Table ID: 2
+Filters: {
+  "Status__equal": "Pending",
+  "Due Date__date_before": "{{ $now.plus(3, 'days').toISODate() }}"
+}
+
+// 3. Loop Over Items
+// 4. Slack Node: Send reminder to assignee
+Channel: "{{ $json.assignee_slack_id }}"
+Message: "Task due in 3 days: {{ $json.task_name }}"
+
+// 5. Baserow Node: Update task status
+Operation: Update
+Row ID: "{{ $json.id }}"
+Fields: {
+  "Reminder Sent": true,
+  "Last Notified": "{{ $now.toISO() }}"
+}
+```
+
+#### Example: Data Enrichment Workflow
+
+Enhance existing records with AI-generated content:
+
+```javascript
+// 1. Baserow Node: Get records missing descriptions
+Operation: List
+Filters: {
+  "Description__empty": true
+}
+
+// 2. Loop Over Items
+// 3. OpenAI Node: Generate product description
+Model: gpt-4o-mini
+Prompt: |
+  Create a compelling product description for:
+  Product: {{ $json.product_name }}
+  Features: {{ $json.features }}
+  Target audience: {{ $json.target_market }}
+  
+  Make it engaging and SEO-friendly (100-150 words).
+
+// 4. Baserow Node: Update with generated content
+Operation: Update
+Row ID: "{{ $json.id }}"
+Fields: {
+  "Description": "{{ $json.generated_description }}",
+  "SEO Keywords": "{{ $json.suggested_keywords }}",
+  "Updated": "{{ $now.toISO() }}"
+}
+```
+
+#### Example: Real-time Collaboration Trigger
+
+React to changes in Baserow using webhooks:
+
+```javascript
+// 1. Webhook Trigger: Baserow sends data on row changes
+// 2. Switch Node: Route based on action type
+Branch 1 - Row Created:
+  // Send welcome email for new customers
+  // Create tasks in project management system
+  
+Branch 2 - Row Updated:
+  // Check for status changes
+  // Notify team members of updates
+  
+Branch 3 - Row Deleted:
+  // Archive related data
+  // Send notification to admin
+
+// 3. Baserow Node: Log action history
+Operation: Create
+Database: activity_log
+Fields: {
+  "Action": "{{ $json.action }}",
+  "Table": "{{ $json.table_name }}",
+  "User": "{{ $json.user_name }}",
+  "Timestamp": "{{ $now.toISO() }}"
+}
+```
+
+#### Advanced: Baserow REST API via HTTP Request
+
+For operations not available in the native node:
+
+```javascript
+// Get database schema information
+Method: GET
+URL: http://baserow:80/api/database/tables/{{ $json.table_id }}/fields/
+Headers: {
+  "Authorization": "Token your-api-token"
+}
+
+// Bulk operations
+Method: PATCH
+URL: http://baserow:80/api/database/rows/table/{{ $json.table_id }}/batch/
+Headers: {
+  "Authorization": "Token your-api-token",
+  "Content-Type": "application/json"
+}
+Body: {
+  "items": [
+    {"id": 1, "field_1": "updated_value1"},
+    {"id": 2, "field_1": "updated_value2"}
+  ]
+}
+```
+
+#### Baserow Features Highlights
+
+**Real-time Collaboration:**
+- Multiple users can edit simultaneously
+- Changes appear instantly for all users
+- Built-in conflict resolution
+
+**Data Safety:**
+- Undo/Redo functionality for all actions
+- Trash bin for deleted rows (unlike NocoDB)
+- Activity log tracks all changes
+
+**Templates and Views:**
+- 50+ ready-made templates
+- Multiple view types: Grid, Gallery, Form
+- Custom filters and sorting
+- Public form sharing
+
+#### Tips for Baserow + n8n Integration
+
+1. **Use Internal URLs**: Always use `http://baserow:80` from n8n, not the external URL
+2. **Token Authentication**: Generate API tokens instead of using username/password
+3. **Field Mapping**: Use field names exactly as they appear in Baserow (case-sensitive)
+4. **Batch Operations**: Use the HTTP Request node for bulk updates to avoid rate limits
+5. **Webhooks**: Set up Baserow webhooks to trigger n8n workflows on data changes
+6. **Error Handling**: Add Try/Catch nodes for resilient workflows
+7. **Field Types**: Respect Baserow field types (Text, Number, Date, Select, etc.)
+8. **Database Structure**: Use multiple tables with relationships for complex data models
 
 ### 🏢 Odoo ERP/CRM Integration with n8n
 

@@ -232,6 +232,35 @@ if is_profile_active "odoo"; then
   echo "Documentation: https://www.odoo.com/documentation/18.0/"
 fi
 
+if is_profile_active "baserow"; then
+  echo
+  echo "================================= Baserow ============================"
+  echo
+  echo "Host: ${BASEROW_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "Access:"
+  echo "  External: https://${BASEROW_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal API: http://baserow:80"
+  echo
+  echo "Setup:"
+  echo "  First user to register becomes admin"
+  echo "  Create workspaces and databases after login"
+  echo
+  echo "Features:"
+  echo "  - Real-time collaboration (unlike NocoDB!)"
+  echo "  - Undo/Redo & Trash Bin for data safety"
+  echo "  - 50+ Templates available"
+  echo "  - Application Builder integrated"
+  echo "  - Native n8n integration works perfectly"
+  echo
+  echo "n8n Integration:"
+  echo "  Use Baserow node with URL: http://baserow:80"
+  echo "  Authentication: Username/Password or API Token"
+  echo "  Generate API token in user settings after setup"
+  echo
+  echo "Documentation: https://baserow.io/docs"
+fi
+
 if is_profile_active "ragapp"; then
   echo
   echo "================================= RAGApp =============================="

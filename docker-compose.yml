@@ -485,6 +485,23 @@ services:
       timeout: 10s
       retries: 10
 
+  # Baserow Database Init - Create database
+  baserow-init:
+    image: postgres:latest
+    container_name: baserow-init
+    profiles: ["baserow"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      sh -c "
+      psql -h postgres -U postgres -c \"CREATE DATABASE baserow\" || true &&
+      echo 'Baserow database ready'
+      "
+    restart: "no"
+
   baserow:
     image: baserow/baserow:1.35.0
     container_name: baserow
@@ -511,6 +528,8 @@ services:
       - baserow_data:/baserow/data
       - ./shared:/data/shared
     depends_on:
+      baserow-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:

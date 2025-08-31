@@ -864,7 +864,7 @@ services:
 
   # Odoo Database Init
   odoo-init:
-    image: postgres:latest
+    image: odoo:18.0
     container_name: odoo-init
     profiles: ["odoo"]
     depends_on:
@@ -872,12 +872,14 @@ services:
         condition: service_healthy
     environment:
       - PGPASSWORD=${POSTGRES_PASSWORD}
-    entrypoint: ["/bin/sh", "-c"]
+      - ODOO_PASSWORD=${ODOO_DB_PASSWORD}
+    entrypoint: ["/bin/bash", "-c"]
     command: |
-      echo "Creating odoo user and database..."
-      psql -h postgres -U postgres -tc "SELECT 1 FROM pg_user WHERE usename = 'odoo'" | grep -q 1 || psql -h postgres -U postgres -c "CREATE USER odoo WITH PASSWORD '${ODOO_DB_PASSWORD}';"
-      psql -h postgres -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'odoo'" | grep -q 1 || psql -h postgres -U postgres -c "CREATE DATABASE odoo OWNER odoo;"
-      echo "Done"
+      # Create user and database
+      psql -h postgres -U postgres -c "CREATE USER odoo WITH PASSWORD '$${ODOO_PASSWORD}'" || true
+      psql -h postgres -U postgres -c "CREATE DATABASE odoo OWNER odoo" || true
+      # Initialize database
+      odoo -c /dev/null --db_host postgres --db_user odoo --db_password $${ODOO_PASSWORD} -d odoo -i base --stop-after-init
     restart: "no"
 
   # Odoo ERP/CRM System  

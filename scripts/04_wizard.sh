@@ -59,6 +59,7 @@ base_services_data=(
     "portainer" "Portainer (Docker management UI)"
     "cloudflare-tunnel" "Cloudflare Tunnel (Zero-Trust Secure Access)"
     "postiz" "Postiz (Social publishing platform)"
+    "odoo" "Odoo 18 (Open Source ERP/CRM with AI features)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"
     "qdrant" "Qdrant (Vector Database)"
     "supabase" "Supabase (Backend as a Service)"

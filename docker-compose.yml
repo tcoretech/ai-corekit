@@ -24,6 +24,7 @@ volumes:
   postiz-config:
   postiz-uploads:
   lightrag_data:
+  odoo_data:
 
 x-n8n: &service-n8n
   build:
@@ -273,6 +274,9 @@ services:
       - LIBRETRANSLATE_USERNAME=${LIBRETRANSLATE_USERNAME}
       - LIBRETRANSLATE_PASSWORD_HASH=${LIBRETRANSLATE_PASSWORD_HASH}
       - LIGHTRAG_HOSTNAME=${LIGHTRAG_HOSTNAME}
+      - ODOO_HOSTNAME=${ODOO_HOSTNAME}
+      - ODOO_USERNAME=${ODOO_USERNAME}
+      - ODOO_PASSWORD_HASH=${ODOO_PASSWORD_HASH}
       - PERPLEXICA_HOSTNAME=${PERPLEXICA_HOSTNAME}
       - PERPLEXICA_USERNAME=${PERPLEXICA_USERNAME}
       - PERPLEXICA_PASSWORD_HASH=${PERPLEXICA_PASSWORD_HASH}
@@ -857,6 +861,30 @@ services:
       - WORKSPACE=${LIGHTRAG_WORKSPACE:-default}
       - AUTH_ACCOUNTS=${LIGHTRAG_AUTH_ACCOUNTS}
       - TOKEN_SECRET=${LIGHTRAG_TOKEN_SECRET}
+
+  odoo:
+    image: odoo:18.0
+    container_name: odoo
+    profiles: ["odoo"]
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      - HOST=postgres
+      - USER=${ODOO_DB_USER:-odoo}
+      - PASSWORD=${ODOO_DB_PASSWORD}
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - ./odoo/config:/etc/odoo
+      - ./odoo/addons:/mnt/extra-addons
+      - ./shared:/data/shared:ro
+    networks:
+      - localai
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8069/web/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   perplexica:
     build:

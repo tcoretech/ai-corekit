@@ -49,6 +49,12 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 | **[Open WebUI](https://github.com/open-webui/open-webui)** | ChatGPT-like interface for LLMs | AI chat, model switching, conversation management | `webui.yourdomain.com` |
 | **[Postiz](https://github.com/gitroomhq/postiz-app)** | Social media management platform | Content scheduling, analytics, multi-platform posting | `postiz.yourdomain.com` |
 
+### 💼 Business & Productivity
+
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
+
 ### 🎨 AI Content Generation
 
 | Tool | Description | Use Cases | Access |
@@ -222,6 +228,228 @@ Arguments: -i /data/media/input.mp4 -vn -codec:a mp3 /data/media/output.mp3
 2. Describe: "Modern pricing card with gradient"
 3. Get React/Vue/HTML component instantly
 ```
+
+### 🏢 Odoo ERP/CRM Integration with n8n
+
+Odoo 18 comes with built-in AI features and native n8n integration, enabling powerful business automation workflows.
+
+#### Initial Setup
+
+**First Login to Odoo:**
+1. Navigate to `https://odoo.yourdomain.com`
+2. Create your database with the master password from your `.env` file
+3. Set up your admin account with your email
+4. Complete the initial configuration wizard
+
+#### Native n8n Odoo Node Setup
+
+**Create Odoo Credentials in n8n:**
+```javascript
+// Odoo API Credentials
+URL: http://odoo:8069
+Database: odoo
+Email: your-admin@email.com
+Password: your-admin-password
+```
+
+#### Example: AI-Enhanced Lead Management
+
+Automate lead qualification with AI scoring:
+
+```javascript
+// 1. Odoo Node: Get New Leads
+Operation: Get All
+Resource: Lead/Opportunity
+Filters: {
+  "stage_id": 1,  // New leads
+  "probability": 0 // Not yet scored
+}
+
+// 2. Perplexica Node: Research Company
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.partner_name }} company information",
+  "focusMode": "webSearch"
+}
+
+// 3. OpenAI/Ollama Node: Score Lead
+Prompt: Based on this company research: {{ $json.research }}
+Score this lead from 0-100 for potential value.
+Consider: company size, industry, recent news.
+
+// 4. Odoo Node: Update Lead
+Operation: Update
+Resource: Lead/Opportunity
+Fields: {
+  "probability": "{{ $json.score }}",
+  "description": "{{ $json.ai_analysis }}",
+  "priority": "{{ $json.score > 70 ? '3' : '1' }}"
+}
+```
+
+#### Example: Automated Invoice Processing
+
+Process invoices from email attachments:
+
+```javascript
+// 1. Email Trigger: Receive invoice emails
+// 2. Extract from File: Get PDF text
+// 3. Code Node: Parse invoice data
+const text = $input.first().json.text;
+const invoiceData = {
+  vendor: text.match(/Vendor: (.+)/)?.[1],
+  amount: parseFloat(text.match(/Total: \$?([\d,]+\.?\d*)/)?.[1].replace(',','')),
+  date: text.match(/Date: (.+)/)?.[1],
+  items: []
+};
+
+// Extract line items
+const itemMatches = text.matchAll(/(.+)\s+(\d+)\s+\$?([\d,]+\.?\d*)/g);
+for (const match of itemMatches) {
+  invoiceData.items.push({
+    description: match[1],
+    quantity: parseInt(match[2]),
+    price: parseFloat(match[3].replace(',',''))
+  });
+}
+
+return invoiceData;
+
+// 4. Odoo Node: Create Vendor Bill
+Operation: Create
+Resource: Vendor Bill
+Fields: {
+  "partner_id": "{{ $json.vendor }}",
+  "invoice_date": "{{ $json.date }}",
+  "amount_total": "{{ $json.amount }}",
+  "invoice_line_ids": "{{ $json.items }}"
+}
+```
+
+#### Example: AI Content Generation for Products
+
+Generate product descriptions and marketing content:
+
+```javascript
+// 1. Odoo Node: Get Products Without Descriptions
+Operation: Get All
+Resource: Product
+Filters: {
+  "description_sale": false
+}
+
+// 2. Loop Over Products
+// 3. OpenAI Node: Generate Description
+Model: gpt-4
+Prompt: |
+  Create an engaging product description for:
+  Product: {{ $json.name }}
+  Category: {{ $json.categ_id }}
+  Features: {{ $json.attribute_line_ids }}
+  
+  Include:
+  - Key benefits (3-5 bullet points)
+  - Technical specifications
+  - SEO-optimized description (150-200 words)
+  - Suggested keywords
+
+// 4. Odoo Node: Update Product
+Operation: Update
+Resource: Product
+Fields: {
+  "description_sale": "{{ $json.description }}",
+  "website_description": "{{ $json.seo_description }}",
+  "website_meta_keywords": "{{ $json.keywords }}"
+}
+```
+
+#### Example: Sales Automation Workflow
+
+Automate follow-ups and task creation:
+
+```javascript
+// 1. Schedule Trigger: Daily at 9 AM
+// 2. Odoo Node: Get Opportunities
+Operation: Get All
+Resource: Lead/Opportunity
+Filters: {
+  "probability": [">", 50],
+  "activity_date_deadline": ["<", "{{ $now.plus(3, 'days').toISO() }}"]
+}
+
+// 3. Loop Over Opportunities
+// 4. Odoo Node: Create Activity
+Operation: Create
+Resource: Activity
+Fields: {
+  "res_model": "crm.lead",
+  "res_id": "{{ $json.id }}",
+  "activity_type_id": 2, // Call
+  "summary": "Follow-up call needed",
+  "date_deadline": "{{ $now.plus(1, 'day').toISO() }}",
+  "user_id": "{{ $json.user_id }}"
+}
+
+// 5. Send Slack/Email Notification
+```
+
+#### Advanced: Odoo API via HTTP Request
+
+For operations not available in the native node:
+
+```javascript
+// Authenticate and get session
+Method: POST
+URL: http://odoo:8069/web/session/authenticate
+Body: {
+  "jsonrpc": "2.0",
+  "params": {
+    "db": "odoo",
+    "login": "admin@example.com",
+    "password": "your-password"
+  }
+}
+
+// Use session cookie for subsequent requests
+Method: POST
+URL: http://odoo:8069/web/dataset/call_kw
+Headers: {
+  "Cookie": "{{ $json.session_id }}"
+}
+Body: {
+  "jsonrpc": "2.0",
+  "method": "call",
+  "params": {
+    "model": "res.partner",
+    "method": "create",
+    "args": [{
+      "name": "New Customer",
+      "email": "customer@example.com"
+    }],
+    "kwargs": {}
+  }
+}
+```
+
+#### Odoo 18 AI Features
+
+Leverage Odoo's built-in AI capabilities:
+
+1. **AI Lead Scoring**: Automatically scores leads based on interaction history
+2. **Content Generation**: Generate emails, product descriptions, and quotes
+3. **Sales Forecasting**: ML-based predictions for pipeline and revenue
+4. **Expense Processing**: OCR and AI for automatic expense categorization
+5. **Document Analysis**: Extract data from PDFs and invoices
+
+#### Tips for Odoo + n8n Integration
+
+1. **Use Internal URLs**: Always use `http://odoo:8069` from n8n, not the external URL
+2. **Batch Operations**: Process multiple records in loops to avoid rate limits
+3. **Error Handling**: Add Try/Catch nodes for resilient workflows
+4. **Caching**: Store frequently accessed data (like product lists) in variables
+5. **Webhooks**: Set up Odoo automated actions to trigger n8n workflows
+6. **Custom Fields**: Create custom fields in Odoo for AI-generated content
 
 ### 🔎 Perplexica Integration with n8n
 

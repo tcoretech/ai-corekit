@@ -31,6 +31,8 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 
 **That's it!** Your AI development stack is ready in ~10-15 minutes.
 
+ATTENTION! The AI LaunchKit is currently in development. It is regularly tested and updated. However, use is at your own risk!
+
 ---
 
 ## ✨ What's Included

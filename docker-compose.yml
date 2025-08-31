@@ -862,34 +862,53 @@ services:
       - AUTH_ACCOUNTS=${LIGHTRAG_AUTH_ACCOUNTS}
       - TOKEN_SECRET=${LIGHTRAG_TOKEN_SECRET}
 
-  # Odoo Database Init
+  # Odoo Database Init - Create user and DB
   odoo-init:
-    image: odoo:18.0
+    image: postgres:latest
     container_name: odoo-init
     profiles: ["odoo"]
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      - PGPASSWORD=${POSTGRES_PASSWORD}
-      - ODOO_PASSWORD=${ODOO_DB_PASSWORD}
-    entrypoint: ["/bin/bash", "-c"]
-    command: |
-      # Create user and database
-      psql -h postgres -U postgres -c "CREATE USER odoo WITH PASSWORD '$${ODOO_PASSWORD}'" || true
-      psql -h postgres -U postgres -c "CREATE DATABASE odoo OWNER odoo" || true
-      # Initialize database
-      odoo -c /dev/null --db_host postgres --db_user odoo --db_password $${ODOO_PASSWORD} -d odoo -i base --stop-after-init
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      sh -c "
+      psql -h postgres -U postgres -c \"CREATE USER odoo WITH PASSWORD '${ODOO_DB_PASSWORD}' CREATEDB\" || true &&
+      psql -h postgres -U postgres -c \"CREATE DATABASE odoo OWNER odoo\" || true &&
+      echo 'Odoo user and database ready'
+      "
     restart: "no"
 
-  # Odoo ERP/CRM System  
+  # Odoo Database Schema Init - Create tables
+  odoo-schema-init:
+    image: odoo:18.0
+    container_name: odoo-schema-init
+    profiles: ["odoo"]
+    depends_on:
+      odoo-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    environment:
+      - HOST=postgres
+      - USER=odoo
+      - PASSWORD=${ODOO_DB_PASSWORD}
+    command: >
+      sh -c "
+      odoo --db_host postgres --db_user odoo --db_password ${ODOO_DB_PASSWORD} -d odoo -i base --stop-after-init || 
+      echo 'Database already initialized'
+      "
+    restart: "no"
+
+  # Odoo ERP/CRM System
   odoo:
     image: odoo:18.0
     container_name: odoo
     profiles: ["odoo"]
     restart: unless-stopped
     depends_on:
-      odoo-init:
+      odoo-schema-init:  # Waiting for Schema-Init!
         condition: service_completed_successfully
       postgres:
         condition: service_healthy

@@ -643,6 +643,75 @@ LightRAG can be added to Open WebUI as an Ollama-compatible model:
 
 This enables chatting with your knowledge graph directly through the Open WebUI interface!
 
+#### Optional: Switch from Ollama to OpenAI Models
+
+LightRAG defaults to using local Ollama models, but you can switch to OpenAI for better performance with large documents:
+
+##### Why Switch to OpenAI?
+- **Performance:** OpenAI models are 10-100x faster than CPU-based Ollama
+- **Large Documents:** Can handle PDFs with 50+ pages without timeouts
+- **Better Quality:** More accurate entity and relationship extraction
+- **Cost-Efficient:** gpt-4o-mini costs ~$0.15 per million tokens
+
+##### Configuration Steps:
+
+1. **Add OpenAI API Key to .env:**
+```bash
+nano .env
+# Add or update:
+OPENAI_API_KEY=sk-proj-YOUR-API-KEY-HERE
+```
+
+2. **Update docker-compose.yml:**
+```yaml
+lightrag:
+  environment:
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - LLM_BINDING=openai                           # Changed from ollama
+    - LLM_BINDING_HOST=https://api.openai.com/v1   # OpenAI endpoint
+    - LLM_MODEL=gpt-4o-mini                        # Cost-efficient model
+    - EMBEDDING_BINDING=openai                     # Changed from ollama
+    - EMBEDDING_BINDING_HOST=https://api.openai.com/v1
+    - EMBEDDING_MODEL=text-embedding-3-small       # OpenAI embeddings
+    - EMBEDDING_DIM=1536                           # OpenAI dimension (not 768!)
+    - TIMEOUT=600                                   # 10 minute timeout
+    # ... other existing variables ...
+```
+
+3. **Clear Existing Data (Important!):**
+```bash
+# Stop LightRAG
+docker compose -p localai down lightrag
+
+# Remove old embeddings (incompatible dimensions)
+docker volume rm localai_lightrag_data
+
+# Restart with new configuration
+docker compose -p localai up -d lightrag
+```
+
+##### Available OpenAI Models:
+- **Budget:** `gpt-4o-mini` (~$0.15/1M input, $0.60/1M output)
+- **Balanced:** `gpt-4o` (~$2.50/1M input, $10/1M output)
+- **Embeddings:** `text-embedding-3-small` (1536 dimensions)
+
+##### Cost Example:
+Processing a 50-page PDF (~50,000 tokens):
+- **gpt-4o-mini:** ~$0.02 total
+- **gpt-4o:** ~$0.20 total
+- **Ollama (llama3.2):** Free but may timeout
+
+##### Troubleshooting OpenAI Configuration:
+
+If you get "model not found" errors:
+- Ensure `LLM_BINDING` and `EMBEDDING_BINDING` are set to `openai`
+- Model names should NOT have `openai/` prefix
+- Check API key is valid: https://platform.openai.com/api-keys
+
+If you get dimension mismatch errors:
+- You must delete the volume when switching between Ollama (768 dim) and OpenAI (1536 dim)
+- This will delete all existing knowledge graphs - export important data first!
+
 ### 📁 File System Access
 - **Shared folder**: `./shared` → `/data/shared` in containers
 - **Media folder**: `./media` → `/data/media` in containers

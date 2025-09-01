@@ -116,9 +116,16 @@ done
 # Calculate dynamic height based on number of services
 num_services=$(( ${#services[@]} / 3 ))
 
+# Calculate dynamic dimensions
+list_height=$num_services
+if [ $list_height -gt 20 ]; then
+    list_height=20  # Max visible items with scrolling
+fi
+window_height=$(( list_height + 8 ))  # Add space for title and buttons
+
 # Use whiptail to display the checklist
 CHOICES=$(whiptail --title "Service Selection Wizard" --checklist \
-  "Choose the services you want to deploy.\nUse ARROW KEYS to navigate, SPACEBAR to select/deselect, ENTER to confirm." 32 110 $num_services \
+  "Choose the services you want to deploy.\nUse ARROW KEYS to navigate, SPACEBAR to select/deselect, ENTER to confirm.\n↑↓ Scroll with arrow keys to see all services" $window_height 110 $list_height \
   "${services[@]}" \
   3>&1 1>&2 2>&3)
 
@@ -313,11 +320,11 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",speech,"* ]]; then
     log_info "================================="
     log_info "The Speech services (Whisper STT and TTS) need authentication for security."
     log_info ""
-    
+
     # Ask for username
     read -p "Enter username for Speech services [admin]: " speech_user
     speech_user=${speech_user:-admin}
-    
+
     # Ask for password
     while true; do
         read -s -p "Enter password for Speech services: " speech_password
@@ -328,10 +335,10 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",speech,"* ]]; then
             break
         fi
     done
-    
+
     # Generate password hashes
     log_info "Generating secure password hashes..."
-    
+
     # Check if Docker is available
     if command -v docker &> /dev/null; then
         # Generate hash for Whisper
@@ -339,20 +346,20 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",speech,"* ]]; then
         if [ $? -eq 0 ] && [ -n "$whisper_hash" ]; then
             # Use same hash for both services (simpler for users)
             tts_hash="$whisper_hash"
-            
+
             # Update .env file with auth settings
             # Remove existing entries if present
             sed -i.bak "/^WHISPER_AUTH_USER=/d" "$ENV_FILE"
             sed -i.bak "/^WHISPER_AUTH_PASSWORD_HASH=/d" "$ENV_FILE"
             sed -i.bak "/^TTS_AUTH_USER=/d" "$ENV_FILE"
             sed -i.bak "/^TTS_AUTH_PASSWORD_HASH=/d" "$ENV_FILE"
-            
+
             # Add new entries
             echo "WHISPER_AUTH_USER=$speech_user" >> "$ENV_FILE"
             echo "WHISPER_AUTH_PASSWORD_HASH=${whisper_hash//\$/\$\$}" >> "$ENV_FILE"
             echo "TTS_AUTH_USER=$speech_user" >> "$ENV_FILE"
             echo "TTS_AUTH_PASSWORD_HASH=${tts_hash//\$/\$\$}" >> "$ENV_FILE"
-            
+
             log_success "Speech services authentication configured successfully."
             log_info "Username: $speech_user"
             log_info "Use this username and password to access:"
@@ -367,11 +374,11 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",speech,"* ]]; then
     else
         log_warning "Docker not available. Saving plaintext password for later hashing."
         log_warning "The installer will generate the hash during Docker setup."
-        
+
         # Save as temporary placeholder
         sed -i.bak "/^WHISPER_AUTH_USER=/d" "$ENV_FILE"
         sed -i.bak "/^SPEECH_TEMP_PASSWORD=/d" "$ENV_FILE"
-        
+
         echo "WHISPER_AUTH_USER=$speech_user" >> "$ENV_FILE"
         echo "TTS_AUTH_USER=$speech_user" >> "$ENV_FILE"
         echo "SPEECH_TEMP_PASSWORD=$speech_password" >> "$ENV_FILE"

@@ -233,202 +233,41 @@ Arguments: -i /data/media/input.mp4 -vn -codec:a mp3 /data/media/output.mp3
 3. Get React/Vue/HTML component instantly
 ```
 
-### ✅ Vikunja Task Management Integration with n8n
+## ✅ Vikunja Task Management Integration
 
 Vikunja provides a modern task management platform with Kanban, Gantt, and calendar views, perfect for project automation workflows in n8n.
 
-#### Initial Setup
+### Initial Setup
+1. **First Login to Vikunja:**
+   - Navigate to `https://vikunja.yourdomain.com`
+   - Click "Register" to create your first account (becomes admin automatically)
+   - Create your first project and lists
+   - Generate API token in User Settings → API Tokens
 
-**First Login to Vikunja:**
-1. Navigate to `https://vikunja.yourdomain.com`
-2. Click "Register" to create your first account (becomes admin automatically)
-3. Create your first project and lists
-4. Generate API token in User Settings → API Tokens
+2. **n8n Integration Options:**
+   - **Community Node:** Install `n8n-nodes-vikunja` via Settings → Community Nodes
+   - **HTTP Request:** Use internal API endpoint `http://vikunja:3456/api/v1`
+   - **Authentication:** Bearer token from Vikunja API settings
 
-#### Create Vikunja Credentials in n8n
+### Key Features for Automation
+- **Multiple Views:** Kanban boards, Gantt charts, Calendar, Table view
+- **Collaboration:** Team workspaces, task assignments, file attachments (up to 20MB)
+- **Import/Export:** From Todoist, Trello, Microsoft To-Do, CSV/JSON export
+- **CalDAV Support:** `https://vikunja.yourdomain.com/dav` for calendar sync
+- **Mobile Apps:** iOS (App Store - "Vikunja Cloud") and Android (Play Store - "Vikunja")
 
-```javascript
-// Vikunja API Credentials (HTTP Request node)
-Base URL: http://vikunja:3456/api/v1
-Authentication: Header Auth
-Name: Authorization
-Value: Bearer YOUR_API_TOKEN
-```
+### Example Workflows
+- **Task Automation Pipeline:** Create tasks from emails/webhooks
+- **Project Status Dashboard:** Daily task summaries and statistics
+- **Recurring Task Generator:** Automatically create daily/weekly tasks
+- **Task Import:** Migrate from Trello, Asana, or CSV files
 
-#### Example: Task Automation Pipeline
-
-Create tasks from incoming emails or webhooks:
-
-```javascript
-// 1. Email Trigger: Receive task requests
-// 2. Extract important information
-// 3. HTTP Request Node: Create Vikunja task
-Method: POST
-URL: http://vikunja:3456/api/v1/projects/1/tasks
-Headers:
-  Authorization: Bearer {{ $credentials.vikunjaToken }}
-  Content-Type: application/json
-Body: {
-  "title": "{{ $json.subject }}",
-  "description": "{{ $json.body }}",
-  "priority": 3,
-  "labels": [1, 2],
-  "due_date": "{{ $now.plus(3, 'days').toISO() }}",
-  "assignees": [1]
-}
-
-// 4. Send confirmation to requester
-```
-
-#### Example: Project Status Dashboard
-
-Aggregate tasks and send daily summaries:
-
-```javascript
-// 1. Schedule Trigger: Daily at 9 AM
-// 2. HTTP Request: Get all projects
-Method: GET
-URL: http://vikunja:3456/api/v1/projects
-
-// 3. Loop Over Projects
-// 4. HTTP Request: Get tasks per project
-Method: GET
-URL: http://vikunja:3456/api/v1/projects/{{ $json.id }}/tasks
-
-// 5. Code Node: Calculate statistics
-const tasks = $input.all();
-const stats = {
-  total: tasks.length,
-  completed: tasks.filter(t => t.json.done).length,
-  overdue: tasks.filter(t => new Date(t.json.due_date) < new Date() && !t.json.done).length,
-  upcoming: tasks.filter(t => {
-    const due = new Date(t.json.due_date);
-    const week = new Date();
-    week.setDate(week.getDate() + 7);
-    return due <= week && due > new Date() && !t.json.done;
-  }).length
-};
-return { json: stats };
-
-// 6. Create HTML report and send via email
-```
-
-#### Example: Recurring Task Generator
-
-Automatically create recurring tasks:
-
-```javascript
-// 1. Schedule Trigger: Daily at midnight
-// 2. Code Node: Define recurring tasks
-const recurringTasks = [
-  {
-    title: "Daily Standup",
-    recurrence: "daily",
-    time: "09:00",
-    project_id: 1
-  },
-  {
-    title: "Weekly Report",
-    recurrence: "weekly",
-    dayOfWeek: 5, // Friday
-    project_id: 2
-  }
-];
-
-// 3. Loop Over Tasks
-// 4. Check if task should be created today
-// 5. HTTP Request: Create task
-Method: POST
-URL: http://vikunja:3456/api/v1/projects/{{ $json.project_id }}/tasks
-Body: {
-  "title": "{{ $json.title }} - {{ $now.toFormat('dd.MM.yyyy') }}",
-  "due_date": "{{ $now.plus(1, 'day').toISO() }}",
-  "reminder_dates": ["{{ $now.toISO() }}"]
-}
-```
-
-#### Example: Task Import from Other Systems
-
-Migrate tasks from Trello, Asana, or CSV files:
-
-```javascript
-// 1. Read CSV/API data from source
-// 2. Transform data to Vikunja format
-// 3. HTTP Request: Create project
-Method: POST
-URL: http://vikunja:3456/api/v1/projects
-Body: {
-  "title": "Imported from {{ $json.source }}",
-  "description": "Import date: {{ $now.toISO() }}"
-}
-
-// 4. Loop Over Tasks
-// 5. HTTP Request: Bulk create tasks
-Method: PUT
-URL: http://vikunja:3456/api/v1/projects/{{ $json.project_id }}/tasks/bulk
-Body: {
-  "tasks": [
-    {
-      "title": "Task 1",
-      "description": "Description 1"
-    },
-    {
-      "title": "Task 2",
-      "description": "Description 2"
-    }
-  ]
-}
-```
-
-#### Advanced: CalDAV Integration
-
-Vikunja supports CalDAV for calendar synchronization:
-
-```javascript
-// CalDAV URL for calendar apps
-URL: https://vikunja.yourdomain.com/dav
-Username: your-username
-Password: your-password
-
-// Use in n8n to sync with calendar services
-// HTTP Request with CalDAV protocol
-Method: PROPFIND
-URL: https://vikunja.yourdomain.com/dav/lists
-Headers:
-  Authorization: Basic {{ Buffer.from('user:pass').toString('base64') }}
-  Depth: 1
-```
-
-#### Vikunja Features for Automation
-
-**Multiple Views:**
-- Kanban boards for visual task management
-- Gantt charts for project timelines
-- Calendar view for deadline tracking
-- Table view for bulk operations
-
-**Collaboration Features:**
-- Team workspaces with permissions
-- Task assignments and mentions
-- File attachments up to 20MB
-- Comments and activity tracking
-
-**Import/Export:**
-- Import from Todoist, Trello, Microsoft To-Do
-- Export to CSV, JSON
-- CalDAV support for calendar sync
-- Webhook support for real-time updates
-
-#### Tips for Vikunja + n8n Integration
-
-1. **Use Internal URL**: Always use `http://vikunja:3456` from n8n, not the external URL
-2. **API Token**: Generate a dedicated API token for n8n instead of using your password
-3. **Rate Limiting**: Add Wait nodes between bulk operations to avoid overwhelming the API
-4. **Error Handling**: Use Try/Catch nodes for resilient workflows
-5. **Webhooks**: Set up Vikunja webhooks to trigger n8n workflows on task changes
-6. **Labels**: Use labels for categorization and workflow routing
-7. **Due Dates**: Vikunja uses ISO 8601 format for dates
-8. **Batch Operations**: Use bulk endpoints for better performance with many tasks
+### Tips for n8n Integration
+- Use internal URL: `http://vikunja:3456` from n8n containers
+- Generate dedicated API tokens for n8n workflows
+- Add Wait nodes between bulk operations
+- Use Try/Catch nodes for error handling
+- Set up webhooks for real-time task updates
 
 ### 💾 Baserow Integration with n8n
 

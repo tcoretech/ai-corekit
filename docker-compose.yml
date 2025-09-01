@@ -27,6 +27,11 @@ volumes:
   odoo_data:
   baserow_data:
   vikunja-files:
+  mysql-leantime-data:
+  leantime-public:
+  leantime-userfiles:
+  leantime-plugins:
+  leantime-logs:
 
 x-n8n: &service-n8n
   build:
@@ -273,6 +278,7 @@ services:
       - GRAFANA_HOSTNAME=${GRAFANA_HOSTNAME}
       - WHISPER_HOSTNAME=${WHISPER_HOSTNAME}
       - LANGFUSE_HOSTNAME=${LANGFUSE_HOSTNAME}
+      - LEANTIME_HOSTNAME=${LEANTIME_HOSTNAME}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-internal}
       - LETTA_HOSTNAME=${LETTA_HOSTNAME}
       - LIBRETRANSLATE_HOSTNAME=${LIBRETRANSLATE_HOSTNAME}
@@ -1044,6 +1050,74 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # MySQL - Database for Leantime and other MySQL-based services
+  mysql_leantime:
+    image: mysql:8.4
+    container_name: mysql_leantime
+    profiles: ["mysql"]  # This profile is auto-activated when leantime is selected
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=leantime
+      - MYSQL_USER=leantime
+      - MYSQL_PASSWORD=${LEANTIME_DB_PASSWORD}
+    volumes:
+      - mysql-leantime-data:/var/lib/mysql
+    command: --character-set-server=UTF8MB4 --collation-server=UTF8MB4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Leantime - Full Project Management Suite
+  leantime:
+    image: leantime/leantime:latest
+    container_name: leantime
+    profiles: ["leantime"]
+    restart: unless-stopped
+    environment:
+      # Database Configuration
+      - LEAN_DB_HOST=mysql_leantime
+      - LEAN_DB_USER=leantime
+      - LEAN_DB_PASSWORD=${LEANTIME_DB_PASSWORD}
+      - LEAN_DB_DATABASE=leantime
+      - LEAN_DB_PORT=3306
+      # Application Configuration
+      - LEAN_APP_URL=https://${LEANTIME_HOSTNAME}
+      - LEAN_SITENAME=Leantime
+      - LEAN_SESSION_PASSWORD=${LEANTIME_SESSION_PASSWORD}
+      - LEAN_SESSION_EXPIRATION=28800  # 8 hours
+      - LEAN_DEFAULT_TIMEZONE=${TZ:-UTC}
+      # Language & Theme
+      - LEAN_LANGUAGE=en-US
+      - LEAN_DEFAULT_THEME=default
+      # User/Group mapping (optional)
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      # Features
+      - LEAN_ENABLE_MENU_TYPE=true
+      - LEAN_ENABLE_FOOTER=true
+      # Email (optional, can be configured later)
+      - LEAN_EMAIL_RETURN=${USER_EMAIL:-}
+      - LEAN_EMAIL_USE_SMTP=false
+    volumes:
+      - leantime-public:/var/www/html/public/userfiles
+      - leantime-userfiles:/var/www/html/userfiles
+      - leantime-plugins:/var/www/html/app/Plugins
+      - leantime-logs:/var/www/html/storage/logs
+      - ./shared:/data/shared
+    depends_on:
+      mysql_leantime:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   perplexica:
     build:

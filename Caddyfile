@@ -170,6 +170,11 @@
     reverse_proxy vikunja:3456
 }
 
+# Leantime - Project Management Suite
+{$LEANTIME_HOSTNAME} {
+    reverse_proxy leantime:8080
+}
+
 # Neo4j
 {$NEO4J_HOSTNAME} {
     reverse_proxy neo4j:7474

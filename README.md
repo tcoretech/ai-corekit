@@ -56,6 +56,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[Vikunja](https://vikunja.io)** | Modern task management platform | Kanban boards, Gantt charts, team collaboration, CalDAV | `vikunja.yourdomain.com` |
+| **[Leantime](https://leantime.io)** | Goal-oriented project management suite | ADHD-friendly PM, time tracking, sprints, strategy tools | `leantime.yourdomain.com` |
 | **[Baserow](https://github.com/bram2w/baserow)** | Airtable Alternative with real-time collaboration | Database management, project tracking, collaborative workflows | `baserow.yourdomain.com` |
 | **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
 
@@ -268,6 +269,251 @@ Vikunja provides a modern task management platform with Kanban, Gantt, and calen
 - Add Wait nodes between bulk operations
 - Use Try/Catch nodes for error handling
 - Set up webhooks for real-time task updates
+
+## 🎯 Leantime Project Management Integration
+
+Leantime is a goal-oriented project management suite designed specifically for ADHD and neurodiverse teams, offering comprehensive project tracking with time management and strategic planning tools.
+
+### Initial Setup
+
+**First Login to Leantime:**
+1. Navigate to `https://leantime.yourdomain.com`
+2. The installation wizard starts automatically
+3. Create your admin account (first user becomes admin)
+4. Complete company profile setup
+5. Generate API key in User Settings → API Access
+
+**MySQL 8.4 Auto-Installation:**
+- Leantime automatically installs MySQL 8.4 during setup
+- This MySQL instance can be reused for other services (WordPress, Ghost, etc.)
+- Root password available in `.env` file
+
+### n8n Integration Setup
+
+**Create Leantime Credentials in n8n:**
+```javascript
+// Leantime API Credentials
+URL: http://leantime:8080
+Email: your-admin@email.com
+Password: your-admin-password
+API Key: your-api-key-from-settings
+```
+
+### Example: Goal-Driven Task Automation
+
+Automatically create tasks aligned with strategic goals:
+
+```javascript
+// 1. Schedule Trigger: Weekly on Monday
+// 2. HTTP Request: Get current goals
+Method: GET
+URL: http://leantime:8080/api/v1/goals
+Headers: {
+  "x-api-key": "{{ $credentials.leantimeApiKey }}"
+}
+
+// 3. Loop Over Goals
+// 4. HTTP Request: Create milestone for each goal
+Method: POST
+URL: http://leantime:8080/api/v1/projects/{{ $json.projectId }}/milestones
+Body: {
+  "headline": "Week {{ $now.weekNumber }} - {{ $json.goalName }}",
+  "tags": "auto-generated,weekly",
+  "editFrom": "{{ $now.toISO() }}",
+  "editTo": "{{ $now.plus(7, 'days').toISO() }}"
+}
+
+// 5. HTTP Request: Create tasks under milestone
+Method: POST
+URL: http://leantime:8080/api/v1/tickets
+Body: {
+  "headline": "{{ $json.taskName }}",
+  "type": "task",
+  "milestoneid": "{{ $json.milestoneId }}",
+  "tags": "automated",
+  "priority": 2,
+  "storypoints": "{{ $json.estimatedHours }}",
+  "sprint": "{{ $json.currentSprint }}"
+}
+```
+
+### Example: Time Tracking Automation
+
+Sync time entries with invoicing systems:
+
+```javascript
+// 1. Schedule Trigger: Daily at 6 PM
+// 2. HTTP Request: Get today's time entries
+Method: GET
+URL: http://leantime:8080/api/v1/timesheets
+Headers: {
+  "x-api-key": "{{ $credentials.leantimeApiKey }}"
+}
+Query: {
+  "dateFrom": "{{ $now.startOf('day').toISO() }}",
+  "dateTo": "{{ $now.endOf('day').toISO() }}"
+}
+
+// 3. Code Node: Aggregate time by project
+const entries = $input.all();
+const projectTime = {};
+
+entries.forEach(entry => {
+  const project = entry.json.projectName;
+  const hours = parseFloat(entry.json.hours);
+  
+  if (!projectTime[project]) {
+    projectTime[project] = {
+      totalHours: 0,
+      tasks: [],
+      client: entry.json.clientName
+    };
+  }
+  
+  projectTime[project].totalHours += hours;
+  projectTime[project].tasks.push({
+    task: entry.json.headline,
+    hours: hours,
+    description: entry.json.description
+  });
+});
+
+return Object.entries(projectTime).map(([project, data]) => ({
+  json: { project, ...data }
+}));
+
+// 4. Loop Over Projects
+// 5. Create invoice entries in your billing system
+```
+
+### Example: Sprint Management Workflow
+
+Automate sprint planning and retrospectives:
+
+```javascript
+// 1. Schedule Trigger: Every 2 weeks (sprint cycle)
+// 2. HTTP Request: Close current sprint
+Method: POST
+URL: http://leantime:8080/api/v1/sprints/{{ $json.currentSprintId }}/close
+
+// 3. HTTP Request: Get sprint metrics
+Method: GET
+URL: http://leantime:8080/api/v1/reports/sprint/{{ $json.currentSprintId }}
+
+// 4. OpenAI Node: Generate retrospective insights
+Prompt: |
+  Based on these sprint metrics:
+  - Completed: {{ $json.completedPoints }} story points
+  - Velocity: {{ $json.velocity }}
+  - Burndown trend: {{ $json.burndownTrend }}
+  
+  Generate:
+  1. Three things that went well
+  2. Three areas for improvement
+  3. Action items for next sprint
+
+// 5. HTTP Request: Create new sprint
+Method: POST
+URL: http://leantime:8080/api/v1/sprints
+Body: {
+  "name": "Sprint {{ $json.nextSprintNumber }}",
+  "startDate": "{{ $now.toISO() }}",
+  "endDate": "{{ $now.plus(14, 'days').toISO() }}",
+  "retrospective": "{{ $json.aiInsights }}"
+}
+
+// 6. HTTP Request: Auto-assign backlog items
+Method: POST
+URL: http://leantime:8080/api/v1/tickets/bulk-update
+Body: {
+  "ticketIds": "{{ $json.topBacklogItems }}",
+  "sprint": "{{ $json.newSprintId }}",
+  "status": "planned"
+}
+```
+
+### Example: Idea to Implementation Pipeline
+
+Convert ideas into actionable tasks with AI enhancement:
+
+```javascript
+// 1. Webhook: Receive new idea from form/email
+// 2. HTTP Request: Create idea in Leantime
+Method: POST
+URL: http://leantime:8080/api/v1/ideas
+Body: {
+  "title": "{{ $json.ideaTitle }}",
+  "description": "{{ $json.ideaDescription }}",
+  "userId": "{{ $json.submitterId }}"
+}
+
+// 3. Perplexica Node: Research feasibility
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.ideaTitle }} implementation best practices",
+  "focusMode": "webSearch"
+}
+
+// 4. OpenAI Node: Break down into tasks
+Prompt: |
+  Idea: {{ $json.ideaTitle }}
+  Research: {{ $json.researchSummary }}
+  
+  Create a task breakdown with:
+  - 5-8 specific tasks
+  - Time estimates (hours)
+  - Dependencies
+  - Required skills
+
+// 5. HTTP Request: Create Canvas
+Method: POST
+URL: http://leantime:8080/api/v1/canvas
+Body: {
+  "type": "lean",
+  "title": "{{ $json.ideaTitle }} - Implementation Plan",
+  "items": "{{ $json.aiTaskBreakdown }}"
+}
+
+// 6. Loop: Create tasks from breakdown
+```
+
+### Leantime Features for Automation
+
+**Strategy Tools:**
+- **Goal Canvas:** Define and track OKRs
+- **Lean Canvas:** Business model planning
+- **SWOT Analysis:** Strategic assessment
+- **Opportunity Canvas:** Market analysis
+
+**Time Management:**
+- **Built-in Timer:** Track time directly in tasks
+- **Timesheets:** Exportable reports
+- **Estimates vs Actual:** Improve planning accuracy
+
+**ADHD-Friendly Features:**
+- **Dopamine-driven UI:** Gamification elements
+- **Focus Mode:** Minimize distractions
+- **Break Reminders:** Pomodoro technique support
+- **Visual Progress:** Charts and progress bars
+
+### Tips for Leantime + n8n Integration
+
+1. **Use Internal URL:** Always use `http://leantime:8080` from n8n containers
+2. **API Authentication:** Generate dedicated API keys for each workflow
+3. **Batch Operations:** Leantime supports bulk updates to reduce API calls
+4. **Webhook Events:** Set up Leantime webhooks for real-time triggers
+5. **Time Zone Handling:** Ensure consistent timezone settings between n8n and Leantime
+6. **Canvas Integration:** Use different canvas types for various planning needs
+7. **Report Generation:** Combine Leantime metrics with Grafana for dashboards
+
+### Leantime Philosophy Integration
+
+Leantime's "Start with WHY" approach fits perfectly with n8n automation:
+- Automate goal tracking and alignment
+- Generate insights from strategic canvases
+- Create feedback loops between execution and strategy
+- Support neurodiverse team members with consistent processes
 
 ### 💾 Baserow Integration with n8n
 

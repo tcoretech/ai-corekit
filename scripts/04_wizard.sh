@@ -62,6 +62,7 @@ base_services_data=(
     "odoo" "Odoo 18 (Open Source ERP/CRM with AI features)"
     "baserow" "Baserow (Airtable Alternative)"
     "vikunja" "Vikunja (Modern Task Management - Todoist/TickTick alternative)"
+    "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"
     "qdrant" "Qdrant (Vector Database)"
     "supabase" "Supabase (Backend as a Service)"
@@ -209,6 +210,17 @@ if [ $ollama_selected -eq 1 ]; then
         # ollama_selected remains 1, but no specific profile is added.
         # This means "ollama" won't be in COMPOSE_PROFILES unless a hardware profile is chosen.
         ollama_selected=0 # Mark as not fully selected if profile choice is cancelled
+    fi
+fi
+
+# Auto-enable MySQL when Leantime is selected
+if [[ " ${selected_profiles[@]} " =~ " leantime " ]]; then
+    if [[ ! " ${selected_profiles[@]} " =~ " mysql " ]]; then
+        selected_profiles+=("mysql")
+        echo
+        log_info "📦 MySQL 8.4 will be installed automatically for Leantime"
+        log_info "   You can use this MySQL instance for other services too (WordPress, Ghost, etc.)"
+        sleep 2
     fi
 fi
 
@@ -370,4 +382,4 @@ fi
 # Make the script executable (though install.sh calls it with bash)
 chmod +x "$SCRIPT_DIR/04_wizard.sh"
 
-exit 0 
+exit 0

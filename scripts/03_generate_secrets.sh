@@ -66,6 +66,9 @@ declare -A VARS_TO_GENERATE=(
     ["ODOO_PASSWORD"]="password:32"
     ["BASEROW_SECRET_KEY"]="secret:64"
     ["VIKUNJA_JWT_SECRET"]="apikey:32"
+    ["MYSQL_ROOT_PASSWORD"]="password:32"
+    ["LEANTIME_DB_PASSWORD"]="password:32"
+    ["LEANTIME_SESSION_PASSWORD"]="password:64"
 )
 
 # Initialize existing_env_vars and attempt to read .env if it exists

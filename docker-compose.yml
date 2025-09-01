@@ -26,6 +26,7 @@ volumes:
   lightrag_data:
   odoo_data:
   baserow_data:
+  vikunja-files:
 
 x-n8n: &service-n8n
   build:
@@ -302,6 +303,7 @@ services:
       - TTS_AUTH_USER=${TTS_AUTH_USER}
       - TTS_AUTH_PASSWORD_HASH=${TTS_AUTH_PASSWORD_HASH}
       - TTS_HOSTNAME=${TTS_HOSTNAME}
+      - VIKUNJA_HOSTNAME=${VIKUNJA_HOSTNAME}
       - WEAVIATE_HOSTNAME=${WEAVIATE_HOSTNAME}
       - WEBUI_HOSTNAME=${WEBUI_HOSTNAME}
       - WHISPER_AUTH_USER=${WHISPER_AUTH_USER}
@@ -984,6 +986,41 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Task Management - Vikunja
+  vikunja:
+    image: vikunja/vikunja:latest
+    container_name: vikunja
+    profiles: ["vikunja"]
+    restart: unless-stopped
+    environment:
+      # Database Configuration (uses existing PostgreSQL)
+      - VIKUNJA_DATABASE_TYPE=postgres
+      - VIKUNJA_DATABASE_HOST=postgres
+      - VIKUNJA_DATABASE_USER=${POSTGRES_USER}
+      - VIKUNJA_DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      - VIKUNJA_DATABASE_DATABASE=vikunja
+      # Service Configuration
+      - VIKUNJA_SERVICE_PUBLICURL=https://${VIKUNJA_HOSTNAME}
+      - VIKUNJA_SERVICE_JWTSECRET=${VIKUNJA_JWT_SECRET}
+      - VIKUNJA_SERVICE_ENABLEREGISTRATION=true
+      - VIKUNJA_SERVICE_ENABLETASKATTACHMENTS=true
+      - VIKUNJA_SERVICE_MAXAVATARSIZE=1024
+      - VIKUNJA_SERVICE_MAXATTACHMENTSIZE=20971520  # 20MB
+      # Optional: Set timezone
+      - VIKUNJA_SERVICE_TIMEZONE=${TZ:-UTC}
+    volumes:
+      - vikunja-files:/app/vikunja/files
+      - ./shared:/data/shared
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3456/api/v1/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   perplexica:
     build:

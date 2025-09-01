@@ -61,6 +61,7 @@ base_services_data=(
     "postiz" "Postiz (Social publishing platform)"
     "odoo" "Odoo 18 (Open Source ERP/CRM with AI features)"
     "baserow" "Baserow (Airtable Alternative)"
+    "vikunja" "Vikunja (Modern Task Management - Todoist/TickTick alternative)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"
     "qdrant" "Qdrant (Vector Database)"
     "supabase" "Supabase (Backend as a Service)"

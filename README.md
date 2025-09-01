@@ -290,192 +290,282 @@ Leantime is a goal-oriented project management suite designed specifically for A
 
 ### n8n Integration Setup
 
+**Important:** Leantime uses JSON-RPC 2.0 API, not REST. All requests go to `/api/jsonrpc` endpoint.
+
 **Create Leantime Credentials in n8n:**
+1. Go to Credentials → New → Header Auth
+2. Configure:
+   - Name: `Leantime API`
+   - Header Name: `x-api-key`
+   - Header Value: `[Your API key from Leantime settings]`
+
+**HTTP Request Node Configuration:**
 ```javascript
-// Leantime API Credentials
-URL: http://leantime:8080
-Email: your-admin@email.com
-Password: your-admin-password
-API Key: your-api-key-from-settings
+Method: POST
+URL: http://leantime:8080/api/jsonrpc
+Authentication: Header Auth (select your Leantime API credential)
+Headers:
+  Content-Type: application/json
+  Accept: application/json
+Body Type: JSON
 ```
 
-### Example: Goal-Driven Task Automation
+### JSON-RPC API Examples
 
-Automatically create tasks aligned with strategic goals:
-
-```javascript
-// 1. Schedule Trigger: Weekly on Monday
-// 2. HTTP Request: Get current goals
-Method: GET
-URL: http://leantime:8080/api/v1/goals
-Headers: {
-  "x-api-key": "{{ $credentials.leantimeApiKey }}"
-}
-
-// 3. Loop Over Goals
-// 4. HTTP Request: Create milestone for each goal
-Method: POST
-URL: http://leantime:8080/api/v1/projects/{{ $json.projectId }}/milestones
-Body: {
-  "headline": "Week {{ $now.weekNumber }} - {{ $json.goalName }}",
-  "tags": "auto-generated,weekly",
-  "editFrom": "{{ $now.toISO() }}",
-  "editTo": "{{ $now.plus(7, 'days').toISO() }}"
-}
-
-// 5. HTTP Request: Create tasks under milestone
-Method: POST
-URL: http://leantime:8080/api/v1/tickets
-Body: {
-  "headline": "{{ $json.taskName }}",
-  "type": "task",
-  "milestoneid": "{{ $json.milestoneId }}",
-  "tags": "automated",
-  "priority": 2,
-  "storypoints": "{{ $json.estimatedHours }}",
-  "sprint": "{{ $json.currentSprint }}"
+#### Get All Projects
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.projects.getAll",
+  "id": 1,
+  "params": {}
 }
 ```
 
-### Example: Time Tracking Automation
-
-Sync time entries with invoicing systems:
-
-```javascript
-// 1. Schedule Trigger: Daily at 6 PM
-// 2. HTTP Request: Get today's time entries
-Method: GET
-URL: http://leantime:8080/api/v1/timesheets
-Headers: {
-  "x-api-key": "{{ $credentials.leantimeApiKey }}"
+#### Get All Tickets/Tasks
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.getAll",
+  "id": 1,
+  "params": {}
 }
-Query: {
-  "dateFrom": "{{ $now.startOf('day').toISO() }}",
-  "dateTo": "{{ $now.endOf('day').toISO() }}"
-}
+```
 
-// 3. Code Node: Aggregate time by project
-const entries = $input.all();
-const projectTime = {};
-
-entries.forEach(entry => {
-  const project = entry.json.projectName;
-  const hours = parseFloat(entry.json.hours);
-  
-  if (!projectTime[project]) {
-    projectTime[project] = {
-      totalHours: 0,
-      tasks: [],
-      client: entry.json.clientName
-    };
+#### Create New Task
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.addTicket",
+  "id": 1,
+  "params": {
+    "values": {
+      "headline": "Task created from n8n",
+      "type": "task",
+      "description": "Automated task creation",
+      "projectId": 1,
+      "status": 3,
+      "priority": "2",
+      "tags": "automated,n8n"
+    }
   }
-  
-  projectTime[project].totalHours += hours;
-  projectTime[project].tasks.push({
-    task: entry.json.headline,
-    hours: hours,
-    description: entry.json.description
-  });
-});
-
-return Object.entries(projectTime).map(([project, data]) => ({
-  json: { project, ...data }
-}));
-
-// 4. Loop Over Projects
-// 5. Create invoice entries in your billing system
-```
-
-### Example: Sprint Management Workflow
-
-Automate sprint planning and retrospectives:
-
-```javascript
-// 1. Schedule Trigger: Every 2 weeks (sprint cycle)
-// 2. HTTP Request: Close current sprint
-Method: POST
-URL: http://leantime:8080/api/v1/sprints/{{ $json.currentSprintId }}/close
-
-// 3. HTTP Request: Get sprint metrics
-Method: GET
-URL: http://leantime:8080/api/v1/reports/sprint/{{ $json.currentSprintId }}
-
-// 4. OpenAI Node: Generate retrospective insights
-Prompt: |
-  Based on these sprint metrics:
-  - Completed: {{ $json.completedPoints }} story points
-  - Velocity: {{ $json.velocity }}
-  - Burndown trend: {{ $json.burndownTrend }}
-  
-  Generate:
-  1. Three things that went well
-  2. Three areas for improvement
-  3. Action items for next sprint
-
-// 5. HTTP Request: Create new sprint
-Method: POST
-URL: http://leantime:8080/api/v1/sprints
-Body: {
-  "name": "Sprint {{ $json.nextSprintNumber }}",
-  "startDate": "{{ $now.toISO() }}",
-  "endDate": "{{ $now.plus(14, 'days').toISO() }}",
-  "retrospective": "{{ $json.aiInsights }}"
-}
-
-// 6. HTTP Request: Auto-assign backlog items
-Method: POST
-URL: http://leantime:8080/api/v1/tickets/bulk-update
-Body: {
-  "ticketIds": "{{ $json.topBacklogItems }}",
-  "sprint": "{{ $json.newSprintId }}",
-  "status": "planned"
 }
 ```
 
-### Example: Idea to Implementation Pipeline
+#### Update Existing Task
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.updateTicket",
+  "id": 1,
+  "params": {
+    "id": 10,
+    "values": {
+      "headline": "Updated headline",
+      "status": 4,
+      "progress": 50
+    }
+  }
+}
+```
 
-Convert ideas into actionable tasks with AI enhancement:
+### Example: Weekly Sprint Planning Automation
+
+Automatically create sprint tasks from a template:
 
 ```javascript
-// 1. Webhook: Receive new idea from form/email
-// 2. HTTP Request: Create idea in Leantime
-Method: POST
-URL: http://leantime:8080/api/v1/ideas
-Body: {
-  "title": "{{ $json.ideaTitle }}",
-  "description": "{{ $json.ideaDescription }}",
-  "userId": "{{ $json.submitterId }}"
+// 1. Schedule Trigger: Weekly on Monday at 9 AM
+
+// 2. HTTP Request: Get current project tasks
+// Method: POST
+// URL: http://leantime:8080/api/jsonrpc
+// Body:
+{
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.getAll",
+  "id": 1,
+  "params": {}
 }
 
-// 3. Perplexica Node: Research feasibility
-Method: POST
-URL: http://perplexica:3000/api/search
-Body: {
-  "query": "{{ $json.ideaTitle }} implementation best practices",
-  "focusMode": "webSearch"
+// 3. Code Node: Filter and prepare weekly tasks
+const tasks = $input.first().json.result;
+const weekNumber = new Date().getWeek();
+
+const weeklyTasks = [
+  {
+    headline: `Week ${weekNumber} - Sprint Planning`,
+    type: "task",
+    priority: "1"
+  },
+  {
+    headline: `Week ${weekNumber} - Daily Standups`,
+    type: "task",
+    priority: "2"
+  },
+  {
+    headline: `Week ${weekNumber} - Sprint Review`,
+    type: "task",
+    priority: "2"
+  }
+];
+
+return weeklyTasks.map(task => ({ json: task }));
+
+// 4. Loop Over Items
+// 5. HTTP Request: Create each task
+// Body:
+{
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.addTicket",
+  "id": 1,
+  "params": {
+    "values": {
+      "headline": "{{ $json.headline }}",
+      "type": "{{ $json.type }}",
+      "projectId": 1,
+      "status": 3,
+      "priority": "{{ $json.priority }}",
+      "tags": "weekly,automated"
+    }
+  }
+}
+```
+
+### Example: Time Tracking Report Automation
+
+Generate weekly time reports:
+
+```javascript
+// 1. Schedule Trigger: Friday at 5 PM
+
+// 2. HTTP Request: Get all tickets with time entries
+// Method: POST
+// URL: http://leantime:8080/api/jsonrpc
+// Body:
+{
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.getAll",
+  "id": 1,
+  "params": {}
 }
 
-// 4. OpenAI Node: Break down into tasks
-Prompt: |
-  Idea: {{ $json.ideaTitle }}
-  Research: {{ $json.researchSummary }}
-  
-  Create a task breakdown with:
-  - 5-8 specific tasks
-  - Time estimates (hours)
-  - Dependencies
-  - Required skills
+// 3. Code Node: Calculate time summaries
+const tickets = $input.first().json.result;
 
-// 5. HTTP Request: Create Canvas
-Method: POST
-URL: http://leantime:8080/api/v1/canvas
-Body: {
-  "type": "lean",
-  "title": "{{ $json.ideaTitle }} - Implementation Plan",
-  "items": "{{ $json.aiTaskBreakdown }}"
+const timeReport = tickets
+  .filter(t => t.bookedHours > 0)
+  .map(ticket => ({
+    task: ticket.headline,
+    project: ticket.projectName,
+    plannedHours: ticket.planHours,
+    actualHours: ticket.bookedHours,
+    remaining: ticket.hourRemaining,
+    status: ticket.statusLabel
+  }));
+
+const totalBooked = timeReport.reduce((sum, t) => sum + t.actualHours, 0);
+const totalPlanned = timeReport.reduce((sum, t) => sum + t.plannedHours, 0);
+
+return [{
+  json: {
+    report: timeReport,
+    summary: {
+      totalBookedHours: totalBooked,
+      totalPlannedHours: totalPlanned,
+      efficiency: (totalBooked / totalPlanned * 100).toFixed(2) + '%'
+    }
+  }
+}];
+
+// 4. Send report via email/Slack/Teams
+```
+
+### Example: Idea to Task Pipeline
+
+Convert ideas into actionable tasks:
+
+```javascript
+// 1. Webhook Trigger: Receive idea submission
+
+// 2. OpenAI Node: Analyze and break down idea
+// Prompt: Break down this idea into 3-5 concrete tasks
+
+// 3. Loop Over Generated Tasks
+
+// 4. HTTP Request: Create task in Leantime
+// Method: POST
+// URL: http://leantime:8080/api/jsonrpc
+// Body:
+{
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.addTicket",
+  "id": 1,
+  "params": {
+    "values": {
+      "headline": "{{ $json.taskTitle }}",
+      "description": "{{ $json.taskDescription }}",
+      "type": "task",
+      "projectId": 1,
+      "status": 3,
+      "storypoints": "{{ $json.estimatedHours }}",
+      "tags": "idea-generated,ai-enhanced"
+    }
+  }
 }
 
-// 6. Loop: Create tasks from breakdown
+// 5. Notification: Send confirmation with task IDs
+```
+
+### Available JSON-RPC Methods
+
+**Project Management:**
+- `leantime.rpc.projects.getAll` - Get all projects
+- `leantime.rpc.projects.getProject` - Get specific project
+- `leantime.rpc.projects.addProject` - Create new project
+- `leantime.rpc.projects.updateProject` - Update project
+
+**Task/Ticket Management:**
+- `leantime.rpc.tickets.getAll` - Get all tickets
+- `leantime.rpc.tickets.getTicket` - Get specific ticket
+- `leantime.rpc.tickets.addTicket` - Create new ticket
+- `leantime.rpc.tickets.updateTicket` - Update ticket
+- `leantime.rpc.tickets.deleteTicket` - Delete ticket
+
+**Time Tracking:**
+- `leantime.rpc.timesheets.getAll` - Get timesheets
+- `leantime.rpc.timesheets.addTime` - Log time entry
+- `leantime.rpc.timesheets.updateTime` - Update time entry
+
+**Milestones:**
+- `leantime.rpc.tickets.getAllMilestones` - Get milestones
+- `leantime.rpc.tickets.addMilestone` - Create milestone
+
+### Task Status Codes
+
+```javascript
+// Status values for tickets
+const STATUS = {
+  NEW: 3,           // Neu
+  IN_PROGRESS: 1,   // In Bearbeitung
+  DONE: 0,          // Fertig
+  BLOCKED: 4,       // Blockiert
+  REVIEW: 2         // Review
+};
+
+// Task types
+const TYPES = {
+  TASK: "task",
+  BUG: "bug",
+  STORY: "story",
+  MILESTONE: "milestone"
+};
+
+// Priority levels
+const PRIORITY = {
+  HIGH: "1",
+  MEDIUM: "2",
+  LOW: "3"
+};
 ```
 
 ### Leantime Features for Automation
@@ -499,13 +589,57 @@ Body: {
 
 ### Tips for Leantime + n8n Integration
 
-1. **Use Internal URL:** Always use `http://leantime:8080` from n8n containers
-2. **API Authentication:** Generate dedicated API keys for each workflow
-3. **Batch Operations:** Leantime supports bulk updates to reduce API calls
-4. **Webhook Events:** Set up Leantime webhooks for real-time triggers
-5. **Time Zone Handling:** Ensure consistent timezone settings between n8n and Leantime
-6. **Canvas Integration:** Use different canvas types for various planning needs
-7. **Report Generation:** Combine Leantime metrics with Grafana for dashboards
+1. **Always use JSON-RPC format:** All API calls must be POST to `/api/jsonrpc`
+2. **Internal URL:** Use `http://leantime:8080` from n8n containers
+3. **API Authentication:** x-api-key header is required for all requests
+4. **Response Format:** Results are in `result` field of JSON-RPC response
+5. **Error Handling:** Check for `error` field in responses
+6. **Batch Operations:** Send multiple requests in array for efficiency
+7. **ID Parameter:** Most update/delete operations need ID in params
+8. **Time Format:** Use ISO 8601 format for dates
+
+### Troubleshooting
+
+**Common Issues:**
+
+1. **"Method not found" Error:**
+   - Check method name spelling and case sensitivity
+   - Ensure format is `leantime.rpc.resource.method`
+
+2. **Authentication Failed:**
+   - Verify API key is correct
+   - Check header name is exactly `x-api-key`
+
+3. **Invalid Parameters:**
+   - Wrap parameters in `params` object
+   - For updates, include ID separately from values
+
+4. **Connection Issues:**
+   - Use internal Docker hostname: `leantime:8080`
+   - Port is 8080, not 80
+
+### Example Error Handling in n8n
+
+```javascript
+// Code Node: Check Leantime response
+const response = $input.first().json;
+
+if (response.error) {
+  throw new Error(`Leantime API Error: ${response.error.message}`);
+}
+
+if (!response.result) {
+  throw new Error('No result returned from Leantime');
+}
+
+// Process successful response
+return [{
+  json: {
+    success: true,
+    data: response.result
+  }
+}];
+```
 
 ### Leantime Philosophy Integration
 

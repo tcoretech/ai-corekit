@@ -987,6 +987,25 @@ services:
       timeout: 10s
       retries: 3
 
+
+
+  # Vikunja Database Init - Create database
+  vikunja-init:
+    image: postgres:latest
+    container_name: vikunja-init
+    profiles: ["vikunja"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      sh -c "
+      psql -h postgres -U postgres -c \"CREATE DATABASE vikunja\" || true &&
+      echo 'Vikunja database ready'
+      "
+    restart: "no"
+
   # Task Management - Vikunja
   vikunja:
     image: vikunja/vikunja:latest
@@ -1013,8 +1032,12 @@ services:
       - vikunja-files:/app/vikunja/files
       - ./shared:/data/shared
     depends_on:
-      - postgres
-      - redis
+      vikunja-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3456/api/v1/info"]
       interval: 30s

@@ -259,6 +259,7 @@ SMTP_PASS=admin
 SMTP_FROM=noreply@yourdomain.com
 SMTP_SECURE=false
 ```
+**Important:** The `EMAIL_*` variables automatically mirror the `SMTP_*` settings. When switching between Mailpit and Postal, all EMAIL_* variables are automatically updated to match the current mail configuration. This ensures services like Baserow always use the correct mail settings without manual intervention.
 
 #### n8n Email Configuration
 
@@ -336,6 +337,8 @@ SMTP_PORT=1025     # or 25 for postal
 # Restart all services
 docker compose -p localai restart
 ```
+
+**Note:** After changing `MAIL_MODE`, run `sudo bash ./scripts/03_generate_secrets.sh` to ensure all EMAIL_* variables are synchronized with the new SMTP_* settings.
 
 ### 📊 Viewing Captured Emails
 

@@ -175,6 +175,23 @@
     reverse_proxy leantime:8080
 }
 
+# ============================================================================
+# MAIL SERVICES
+# ============================================================================
+
+# Mailpit Web Interface (Mail Catcher - always active)
+{$MAILPIT_HOSTNAME} {
+    reverse_proxy mailpit:8025
+}
+
+# Postal Web Interface (Production Mail Server - optional)
+{$POSTAL_HOSTNAME} {
+    basic_auth {
+        {$POSTAL_USERNAME} {$POSTAL_PASSWORD_HASH}
+    }
+    reverse_proxy postal:5000
+}
+
 # Neo4j
 {$NEO4J_HOSTNAME} {
     reverse_proxy neo4j:7474

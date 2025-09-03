@@ -561,6 +561,77 @@ if is_profile_active "n8n" || is_profile_active "langfuse"; then
   echo "(It is separate from Supabase's internal PostgreSQL if Supabase is also enabled.)"
 fi
 
+# ============================================================================
+# MAIL SERVICES
+# ============================================================================
+echo
+echo "================================= Mail System ========================="
+echo
+
+# Get mail mode from .env
+MAIL_MODE=$(grep "^MAIL_MODE=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+BASE_DOMAIN=$(grep "^BASE_DOMAIN=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+
+echo "Active Mail Handler: ${MAIL_MODE^^}"
+echo
+
+# Always show Mailpit info (it's always running)
+echo "📬 Mailpit (Mail Catcher) - ACTIVE"
+echo "  Web UI: https://${MAILPIT_HOSTNAME:-mail.${BASE_DOMAIN}}"
+echo "  Internal SMTP: mailpit:1025"
+echo "  Purpose: Captures all emails for development/testing"
+if [[ "$MAIL_MODE" == "mailpit" ]]; then
+    echo "  Status: PRIMARY mail handler (no external delivery)"
+else
+    echo "  Status: Available for testing (not primary)"
+fi
+echo
+
+# Show Postal info if profile is active
+if is_profile_active "postal"; then
+    echo "📮 Postal (Production Mail Server) - ACTIVE"
+    echo "  Admin UI: https://${POSTAL_HOSTNAME:-postal.${BASE_DOMAIN}}"
+    echo "  Username: ${POSTAL_USERNAME:-<not_set>}"
+    echo "  Password: ${POSTAL_PASSWORD:-<not_set>}"
+    echo "  Internal SMTP: postal:25"
+    echo
+    echo "  ⚠️  First-time setup required:"
+    echo "     1. Access the Admin UI"
+    echo "     2. Create organization and mail server"
+    echo "     3. Configure DNS records (check Postal UI for details)"
+    echo "     4. Generate API credentials for services"
+    echo
+    if [[ "$MAIL_MODE" == "postal" ]]; then
+        echo "  Status: PRIMARY mail handler (real delivery enabled)"
+    else
+        echo "  Status: Installed but not primary"
+    fi
+fi
+
+echo
+echo "Current SMTP Configuration for all services:"
+echo "  Mode: ${MAIL_MODE}"
+echo "  Host: ${SMTP_HOST}"
+echo "  Port: ${SMTP_PORT}"
+echo "  User: ${SMTP_USER}"
+echo "  From: ${SMTP_FROM}"
+echo
+
+if [[ "$MAIL_MODE" == "mailpit" ]]; then
+    echo "ℹ️  All emails are captured locally and visible in Mailpit"
+    echo "   No emails will be sent externally!"
+elif [[ "$MAIL_MODE" == "postal" ]]; then
+    echo "ℹ️  Real email delivery is enabled via Postal"
+    echo "   Make sure DNS records are properly configured!"
+fi
+
+echo
+echo "To switch between mail handlers:"
+echo "  1. Edit .env file: MAIL_MODE=mailpit or MAIL_MODE=postal"
+echo "  2. Update SMTP_* variables accordingly"
+echo "  3. Restart services: docker compose -p localai restart"
+echo
+
 echo
 echo "======================================================================="
 echo

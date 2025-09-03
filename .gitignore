@@ -13,3 +13,10 @@ volumes/bolt-data/
 openedai-config/
 openedai-voices/
 perplexica/
+# Mail Services
+postal/config/
+mailpit_data/
+postal_mariadb/
+postal_rabbitmq/
+postal_assets/
+postal_uploads/

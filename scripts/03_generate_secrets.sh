@@ -16,6 +16,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
 TEMPLATE_FILE="$PROJECT_ROOT/.env.example"
 OUTPUT_FILE="$PROJECT_ROOT/.env"
+ENV_FILE="$OUTPUT_FILE"
 DOMAIN_PLACEHOLDER="yourdomain.com"
 
 # Variables to generate: varName="type:length"
@@ -69,6 +70,12 @@ declare -A VARS_TO_GENERATE=(
     ["MYSQL_ROOT_PASSWORD"]="password:32"
     ["LEANTIME_DB_PASSWORD"]="password:32"
     ["LEANTIME_SESSION_PASSWORD"]="password:64"
+    # Mail Services
+    ["POSTAL_PASSWORD"]="password:32"
+    ["POSTAL_DB_ROOT_PASSWORD"]="password:32"
+    ["POSTAL_RABBITMQ_PASSWORD"]="password:32"
+    ["POSTAL_SMTP_PASSWORD"]="password:24"
+    ["SMTP_PASS"]="password:16"
 )
 
 # Initialize existing_env_vars and attempt to read .env if it exists
@@ -154,6 +161,9 @@ else
         fi
     done
 fi
+
+# Save BASE_DOMAIN for mail configuration detection
+generated_values["BASE_DOMAIN"]="$DOMAIN"
 
 # Prompt for user email
 if [[ -z "${existing_env_vars[LETSENCRYPT_EMAIL]}" ]]; then
@@ -404,6 +414,88 @@ _generate_and_get_hash() {
     echo "$new_hash"
 }
 
+# ============================================================================
+# MAIL CONFIGURATION DETECTION
+# ============================================================================
+detect_and_configure_mail() {
+    echo
+    echo "📧 Configuring Mail System..."
+    echo "=========================================="
+    
+    # Get BASE_DOMAIN from generated_values
+    BASE_DOMAIN="${generated_values[BASE_DOMAIN]}"
+    
+    if [[ -z "$BASE_DOMAIN" ]]; then
+        echo "⚠️  BASE_DOMAIN not set - using default mail configuration"
+        MAIL_MODE="mailpit"
+    elif [[ "$BASE_DOMAIN" == *"sslip.io" ]] || [[ "$BASE_DOMAIN" == *"nip.io" ]] || [[ "$BASE_DOMAIN" == *"localhost"* ]]; then
+        echo "🔍 Detected development domain: $BASE_DOMAIN"
+        echo "📬 Mailpit will be used for mail capture (no external mail delivery)"
+        MAIL_MODE="mailpit"
+        SMTP_HOST="mailpit"
+        SMTP_PORT="1025"
+        SMTP_FROM="noreply@local"
+        SMTP_SECURE="false"
+    else
+        echo "🔍 Detected production domain: $BASE_DOMAIN"
+        echo
+        echo "Choose your mail configuration:"
+        echo "  1) Mailpit (Development/Testing - captures all mail locally)"
+        echo "  2) Postal (Production - real mail delivery)"
+        echo
+        read -p "Your choice [1-2] (default: 1): " mail_choice
+        
+        if [[ "$mail_choice" == "2" ]]; then
+            echo "📮 Postal selected for production mail delivery"
+            MAIL_MODE="postal"
+            SMTP_HOST="postal"
+            SMTP_PORT="25"
+            SMTP_FROM="noreply@${BASE_DOMAIN}"
+            SMTP_SECURE="false"
+            
+            # Add postal to COMPOSE_PROFILES if not already there
+            CURRENT_PROFILES="${existing_env_vars[COMPOSE_PROFILES]}"
+            if [[ ! "$CURRENT_PROFILES" == *"postal"* ]]; then
+                if [[ -n "$CURRENT_PROFILES" ]]; then
+                    NEW_PROFILES="${CURRENT_PROFILES},postal"
+                else
+                    NEW_PROFILES="postal"
+                fi
+                generated_values["COMPOSE_PROFILES"]="$NEW_PROFILES"
+            fi
+            
+            echo "⚠️  IMPORTANT: After installation, configure Postal:"
+            echo "   1. Access https://postal.${BASE_DOMAIN}"
+            echo "   2. Create organization and mail server"
+            echo "   3. Configure DNS records (SPF, DKIM, DMARC)"
+            echo "   4. Generate SMTP credentials for services"
+        else
+            echo "📬 Mailpit selected for mail capture"
+            MAIL_MODE="mailpit"
+            SMTP_HOST="mailpit"
+            SMTP_PORT="1025"
+            SMTP_FROM="noreply@${BASE_DOMAIN}"
+            SMTP_SECURE="false"
+        fi
+    fi
+    
+    # Store mail configuration
+    generated_values["MAIL_MODE"]="$MAIL_MODE"
+    generated_values["SMTP_HOST"]="$SMTP_HOST"
+    generated_values["SMTP_PORT"]="$SMTP_PORT"
+    generated_values["SMTP_FROM"]="$SMTP_FROM"
+    generated_values["SMTP_SECURE"]="$SMTP_SECURE"
+    
+    # Set default SMTP credentials if not set
+    if [[ "$MAIL_MODE" == "mailpit" ]]; then
+        generated_values["SMTP_USER"]="admin"
+        generated_values["SMTP_PASS"]="admin"
+    fi
+    
+    echo "✅ Mail configuration completed"
+    echo
+}
+
 # --- Main Logic ---
 
 if [ ! -f "$TEMPLATE_FILE" ]; then
@@ -417,6 +509,40 @@ for key_from_existing in "${!existing_env_vars[@]}"; do
         generated_values["$key_from_existing"]="${existing_env_vars[$key_from_existing]}"
     fi
 done
+
+# Generate missing variables from VARS_TO_GENERATE
+for varName in "${!VARS_TO_GENERATE[@]}"; do
+    # Skip if already has a value
+    if [[ -n "${generated_values[$varName]}" ]]; then
+        continue
+    fi
+    
+    IFS=':' read -r type length <<< "${VARS_TO_GENERATE[$varName]}"
+    newValue=""
+    case "$type" in
+        password|alphanum) newValue=$(gen_password "$length") ;;
+        secret|base64) newValue=$(gen_base64 "$length") ;;
+        hex) newValue=$(gen_hex "$length") ;;
+        apikey) newValue=$(gen_hex "$length") ;;
+        langfuse_pk) newValue="pk-lf-$(gen_hex "$length")" ;;
+        langfuse_sk) newValue="sk-lf-$(gen_hex "$length")" ;;
+        fixed) newValue="$length" ;;
+        special) 
+            if [[ "$varName" == "LIGHTRAG_AUTH_ACCOUNTS" && "$length" == "lightrag_auth" ]]; then
+                ADMIN_PASS=$(gen_password 16)
+                newValue="admin:${ADMIN_PASS}"
+            fi
+            ;;
+        *) log_warning "Unknown generation type '$type' for $varName" ;;
+    esac
+    
+    if [[ -n "$newValue" ]]; then
+        generated_values["$varName"]="$newValue"
+    fi
+done
+
+# Configure mail system
+detect_and_configure_mail
 
 # Store user input values (potentially overwriting if user was re-prompted and gave new input)
 generated_values["BOLT_USERNAME"]="$USER_EMAIL"
@@ -437,6 +563,8 @@ generated_values["TTS_AUTH_USER"]="$USER_EMAIL" # Set TTS username for Caddy
 generated_values["LIGHTRAG_USERNAME"]="$USER_EMAIL" # Set LightRAG username for Caddy
 generated_values["PERPLEXICA_USERNAME"]="$USER_EMAIL" # Set Perplexica username for Caddy
 generated_values["ODOO_USERNAME"]="$USER_EMAIL" #Set Odoo username for Caddy
+generated_values["POSTAL_USERNAME"]="$USER_EMAIL" # Set Postal username for Caddy
+generated_values["POSTAL_EMAIL"]="$USER_EMAIL" # Set Postal email
 
 if [[ -n "$OPENAI_API_KEY" ]]; then
     generated_values["OPENAI_API_KEY"]="$OPENAI_API_KEY"
@@ -448,6 +576,20 @@ fi
 
 if [[ -n "$GROQ_API_KEY" ]]; then
     generated_values["GROQ_API_KEY"]="$GROQ_API_KEY"
+fi
+
+# Set mail service hostnames
+BASE_DOMAIN="${generated_values[BASE_DOMAIN]}"
+if [[ -n "$BASE_DOMAIN" ]]; then
+    # Mailpit hostname (if not already set)
+    if [[ -z "${generated_values[MAILPIT_HOSTNAME]}" ]]; then
+        generated_values["MAILPIT_HOSTNAME"]="mail.${BASE_DOMAIN}"
+    fi
+    
+    # Postal hostname (if not already set)
+    if [[ -z "${generated_values[POSTAL_HOSTNAME]}" ]]; then
+        generated_values["POSTAL_HOSTNAME"]="postal.${BASE_DOMAIN}"
+    fi
 fi
 
 # Create a temporary file for processing
@@ -478,6 +620,7 @@ found_vars["TTS_AUTH_USER"]=0
 found_vars["LIGHTRAG_USERNAME"]=0
 found_vars["PERPLEXICA_USERNAME"]=0
 found_vars["ODOO_USERNAME"]=0
+found_vars["POSTAL_USERNAME"]=0
 
 # Read template, substitute domain, generate initial values
 while IFS= read -r line || [[ -n "$line" ]]; do
@@ -531,7 +674,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             # This 'else' block is for lines from template not covered by existing values or VARS_TO_GENERATE.
             # Check if it is one of the user input vars - these are handled by found_vars later if not in template.
             is_user_input_var=0 # Reset for each line
-            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER")
+            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "POSTAL_USERNAME")
             for uivar in "${user_input_vars[@]}"; do
                 if [[ "$varName" == "$uivar" ]]; then
                     is_user_input_var=1
@@ -613,7 +756,7 @@ if [[ -z "${generated_values[SERVICE_ROLE_KEY]}" ]]; then
 fi
 
 # Add any custom variables that weren't found in the template
-for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME"; do
+for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME" "POSTAL_USERNAME"; do
     if [[ ${found_vars["$var"]} -eq 0 && -v generated_values["$var"] ]]; then
         # Before appending, check if it's already in TMP_ENV_FILE to avoid duplicates
         if ! grep -q -E "^${var}=" "$TMP_ENV_FILE"; then
@@ -808,15 +951,6 @@ if [[ -z "$FINAL_LIGHTRAG_HASH" && -n "$LIGHTRAG_PLAIN_PASS" ]]; then
 fi
 _update_or_add_env_var "LIGHTRAG_PASSWORD_HASH" "$FINAL_LIGHTRAG_HASH"
 
-if [ $? -eq 0 ]; then # This $? reflects the status of the last mv command from the last _update_or_add_env_var call.
-    # For now, assuming if we reached here and mv was fine, primary operations were okay.
-    echo ".env file generated successfully in the project root ($OUTPUT_FILE)."
-else
-    log_error "Failed to generate .env file." >&2
-    rm -f "$OUTPUT_FILE" # Clean up potentially broken output file
-    exit 1
-fi
-
 # --- PERPLEXICA ---
 PERPLEXICA_PLAIN_PASS="${generated_values["PERPLEXICA_PASSWORD"]}"
 FINAL_PERPLEXICA_HASH="${generated_values[PERPLEXICA_PASSWORD_HASH]}"
@@ -840,6 +974,27 @@ if [[ -z "$FINAL_ODOO_HASH" && -n "$ODOO_PLAIN_PASS" ]]; then
     fi
 fi
 _update_or_add_env_var "ODOO_PASSWORD_HASH" "$FINAL_ODOO_HASH"
+
+# --- POSTAL ---
+POSTAL_PLAIN_PASS="${generated_values["POSTAL_PASSWORD"]}"
+FINAL_POSTAL_HASH="${generated_values[POSTAL_PASSWORD_HASH]}"
+if [[ -z "$FINAL_POSTAL_HASH" && -n "$POSTAL_PLAIN_PASS" ]]; then
+    NEW_HASH=$(_generate_and_get_hash "$POSTAL_PLAIN_PASS")
+    if [[ -n "$NEW_HASH" ]]; then
+        FINAL_POSTAL_HASH="$NEW_HASH"
+        generated_values["POSTAL_PASSWORD_HASH"]="$NEW_HASH"
+    fi
+fi
+_update_or_add_env_var "POSTAL_PASSWORD_HASH" "$FINAL_POSTAL_HASH"
+
+if [ $? -eq 0 ]; then # This $? reflects the status of the last mv command from the last _update_or_add_env_var call.
+    # For now, assuming if we reached here and mv was fine, primary operations were okay.
+    echo ".env file generated successfully in the project root ($OUTPUT_FILE)."
+else
+    log_error "Failed to generate .env file." >&2
+    rm -f "$OUTPUT_FILE" # Clean up potentially broken output file
+    exit 1
+fi
 
 # Uninstall caddy
 apt remove -y caddy

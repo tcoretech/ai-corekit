@@ -37,6 +37,19 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 
 ## ✨ What's Included
 
+### 📧 Mail System (NEW!)
+
+| Tool | Description | Always Active | Purpose |
+|------|-------------|---------------|----------|
+| **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | Development/Testing - captures all emails |
+| **[Postal](https://github.com/postalserver/postal)** | Full mail server | ❌ Optional | Production - real email delivery |
+
+**Smart Mail Configuration:**
+- Automatically detects development domains (sslip.io, nip.io) → uses Mailpit
+- For production domains → choice between Mailpit or Postal
+- All services automatically configured with correct SMTP settings
+- Zero manual configuration needed!
+
 ### 🔧 Workflow Automation
 
 | Tool | Description | Use Cases | Access |
@@ -187,6 +200,10 @@ The installer will ask you for:
 5. **Worker count** - Number of n8n workers for parallel processing (1-4)
 6. **Service selection** - Choose which tools to install (including Speech Stack)
 
+**🆕 Mail Configuration (Automatic):**
+- For `sslip.io`, `nip.io`, or `localhost` domains → Mailpit automatically configured
+- For real domains → Choose between Mailpit (testing) or Postal (production)
+
 **Installation time:** 10-15 minutes (plus optional workflow import)
 
 ### Post-Installation
@@ -204,6 +221,206 @@ GROQ_API_KEY=gsk_...
 # Restart services
 docker compose restart
 ```
+
+---
+
+## 📧 Mail Configuration
+
+AI LaunchKit includes an intelligent dual mail system that automatically configures based on your domain type:
+
+### 🎯 How It Works
+
+1. **Automatic Domain Detection:**
+   - **Development domains** (`sslip.io`, `nip.io`, `localhost`): Automatically configures Mailpit
+   - **Production domains**: Asks whether you want Mailpit (testing) or Postal (real delivery)
+
+2. **Mailpit** (Always Active):
+   - Captures ALL emails sent by any service
+   - Web UI to view emails: `https://mail.yourdomain.com`
+   - No emails leave your server - perfect for development
+   - No authentication needed for web UI
+
+3. **Postal** (Optional - Production only):
+   - Full-featured mail server for real email delivery
+   - Admin UI: `https://postal.yourdomain.com`
+   - Requires DNS configuration (SPF, DKIM, DMARC)
+   - Supports multiple organizations and mail servers
+
+### 📮 Service Integration
+
+All services automatically use the configured SMTP settings via environment variables:
+
+```bash
+# Universal SMTP settings in .env (automatically configured)
+SMTP_HOST=mailpit        # or postal
+SMTP_PORT=1025           # or 25 for postal
+SMTP_USER=admin
+SMTP_PASS=admin
+SMTP_FROM=noreply@yourdomain.com
+SMTP_SECURE=false
+```
+
+#### n8n Email Configuration
+
+n8n automatically uses the SMTP settings for:
+- User invitations
+- Password resets
+- Workflow notifications
+- Send Email node
+
+**Additional n8n-specific variables (auto-configured):**
+```bash
+N8N_EMAIL_MODE=smtp
+N8N_SMTP_HOST=${SMTP_HOST}
+N8N_SMTP_PORT=${SMTP_PORT}
+N8N_SMTP_USER=${SMTP_USER}
+N8N_SMTP_PASS=${SMTP_PASS}
+N8N_SMTP_SENDER=${SMTP_FROM}
+N8N_SMTP_SSL=${SMTP_SECURE}
+```
+
+**Using Send Email node in workflows:**
+1. Add Send Email node to your workflow
+2. Create SMTP credentials:
+   - Host: Use `mailpit` (internal) or `${SMTP_HOST}`
+   - Port: 1025 (or `${SMTP_PORT}`)
+   - User: admin
+   - Password: admin
+   - SSL/TLS: OFF for Mailpit
+
+#### Supabase Email Configuration
+
+Supabase uses the mail system for:
+- User registration confirmations
+- Password reset emails
+- Magic link authentication
+
+The configuration is automatic, no manual setup needed.
+
+#### Odoo Email Configuration
+
+Odoo can use the mail system for:
+- Customer invoices
+- Order confirmations
+- Internal notifications
+
+**Configure in Odoo:**
+1. Go to Settings → Technical → Outgoing Mail Servers
+2. Create new server:
+   - SMTP Server: `mailpit` (or `postal`)
+   - Port: 1025 (or 25)
+   - Connection Security: None
+   - Username/Password: admin/admin
+
+#### Other Services
+
+Most services that support SMTP can be configured similarly:
+- **Host**: `mailpit` (from within Docker network)
+- **Port**: 1025
+- **Authentication**: Usually not required for Mailpit
+- **SSL/TLS**: Disabled
+
+### 🔄 Switching Mail Modes
+
+To switch between Mailpit and Postal after installation:
+
+```bash
+# Edit .env file
+nano .env
+
+# Change mail mode
+MAIL_MODE=mailpit  # or postal
+SMTP_HOST=mailpit  # or postal
+SMTP_PORT=1025     # or 25 for postal
+
+# Restart all services
+docker compose -p localai restart
+```
+
+### 📊 Viewing Captured Emails
+
+**Mailpit Web UI:**
+- URL: `https://mail.yourdomain.com`
+- Features:
+  - Search emails
+  - View HTML/Text/Source
+  - Download attachments
+  - Real-time updates
+  - API for automation
+
+**Example: Testing email in development:**
+```javascript
+// n8n workflow to test email
+1. Manual Trigger
+2. Send Email node:
+   - To: test@example.com
+   - Subject: Test from AI LaunchKit
+   - Message: This email was captured by Mailpit!
+3. Check Mailpit UI to see the email
+```
+
+### 🚀 Production Setup with Postal
+
+If you choose Postal for production:
+
+1. **Initial Setup:**
+   - Access `https://postal.yourdomain.com`
+   - Login with credentials from installation
+   - Create organization
+   - Create mail server
+
+2. **DNS Configuration Required:**
+   ```
+   MX    mail.yourdomain.com
+   TXT   v=spf1 include:spf.postal.yourdomain.com ~all
+   DKIM  (generated by Postal)
+   DMARC v=DMARC1; p=quarantine
+   ```
+
+3. **Generate SMTP Credentials:**
+   - In Postal UI → Credentials
+   - Create new SMTP user
+   - Update .env with new credentials
+
+### 🛡️ Security Notes
+
+- **Mailpit**: No authentication by default (development use)
+- **Postal**: Basic Auth protection via Caddy
+- **Internal SMTP**: Services communicate internally without auth
+- **Port 25**: May be blocked by VPS provider (contact support)
+
+### ⚙️ Troubleshooting Mail Issues
+
+**Emails not appearing in Mailpit:**
+```bash
+# Check if Mailpit is running
+docker ps | grep mailpit
+
+# Check Mailpit logs
+docker logs mailpit
+
+# Test SMTP connection from n8n
+docker exec n8n nc -zv mailpit 1025
+```
+
+**Service can't send emails:**
+```bash
+# Check SMTP settings in .env
+grep "SMTP_" .env
+
+# Verify internal DNS
+docker exec [service] ping mailpit
+
+# Check service logs
+docker logs [service] | grep -i smtp
+```
+
+**Switching from dev to production:**
+1. Update domain in .env
+2. Re-run `sudo bash ./scripts/03_generate_secrets.sh`
+3. Choose Postal when prompted
+4. Configure DNS records
+5. Test with a real email address
 
 ---
 
@@ -1005,6 +1222,7 @@ Filters: {
 
 // 3. Loop Over Opportunities
 // 4. Odoo Node: Create Activity
+    method: "POST",
 Operation: Create
 Resource: Activity
 Fields: {
@@ -1017,6 +1235,7 @@ Fields: {
 }
 
 // 5. Send Slack/Email Notification
+// Using the configured mail system - emails will be captured by Mailpit in dev
 ```
 
 #### Advanced: Odoo API via HTTP Request
@@ -1198,7 +1417,6 @@ for (const competitor of competitors) {
   
   // Search for community sentiment
   const sentiment = await $http.request({
-    method: "POST",
     url: "http://perplexica:3000/api/search",
     body: {
       query: `${competitor} reviews opinions`,
@@ -1279,9 +1497,9 @@ The Speech Stack provides OpenAI-compatible APIs for speech-to-text and text-to-
 3. HTTP Request → Transcribe with Whisper
 4. AI Agent → Process text with ChatGPT/Claude
 5. HTTP Request → Generate speech with TTS
+
 6. Telegram → Send audio response
 ```
-
 ### 🇩🇪 Adding German Voices to TTS
 
 To add German voices (or other languages) to the Text-to-Speech service:
@@ -1359,6 +1577,7 @@ LibreTranslate provides a self-hosted translation API with 50+ languages, perfec
   {
     "q": "{{ $json.text }}"
   }
+- **Symptom:** "Port already allocated" error during startup
   ```
 
 #### Get Available Languages
@@ -1475,7 +1694,7 @@ Body: {
    - Extract entities and relationships
 6. HTTP Request → Query for specific insights
 7. Format Response → Create summary report
-8. Send Email → Deliver insights
+8. Send Email → Deliver insights (via Mailpit in dev)
 ```
 
 #### Query Modes Explained
@@ -1644,6 +1863,124 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
 - **Video Guide**: [AI Starter Kit Walkthrough](https://youtu.be/pOsO40HSbOo)
 
 ### Troubleshooting
+
+<details>
+<summary><b>📧 Mail System Issues</b></summary>
+
+#### Mailpit Not Receiving Emails
+
+**Symptom:** Emails sent from services don't appear in Mailpit UI
+
+**Solutions:**
+```bash
+# 1. Check if Mailpit is running
+docker ps | grep mailpit
+
+# 2. Check Mailpit logs
+docker logs mailpit
+
+# 3. Test SMTP connectivity from n8n
+docker exec n8n nc -zv mailpit 1025
+
+# 4. Verify environment variables
+grep "SMTP_\|MAIL_MODE" .env
+```
+
+#### Service Can't Send Emails
+
+**Symptom:** Error messages about SMTP connection failures
+
+**Solutions:**
+```bash
+# 1. Check service configuration
+docker exec [service-name] printenv | grep SMTP
+
+# 2. Test internal DNS resolution
+docker exec [service-name] ping mailpit
+
+# 3. Check service logs for SMTP errors
+docker logs [service-name] | grep -i smtp
+
+# 4. Restart the service
+docker compose restart [service-name]
+```
+
+#### n8n Send Email Node Not Working
+
+**Symptom:** Send Email node fails with connection error
+
+**Solution:**
+1. Create new SMTP credential in n8n:
+   - Host: `mailpit` (not localhost!)
+   - Port: `1025`
+   - User: `admin`
+   - Password: `admin`
+   - SSL/TLS: **OFF**
+   - Sender Email: `noreply@yourdomain.com`
+
+2. Test with simple workflow:
+   ```javascript
+   Manual Trigger → Send Email → Set recipient to test@example.com
+   ```
+
+#### Switching to Production (Postal)
+
+**Steps to migrate from development to production:**
+```bash
+# 1. Change domain in .env
+nano .env
+# Update USER_DOMAIN_NAME from sslip.io to real domain
+
+# 2. Re-run secrets generation
+sudo bash ./scripts/03_generate_secrets.sh
+# Choose option 2 (Postal) when prompted
+
+# 3. Start Postal containers
+docker compose -p localai --profile postal up -d
+
+# 4. Configure DNS records (required for Postal)
+# Add these to your domain's DNS:
+MX     mail.yourdomain.com    10
+TXT    v=spf1 include:spf.postal.yourdomain.com ~all
+# DKIM will be provided by Postal UI
+
+# 5. Access Postal admin
+# https://postal.yourdomain.com
+# Create organization and mail server
+```
+
+#### Port 25 Blocked by VPS Provider
+
+**Symptom:** Postal can't send external emails
+
+**Solutions:**
+1. **Contact VPS support** to unblock port 25
+2. **Use alternative ports** (587 with TLS)
+3. **Use relay service** (SendGrid, AWS SES) as smarthost
+
+#### Postal Not Starting
+
+**Common issues:**
+```bash
+# Check all Postal components
+docker ps | grep postal
+
+# Check MariaDB
+docker logs postal-mariadb
+
+# Check RabbitMQ
+docker logs postal-rabbitmq
+
+# Check main Postal container
+docker logs postal
+
+# Common fix: Reset Postal data
+docker compose -p localai down
+docker volume rm localai_postal_mariadb localai_postal_rabbitmq
+docker compose -p localai --profile postal up -d
+```
+
+</details>
 
 <details>
 <summary><b>🚨 502 Bad Gateway Errors</b></summary>
@@ -1884,7 +2221,6 @@ If problems persist after trying these solutions:
 <summary><b>🎙️ Speech Stack Issues</b></summary>
 
 #### Port Conflicts
-- **Symptom:** "Port already allocated" error during startup
 - **Common cause:** Port 8000 is used by Kong/Supabase
 - **Solution:** Speech Stack uses port 8001 for Whisper and 5001 for TTS to avoid conflicts
 
@@ -2144,6 +2480,8 @@ graph TD
     A --> D[ComfyUI - Image Gen]
     A --> E[Open WebUI - Chat]
     A --> F[Other Services]
+    A --> MP[Mailpit - Mail UI]
+    A --> PO[Postal - Mail Admin]
     
     CF[Cloudflare Tunnel] -.-> A
     
@@ -2156,6 +2494,10 @@ graph TD
     B --> O[Qdrant/Weaviate - Vectors]
     B --> P[Neo4j - Knowledge Graph]
     B --> LR[LightRAG - Graph RAG]
+    B --> SMTP[Mail System]
+    
+    SMTP --> MP2[Mailpit SMTP]
+    SMTP --> PO2[Postal SMTP]
     
     C --> J[Ollama - Local LLMs]
     D --> J

@@ -175,6 +175,17 @@
     reverse_proxy leantime:8080
 }
 
+# Cal.com - Open Source Scheduling Platform
+{$CALCOM_HOSTNAME} {
+    reverse_proxy calcom:3000 {
+        # Important for WebSocket support
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
+
 # ============================================================================
 # MAIL SERVICES
 # ============================================================================

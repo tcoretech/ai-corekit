@@ -70,6 +70,8 @@ declare -A VARS_TO_GENERATE=(
     ["MYSQL_ROOT_PASSWORD"]="password:32"
     ["LEANTIME_DB_PASSWORD"]="password:32"
     ["LEANTIME_SESSION_PASSWORD"]="password:64"
+    ["CALCOM_NEXTAUTH_SECRET"]="apikey:32"
+    ["CALCOM_ENCRYPTION_KEY"]="apikey:32"
     # Mail Services
     ["POSTAL_PASSWORD"]="password:32"
     ["POSTAL_DB_ROOT_PASSWORD"]="password:32"

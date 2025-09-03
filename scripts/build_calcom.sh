@@ -24,7 +24,7 @@ if [ -f "../.env" ]; then
     echo "Using configuration from parent .env..."
     
     # Extract necessary variables
-    DOMAIN=$(grep "^DOMAIN=" ../.env | cut -d '=' -f2 | tr -d '"')
+    DOMAIN=$(grep "^USER_DOMAIN_NAME=" ../.env | cut -d '=' -f2 | tr -d '"')
     POSTGRES_PASSWORD=$(grep "^POSTGRES_PASSWORD=" ../.env | cut -d '=' -f2 | tr -d '"')
     
     # Create .env for Cal.com build

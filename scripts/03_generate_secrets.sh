@@ -497,7 +497,7 @@ detect_and_configure_mail() {
 }
 
 # Force EMAIL_* variables to always mirror SMTP_* for compatibility
-# This ensures services like Baserow always use the current mail configuration
+# This ensures services like Baserow and CalCom always use the current mail configuration
 force_update_email_variables() {
     # Always update EMAIL_* to match current SMTP_* values
     _update_or_add_env_var "EMAIL_FROM" "${generated_values[SMTP_FROM]:-noreply@local}"
@@ -507,6 +507,12 @@ force_update_email_variables() {
     _update_or_add_env_var "EMAIL_SMTP_USER" "${generated_values[SMTP_USER]:-admin}"
     _update_or_add_env_var "EMAIL_SMTP_PASSWORD" "${generated_values[SMTP_PASS]:-admin}"
     _update_or_add_env_var "EMAIL_SMTP_USE_TLS" "${generated_values[SMTP_SECURE]:-false}"
+
+    # CalCom EMAIL_SERVER_* variables (other prefix, same values)
+    _update_or_add_env_var "EMAIL_SERVER_HOST" "${generated_values[SMTP_HOST]:-mailpit}"
+    _update_or_add_env_var "EMAIL_SERVER_PORT" "${generated_values[SMTP_PORT]:-1025}"
+    _update_or_add_env_var "EMAIL_SERVER_USER" "${generated_values[SMTP_USER]:-admin}"
+    _update_or_add_env_var "EMAIL_SERVER_PASSWORD" "${generated_values[SMTP_PASS]:-admin}"
 }
 
 # --- Main Logic ---

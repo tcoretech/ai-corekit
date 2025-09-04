@@ -37,7 +37,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 
 ## ✨ What's Included
 
-### 📧 Mail System (NEW!)
+### 📧 Mail System
 
 | Tool | Description | Always Active | Purpose |
 |------|-------------|---------------|----------|

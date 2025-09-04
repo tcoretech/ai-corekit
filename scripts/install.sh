@@ -101,6 +101,20 @@ log_info "========== STEP 4a: Setting up Perplexica (if selected) =========="
 bash "$SCRIPT_DIR/04a_setup_perplexica.sh" || { log_error "Perplexica setup failed"; exit 1; }
 log_success "Perplexica setup complete!"
 
+log_info "========== STEP 4b: Building Cal.com (if selected) =========="
+# Check if calcom profile is in COMPOSE_PROFILES
+if grep -q "calcom" .env 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"calcom"* ]]; then
+    if [ -f "$SCRIPT_DIR/build_calcom.sh" ]; then
+        log_info "Cal.com selected - preparing build..."
+        bash "$SCRIPT_DIR/build_calcom.sh" || { log_error "Cal.com build preparation failed"; exit 1; }
+    else
+        log_warning "Cal.com selected but build script not found"
+    fi
+else
+    log_info "Cal.com not selected, skipping build"
+fi
+log_success "Cal.com build step complete!"
+
 log_info "========== STEP 5: Running Services =========="
 bash "$SCRIPT_DIR/05_run_services.sh" || { log_error "Running Services failed"; exit 1; }
 log_success "Running Services complete!"

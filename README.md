@@ -68,6 +68,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
+| **[Cal.com](https://github.com/calcom/cal.com)** | Open-source scheduling platform | Meeting bookings, team calendars, payment integrations | `cal.yourdomain.com` |
 | **[Vikunja](https://vikunja.io)** | Modern task management platform | Kanban boards, Gantt charts, team collaboration, CalDAV | `vikunja.yourdomain.com` |
 | **[Leantime](https://leantime.io)** | Goal-oriented project management suite | ADHD-friendly PM, time tracking, sprints, strategy tools | `leantime.yourdomain.com` |
 | **[Baserow](https://github.com/bram2w/baserow)** | Airtable Alternative with real-time collaboration | Database management, project tracking, collaborative workflows | `baserow.yourdomain.com` |
@@ -259,7 +260,7 @@ SMTP_PASS=admin
 SMTP_FROM=noreply@yourdomain.com
 SMTP_SECURE=false
 ```
-**Important:** The `EMAIL_*` variables automatically mirror the `SMTP_*` settings. When switching between Mailpit and Postal, all EMAIL_* variables are automatically updated to match the current mail configuration. This ensures services like Baserow always use the correct mail settings without manual intervention.
+**Important:** The `EMAIL_*` variables automatically mirror the `SMTP_*` settings. When switching between Mailpit and Postal, all EMAIL_* variables are automatically updated to match the current mail configuration. This ensures services like Baserow and Cal.com always use the correct mail settings without manual intervention.
 
 #### n8n Email Configuration
 
@@ -312,6 +313,16 @@ Odoo can use the mail system for:
    - Port: 1025 (or 25)
    - Connection Security: None
    - Username/Password: admin/admin
+
+#### Cal.com Email Configuration
+
+Cal.com automatically uses the mail system for:
+- Booking confirmations to both parties
+- Calendar invitations (.ics files)
+- Reminder notifications
+- Cancellation/rescheduling notices
+
+The configuration is automatic via `EMAIL_*` environment variables that mirror your SMTP settings.
 
 #### Other Services
 
@@ -453,6 +464,321 @@ Arguments: -i /data/media/input.mp4 -vn -codec:a mp3 /data/media/output.mp3
 2. Describe: "Modern pricing card with gradient"
 3. Get React/Vue/HTML component instantly
 ```
+
+## 📅 Cal.com Scheduling Platform Integration
+
+Cal.com provides a powerful open-source scheduling platform that seamlessly integrates with n8n for automated booking workflows. It's the perfect self-hosted alternative to Calendly with extensive customization options.
+
+### Initial Setup
+
+**First Login to Cal.com:**
+1. Navigate to `https://cal.yourdomain.com`
+2. First user to register becomes admin
+3. Complete onboarding wizard:
+   - Set your availability schedule
+   - Connect calendar services (optional)
+   - Create event types (15min call, 30min meeting, etc.)
+4. Your booking link: `https://cal.yourdomain.com/[username]`
+
+**Generate API Key for n8n:**
+1. Go to Settings → Developer → API Keys
+2. Click "Create new API key"
+3. Name it "n8n Integration"
+4. Copy the key for use in n8n
+
+### Native n8n Cal.com Integration
+
+n8n provides native Cal.com nodes for seamless integration:
+
+#### Cal.com Trigger Node
+
+The Cal.com Trigger node listens for events in your Cal.com account:
+
+**Available Trigger Events:**
+- `booking.created` - New booking made
+- `booking.rescheduled` - Booking time changed
+- `booking.cancelled` - Booking cancelled
+- `booking.completed` - Meeting completed
+- `booking.rejected` - Booking rejected
+- `booking.requested` - Booking request received (for approval)
+
+**Setup Cal.com Trigger:**
+1. Add Cal.com Trigger node to your workflow
+2. Create Cal.com credentials:
+   - **API Key**: Your generated key from Cal.com
+   - **Base URL**: `http://calcom:3000` (internal) or `https://cal.yourdomain.com` (external)
+3. Select trigger events to listen for
+4. Activate workflow to start receiving webhooks
+
+#### Cal.com Node (Actions)
+
+The Cal.com node provides actions to interact with Cal.com:
+
+**Available Operations:**
+- **Event Types**: List, get, create, update, delete event types
+- **Bookings**: List, get, cancel, confirm bookings
+- **Availability**: Get/set availability schedules
+- **Users**: Get user information
+- **Webhooks**: Manage webhooks programmatically
+
+### Example: Automated Booking Confirmation Workflow
+
+```javascript
+// 1. Cal.com Trigger Node
+Trigger: booking.created
+
+// 2. Slack Node
+Send message to #sales channel:
+"New booking: {{ $json.title }}
+Customer: {{ $json.attendees[0].name }}
+Time: {{ $json.startTime }}
+Type: {{ $json.eventType.title }}"
+
+// 3. Google Calendar Node
+Create calendar event with meeting details
+
+// 4. Send Email Node (via Mailpit/Postal)
+To: {{ $json.attendees[0].email }}
+Subject: Booking Confirmed - {{ $json.title }}
+Body: Custom welcome email with meeting link
+
+// 5. Airtable/Baserow Node
+Create record in CRM with booking details
+```
+
+### Example: AI-Enhanced Booking Assistant
+
+```javascript
+// 1. Cal.com Trigger Node
+Trigger: booking.created
+
+// 2. HTTP Request Node - Research Company
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.attendees[0].email.split('@')[1] }} company information",
+  "mode": "webSearch"
+}
+
+// 3. OpenAI/Ollama Node - Generate Briefing
+Prompt: |
+  Create a meeting briefing for:
+  Meeting: {{ $json.title }}
+  Attendee: {{ $json.attendees[0].name }}
+  Company Research: {{ $json.research }}
+  
+  Include:
+  - Key talking points
+  - Relevant questions to ask
+  - Company background summary
+
+// 4. Slack/Email Node
+Send briefing to host 30 minutes before meeting
+
+// 5. Cal.com Node - Add Notes
+Operation: Update Booking
+Add briefing to booking notes for reference
+```
+
+### Example: Availability Sync Workflow
+
+```javascript
+// 1. Schedule Trigger
+Every day at 8 AM
+
+// 2. Google Calendar Node
+Get events for next 7 days
+
+// 3. Code Node - Process Busy Times
+const events = $input.all();
+const busySlots = events.map(event => ({
+  start: event.json.start.dateTime,
+  end: event.json.end.dateTime
+}));
+return busySlots;
+
+// 4. Cal.com Node
+Operation: Update Availability
+Block times based on external calendar
+
+// 5. Notification
+Confirm sync completed
+```
+
+### Example: Follow-up Automation
+
+```javascript
+// 1. Cal.com Trigger
+Trigger: booking.completed
+
+// 2. Wait Node
+Wait 1 hour after meeting end
+
+// 3. Send Email Node
+To: {{ $json.attendees[0].email }}
+Subject: Thank you for meeting with us!
+Body: |
+  Hi {{ $json.attendees[0].name }},
+  
+  Thank you for taking the time to meet today.
+  
+  As discussed, here are the next steps:
+  [Auto-populate based on meeting type]
+  
+  You can book a follow-up meeting here:
+  https://cal.yourdomain.com/{{ $json.organizer.username }}/followup
+
+// 4. CRM Update
+Mark meeting as completed
+Schedule follow-up task
+```
+
+### Example: Smart Scheduling with AI
+
+```javascript
+// 1. Webhook Trigger
+Receive scheduling request via form/chat
+
+// 2. OpenAI Node - Parse Request
+Extract: preferred times, duration, urgency
+
+// 3. Cal.com Node - Get Availability
+Operation: Get available slots
+Filter by AI-extracted preferences
+
+// 4. Code Node - Rank Slots
+Rank slots by:
+- Customer preference
+- Your optimal times
+- Buffer time needs
+
+// 5. Cal.com Node - Create Booking
+Operation: Create booking
+Use top-ranked slot
+
+// 6. Send Confirmation
+Email/SMS with calendar invite
+```
+
+### Advanced Cal.com API Usage
+
+For operations not available in the native node, use HTTP Request:
+
+```javascript
+// Get all event types with full details
+Method: GET
+URL: http://calcom:3000/api/v2/event-types
+Headers: {
+  "Authorization": "Bearer cal_api_key_xxx",
+  "Content-Type": "application/json"
+}
+
+// Create custom availability schedule
+Method: POST
+URL: http://calcom:3000/api/v2/schedules
+Body: {
+  "name": "Summer Hours",
+  "timeZone": "Europe/Berlin",
+  "availability": [
+    {
+      "days": [1, 2, 3, 4, 5],
+      "startTime": "09:00",
+      "endTime": "17:00"
+    }
+  ]
+}
+
+// Bulk cancel bookings
+Method: POST
+URL: http://calcom:3000/api/v2/bookings/cancel
+Body: {
+  "bookingIds": [123, 124, 125],
+  "reason": "Holiday closure"
+}
+```
+
+### Cal.com Features for Automation
+
+**Event Types:**
+- **Recurring Events**: Weekly standups, monthly reviews
+- **Team Events**: Round-robin assignment, collective availability
+- **Paid Events**: Stripe/PayPal integration for consultations
+- **Approval Required**: Screen bookings before confirmation
+
+**Integrations:**
+- **Video Conferencing**: Zoom, Google Meet, Jitsi (auto-generated links)
+- **Calendar Sync**: Google Calendar, Office 365, CalDAV
+- **Payment Processing**: Stripe, PayPal for paid consultations
+- **Analytics**: Track no-shows, popular times, conversion rates
+
+**Customization:**
+- **Custom Fields**: Collect additional info during booking
+- **Workflows**: Set up reminders, follow-ups (complements n8n)
+- **Webhooks**: Real-time events to n8n workflows
+- **Embed Options**: Add booking widget to websites
+
+### Tips for Cal.com + n8n Integration
+
+1. **Use Internal URLs**: From n8n, use `http://calcom:3000` not the external URL
+2. **API Key Security**: Store Cal.com API key in n8n credentials, not in code
+3. **Webhook Deduplication**: Cal.com may send webhooks multiple times - add deduplication logic
+4. **Time Zones**: Cal.com uses UTC by default - convert for local times
+5. **Rate Limiting**: Add delays between bulk operations
+6. **Error Handling**: Use Try/Catch nodes for resilient workflows
+7. **Testing**: Use Mailpit to catch all booking confirmation emails during development
+
+### Common Cal.com Webhook Payload
+
+```json
+{
+  "triggerEvent": "booking.created",
+  "payload": {
+    "id": 12345,
+    "uid": "unique-booking-id",
+    "title": "30 Min Meeting",
+    "description": "Let's discuss the project",
+    "startTime": "2025-01-15T10:00:00.000Z",
+    "endTime": "2025-01-15T10:30:00.000Z",
+    "organizer": {
+      "name": "John Host",
+      "email": "john@example.com",
+      "username": "john"
+    },
+    "attendees": [
+      {
+        "name": "Jane Guest",
+        "email": "jane@example.com"
+      }
+    ],
+    "eventType": {
+      "id": 1,
+      "title": "30 Min Meeting",
+      "slug": "30min"
+    },
+    "location": "Google Meet",
+    "conferenceUrl": "https://meet.google.com/xyz-abc",
+    "status": "ACCEPTED"
+  }
+}
+```
+
+### Email Notifications
+
+Cal.com automatically sends emails for:
+- **Booking Confirmations**: Sent to both organizer and attendee
+- **Reminders**: Configurable timing before meetings
+- **Cancellations**: Notification to all parties
+- **Rescheduling**: Update emails with new time
+
+All emails are captured by Mailpit in development or sent via Postal in production, based on your mail configuration.
+
+### Production Considerations
+
+1. **Calendar Connections**: Connect Google/Office365 for real-time availability
+2. **Custom Domain**: Use your domain for professional appearance
+3. **Analytics**: Monitor booking rates, no-shows, popular times
+4. **Team Coordination**: Set up team events for sales, support
+5. **Backup**: Regular database backups of booking data
+6. **GDPR**: Configure data retention policies
 
 ## ✅ Vikunja Task Management Integration
 
@@ -1500,9 +1826,9 @@ The Speech Stack provides OpenAI-compatible APIs for speech-to-text and text-to-
 3. HTTP Request → Transcribe with Whisper
 4. AI Agent → Process text with ChatGPT/Claude
 5. HTTP Request → Generate speech with TTS
-
 6. Telegram → Send audio response
 ```
+
 ### 🇩🇪 Adding German Voices to TTS
 
 To add German voices (or other languages) to the Text-to-Speech service:
@@ -1580,7 +1906,6 @@ LibreTranslate provides a self-hosted translation API with 50+ languages, perfec
   {
     "q": "{{ $json.text }}"
   }
-- **Symptom:** "Port already allocated" error during startup
   ```
 
 #### Get Available Languages
@@ -2065,7 +2390,7 @@ docker compose stop [SERVICE_NAME]
 **Symptoms:**
 - Service works after 5-10 minutes
 - Container is running but not ready
-- Especially common with: Supabase, Dify, ComfyUI
+- Especially common with: Supabase, Dify, ComfyUI, Cal.com
 
 **Solution:**
 ```bash
@@ -2073,6 +2398,7 @@ docker compose stop [SERVICE_NAME]
 # Check progress with:
 docker logs [SERVICE_NAME] --follow
 
+# For Cal.com, first build can take 10-15 minutes
 # For n8n with workflows import, this can take 30+ minutes
 ```
 
@@ -2151,6 +2477,14 @@ docker ps | grep supabase
 docker logs supabase-kong --tail 50
 ```
 
+##### Cal.com
+```bash
+# Long build time on first start
+# Check build progress:
+docker logs calcom --follow
+# Can take 10-15 minutes for initial build
+```
+
 ##### bolt.diy
 ```bash
 # Requires proper hostname configuration
@@ -2168,7 +2502,7 @@ grep BOLT_HOSTNAME .env
 
 2. **Check requirements before installation:**
    - Each service adds ~200-500MB RAM usage
-   - Some services (ComfyUI, Dify) need 1-2GB alone
+   - Some services (ComfyUI, Dify, Cal.com) need 1-2GB alone
 
 3. **Use monitoring:**
    ```bash
@@ -2485,6 +2819,7 @@ graph TD
     A --> F[Other Services]
     A --> MP[Mailpit - Mail UI]
     A --> PO[Postal - Mail Admin]
+    A --> CAL[Cal.com - Scheduling]
     
     CF[Cloudflare Tunnel] -.-> A
     
@@ -2498,6 +2833,11 @@ graph TD
     B --> P[Neo4j - Knowledge Graph]
     B --> LR[LightRAG - Graph RAG]
     B --> SMTP[Mail System]
+    B --> CAL2[Cal.com API]
+    
+    CAL --> G
+    CAL --> H
+    CAL --> SMTP
     
     SMTP --> MP2[Mailpit SMTP]
     SMTP --> PO2[Postal SMTP]

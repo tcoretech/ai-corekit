@@ -63,6 +63,7 @@ base_services_data=(
     "baserow" "Baserow (Airtable Alternative)"
     "vikunja" "Vikunja (Modern Task Management - Todoist/TickTick alternative)"
     "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
+    "calcom" "Cal.com (Open Source Scheduling Platform)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"
     "qdrant" "Qdrant (Vector Database)"
     "supabase" "Supabase (Backend as a Service)"

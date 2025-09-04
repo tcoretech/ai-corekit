@@ -37,6 +37,7 @@ volumes:
   postal_rabbitmq:
   postal_assets:
   postal_uploads:
+  calcom_data:
 
 x-n8n: &service-n8n
   build:
@@ -319,6 +320,7 @@ services:
       - WEBUI_HOSTNAME=${WEBUI_HOSTNAME}
       - WHISPER_AUTH_USER=${WHISPER_AUTH_USER}
       - WHISPER_AUTH_PASSWORD_HASH=${WHISPER_AUTH_PASSWORD_HASH}
+      - CALCOM_HOSTNAME=${CALCOM_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - POSTAL_HOSTNAME=${POSTAL_HOSTNAME}
@@ -1150,6 +1152,63 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - searxng
+
+  calcom:
+    build:
+      context: ./calcom-docker
+      dockerfile: Dockerfile
+      args:
+        - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/calcom
+        - NEXT_PUBLIC_WEBAPP_URL=https://cal.${DOMAIN}
+        - NEXT_PUBLIC_API_V2_URL=https://cal.${DOMAIN}/api/v2
+        - NEXT_PUBLIC_WEBSITE_URL=https://cal.${DOMAIN}
+    container_name: calcom
+    profiles: ["calcom"]
+    restart: unless-stopped
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/calcom
+      - DATABASE_DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/calcom
+      
+      # URLs
+      - NEXT_PUBLIC_WEBAPP_URL=https://cal.${DOMAIN}
+      - NEXT_PUBLIC_API_V2_URL=https://cal.${DOMAIN}/api/v2
+      - NEXT_PUBLIC_WEBSITE_URL=https://cal.${DOMAIN}
+      - NEXTAUTH_URL=https://cal.${DOMAIN}
+      - CAL_URL=https://cal.${DOMAIN}
+      
+      # Security
+      - NEXTAUTH_SECRET=${CALCOM_NEXTAUTH_SECRET}
+      - CALENDSO_ENCRYPTION_KEY=${CALCOM_ENCRYPTION_KEY}
+      
+      # Email (using AI LaunchKit mail system)
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_SERVER_HOST=${SMTP_HOST}
+      - EMAIL_SERVER_PORT=${SMTP_PORT}
+      - EMAIL_SERVER_USER=${SMTP_USER:-}
+      - EMAIL_SERVER_PASSWORD=${SMTP_PASSWORD:-}
+      - SEND_FEEDBACK_EMAIL=false
+      
+      # Features
+      - NEXT_PUBLIC_DISABLE_SIGNUP=false
+      - TELEMETRY_DISABLED=1
+      - NODE_ENV=production
+    volumes:
+      - calcom_data:/app/data
+      - ./shared:/data/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s  # 5 minutes for build
 
   # ============================================================================
   # MAIL SERVICES

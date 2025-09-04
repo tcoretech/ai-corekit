@@ -70,6 +70,8 @@ declare -A VARS_TO_GENERATE=(
     ["MYSQL_ROOT_PASSWORD"]="password:32"
     ["LEANTIME_DB_PASSWORD"]="password:32"
     ["LEANTIME_SESSION_PASSWORD"]="password:64"
+    ["CALCOM_NEXTAUTH_SECRET"]="apikey:32"
+    ["CALCOM_ENCRYPTION_KEY"]="apikey:32"
     # Mail Services
     ["POSTAL_PASSWORD"]="password:32"
     ["POSTAL_DB_ROOT_PASSWORD"]="password:32"
@@ -129,6 +131,7 @@ if [[ -v existing_env_vars[USER_DOMAIN_NAME] && -n "${existing_env_vars[USER_DOM
     # Ensure this value is carried over to generated_values for writing and template processing
     # If it came from existing_env_vars, it might already be there, but this ensures it.
     generated_values["USER_DOMAIN_NAME"]="$DOMAIN"
+    generated_values["DOMAIN"]="$DOMAIN"  # Also set DOMAIN for services that expect it
 else
     while true; do
         echo ""

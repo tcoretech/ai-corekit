@@ -51,12 +51,19 @@ else
     log_warning "'apt-get' not found. Skipping system package update. This is normal on non-debian systems."
 fi
 
-
-# Execute the rest of the update process using the (potentially updated) apply_update.sh
-bash "$APPLY_UPDATE_SCRIPT"
-
-# The final success message will now come from apply_update.sh
-log_info "Update script finished." # Changed final message
+# Build Cal.com if selected (needed for updates)
+log_info "Checking if Cal.com needs to be built..."
+if grep -q "calcom" "$PROJECT_ROOT/.env" 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"calcom"* ]]; then
+    if [ -f "$SCRIPT_DIR/build_calcom.sh" ]; then
+        log_info "Cal.com detected - preparing build..."
+        bash "$SCRIPT_DIR/build_calcom.sh" || { log_error "Cal.com build preparation failed"; exit 1; }
+        log_success "Cal.com build preparation complete!"
+    else
+        log_warning "Cal.com selected but build script not found"
+    fi
+else
+    log_info "Cal.com not selected, skipping build"
+fi
 
 # Execute the rest of the update process using the (potentially updated) apply_update.sh
 bash "$APPLY_UPDATE_SCRIPT"

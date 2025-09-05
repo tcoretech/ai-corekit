@@ -174,8 +174,8 @@ Pre-installed in the n8n container for seamless media manipulation:
 ### Prerequisites
 
 1. **Server**: Ubuntu 24.04 LTS (64-bit)
-   - Minimum: 4GB RAM, 2 CPU cores, 30GB disk (n8n + Flowise only)
-   - Recommended: 8GB RAM, 4 CPU cores, 60GB disk (all services)
+   - Minimum: 4 GB RAM, 2 CPU cores, 30GB disk (n8n + Flowise only)
+   - Recommended: 16+ GB RAM, 8+ CPU cores, 120GB disk (all services)
 
 2. **Domain**: A registered domain with wildcard DNS
    ```

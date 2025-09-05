@@ -78,6 +78,7 @@ declare -A VARS_TO_GENERATE=(
     ["POSTAL_RABBITMQ_PASSWORD"]="password:32"
     ["POSTAL_SMTP_PASSWORD"]="password:24"
     ["SMTP_PASS"]="password:16"
+    ["POSTAL_SECRET_KEY"]="hex:64"
 )
 
 # Initialize existing_env_vars and attempt to read .env if it exists

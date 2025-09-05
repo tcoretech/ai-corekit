@@ -375,6 +375,13 @@ if is_profile_active "calcom"; then
   echo "  Using: ${MAIL_MODE} (${SMTP_HOST}:${SMTP_PORT})"
   echo "  Bookings will ${MAIL_MODE:+$([ "$MAIL_MODE" == "mailpit" ] && echo "be captured locally" || echo "be sent via Postal")}"
   echo
+  echo "📚 Documentation:"
+  echo "  Setup Guide: ~/ai-launchkit/docs/CALCOM_SETUP.md"
+  echo "  - Google Calendar integration instructions"
+  echo "  - Zoom, Stripe, MS365 integrations"
+  echo "  - Troubleshooting guide"
+  echo "  Online: https://github.com/freddy-schuetz/ai-launchkit/blob/main/docs/CALCOM_SETUP.md"  
+  echo
   echo "n8n Integration:"
   echo "  Base URL: http://calcom:3000/api/v2"
   echo "  Auth: Generate API key in Settings → Developer → API Keys"

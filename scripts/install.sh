@@ -147,6 +147,16 @@ else
 fi
 log_success "Mailserver setup step complete!"
 
+# Create noreply account
+if docker ps | grep -q mailserver; then
+    log_info "Creating noreply email account..."
+    MAIL_NOREPLY_PASSWORD=$(grep "^MAIL_NOREPLY_PASSWORD=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    if [[ -n "$MAIL_NOREPLY_PASSWORD" ]]; then
+        docker exec mailserver setup email add noreply@${BASE_DOMAIN} ${MAIL_NOREPLY_PASSWORD} 2>/dev/null || true
+        log_success "Email account noreply@${BASE_DOMAIN} created"
+    fi
+fi
+
 # Setup Google Calendar AFTER STARTED SERVICES
 if grep -q "calcom" .env 2>/dev/null && [ -f "$SCRIPT_DIR/setup_calcom_google.sh" ]; then
     log_info "Configuring Google Calendar for Cal.com..."

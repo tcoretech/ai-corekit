@@ -435,9 +435,6 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",calcom,"* ]]; then
     fi
 fi
 
-# Make the script executable (though install.sh calls it with bash)
-chmod +x "$SCRIPT_DIR/04_wizard.sh"
-
 # Docker-Mailserver account setup (if mailserver profile was selected)
 if [[ ",$COMPOSE_PROFILES_VALUE," == *",mailserver,"* ]]; then
     log_info ""
@@ -452,11 +449,7 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",mailserver,"* ]]; then
         ACCOUNTS_DIR="$PROJECT_ROOT/docker-data/dms/config"
         mkdir -p "$ACCOUNTS_DIR"
         
-        # Create postfix-accounts.cf with plain password
-        # Docker-Mailserver will hash it on first start
-        echo "noreply@${BASE_DOMAIN}|${MAIL_NOREPLY_PASSWORD}" > "$ACCOUNTS_DIR/postfix-accounts.cf"
-        
-        # Also update SMTP settings in .env for mailserver mode
+        # Remove ALL old SMTP and EMAIL settings
         sed -i.bak "/^SMTP_HOST=/d" "$ENV_FILE"
         sed -i.bak "/^SMTP_PORT=/d" "$ENV_FILE"
         sed -i.bak "/^SMTP_USER=/d" "$ENV_FILE"
@@ -465,6 +458,16 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",mailserver,"* ]]; then
         sed -i.bak "/^SMTP_SECURE=/d" "$ENV_FILE"
         sed -i.bak "/^MAIL_MODE=/d" "$ENV_FILE"
         
+        # WICHTIG: Auch EMAIL_* Variablen löschen und neu setzen!
+        sed -i.bak "/^EMAIL_SMTP=/d" "$ENV_FILE"
+        sed -i.bak "/^EMAIL_SMTP_HOST=/d" "$ENV_FILE"
+        sed -i.bak "/^EMAIL_SMTP_PORT=/d" "$ENV_FILE"
+        sed -i.bak "/^EMAIL_SMTP_USER=/d" "$ENV_FILE"
+        sed -i.bak "/^EMAIL_SMTP_PASSWORD=/d" "$ENV_FILE"
+        sed -i.bak "/^EMAIL_SMTP_USE_TLS=/d" "$ENV_FILE"
+        sed -i.bak "/^EMAIL_FROM=/d" "$ENV_FILE"
+        
+        # Set all variables for mailserver
         echo "MAIL_MODE=mailserver" >> "$ENV_FILE"
         echo "SMTP_HOST=mailserver" >> "$ENV_FILE"
         echo "SMTP_PORT=587" >> "$ENV_FILE"
@@ -473,11 +476,23 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",mailserver,"* ]]; then
         echo "SMTP_FROM=noreply@${BASE_DOMAIN}" >> "$ENV_FILE"
         echo "SMTP_SECURE=true" >> "$ENV_FILE"
         
-        log_success "Docker-Mailserver account configured: noreply@${BASE_DOMAIN}"
+        # WICHTIG: Mirror to EMAIL_* for Baserow, Cal.com etc.
+        echo "EMAIL_SMTP=mailserver" >> "$ENV_FILE"
+        echo "EMAIL_SMTP_HOST=mailserver" >> "$ENV_FILE"
+        echo "EMAIL_SMTP_PORT=587" >> "$ENV_FILE"
+        echo "EMAIL_SMTP_USER=noreply@${BASE_DOMAIN}" >> "$ENV_FILE"
+        echo "EMAIL_SMTP_PASSWORD=${MAIL_NOREPLY_PASSWORD}" >> "$ENV_FILE"
+        echo "EMAIL_SMTP_USE_TLS=true" >> "$ENV_FILE"
+        echo "EMAIL_FROM=noreply@${BASE_DOMAIN}" >> "$ENV_FILE"
+        
+        log_success "Docker-Mailserver SMTP settings configured for all services"
         log_info "Remember to configure DNS records after installation!"
     else
-        log_warning "Could not configure Docker-Mailserver account - missing BASE_DOMAIN or password"
+        log_warning "Could not configure Docker-Mailserver - missing BASE_DOMAIN or password"
     fi
 fi
+
+# Make the script executable (though install.sh calls it with bash)
+chmod +x "$SCRIPT_DIR/04_wizard.sh"
 
 exit 0

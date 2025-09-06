@@ -1263,7 +1263,7 @@ services:
       - NETWORK_INTERFACE=
       
       # Security & SSL (Caddy Zertifikate nutzen)
-      - SSL_TYPE=manual
+      - SSL_TYPE=
       - SSL_CERT_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.crt
       - SSL_KEY_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.key
       
@@ -1283,10 +1283,6 @@ services:
       - DMS_DEBUG=0
       - POSTMASTER_ADDRESS=postmaster@${BASE_DOMAIN}
       - POSTFIX_MESSAGE_SIZE_LIMIT=20480000  # 20MB
-      
-      # Auto-configuration
-      - ENABLE_SETUP_AUTO_ACCOUNTS=1
-      - SETUP_AUTO_ACCOUNTS_FILE=/tmp/docker-mailserver/postfix-accounts.cf
       
     cap_add:
       - NET_ADMIN

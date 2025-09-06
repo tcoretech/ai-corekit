@@ -22,3 +22,6 @@ postal_assets/
 postal_uploads/
 calcom-docker/
 *.backup-postal
+docker-data/
+dkim_generation.log
+dkim_record.txt

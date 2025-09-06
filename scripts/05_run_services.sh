@@ -52,6 +52,12 @@ fi
 chmod 755 media temp
 log_info "Media directories created with correct permissions"
 
+# Setup Postal configuration if needed
+if [ -f "./scripts/setup_postal.sh" ]; then
+  log_info "Checking for Postal setup..."
+  bash ./scripts/setup_postal.sh
+fi
+
 log_info "Launching services using start_services.py..."
 # Execute start_services.py
 ./start_services.py

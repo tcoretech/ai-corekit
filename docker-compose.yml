@@ -1277,7 +1277,7 @@ services:
     container_name: postal
     profiles: ["postal"]
     restart: unless-stopped
-    command: ["postal", "run"]
+    command: ["postal", "web-server"]
     depends_on:
       - postal-mariadb
       - postal-rabbitmq
@@ -1293,6 +1293,16 @@ services:
       POSTAL_EMAIL: ${POSTAL_EMAIL:-${USER_EMAIL}}
       POSTAL_USERNAME: ${POSTAL_USERNAME}
       POSTAL_PASSWORD: ${POSTAL_PASSWORD}
+      POSTAL_DB_HOST: postal-mariadb
+      POSTAL_DB_NAME: postal
+      POSTAL_DB_USERNAME: root
+      POSTAL_DB_PASSWORD: ${POSTAL_DB_ROOT_PASSWORD}
+      POSTAL_RABBITMQ_HOST: postal-rabbitmq
+      POSTAL_RABBITMQ_USERNAME: postal
+      POSTAL_RABBITMQ_PASSWORD: ${POSTAL_RABBITMQ_PASSWORD}
+      POSTAL_RABBITMQ_VHOST: /postal
+      POSTAL_WEB_HOST: ${POSTAL_HOSTNAME}
+      POSTAL_WEB_PROTOCOL: https
     ports:
       - "25:25"     # SMTP - May be blocked by VPS provider
       - "587:587"   # Submission (TLS)
@@ -1315,3 +1325,11 @@ services:
       - postal_uploads:/storage
     environment:
       POSTAL_CONFIG_FILE: /config/postal.yml
+      POSTAL_DB_HOST: postal-mariadb
+      POSTAL_DB_NAME: postal
+      POSTAL_DB_USERNAME: root
+      POSTAL_DB_PASSWORD: ${POSTAL_DB_ROOT_PASSWORD}
+      POSTAL_RABBITMQ_HOST: postal-rabbitmq
+      POSTAL_RABBITMQ_USERNAME: postal
+      POSTAL_RABBITMQ_PASSWORD: ${POSTAL_RABBITMQ_PASSWORD}
+      POSTAL_RABBITMQ_VHOST: /postal

@@ -197,9 +197,6 @@
 
 # Postal Web Interface (Production Mail Server - optional)
 {$POSTAL_HOSTNAME} {
-    basic_auth {
-        {$POSTAL_USERNAME} {$POSTAL_PASSWORD_HASH}
-    }
     reverse_proxy postal:5000
 }
 

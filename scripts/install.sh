@@ -119,6 +119,19 @@ log_info "========== STEP 5: Running Services =========="
 bash "$SCRIPT_DIR/05_run_services.sh" || { log_error "Running Services failed"; exit 1; }
 log_success "Running Services complete!"
 
+log_info "========== STEP 5: Running Services =========="
+bash "$SCRIPT_DIR/05_run_services.sh" || { log_error "Running Services failed"; exit 1; }
+log_success "Running Services complete!"
+
+# Setup Google Calendar AFTER STARTED SERVICES
+if grep -q "calcom" .env 2>/dev/null && [ -f "$SCRIPT_DIR/setup_calcom_google.sh" ]; then
+    log_info "Configuring Google Calendar for Cal.com..."
+    sleep 30
+    bash "$SCRIPT_DIR/setup_calcom_google.sh" || true
+fi
+
+log_info "========== STEP 6: Generating Final Report =========="
+
 log_info "========== STEP 6: Generating Final Report =========="
 # --- Installation Summary ---
 log_info "Installation Summary. The following steps were performed by the scripts:"

@@ -19,14 +19,47 @@ echo "Updating Cal.com source code..."
 git pull
 git submodule update --init
 
+# --- Patch Dockerfile automatically ---
+echo "Patching Dockerfile for Google Calendar integration..."
+
+# 1. Insert ARG GOOGLE_API_CREDENTIALS, if not existing
+if ! grep -q "ARG GOOGLE_API_CREDENTIALS" Dockerfile; then
+    sed -i '/^ARG ORGANIZATIONS_ENABLED/a ARG GOOGLE_API_CREDENTIALS' Dockerfile
+    echo "  -> Added ARG GOOGLE_API_CREDENTIALS"
+else
+    echo "  -> ARG GOOGLE_API_CREDENTIALS already exists."
+fi
+
+# 2. Insert GOOGLE_API_CREDENTIALS to ENV-Block, if not existing
+if ! grep -q "GOOGLE_API_CREDENTIALS=\$GOOGLE_API_CREDENTIALS" Dockerfile; then
+    # Füge einen Backslash an die vorherige Zeile an
+    sed -i 's/^\( *BUILD_STANDALONE=true\).*/\1 \\/' Dockerfile
+    # Insert the new ENV-line
+    sed -i '/^\( *BUILD_STANDALONE=true\)/a \    GOOGLE_API_CREDENTIALS=$GOOGLE_API_CREDENTIALS' Dockerfile
+    echo "  -> Added GOOGLE_API_CREDENTIALS to ENV block."
+else
+    echo "  -> GOOGLE_API_CREDENTIALS already in ENV block."
+fi
+# --- End of Patch-Blocks ---
+
+
 # Copy our .env values to build environment
 if [ -f "../.env" ]; then
     echo "Using configuration from parent .env..."
-    
+
     # Extract necessary variables
     DOMAIN=$(grep "^USER_DOMAIN_NAME=" ../.env | cut -d '=' -f2 | tr -d '"')
     POSTGRES_PASSWORD=$(grep "^POSTGRES_PASSWORD=" ../.env | cut -d '=' -f2 | tr -d '"')
-    
+
+    # Google Calendar Integration
+    GOOGLE_CLIENT_ID=$(sed -n "s/^GOOGLE_CLIENT_ID=//p" ../.env | sed "s/['\"]//g")
+    GOOGLE_CLIENT_SECRET=$(sed -n "s/^GOOGLE_CLIENT_SECRET=//p" ../.env | sed "s/['\"]//g")
+
+    if [[ -n "$GOOGLE_CLIENT_ID" && -n "$GOOGLE_CLIENT_SECRET" ]]; then
+        echo "Adding Google Calendar credentials..."
+        GOOGLE_CREDS="{\"web\":{\"client_id\":\"${GOOGLE_CLIENT_ID}\",\"client_secret\":\"${GOOGLE_CLIENT_SECRET}\",\"redirect_uris\":[\"https://cal.${DOMAIN}/api/integrations/googlecalendar/callback\",\"https://cal.${DOMAIN}/api/auth/callback/google\"]}}"
+    fi
+
     # Create .env for Cal.com build
     cat > .env << EOF
 # Database (using AI LaunchKit's PostgreSQL)
@@ -40,22 +73,29 @@ NEXT_PUBLIC_WEBSITE_URL=https://cal.${DOMAIN}
 NEXTAUTH_URL=https://cal.${DOMAIN}
 CAL_URL=https://cal.${DOMAIN}
 
-# Security (will be generated if not exists)
-NEXTAUTH_SECRET=$(openssl rand -base64 32)
-CALENDSO_ENCRYPTION_KEY=$(openssl rand -base64 32)
+# Security
+NEXTAUTH_SECRET=\$(openssl rand -base64 32)
+CALENDSO_ENCRYPTION_KEY=\$(openssl rand -base64 32)
 
-# Email (using AI LaunchKit's mail system)
-EMAIL_FROM=${EMAIL_FROM:-noreply@${DOMAIN}}
-EMAIL_SERVER_HOST=${SMTP_HOST:-mailpit}
-EMAIL_SERVER_PORT=${SMTP_PORT:-1025}
-EMAIL_SERVER_USER=${SMTP_USER:-}
-EMAIL_SERVER_PASSWORD=${SMTP_PASSWORD:-}
+# Email
+EMAIL_FROM=\${EMAIL_FROM:-noreply@\${DOMAIN}}
+EMAIL_SERVER_HOST=\${SMTP_HOST:-mailpit}
+EMAIL_SERVER_PORT=\${SMTP_PORT:-1025}
+EMAIL_SERVER_USER=\${SMTP_USER:-}
+EMAIL_SERVER_PASSWORD=\${SMTP_PASSWORD:-}
 SEND_FEEDBACK_EMAIL=false
 
 # Features
 NEXT_PUBLIC_DISABLE_SIGNUP=false
 TELEMETRY_DISABLED=1
 EOF
+    
+    # Append the Google line separately. This is much safer.
+    if [[ -n "$GOOGLE_CREDS" ]]; then
+        echo "" >> .env
+        echo "# Google Calendar Integration" >> .env
+        echo "GOOGLE_API_CREDENTIALS=${GOOGLE_CREDS}" >> .env
+    fi
 fi
 
 echo "========================================="

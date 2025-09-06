@@ -119,9 +119,33 @@ log_info "========== STEP 5: Running Services =========="
 bash "$SCRIPT_DIR/05_run_services.sh" || { log_error "Running Services failed"; exit 1; }
 log_success "Running Services complete!"
 
-log_info "========== STEP 5: Running Services =========="
-bash "$SCRIPT_DIR/05_run_services.sh" || { log_error "Running Services failed"; exit 1; }
-log_success "Running Services complete!"
+log_info "========== STEP 5a: Setting up Docker-Mailserver (if selected) =========="
+# Check if mailserver profile is in COMPOSE_PROFILES
+if grep -q "mailserver" .env 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"mailserver"* ]]; then
+    if docker ps | grep -q mailserver; then
+        log_info "Generating DKIM keys for Docker-Mailserver..."
+        sleep 15  # Wait for container to be fully ready
+        
+        # Load BASE_DOMAIN from .env
+        BASE_DOMAIN=$(grep "^BASE_DOMAIN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+        
+        # Generate DKIM
+        docker exec mailserver setup config dkim 2>&1 | tee dkim_generation.log || true
+        
+        # Extract the DKIM record
+        if docker exec mailserver test -f /tmp/docker-mailserver/opendkim/keys/${BASE_DOMAIN}/mail.txt 2>/dev/null; then
+            docker exec mailserver cat /tmp/docker-mailserver/opendkim/keys/${BASE_DOMAIN}/mail.txt > dkim_record.txt 2>/dev/null || true
+            log_success "DKIM keys generated and saved to dkim_record.txt"
+        else
+            log_warning "DKIM generation may have failed - check manually with: docker exec mailserver setup config dkim"
+        fi
+    else
+        log_warning "Mailserver container not running - skipping DKIM generation"
+    fi
+else
+    log_info "Docker-Mailserver not selected, skipping"
+fi
+log_success "Mailserver setup step complete!"
 
 # Setup Google Calendar AFTER STARTED SERVICES
 if grep -q "calcom" .env 2>/dev/null && [ -f "$SCRIPT_DIR/setup_calcom_google.sh" ]; then

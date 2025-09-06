@@ -42,11 +42,12 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | Tool | Description | Always Active | Purpose |
 |------|-------------|---------------|----------|
 | **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | Development/Testing - captures all emails |
+| **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production mail server | ⚡ Optional | Real email delivery for production |
 
 **Mail Configuration:**
-- Automatically configured for all services
+- Mailpit automatically configured for all services (always active)
+- Docker-Mailserver available for production email delivery (optional)
 - Web UI to view all captured emails
-- No emails leave your server - perfect for development and testing
 - Zero manual configuration needed!
 
 ### 🔧 Workflow Automation
@@ -198,9 +199,11 @@ The installer will ask you for:
 3. **API keys** (optional) - OpenAI, Anthropic, Groq for enhanced AI features
 4. **Community workflows** - Import 300+ n8n templates (optional, 20-30 min)
 5. **Worker count** - Number of n8n workers for parallel processing (1-4)
-6. **Service selection** - Choose which tools to install (including Speech Stack)
+6. **Service selection** - Choose which tools to install (including Docker-Mailserver for production email)
 
-**Mail Configuration:** Mailpit is automatically configured to capture all emails sent by services for development and testing purposes.
+**Mail Configuration:** 
+- Mailpit is automatically configured to capture all emails for development/testing (always active)
+- Docker-Mailserver can be selected during installation for production email delivery
 
 **Installation time:** 10-15 minutes (plus optional workflow import)
 
@@ -224,7 +227,7 @@ docker compose restart
 
 ## 📧 Mail Configuration
 
-AI LaunchKit includes Mailpit as a mail catcher that captures all emails sent by services for development and testing purposes.
+AI LaunchKit includes a dual mail system: Mailpit for development/testing (always active) and optional Docker-Mailserver for production email delivery.
 
 ### 🎯 How It Works
 
@@ -233,20 +236,117 @@ AI LaunchKit includes Mailpit as a mail catcher that captures all emails sent by
 - Web UI to view emails: `https://mail.yourdomain.com`
 - No emails leave your server - perfect for development and testing
 - No authentication needed for web UI
-- All services automatically configured to use Mailpit
+- All services automatically configured to use Mailpit by default
+
+**Docker-Mailserver** (Optional - Production):
+- Full-featured production mail server
+- Real email delivery with SMTP/IMAP support
+- DKIM, SPF, DMARC support for deliverability
+- Spam filtering with Rspamd
+- Select during installation wizard
+
+### 📬 Docker-Mailserver Setup (Production)
+
+If you selected Docker-Mailserver during installation:
+
+#### Automatic Configuration
+- A `noreply@yourdomain.com` account is created automatically
+- All services are configured to use Docker-Mailserver for real email delivery
+- SMTP settings are automatically applied to all services
+
+#### Required DNS Records
+
+After installation, configure these DNS records for proper email delivery:
+
+1. **MX Record:**
+   ```
+   Type: MX
+   Name: @ (or yourdomain.com)
+   Value: mail.yourdomain.com
+   Priority: 10
+   ```
+
+2. **A Record for mail subdomain:**
+   ```
+   Type: A
+   Name: mail
+   Value: YOUR_SERVER_IP
+   ```
+
+3. **SPF Record:**
+   ```
+   Type: TXT
+   Name: @ (or yourdomain.com)
+   Value: "v=spf1 mx ~all"
+   ```
+
+4. **DMARC Record:**
+   ```
+   Type: TXT
+   Name: _dmarc
+   Value: "v=DMARC1; p=none; rua=mailto:postmaster@yourdomain.com"
+   ```
+
+5. **DKIM Record (after installation):**
+   ```bash
+   # Generate DKIM keys
+   docker exec mailserver setup config dkim
+   
+   # Display the public key to add to DNS
+   docker exec mailserver cat /tmp/docker-mailserver/opendkim/keys/yourdomain.com/mail.txt
+   
+   # Add the displayed key as TXT record for mail._domainkey.yourdomain.com
+   ```
+
+#### Managing Email Accounts
+
+```bash
+# Add a new email account
+docker exec -it mailserver setup email add user@yourdomain.com
+
+# List all email accounts
+docker exec mailserver setup email list
+
+# Delete an email account
+docker exec mailserver setup email del user@yourdomain.com
+
+# Check mail queue
+docker exec mailserver postqueue -p
+
+# View logs
+docker logs mailserver
+```
+
+#### Service Configuration
+
+When Docker-Mailserver is active, all services automatically use these settings:
+- **SMTP Host:** `mailserver` (internal)
+- **Port:** 587
+- **Security:** STARTTLS
+- **From:** `noreply@yourdomain.com`
+- **Authentication:** Configured automatically
 
 ### 📮 Service Integration
 
-All services automatically use Mailpit via environment variables:
+All services automatically use the configured mail system via environment variables:
 
 ```bash
 # Universal SMTP settings in .env (automatically configured)
+# For Mailpit (default):
 SMTP_HOST=mailpit
 SMTP_PORT=1025
 SMTP_USER=admin
 SMTP_PASS=admin
 SMTP_FROM=noreply@yourdomain.com
 SMTP_SECURE=false
+
+# For Docker-Mailserver (if selected):
+SMTP_HOST=mailserver
+SMTP_PORT=587
+SMTP_USER=noreply@yourdomain.com
+SMTP_PASS=[auto-generated-password]
+SMTP_FROM=noreply@yourdomain.com
+SMTP_SECURE=true
 ```
 
 #### n8n Email Configuration
@@ -259,12 +359,21 @@ n8n automatically uses the SMTP settings for:
 
 **Using Send Email node in workflows:**
 1. Add Send Email node to your workflow
-2. Create SMTP credentials:
-   - Host: Use `mailpit` (internal)
+2. Create SMTP credentials based on your mail mode:
+   
+   **For Mailpit (development):**
+   - Host: `mailpit`
    - Port: 1025
    - User: admin
    - Password: admin
    - SSL/TLS: OFF
+   
+   **For Docker-Mailserver (production):**
+   - Host: `mailserver`
+   - Port: 587
+   - User: noreply@yourdomain.com
+   - Password: [check .env file]
+   - SSL/TLS: STARTTLS
 
 #### Supabase Email Configuration
 
@@ -285,10 +394,8 @@ Odoo can use the mail system for:
 **Configure in Odoo:**
 1. Go to Settings → Technical → Outgoing Mail Servers
 2. Create new server:
-   - SMTP Server: `mailpit`
-   - Port: 1025
-   - Connection Security: None
-   - Username/Password: admin/admin
+   - For **Mailpit**: SMTP Server: `mailpit`, Port: 1025, No security
+   - For **Docker-Mailserver**: SMTP Server: `mailserver`, Port: 587, STARTTLS
 
 #### Cal.com Email Configuration
 
@@ -303,14 +410,12 @@ The configuration is automatic via `EMAIL_*` environment variables.
 #### Other Services
 
 Most services that support SMTP can be configured similarly:
-- **Host**: `mailpit` (from within Docker network)
-- **Port**: 1025
-- **Authentication**: Usually not required for Mailpit
-- **SSL/TLS**: Disabled
+- **Mailpit:** Host: `mailpit`, Port: 1025, No auth, No SSL
+- **Docker-Mailserver:** Host: `mailserver`, Port: 587, Auth required, STARTTLS
 
 ### 📊 Viewing Captured Emails
 
-**Mailpit Web UI:**
+**Mailpit Web UI (Development/Testing):**
 - URL: `https://mail.yourdomain.com`
 - Features:
   - Search emails
@@ -333,33 +438,55 @@ Most services that support SMTP can be configured similarly:
 ### 🛡️ Security Notes
 
 - **Mailpit**: No authentication by default (development use)
-- **Internal SMTP**: Services communicate internally without auth
-- For production email delivery, consider using external SMTP services like SendGrid, Mailgun, or AWS SES
+- **Docker-Mailserver**: Production-ready with authentication, spam filtering, and security features
+- **Internal SMTP**: Services communicate internally without exposing ports
+- For additional security, consider using external SMTP services like SendGrid, Mailgun, or AWS SES
 
 ### ⚙️ Troubleshooting Mail Issues
 
-**Emails not appearing in Mailpit:**
+**Emails not appearing:**
 ```bash
-# Check if Mailpit is running
+# Check if mail service is running
 docker ps | grep mailpit
+docker ps | grep mailserver
 
-# Check Mailpit logs
+# Check logs
 docker logs mailpit
+docker logs mailserver
 
 # Test SMTP connection from n8n
 docker exec n8n nc -zv mailpit 1025
+# or for Docker-Mailserver
+docker exec n8n nc -zv mailserver 587
 ```
 
 **Service can't send emails:**
 ```bash
 # Check SMTP settings in .env
-grep "SMTP_" .env
+grep "SMTP_\|MAIL_MODE" .env
 
 # Verify internal DNS
 docker exec [service] ping mailpit
+# or
+docker exec [service] ping mailserver
 
 # Check service logs
 docker logs [service] | grep -i smtp
+```
+
+**Docker-Mailserver specific issues:**
+```bash
+# Check DKIM configuration
+docker exec mailserver setup config dkim status
+
+# Verify account exists
+docker exec mailserver setup email list
+
+# Check authentication
+docker exec mailserver doveadm auth test noreply@yourdomain.com [password]
+
+# Monitor mail queue
+docker exec mailserver postqueue -p
 ```
 
 ---
@@ -463,7 +590,7 @@ Type: {{ $json.eventType.title }}"
 // 3. Google Calendar Node
 Create calendar event with meeting details
 
-// 4. Send Email Node (via Mailpit)
+// 4. Send Email Node (via configured mail system)
 To: {{ $json.attendees[0].email }}
 Subject: Booking Confirmed - {{ $json.title }}
 Body: Custom welcome email with meeting link
@@ -650,7 +777,7 @@ Body: {
 4. **Time Zones**: Cal.com uses UTC by default - convert for local times
 5. **Rate Limiting**: Add delays between bulk operations
 6. **Error Handling**: Use Try/Catch nodes for resilient workflows
-7. **Testing**: Use Mailpit to catch all booking confirmation emails during development
+7. **Testing**: Use Mailpit (or Docker-Mailserver) to catch all booking confirmation emails during development
 
 ### Common Cal.com Webhook Payload
 
@@ -695,7 +822,7 @@ Cal.com automatically sends emails for:
 - **Cancellations**: Notification to all parties
 - **Rescheduling**: Update emails with new time
 
-All emails are captured by Mailpit in development, based on your mail configuration.
+All emails are handled by your configured mail system (Mailpit for development, Docker-Mailserver for production).
 
 ### Production Considerations
 
@@ -1491,6 +1618,7 @@ Fields: {
 
 // 5. Send Slack/Email Notification
 // Using the configured mail system - emails will be captured by Mailpit in dev
+// or sent via Docker-Mailserver in production
 ```
 
 #### Advanced: Odoo API via HTTP Request
@@ -1948,7 +2076,7 @@ Body: {
    - Extract entities and relationships
 6. HTTP Request → Query for specific insights
 7. Format Response → Create summary report
-8. Send Email → Deliver insights (via Mailpit in dev)
+8. Send Email → Deliver insights (via configured mail system)
 ```
 
 #### Query Modes Explained
@@ -2140,6 +2268,32 @@ docker exec n8n nc -zv mailpit 1025
 grep "SMTP_\|MAIL_MODE" .env
 ```
 
+#### Docker-Mailserver Issues
+
+**Symptom:** Real emails not being delivered when Docker-Mailserver is configured
+
+**Solutions:**
+```bash
+# 1. Check if Docker-Mailserver is running
+docker ps | grep mailserver
+
+# 2. Check Docker-Mailserver logs
+docker logs mailserver
+
+# 3. Verify DNS records
+nslookup -type=MX yourdomain.com
+nslookup mail.yourdomain.com
+
+# 4. Test authentication
+docker exec mailserver doveadm auth test noreply@yourdomain.com [password]
+
+# 5. Check mail queue
+docker exec mailserver postqueue -p
+
+# 6. Verify DKIM configuration
+docker exec mailserver setup config dkim status
+```
+
 #### Service Can't Send Emails
 
 **Symptom:** Error messages about SMTP connection failures
@@ -2150,7 +2304,10 @@ grep "SMTP_\|MAIL_MODE" .env
 docker exec [service-name] printenv | grep SMTP
 
 # 2. Test internal DNS resolution
+# For Mailpit:
 docker exec [service-name] ping mailpit
+# For Docker-Mailserver:
+docker exec [service-name] ping mailserver
 
 # 3. Check service logs for SMTP errors
 docker logs [service-name] | grep -i smtp
@@ -2163,13 +2320,22 @@ docker compose restart [service-name]
 
 **Symptom:** Send Email node fails with connection error
 
-**Solution:**
+**Solution for Mailpit (Development):**
 1. Create new SMTP credential in n8n:
    - Host: `mailpit` (not localhost!)
    - Port: `1025`
    - User: `admin`
    - Password: `admin`
    - SSL/TLS: **OFF**
+   - Sender Email: `noreply@yourdomain.com`
+
+**Solution for Docker-Mailserver (Production):**
+1. Create new SMTP credential in n8n:
+   - Host: `mailserver`
+   - Port: `587`
+   - User: `noreply@yourdomain.com`
+   - Password: Check `.env` file for `MAIL_NOREPLY_PASSWORD`
+   - SSL/TLS: **STARTTLS**
    - Sender Email: `noreply@yourdomain.com`
 
 2. Test with simple workflow:
@@ -2708,6 +2874,7 @@ graph TD
     CAL --> SMTP
     
     SMTP --> MP2[Mailpit SMTP]
+    SMTP -.-> MS[Docker-Mailserver]
     
     C --> J[Ollama - Local LLMs]
     D --> J

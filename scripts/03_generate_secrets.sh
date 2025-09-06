@@ -74,6 +74,7 @@ declare -A VARS_TO_GENERATE=(
     ["CALCOM_ENCRYPTION_KEY"]="apikey:32"
     # Mail Services (keeping for future Docker-Mailserver)
     ["SMTP_PASS"]="password:16"
+    ["MAIL_NOREPLY_PASSWORD"]="password:32"
 )
 
 # Initialize existing_env_vars and attempt to read .env if it exists
@@ -427,6 +428,10 @@ detect_and_configure_mail() {
     if [[ -z "$BASE_DOMAIN" ]]; then
         echo "⚠️  BASE_DOMAIN not set - using default mail configuration"
         MAIL_MODE="mailpit"
+        SMTP_HOST="mailpit"
+        SMTP_PORT="1025"
+        SMTP_FROM="noreply@local"
+        SMTP_SECURE="false"
     elif [[ "$BASE_DOMAIN" == *"sslip.io" ]] || [[ "$BASE_DOMAIN" == *"nip.io" ]] || [[ "$BASE_DOMAIN" == *"localhost"* ]]; then
         echo "🔍 Detected development domain: $BASE_DOMAIN"
         echo "📬 Mailpit will be used for mail capture (no external mail delivery)"
@@ -437,36 +442,23 @@ detect_and_configure_mail() {
         SMTP_SECURE="false"
     else
         echo "🔍 Detected production domain: $BASE_DOMAIN"
-        echo "📬 Using Mailpit for mail capture"
-        echo ""
-        echo "Note: Production mail server (Docker-Mailserver) will be available in a future update."
-        echo "For now, all emails will be captured locally by Mailpit."
+        echo "📬 Default: Mailpit for mail capture"
+        echo "💡 Tip: Select 'Docker-Mailserver' in the wizard for real mail delivery"
         MAIL_MODE="mailpit"
         SMTP_HOST="mailpit"
         SMTP_PORT="1025"
         SMTP_FROM="noreply@${BASE_DOMAIN}"
         SMTP_SECURE="false"
-        
-        # TODO: Add Docker-Mailserver option here in future
-        # echo "Choose your mail configuration:"
-        # echo "  1) Mailpit (Development/Testing - captures all mail locally)"
-        # echo "  2) Docker-Mailserver (Production - real mail delivery)"
-        # echo
-        # read -p "Your choice [1-2] (default: 1): " mail_choice
     fi
 
     # Store mail configuration
     generated_values["MAIL_MODE"]="$MAIL_MODE"
-    generated_values["SMTP_HOST"]="$SMTP_HOST"
-    generated_values["SMTP_PORT"]="$SMTP_PORT"
-    generated_values["SMTP_FROM"]="$SMTP_FROM"
-    generated_values["SMTP_SECURE"]="$SMTP_SECURE"
-
-    # Set default SMTP credentials if not set
-    if [[ "$MAIL_MODE" == "mailpit" ]]; then
-        generated_values["SMTP_USER"]="admin"
-        generated_values["SMTP_PASS"]="admin"
-    fi
+    generated_values["SMTP_HOST"]="${SMTP_HOST:-mailpit}"
+    generated_values["SMTP_PORT"]="${SMTP_PORT:-1025}"
+    generated_values["SMTP_FROM"]="${SMTP_FROM:-noreply@local}"
+    generated_values["SMTP_SECURE"]="${SMTP_SECURE:-false}"
+    generated_values["SMTP_USER"]="admin"
+    generated_values["SMTP_PASS"]="admin"
 
     echo "✅ Mail configuration completed"
     echo

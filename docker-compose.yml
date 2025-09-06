@@ -319,6 +319,7 @@ services:
       - CALCOM_HOSTNAME=${CALCOM_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
+      - MAILSERVER_WEBMAIL_HOSTNAME=${MAILSERVER_WEBMAIL_HOSTNAME}
     cap_drop:
       - ALL
     cap_add:
@@ -1232,3 +1233,68 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+# Docker-Mailserver - Production email server
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:latest
+    container_name: mailserver
+    hostname: mail.${BASE_DOMAIN}
+    profiles: ["mailserver"]
+    restart: unless-stopped
+    ports:
+      - "25:25"     # SMTP (receiving)
+      - "587:587"   # SMTP (submission)
+      - "993:993"   # IMAP (optional, nur wenn User Mailboxen brauchen)
+    volumes:
+      - ./docker-data/dms/mail-data/:/var/mail/
+      - ./docker-data/dms/mail-state/:/var/mail-state/
+      - ./docker-data/dms/config/:/tmp/docker-mailserver/
+      - caddy-data:/certs/:ro  # Uses Caddy's Let's Encrypt Certificates
+      - /etc/localtime:/etc/localtime:ro
+      - ./shared:/data/shared
+    environment:
+      # Basic Configuration
+      - OVERRIDE_HOSTNAME=mail.${BASE_DOMAIN}
+      - LOG_LEVEL=info
+      - SUPERVISOR_LOGLEVEL=warn
+      
+      # Network
+      - PERMIT_DOCKER=network
+      - NETWORK_INTERFACE=
+      
+      # Security & SSL (Caddy Zertifikate nutzen)
+      - SSL_TYPE=manual
+      - SSL_CERT_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.crt
+      - SSL_KEY_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.key
+      
+      # Features
+      - ENABLE_RSPAMD=1          # Better than SpamAssassin
+      - ENABLE_CLAMAV=0          # Disabled by default (saves RAM)
+      - ENABLE_FAIL2BAN=1        # Brute-force protection
+      - ENABLE_POSTGREY=0        # Greylisting (optional)
+      - ENABLE_SASLAUTHD=0       # Not needed for basic setup
+      - ENABLE_SPAMASSASSIN=0    # Using Rspamd instead
+      - ENABLE_FETCHMAIL=0       # Not needed
+      - ENABLE_GETMAIL=0         # Not needed
+      - ENABLE_AMAVIS=0          # Not needed with Rspamd
+      
+      # Mail Settings
+      - ONE_DIR=1                # Better for Docker
+      - DMS_DEBUG=0
+      - POSTMASTER_ADDRESS=postmaster@${BASE_DOMAIN}
+      - POSTFIX_MESSAGE_SIZE_LIMIT=20480000  # 20MB
+      
+      # Auto-configuration
+      - ENABLE_SETUP_AUTO_ACCOUNTS=1
+      - SETUP_AUTO_ACCOUNTS_FILE=/tmp/docker-mailserver/postfix-accounts.cf
+      
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
+    healthcheck:
+      test: ["CMD", "ss", "-lnp", "|", "grep", ":25"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - caddy  # For SSL certificates

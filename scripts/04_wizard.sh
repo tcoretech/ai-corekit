@@ -64,6 +64,7 @@ base_services_data=(
     "vikunja" "Vikunja (Modern Task Management - Todoist/TickTick alternative)"
     "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
     "calcom" "Cal.com (Open Source Scheduling Platform)"
+    "mailserver" "Docker-Mailserver (Production email server for all services)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"
     "qdrant" "Qdrant (Vector Database)"
     "supabase" "Supabase (Backend as a Service)"
@@ -436,5 +437,47 @@ fi
 
 # Make the script executable (though install.sh calls it with bash)
 chmod +x "$SCRIPT_DIR/04_wizard.sh"
+
+# Docker-Mailserver account setup (if mailserver profile was selected)
+if [[ ",$COMPOSE_PROFILES_VALUE," == *",mailserver,"* ]]; then
+    log_info ""
+    log_info "Configuring Docker-Mailserver..."
+    
+    # Get BASE_DOMAIN and MAIL_NOREPLY_PASSWORD from .env
+    BASE_DOMAIN=$(grep "^BASE_DOMAIN=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    MAIL_NOREPLY_PASSWORD=$(grep "^MAIL_NOREPLY_PASSWORD=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    
+    if [[ -n "$BASE_DOMAIN" && -n "$MAIL_NOREPLY_PASSWORD" ]]; then
+        # Create directory for Docker-Mailserver config
+        ACCOUNTS_DIR="$PROJECT_ROOT/docker-data/dms/config"
+        mkdir -p "$ACCOUNTS_DIR"
+        
+        # Create postfix-accounts.cf with plain password
+        # Docker-Mailserver will hash it on first start
+        echo "noreply@${BASE_DOMAIN}|${MAIL_NOREPLY_PASSWORD}" > "$ACCOUNTS_DIR/postfix-accounts.cf"
+        
+        # Also update SMTP settings in .env for mailserver mode
+        sed -i.bak "/^SMTP_HOST=/d" "$ENV_FILE"
+        sed -i.bak "/^SMTP_PORT=/d" "$ENV_FILE"
+        sed -i.bak "/^SMTP_USER=/d" "$ENV_FILE"
+        sed -i.bak "/^SMTP_PASS=/d" "$ENV_FILE"
+        sed -i.bak "/^SMTP_FROM=/d" "$ENV_FILE"
+        sed -i.bak "/^SMTP_SECURE=/d" "$ENV_FILE"
+        sed -i.bak "/^MAIL_MODE=/d" "$ENV_FILE"
+        
+        echo "MAIL_MODE=mailserver" >> "$ENV_FILE"
+        echo "SMTP_HOST=mailserver" >> "$ENV_FILE"
+        echo "SMTP_PORT=587" >> "$ENV_FILE"
+        echo "SMTP_USER=noreply@${BASE_DOMAIN}" >> "$ENV_FILE"
+        echo "SMTP_PASS=${MAIL_NOREPLY_PASSWORD}" >> "$ENV_FILE"
+        echo "SMTP_FROM=noreply@${BASE_DOMAIN}" >> "$ENV_FILE"
+        echo "SMTP_SECURE=true" >> "$ENV_FILE"
+        
+        log_success "Docker-Mailserver account configured: noreply@${BASE_DOMAIN}"
+        log_info "Remember to configure DNS records after installation!"
+    else
+        log_warning "Could not configure Docker-Mailserver account - missing BASE_DOMAIN or password"
+    fi
+fi
 
 exit 0

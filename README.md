@@ -42,12 +42,11 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | Tool | Description | Always Active | Purpose |
 |------|-------------|---------------|----------|
 | **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | Development/Testing - captures all emails |
-| **[Postal](https://github.com/postalserver/postal)** | Full mail server | ❌ Optional | Production - real email delivery |
 
-**Smart Mail Configuration:**
-- Automatically detects development domains (sslip.io, nip.io) → uses Mailpit
-- For production domains → choice between Mailpit or Postal
-- All services automatically configured with correct SMTP settings
+**Mail Configuration:**
+- Automatically configured for all services
+- Web UI to view all captured emails
+- No emails leave your server - perfect for development and testing
 - Zero manual configuration needed!
 
 ### 🔧 Workflow Automation
@@ -201,9 +200,7 @@ The installer will ask you for:
 5. **Worker count** - Number of n8n workers for parallel processing (1-4)
 6. **Service selection** - Choose which tools to install (including Speech Stack)
 
-**🆕 Mail Configuration (Automatic):**
-- For `sslip.io`, `nip.io`, or `localhost` domains → Mailpit automatically configured
-- For real domains → Choose between Mailpit (testing) or Postal (production)
+**Mail Configuration:** Mailpit is automatically configured to capture all emails sent by services for development and testing purposes.
 
 **Installation time:** 10-15 minutes (plus optional workflow import)
 
@@ -227,40 +224,30 @@ docker compose restart
 
 ## 📧 Mail Configuration
 
-AI LaunchKit includes an intelligent dual mail system that automatically configures based on your domain type:
+AI LaunchKit includes Mailpit as a mail catcher that captures all emails sent by services for development and testing purposes.
 
 ### 🎯 How It Works
 
-1. **Automatic Domain Detection:**
-   - **Development domains** (`sslip.io`, `nip.io`, `localhost`): Automatically configures Mailpit
-   - **Production domains**: Asks whether you want Mailpit (testing) or Postal (real delivery)
-
-2. **Mailpit** (Always Active):
-   - Captures ALL emails sent by any service
-   - Web UI to view emails: `https://mail.yourdomain.com`
-   - No emails leave your server - perfect for development
-   - No authentication needed for web UI
-
-3. **Postal** (Optional - Production only):
-   - Full-featured mail server for real email delivery
-   - Admin UI: `https://postal.yourdomain.com`
-   - Requires DNS configuration (SPF, DKIM, DMARC)
-   - Supports multiple organizations and mail servers
+**Mailpit** (Always Active):
+- Captures ALL emails sent by any service
+- Web UI to view emails: `https://mail.yourdomain.com`
+- No emails leave your server - perfect for development and testing
+- No authentication needed for web UI
+- All services automatically configured to use Mailpit
 
 ### 📮 Service Integration
 
-All services automatically use the configured SMTP settings via environment variables:
+All services automatically use Mailpit via environment variables:
 
 ```bash
 # Universal SMTP settings in .env (automatically configured)
-SMTP_HOST=mailpit        # or postal
-SMTP_PORT=1025           # or 25 for postal
+SMTP_HOST=mailpit
+SMTP_PORT=1025
 SMTP_USER=admin
 SMTP_PASS=admin
 SMTP_FROM=noreply@yourdomain.com
 SMTP_SECURE=false
 ```
-**Important:** The `EMAIL_*` variables automatically mirror the `SMTP_*` settings. When switching between Mailpit and Postal, all EMAIL_* variables are automatically updated to match the current mail configuration. This ensures services like Baserow and Cal.com always use the correct mail settings without manual intervention.
 
 #### n8n Email Configuration
 
@@ -270,25 +257,14 @@ n8n automatically uses the SMTP settings for:
 - Workflow notifications
 - Send Email node
 
-**Additional n8n-specific variables (auto-configured):**
-```bash
-N8N_EMAIL_MODE=smtp
-N8N_SMTP_HOST=${SMTP_HOST}
-N8N_SMTP_PORT=${SMTP_PORT}
-N8N_SMTP_USER=${SMTP_USER}
-N8N_SMTP_PASS=${SMTP_PASS}
-N8N_SMTP_SENDER=${SMTP_FROM}
-N8N_SMTP_SSL=${SMTP_SECURE}
-```
-
 **Using Send Email node in workflows:**
 1. Add Send Email node to your workflow
 2. Create SMTP credentials:
-   - Host: Use `mailpit` (internal) or `${SMTP_HOST}`
-   - Port: 1025 (or `${SMTP_PORT}`)
+   - Host: Use `mailpit` (internal)
+   - Port: 1025
    - User: admin
    - Password: admin
-   - SSL/TLS: OFF for Mailpit
+   - SSL/TLS: OFF
 
 #### Supabase Email Configuration
 
@@ -309,8 +285,8 @@ Odoo can use the mail system for:
 **Configure in Odoo:**
 1. Go to Settings → Technical → Outgoing Mail Servers
 2. Create new server:
-   - SMTP Server: `mailpit` (or `postal`)
-   - Port: 1025 (or 25)
+   - SMTP Server: `mailpit`
+   - Port: 1025
    - Connection Security: None
    - Username/Password: admin/admin
 
@@ -322,7 +298,7 @@ Cal.com automatically uses the mail system for:
 - Reminder notifications
 - Cancellation/rescheduling notices
 
-The configuration is automatic via `EMAIL_*` environment variables that mirror your SMTP settings.
+The configuration is automatic via `EMAIL_*` environment variables.
 
 #### Other Services
 
@@ -331,25 +307,6 @@ Most services that support SMTP can be configured similarly:
 - **Port**: 1025
 - **Authentication**: Usually not required for Mailpit
 - **SSL/TLS**: Disabled
-
-### 🔄 Switching Mail Modes
-
-To switch between Mailpit and Postal after installation:
-
-```bash
-# Edit .env file
-nano .env
-
-# Change mail mode
-MAIL_MODE=mailpit  # or postal
-SMTP_HOST=mailpit  # or postal
-SMTP_PORT=1025     # or 25 for postal
-
-# Restart all services
-docker compose -p localai restart
-```
-
-**Note:** After changing `MAIL_MODE`, run `sudo bash ./scripts/03_generate_secrets.sh` to ensure all EMAIL_* variables are synchronized with the new SMTP_* settings.
 
 ### 📊 Viewing Captured Emails
 
@@ -373,35 +330,11 @@ docker compose -p localai restart
 3. Check Mailpit UI to see the email
 ```
 
-### 🚀 Production Setup with Postal
-
-If you choose Postal for production:
-
-1. **Initial Setup:**
-   - Access `https://postal.yourdomain.com`
-   - Login with credentials from installation
-   - Create organization
-   - Create mail server
-
-2. **DNS Configuration Required:**
-   ```
-   MX    mail.yourdomain.com
-   TXT   v=spf1 include:spf.postal.yourdomain.com ~all
-   DKIM  (generated by Postal)
-   DMARC v=DMARC1; p=quarantine
-   ```
-
-3. **Generate SMTP Credentials:**
-   - In Postal UI → Credentials
-   - Create new SMTP user
-   - Update .env with new credentials
-
 ### 🛡️ Security Notes
 
 - **Mailpit**: No authentication by default (development use)
-- **Postal**: Basic Auth protection via Caddy
 - **Internal SMTP**: Services communicate internally without auth
-- **Port 25**: May be blocked by VPS provider (contact support)
+- For production email delivery, consider using external SMTP services like SendGrid, Mailgun, or AWS SES
 
 ### ⚙️ Troubleshooting Mail Issues
 
@@ -428,13 +361,6 @@ docker exec [service] ping mailpit
 # Check service logs
 docker logs [service] | grep -i smtp
 ```
-
-**Switching from dev to production:**
-1. Update domain in .env
-2. Re-run `sudo bash ./scripts/03_generate_secrets.sh`
-3. Choose Postal when prompted
-4. Configure DNS records
-5. Test with a real email address
 
 ---
 
@@ -537,7 +463,7 @@ Type: {{ $json.eventType.title }}"
 // 3. Google Calendar Node
 Create calendar event with meeting details
 
-// 4. Send Email Node (via Mailpit/Postal)
+// 4. Send Email Node (via Mailpit)
 To: {{ $json.attendees[0].email }}
 Subject: Booking Confirmed - {{ $json.title }}
 Body: Custom welcome email with meeting link
@@ -769,7 +695,7 @@ Cal.com automatically sends emails for:
 - **Cancellations**: Notification to all parties
 - **Rescheduling**: Update emails with new time
 
-All emails are captured by Mailpit in development or sent via Postal in production, based on your mail configuration.
+All emails are captured by Mailpit in development, based on your mail configuration.
 
 ### Production Considerations
 
@@ -2251,63 +2177,6 @@ docker compose restart [service-name]
    Manual Trigger → Send Email → Set recipient to test@example.com
    ```
 
-#### Switching to Production (Postal)
-
-**Steps to migrate from development to production:**
-```bash
-# 1. Change domain in .env
-nano .env
-# Update USER_DOMAIN_NAME from sslip.io to real domain
-
-# 2. Re-run secrets generation
-sudo bash ./scripts/03_generate_secrets.sh
-# Choose option 2 (Postal) when prompted
-
-# 3. Start Postal containers
-docker compose -p localai --profile postal up -d
-
-# 4. Configure DNS records (required for Postal)
-# Add these to your domain's DNS:
-MX     mail.yourdomain.com    10
-TXT    v=spf1 include:spf.postal.yourdomain.com ~all
-# DKIM will be provided by Postal UI
-
-# 5. Access Postal admin
-# https://postal.yourdomain.com
-# Create organization and mail server
-```
-
-#### Port 25 Blocked by VPS Provider
-
-**Symptom:** Postal can't send external emails
-
-**Solutions:**
-1. **Contact VPS support** to unblock port 25
-2. **Use alternative ports** (587 with TLS)
-3. **Use relay service** (SendGrid, AWS SES) as smarthost
-
-#### Postal Not Starting
-
-**Common issues:**
-```bash
-# Check all Postal components
-docker ps | grep postal
-
-# Check MariaDB
-docker logs postal-mariadb
-
-# Check RabbitMQ
-docker logs postal-rabbitmq
-
-# Check main Postal container
-docker logs postal
-
-# Common fix: Reset Postal data
-docker compose -p localai down
-docker volume rm localai_postal_mariadb localai_postal_rabbitmq
-docker compose -p localai --profile postal up -d
-```
-
 </details>
 
 <details>
@@ -2818,7 +2687,6 @@ graph TD
     A --> E[Open WebUI - Chat]
     A --> F[Other Services]
     A --> MP[Mailpit - Mail UI]
-    A --> PO[Postal - Mail Admin]
     A --> CAL[Cal.com - Scheduling]
     
     CF[Cloudflare Tunnel] -.-> A
@@ -2840,7 +2708,6 @@ graph TD
     CAL --> SMTP
     
     SMTP --> MP2[Mailpit SMTP]
-    SMTP --> PO2[Postal SMTP]
     
     C --> J[Ollama - Local LLMs]
     D --> J

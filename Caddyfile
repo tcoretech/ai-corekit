@@ -195,11 +195,6 @@
     reverse_proxy mailpit:8025
 }
 
-# Postal Web Interface (Production Mail Server - optional)
-{$POSTAL_HOSTNAME} {
-    reverse_proxy postal:5000
-}
-
 # Neo4j
 {$NEO4J_HOSTNAME} {
     reverse_proxy neo4j:7474

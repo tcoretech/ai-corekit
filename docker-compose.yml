@@ -33,10 +33,6 @@ volumes:
   leantime-plugins:
   leantime-logs:
   mailpit_data:
-  postal_mariadb:
-  postal_rabbitmq:
-  postal_assets:
-  postal_uploads:
   calcom_data:
 
 x-n8n: &service-n8n
@@ -323,9 +319,6 @@ services:
       - CALCOM_HOSTNAME=${CALCOM_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
-      - POSTAL_HOSTNAME=${POSTAL_HOSTNAME}
-      - POSTAL_USERNAME=${POSTAL_USERNAME}
-      - POSTAL_PASSWORD_HASH=${POSTAL_PASSWORD_HASH}
     cap_drop:
       - ALL
     cap_add:
@@ -1239,97 +1232,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # ============================================================================
-  # POSTAL - Production Mail Server (OPTIONAL - requires real domain)
-  # ============================================================================
-  
-  postal-mariadb:
-    image: mariadb:10
-    container_name: postal-mariadb
-    profiles: ["postal"]
-    restart: unless-stopped
-    environment:
-      MARIADB_ROOT_PASSWORD: ${POSTAL_DB_ROOT_PASSWORD}
-      MARIADB_DATABASE: postal
-    volumes:
-      - postal_mariadb:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${POSTAL_DB_ROOT_PASSWORD}"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  postal-rabbitmq:
-    image: rabbitmq:3.8-alpine
-    container_name: postal-rabbitmq
-    profiles: ["postal"]
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: postal
-      RABBITMQ_DEFAULT_PASS: ${POSTAL_RABBITMQ_PASSWORD}
-      RABBITMQ_DEFAULT_VHOST: /postal
-    volumes:
-      - postal_rabbitmq:/var/lib/rabbitmq
-
-  postal:
-    image: ghcr.io/postalserver/postal:latest
-    container_name: postal
-    profiles: ["postal"]
-    restart: unless-stopped
-    command: ["postal", "web-server"]
-    depends_on:
-      - postal-mariadb
-      - postal-rabbitmq
-    volumes:
-      - ./postal/config:/config
-      - postal_assets:/opt/postal/public/assets
-      - postal_uploads:/storage
-      - ./shared:/data/shared
-    environment:
-      POSTAL_CONFIG_FILE: /config/postal.yml
-      POSTAL_FNAME: ${POSTAL_FNAME:-Postal}
-      POSTAL_LNAME: ${POSTAL_LNAME:-Admin}
-      POSTAL_EMAIL: ${POSTAL_EMAIL:-${USER_EMAIL}}
-      POSTAL_USERNAME: ${POSTAL_USERNAME}
-      POSTAL_PASSWORD: ${POSTAL_PASSWORD}
-      POSTAL_DB_HOST: postal-mariadb
-      POSTAL_DB_NAME: postal
-      POSTAL_DB_USERNAME: root
-      POSTAL_DB_PASSWORD: ${POSTAL_DB_ROOT_PASSWORD}
-      POSTAL_RABBITMQ_HOST: postal-rabbitmq
-      POSTAL_RABBITMQ_USERNAME: postal
-      POSTAL_RABBITMQ_PASSWORD: ${POSTAL_RABBITMQ_PASSWORD}
-      POSTAL_RABBITMQ_VHOST: /postal
-      POSTAL_WEB_HOST: ${POSTAL_HOSTNAME}
-      POSTAL_WEB_PROTOCOL: https
-    ports:
-      - "25:25"     # SMTP - May be blocked by VPS provider
-      - "587:587"   # Submission (TLS)
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  postal-worker:
-    image: ghcr.io/postalserver/postal:latest
-    container_name: postal-worker
-    profiles: ["postal"]
-    restart: unless-stopped
-    command: ["postal", "worker"]
-    depends_on:
-      - postal
-    volumes:
-      - ./postal/config:/config
-      - postal_uploads:/storage
-    environment:
-      POSTAL_CONFIG_FILE: /config/postal.yml
-      POSTAL_DB_HOST: postal-mariadb
-      POSTAL_DB_NAME: postal
-      POSTAL_DB_USERNAME: root
-      POSTAL_DB_PASSWORD: ${POSTAL_DB_ROOT_PASSWORD}
-      POSTAL_RABBITMQ_HOST: postal-rabbitmq
-      POSTAL_RABBITMQ_USERNAME: postal
-      POSTAL_RABBITMQ_PASSWORD: ${POSTAL_RABBITMQ_PASSWORD}
-      POSTAL_RABBITMQ_VHOST: /postal

@@ -72,13 +72,8 @@ declare -A VARS_TO_GENERATE=(
     ["LEANTIME_SESSION_PASSWORD"]="password:64"
     ["CALCOM_NEXTAUTH_SECRET"]="apikey:32"
     ["CALCOM_ENCRYPTION_KEY"]="apikey:32"
-    # Mail Services
-    ["POSTAL_PASSWORD"]="password:32"
-    ["POSTAL_DB_ROOT_PASSWORD"]="password:32"
-    ["POSTAL_RABBITMQ_PASSWORD"]="password:32"
-    ["POSTAL_SMTP_PASSWORD"]="password:24"
+    # Mail Services (keeping for future Docker-Mailserver)
     ["SMTP_PASS"]="password:16"
-    ["POSTAL_SECRET_KEY"]="hex:64"
 )
 
 # Initialize existing_env_vars and attempt to read .env if it exists
@@ -241,7 +236,7 @@ fi
 
 if [[ -v existing_env_vars[ANTHROPIC_API_KEY] ]]; then
     ANTHROPIC_API_KEY="${existing_env_vars[ANTHROPIC_API_KEY]}"
-    if [[ -n "$ANTHROPIC_API_KEY" ]]; then : 
+    if [[ -n "$ANTHROPIC_API_KEY" ]]; then :
     else
       log_info "Found empty Anthropic API Key in .env. You can provide one now or leave empty."
       echo ""
@@ -425,10 +420,10 @@ detect_and_configure_mail() {
     echo
     echo "📧 Configuring Mail System..."
     echo "=========================================="
-    
+
     # Get BASE_DOMAIN from generated_values
     BASE_DOMAIN="${generated_values[BASE_DOMAIN]}"
-    
+
     if [[ -z "$BASE_DOMAIN" ]]; then
         echo "⚠️  BASE_DOMAIN not set - using default mail configuration"
         MAIL_MODE="mailpit"
@@ -442,60 +437,37 @@ detect_and_configure_mail() {
         SMTP_SECURE="false"
     else
         echo "🔍 Detected production domain: $BASE_DOMAIN"
-        echo
-        echo "Choose your mail configuration:"
-        echo "  1) Mailpit (Development/Testing - captures all mail locally)"
-        echo "  2) Postal (Production - real mail delivery)"
-        echo
-        read -p "Your choice [1-2] (default: 1): " mail_choice
+        echo "📬 Using Mailpit for mail capture"
+        echo ""
+        echo "Note: Production mail server (Docker-Mailserver) will be available in a future update."
+        echo "For now, all emails will be captured locally by Mailpit."
+        MAIL_MODE="mailpit"
+        SMTP_HOST="mailpit"
+        SMTP_PORT="1025"
+        SMTP_FROM="noreply@${BASE_DOMAIN}"
+        SMTP_SECURE="false"
         
-        if [[ "$mail_choice" == "2" ]]; then
-            echo "📮 Postal selected for production mail delivery"
-            MAIL_MODE="postal"
-            SMTP_HOST="postal"
-            SMTP_PORT="25"
-            SMTP_FROM="noreply@${BASE_DOMAIN}"
-            SMTP_SECURE="false"
-            
-            # Add postal to COMPOSE_PROFILES if not already there
-            CURRENT_PROFILES="${existing_env_vars[COMPOSE_PROFILES]}"
-            if [[ ! "$CURRENT_PROFILES" == *"postal"* ]]; then
-                if [[ -n "$CURRENT_PROFILES" ]]; then
-                    NEW_PROFILES="${CURRENT_PROFILES},postal"
-                else
-                    NEW_PROFILES="postal"
-                fi
-                generated_values["COMPOSE_PROFILES"]="$NEW_PROFILES"
-            fi
-            
-            echo "⚠️  IMPORTANT: After installation, configure Postal:"
-            echo "   1. Access https://postal.${BASE_DOMAIN}"
-            echo "   2. Create organization and mail server"
-            echo "   3. Configure DNS records (SPF, DKIM, DMARC)"
-            echo "   4. Generate SMTP credentials for services"
-        else
-            echo "📬 Mailpit selected for mail capture"
-            MAIL_MODE="mailpit"
-            SMTP_HOST="mailpit"
-            SMTP_PORT="1025"
-            SMTP_FROM="noreply@${BASE_DOMAIN}"
-            SMTP_SECURE="false"
-        fi
+        # TODO: Add Docker-Mailserver option here in future
+        # echo "Choose your mail configuration:"
+        # echo "  1) Mailpit (Development/Testing - captures all mail locally)"
+        # echo "  2) Docker-Mailserver (Production - real mail delivery)"
+        # echo
+        # read -p "Your choice [1-2] (default: 1): " mail_choice
     fi
-    
+
     # Store mail configuration
     generated_values["MAIL_MODE"]="$MAIL_MODE"
     generated_values["SMTP_HOST"]="$SMTP_HOST"
     generated_values["SMTP_PORT"]="$SMTP_PORT"
     generated_values["SMTP_FROM"]="$SMTP_FROM"
     generated_values["SMTP_SECURE"]="$SMTP_SECURE"
-    
+
     # Set default SMTP credentials if not set
     if [[ "$MAIL_MODE" == "mailpit" ]]; then
         generated_values["SMTP_USER"]="admin"
         generated_values["SMTP_PASS"]="admin"
     fi
-    
+
     echo "✅ Mail configuration completed"
     echo
 }
@@ -539,7 +511,7 @@ for varName in "${!VARS_TO_GENERATE[@]}"; do
     if [[ -n "${generated_values[$varName]}" ]]; then
         continue
     fi
-    
+
     IFS=':' read -r type length <<< "${VARS_TO_GENERATE[$varName]}"
     newValue=""
     case "$type" in
@@ -550,7 +522,7 @@ for varName in "${!VARS_TO_GENERATE[@]}"; do
         langfuse_pk) newValue="pk-lf-$(gen_hex "$length")" ;;
         langfuse_sk) newValue="sk-lf-$(gen_hex "$length")" ;;
         fixed) newValue="$length" ;;
-        special) 
+        special)
             if [[ "$varName" == "LIGHTRAG_AUTH_ACCOUNTS" && "$length" == "lightrag_auth" ]]; then
                 ADMIN_PASS=$(gen_password 16)
                 newValue="admin:${ADMIN_PASS}"
@@ -558,7 +530,7 @@ for varName in "${!VARS_TO_GENERATE[@]}"; do
             ;;
         *) log_warning "Unknown generation type '$type' for $varName" ;;
     esac
-    
+
     if [[ -n "$newValue" ]]; then
         generated_values["$varName"]="$newValue"
     fi
@@ -596,8 +568,7 @@ generated_values["TTS_AUTH_USER"]="$USER_EMAIL" # Set TTS username for Caddy
 generated_values["LIGHTRAG_USERNAME"]="$USER_EMAIL" # Set LightRAG username for Caddy
 generated_values["PERPLEXICA_USERNAME"]="$USER_EMAIL" # Set Perplexica username for Caddy
 generated_values["ODOO_USERNAME"]="$USER_EMAIL" #Set Odoo username for Caddy
-generated_values["POSTAL_USERNAME"]="$USER_EMAIL" # Set Postal username for Caddy
-generated_values["POSTAL_EMAIL"]="$USER_EMAIL" # Set Postal email
+generated_values["BASEROW_USERNAME"]="$USER_EMAIL" # Set Baserow username for Caddy
 
 if [[ -n "$OPENAI_API_KEY" ]]; then
     generated_values["OPENAI_API_KEY"]="$OPENAI_API_KEY"
@@ -617,11 +588,6 @@ if [[ -n "$BASE_DOMAIN" ]]; then
     # Mailpit hostname (if not already set)
     if [[ -z "${generated_values[MAILPIT_HOSTNAME]}" ]]; then
         generated_values["MAILPIT_HOSTNAME"]="mail.${BASE_DOMAIN}"
-    fi
-    
-    # Postal hostname (if not already set)
-    if [[ -z "${generated_values[POSTAL_HOSTNAME]}" ]]; then
-        generated_values["POSTAL_HOSTNAME"]="postal.${BASE_DOMAIN}"
     fi
 fi
 
@@ -653,7 +619,7 @@ found_vars["TTS_AUTH_USER"]=0
 found_vars["LIGHTRAG_USERNAME"]=0
 found_vars["PERPLEXICA_USERNAME"]=0
 found_vars["ODOO_USERNAME"]=0
-found_vars["POSTAL_USERNAME"]=0
+found_vars["BASEROW_USERNAME"]=0
 found_vars["EMAIL_FROM"]=0
 found_vars["EMAIL_SMTP"]=0
 found_vars["EMAIL_SMTP_HOST"]=0
@@ -689,7 +655,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
                 langfuse_pk) newValue="pk-lf-$(gen_hex "$length")" ;;
                 langfuse_sk) newValue="sk-lf-$(gen_hex "$length")" ;;
                 fixed) newValue="$length" ;; # Handle fixed type
-                special) 
+                special)
                     if [[ "$varName" == "LIGHTRAG_AUTH_ACCOUNTS" && "$length" == "lightrag_auth" ]]; then
                         ADMIN_PASS=$(gen_password 16)
                         newValue="admin:${ADMIN_PASS}"
@@ -714,12 +680,12 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             # This 'else' block is for lines from template not covered by existing values or VARS_TO_GENERATE.
             # Check if it is one of the user input vars - these are handled by found_vars later if not in template.
             is_user_input_var=0 # Reset for each line
-            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "POSTAL_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS")
+            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "ODOO_USERNAME" "BASEROW_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS")
             for uivar in "${user_input_vars[@]}"; do
                 if [[ "$varName" == "$uivar" ]]; then
                     is_user_input_var=1
                     # Mark as found if it's in template, value taken from generated_values if already set or blank
-                    found_vars["$varName"]=1 
+                    found_vars["$varName"]=1
                     if [[ -v generated_values[$varName] ]]; then # if it was set (even to empty by user)
                         processed_line="${varName}=\"${generated_values[$varName]}\""
                     else # Not set in generated_values, keep template's default if any, or make it empty
@@ -756,20 +722,20 @@ create_jwt() {
     local jwt_secret=$2
     local now=$(date +%s)
     local exp=$((now + 315360000)) # 10 years from now (seconds)
-    
+
     # Create header (alg=HS256, typ=JWT)
     local header='{"alg":"HS256","typ":"JWT"}'
     # Create payload with role, issued at time, and expiry
     local payload="{\"role\":\"$role\",\"iss\":\"supabase\",\"iat\":$now,\"exp\":$exp}"
-    
+
     # Base64url encode header and payload
     local b64_header=$(echo -n "$header" | base64 -w 0 | tr '/+' '_-' | tr -d '=')
     local b64_payload=$(echo -n "$payload" | base64 -w 0 | tr '/+' '_-' | tr -d '=')
-    
+
     # Create signature
     local signature_input="$b64_header.$b64_payload"
     local signature=$(echo -n "$signature_input" | openssl dgst -sha256 -hmac "$jwt_secret" -binary | base64 -w 0 | tr '/+' '_-' | tr -d '=')
-    
+
     # Combine to form JWT
     echo -n "$b64_header.$b64_payload.$signature" # Use echo -n to avoid trailing newline
 }
@@ -796,7 +762,7 @@ if [[ -z "${generated_values[SERVICE_ROLE_KEY]}" ]]; then
 fi
 
 # Add any custom variables that weren't found in the template
-for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME" "POSTAL_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS"; do
+for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME" "BASEROW_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS"; do
     if [[ ${found_vars["$var"]} -eq 0 && -v generated_values["$var"] ]]; then
         # Before appending, check if it's already in TMP_ENV_FILE to avoid duplicates
         if ! grep -q -E "^${var}=" "$TMP_ENV_FILE"; then
@@ -816,14 +782,14 @@ log_info "Applying variable substitutions..."
 # Process each generated value
 for key in "${!generated_values[@]}"; do
     value="${generated_values[$key]}"
-    
+
     # Create a temporary file for this value to avoid escaping issues
     value_file=$(mktemp)
     echo -n "$value" > "$value_file"
-    
+
     # Create a new temporary file for the output
     new_output=$(mktemp)
-    
+
     # Process each line in the file
     while IFS= read -r line; do
         # Replace ${KEY} format
@@ -832,46 +798,46 @@ for key in "${!generated_values[@]}"; do
             replacement=$(cat "$value_file")
             line="${line//$placeholder/$replacement}"
         fi
-        
+
         # Replace $KEY format
         if [[ "$line" == *"$"$key* ]]; then
             placeholder="$"$key
             replacement=$(cat "$value_file")
             line="${line//$placeholder/$replacement}"
         fi
-        
+
         # Handle specific cases
         if [[ "$key" == "ANON_KEY" && "$line" == "ANON_KEY="* ]]; then
             line="ANON_KEY=\"$(cat "$value_file")\""
         fi
-        
+
         if [[ "$key" == "SERVICE_ROLE_KEY" && "$line" == "SERVICE_ROLE_KEY="* ]]; then
             line="SERVICE_ROLE_KEY=\"$(cat "$value_file")\""
         fi
-        
+
         if [[ "$key" == "ANON_KEY" && "$line" == "SUPABASE_ANON_KEY="* ]]; then
             line="SUPABASE_ANON_KEY=\"$(cat "$value_file")\""
         fi
-        
+
         if [[ "$key" == "SERVICE_ROLE_KEY" && "$line" == "SUPABASE_SERVICE_ROLE_KEY="* ]]; then
             line="SUPABASE_SERVICE_ROLE_KEY=\"$(cat "$value_file")\""
         fi
-        
+
         if [[ "$key" == "JWT_SECRET" && "$line" == "SUPABASE_JWT_SECRET="* ]]; then
             line="SUPABASE_JWT_SECRET=\"$(cat "$value_file")\""
         fi
-        
+
         if [[ "$key" == "POSTGRES_PASSWORD" && "$line" == "SUPABASE_POSTGRES_PASSWORD="* ]]; then
             line="SUPABASE_POSTGRES_PASSWORD=\"$(cat "$value_file")\""
         fi
-        
+
         # Write the processed line to the new file
         echo "$line" >> "$new_output"
     done < "$OUTPUT_FILE"
-    
+
     # Replace the output file with the new version
     mv "$new_output" "$OUTPUT_FILE"
-    
+
     # Clean up
     rm -f "$value_file"
 done
@@ -1015,17 +981,17 @@ if [[ -z "$FINAL_ODOO_HASH" && -n "$ODOO_PLAIN_PASS" ]]; then
 fi
 _update_or_add_env_var "ODOO_PASSWORD_HASH" "$FINAL_ODOO_HASH"
 
-# --- POSTAL ---
-POSTAL_PLAIN_PASS="${generated_values["POSTAL_PASSWORD"]}"
-FINAL_POSTAL_HASH="${generated_values[POSTAL_PASSWORD_HASH]}"
-if [[ -z "$FINAL_POSTAL_HASH" && -n "$POSTAL_PLAIN_PASS" ]]; then
-    NEW_HASH=$(_generate_and_get_hash "$POSTAL_PLAIN_PASS")
+# --- BASEROW ---
+BASEROW_PLAIN_PASS="${generated_values["BASEROW_PASSWORD"]}"
+FINAL_BASEROW_HASH="${generated_values[BASEROW_PASSWORD_HASH]}"
+if [[ -z "$FINAL_BASEROW_HASH" && -n "$BASEROW_PLAIN_PASS" ]]; then
+    NEW_HASH=$(_generate_and_get_hash "$BASEROW_PLAIN_PASS")
     if [[ -n "$NEW_HASH" ]]; then
-        FINAL_POSTAL_HASH="$NEW_HASH"
-        generated_values["POSTAL_PASSWORD_HASH"]="$NEW_HASH"
+        FINAL_BASEROW_HASH="$NEW_HASH"
+        generated_values["BASEROW_PASSWORD_HASH"]="$NEW_HASH"
     fi
 fi
-_update_or_add_env_var "POSTAL_PASSWORD_HASH" "$FINAL_POSTAL_HASH"
+_update_or_add_env_var "BASEROW_PASSWORD_HASH" "$FINAL_BASEROW_HASH"
 
 if [ $? -eq 0 ]; then # This $? reflects the status of the last mv command from the last _update_or_add_env_var call.
     # For now, assuming if we reached here and mv was fine, primary operations were okay.

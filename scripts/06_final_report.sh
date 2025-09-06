@@ -372,8 +372,8 @@ if is_profile_active "calcom"; then
   echo "  5. Share your booking link: https://${CALCOM_HOSTNAME}/USERNAME"
   echo
   echo "Email Configuration:"
-  echo "  Using: ${MAIL_MODE} (${SMTP_HOST}:${SMTP_PORT})"
-  echo "  Bookings will ${MAIL_MODE:+$([ "$MAIL_MODE" == "mailpit" ] && echo "be captured locally" || echo "be sent via Postal")}"
+  echo "  Using: ${MAIL_MODE:-mailpit} (${SMTP_HOST}:${SMTP_PORT})"
+  echo "  Bookings will be captured in Mailpit"
   echo
   echo "📚 Documentation:"
   echo "  Setup Guide: ~/ai-launchkit/docs/CALCOM_SETUP.md"
@@ -621,28 +621,6 @@ if [[ "$MAIL_MODE" == "mailpit" ]]; then
 else
     echo "  Status: Available for testing (not primary)"
 fi
-echo
-
-# Show Postal info if profile is active
-if is_profile_active "postal"; then
-    echo "📮 Postal (Production Mail Server) - ACTIVE"
-    echo "  Admin UI: https://${POSTAL_HOSTNAME:-postal.${BASE_DOMAIN}}"
-    echo "  Username: ${POSTAL_USERNAME:-<not_set>}"
-    echo "  Password: ${POSTAL_PASSWORD:-<not_set>}"
-    echo "  Internal SMTP: postal:25"
-    echo
-    echo "  ⚠️  First-time setup required:"
-    echo "     1. Access the Admin UI"
-    echo "     2. Create organization and mail server"
-    echo "     3. Configure DNS records (check Postal UI for details)"
-    echo "     4. Generate API credentials for services"
-    echo
-    if [[ "$MAIL_MODE" == "postal" ]]; then
-        echo "  Status: PRIMARY mail handler (real delivery enabled)"
-    else
-        echo "  Status: Installed but not primary"
-    fi
-fi
 
 echo
 echo "Current SMTP Configuration for all services:"
@@ -656,14 +634,11 @@ echo
 if [[ "$MAIL_MODE" == "mailpit" ]]; then
     echo "ℹ️  All emails are captured locally and visible in Mailpit"
     echo "   No emails will be sent externally!"
-elif [[ "$MAIL_MODE" == "postal" ]]; then
-    echo "ℹ️  Real email delivery is enabled via Postal"
-    echo "   Make sure DNS records are properly configured!"
 fi
 
 echo
 echo "To switch between mail handlers:"
-echo "  1. Edit .env file: MAIL_MODE=mailpit or MAIL_MODE=postal"
+echo "  1. Edit .env file: MAIL_MODE=mailpit"
 echo "  2. Update SMTP_* variables accordingly"
 echo "  3. Restart services: docker compose -p localai restart"
 echo

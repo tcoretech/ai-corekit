@@ -387,6 +387,53 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",speech,"* ]]; then
     fi
 fi
 
+# Google Calendar Integration for Cal.com (if calcom profile was selected)
+if [[ ",$COMPOSE_PROFILES_VALUE," == *",calcom,"* ]]; then
+    log_info ""
+    log_info "Google Calendar Integration for Cal.com (Optional)"
+    log_info "=================================================="
+    log_info "Enable Google Calendar sync in Cal.com (you can skip this)."
+    log_info ""
+    log_info "To get credentials:"
+    log_info "1. Go to https://console.cloud.google.com"
+    log_info "2. Enable Google Calendar API"
+    log_info "3. Create OAuth 2.0 credentials"
+    log_info "4. Add redirect URIs with your domain"
+    log_info ""
+    log_info "Press ENTER to skip if you don't have credentials yet."
+    log_info ""
+
+    # Check if already exists
+    existing_client_id=""
+    if grep -q "^GOOGLE_CLIENT_ID=" "$ENV_FILE"; then
+        existing_client_id=$(grep "^GOOGLE_CLIENT_ID=" "$ENV_FILE" | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    fi
+
+    if [ -n "$existing_client_id" ]; then
+        log_info "Google credentials found in .env; reusing them."
+    else
+        read -p "Google OAuth Client ID (optional): " google_client_id
+        
+        if [ -n "$google_client_id" ]; then
+            read -p "Google OAuth Client Secret: " google_client_secret
+            
+            # Update .env
+            sed -i.bak "/^GOOGLE_CLIENT_ID=/d" "$ENV_FILE"
+            sed -i.bak "/^GOOGLE_CLIENT_SECRET=/d" "$ENV_FILE"
+            
+            echo "GOOGLE_CLIENT_ID=$google_client_id" >> "$ENV_FILE"
+            echo "GOOGLE_CLIENT_SECRET=$google_client_secret" >> "$ENV_FILE"
+            
+            log_success "Google Calendar credentials saved."
+            log_info "Will be configured automatically after Cal.com starts."
+        else
+            log_info "Skipping Google Calendar integration."
+            log_info "You can add it later by editing .env and running:"
+            log_info "  sudo bash scripts/setup_calcom_google.sh"
+        fi
+    fi
+fi
+
 # Make the script executable (though install.sh calls it with bash)
 chmod +x "$SCRIPT_DIR/04_wizard.sh"
 

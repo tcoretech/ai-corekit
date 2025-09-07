@@ -620,6 +620,7 @@ found_vars["EMAIL_SMTP_PORT"]=0
 found_vars["EMAIL_SMTP_USER"]=0
 found_vars["EMAIL_SMTP_PASSWORD"]=0
 found_vars["EMAIL_SMTP_USE_TLS"]=0
+found_vars["DOMAIN"]=0  # Add DOMAIN to track if it's in template
 
 # Read template, substitute domain, generate initial values
 while IFS= read -r line || [[ -n "$line" ]]; do
@@ -673,7 +674,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             # This 'else' block is for lines from template not covered by existing values or VARS_TO_GENERATE.
             # Check if it is one of the user input vars - these are handled by found_vars later if not in template.
             is_user_input_var=0 # Reset for each line
-            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "ODOO_USERNAME" "BASEROW_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS")
+            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "ODOO_USERNAME" "BASEROW_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN")
             for uivar in "${user_input_vars[@]}"; do
                 if [[ "$varName" == "$uivar" ]]; then
                     is_user_input_var=1
@@ -755,7 +756,7 @@ if [[ -z "${generated_values[SERVICE_ROLE_KEY]}" ]]; then
 fi
 
 # Add any custom variables that weren't found in the template
-for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME" "BASEROW_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS"; do
+for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME" "BASEROW_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN"; do
     if [[ ${found_vars["$var"]} -eq 0 && -v generated_values["$var"] ]]; then
         # Before appending, check if it's already in TMP_ENV_FILE to avoid duplicates
         if ! grep -q -E "^${var}=" "$TMP_ENV_FILE"; then
@@ -985,6 +986,11 @@ if [[ -z "$FINAL_BASEROW_HASH" && -n "$BASEROW_PLAIN_PASS" ]]; then
     fi
 fi
 _update_or_add_env_var "BASEROW_PASSWORD_HASH" "$FINAL_BASEROW_HASH"
+
+# Ensure DOMAIN is written to .env for backward compatibility
+if [[ -n "${generated_values[DOMAIN]}" ]]; then
+    _update_or_add_env_var "DOMAIN" "${generated_values[DOMAIN]}"
+fi
 
 if [ $? -eq 0 ]; then # This $? reflects the status of the last mv command from the last _update_or_add_env_var call.
     # For now, assuming if we reached here and mv was fine, primary operations were okay.

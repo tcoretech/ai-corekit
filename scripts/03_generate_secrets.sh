@@ -153,6 +153,7 @@ else
         if [[ "$confirm_domain" =~ ^[Yy]$ ]]; then
             DOMAIN="$DOMAIN_TO_USE" # Set the final DOMAIN variable
             generated_values["USER_DOMAIN_NAME"]="$DOMAIN" # Using USER_DOMAIN_NAME
+            generated_values["DOMAIN"]="$DOMAIN" # Also set DOMAIN for backward compatibility
             log_info "Domain set to '$DOMAIN'. It will be saved in .env."
             break # Confirmed, exit loop
         else

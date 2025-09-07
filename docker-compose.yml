@@ -1176,12 +1176,13 @@ services:
       - NEXTAUTH_SECRET=${CALCOM_NEXTAUTH_SECRET}
       - CALENDSO_ENCRYPTION_KEY=${CALCOM_ENCRYPTION_KEY}
       
-      # Email (using AI LaunchKit mail system)
+      # Email (using AI LaunchKit mail system and smtp-relay)
       - EMAIL_FROM=${EMAIL_FROM}
-      - EMAIL_SERVER_HOST=${SMTP_HOST}
-      - EMAIL_SERVER_PORT=${SMTP_PORT}
+      - EMAIL_SERVER_HOST=smtp-relay
+      - EMAIL_SERVER_PORT=8025
       - EMAIL_SERVER_USER=${SMTP_USER:-}
       - EMAIL_SERVER_PASSWORD=${SMTP_PASSWORD:-}
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
       - SEND_FEEDBACK_EMAIL=false
       
       # Features
@@ -1299,6 +1300,6 @@ services:
   smtp-relay:
     image: alpine/socat
     container_name: smtp-relay
-    profiles: ["baserow"]
+    profiles: ["baserow", "calcom"]
     restart: unless-stopped
     command: tcp-listen:8025,fork,reuseaddr tcp-connect:mailserver:25

@@ -742,6 +742,11 @@ if is_profile_active "snappymail"; then
   echo "  Password: their Docker-Mailserver password"
   echo
   echo "Documentation: https://github.com/the-djmaze/snappymail/wiki"
+# Auto-configure domain if setup script exists
+  if [ -f "$SCRIPT_DIR/setup_snappymail.sh" ]; then
+    log_info "Checking SnappyMail domain configuration..."
+    bash $SCRIPT_DIR/setup_snappymail.sh
+  fi
 fi
 
 # --- Update Script Info (Placeholder) ---

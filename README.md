@@ -43,7 +43,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 |------|-------------|---------------|----------|
 | **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | Development/Testing - captures all emails |
 | **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production mail server | ⚡ Optional | Real email delivery for production |
-| **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client | ⚡ Optional | Web interface for Docker-Mailserver |
+| **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client Access: `webmail.yourdomain.com` | ⚡ Optional | Web interface for Docker-Mailserver |
 
 **Mail Configuration:**
 - Mailpit automatically configured for all services (always active)

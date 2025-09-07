@@ -1107,9 +1107,16 @@ services:
       # Features
       - LEAN_ENABLE_MENU_TYPE=true
       - LEAN_ENABLE_FOOTER=true
-      # Email (optional, can be configured later)
-      - LEAN_EMAIL_RETURN=${USER_EMAIL:-}
-      - LEAN_EMAIL_USE_SMTP=false
+      # Email configuration (using mailserver with auth)
+      - LEAN_EMAIL_RETURN=noreply@${DOMAIN}
+      - LEAN_EMAIL_USE_SMTP=true
+      - LEAN_EMAIL_SMTP_HOSTS=mailserver
+      - LEAN_EMAIL_SMTP_PORT=587
+      - LEAN_EMAIL_SMTP_AUTH=true
+      - LEAN_EMAIL_SMTP_USERNAME=noreply@${DOMAIN}
+      - LEAN_EMAIL_SMTP_PASSWORD=UTUyfeicxqtO5LkdcFz21eTaGdT5w39t
+      - LEAN_EMAIL_SMTP_AUTO_TLS=true
+      - LEAN_EMAIL_SMTP_SECURE=STARTTLS
     volumes:
       - leantime-public:/var/www/html/public/userfiles
       - leantime-userfiles:/var/www/html/userfiles
@@ -1300,6 +1307,6 @@ services:
   smtp-relay:
     image: alpine/socat
     container_name: smtp-relay
-    profiles: ["baserow", "calcom"]
+    profiles: ["baserow", "calcom", "leantime"]
     restart: unless-stopped
     command: tcp-listen:8025,fork,reuseaddr tcp-connect:mailserver:25

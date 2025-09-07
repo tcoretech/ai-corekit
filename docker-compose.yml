@@ -520,6 +520,7 @@ services:
     image: baserow/baserow:1.35.0
     container_name: baserow
     profiles: ["baserow"]
+    privileged: true
     restart: unless-stopped
     environment:
       - BASEROW_PUBLIC_URL=https://${BASEROW_HOSTNAME}
@@ -1294,3 +1295,10 @@ services:
       retries: 3
     depends_on:
       - caddy  # For SSL certificates
+
+  smtp-relay:
+    image: alpine/socat
+    container_name: smtp-relay
+    profiles: ["baserow"]
+    restart: unless-stopped
+    command: tcp-listen:8025,fork,reuseaddr tcp-connect:mailserver:25

@@ -490,6 +490,15 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",mailserver,"* ]]; then
     else
         log_warning "Could not configure Docker-Mailserver - missing BASE_DOMAIN or password"
     fi
+# Special adaption for baserow (smtp-relay because of port-blocking)
+if [[ ",$COMPOSE_PROFILES_VALUE," == *",baserow,"* ]] && [[ ",$COMPOSE_PROFILES_VALUE," == *",mailserver,"* ]]; then
+    sed -i.bak "/^EMAIL_SMTP_HOST=/d" "$ENV_FILE"
+    sed -i.bak "/^EMAIL_SMTP_PORT=/d" "$ENV_FILE"
+    sed -i.bak "/^EMAIL_SMTP_USE_TLS=/d" "$ENV_FILE"
+    echo "EMAIL_SMTP_HOST=smtp-relay" >> "$ENV_FILE"
+    echo "EMAIL_SMTP_PORT=8025" >> "$ENV_FILE"
+    echo "EMAIL_SMTP_USE_TLS=false" >> "$ENV_FILE"
+    log_info "Baserow configured to use SMTP relay (workaround for port blocking)"
 fi
 
 # Make the script executable (though install.sh calls it with bash)

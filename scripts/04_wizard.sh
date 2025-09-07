@@ -490,6 +490,7 @@ if [[ ",$COMPOSE_PROFILES_VALUE," == *",mailserver,"* ]]; then
     else
         log_warning "Could not configure Docker-Mailserver - missing BASE_DOMAIN or password"
     fi
+fi
 # Special adaption for baserow (smtp-relay because of port-blocking)
 if [[ ",$COMPOSE_PROFILES_VALUE," == *",baserow,"* ]] && [[ ",$COMPOSE_PROFILES_VALUE," == *",mailserver,"* ]]; then
     sed -i.bak "/^EMAIL_SMTP_HOST=/d" "$ENV_FILE"

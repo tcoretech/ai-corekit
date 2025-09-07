@@ -166,12 +166,6 @@ if is_profile_active "perplexica"; then
   echo "  External (HTTPS): https://${PERPLEXICA_HOSTNAME:-<hostname_not_set>}"
   echo "  Internal API: http://perplexica-backend:3001"
   echo
-  echo "Features:"
-  echo "  - 6 Focus Modes (Academic, YouTube, Reddit, Writing, etc.)"
-  echo "  - Uses your SearXNG instance for web search"
-  echo "  - Integrates with Ollama for local LLMs"
-  echo "  - Can also use OpenAI/Anthropic/Groq if configured"
-  echo
   echo "n8n Integration:"
   echo "  API Endpoint: http://perplexica-backend:3001/api/search"
   echo "  Method: POST"
@@ -218,12 +212,6 @@ if is_profile_active "odoo"; then
   echo "  Use native Odoo node in n8n"
   echo "  Internal URL: http://odoo:8069"
   echo "  API Endpoint: /web/session/authenticate"
-  echo
-  echo "AI Features (Odoo 18):"
-  echo "  - AI-powered lead scoring"
-  echo "  - Content generation for marketing"
-  echo "  - Sales forecasting with ML"
-  echo "  - Automated expense processing"
   echo
   echo "Resources:"
   echo "  RAM Usage: ~2-4GB (2 workers)"
@@ -719,6 +707,41 @@ if is_profile_active "mailserver"; then
   echo "  View logs: docker logs mailserver"
   echo
   echo "Documentation: https://docker-mailserver.github.io/docker-mailserver/"
+fi
+
+# SnappyMail Webmail Report (if selected)
+if is_profile_active "snappymail"; then
+  echo
+  echo "================================= SnappyMail Webmail =================="
+  echo
+  echo "✅ Modern webmail interface ready"
+  echo
+  echo "Access:"
+  echo "  URL: https://${SNAPPYMAIL_HOSTNAME:-webmail.${BASE_DOMAIN}}"
+  echo "  Admin Panel: https://${SNAPPYMAIL_HOSTNAME:-webmail.${BASE_DOMAIN}}/?admin"
+  echo
+  echo "⚠️  IMPORTANT - Get Admin Password:"
+  echo "  The admin password is auto-generated on first start."
+  echo "  Run this command to see it:"
+  echo "  docker exec snappymail cat /var/lib/snappymail/_data_/_default_/admin_password.txt"
+  echo
+  echo "First Time Setup:"
+  echo "  1. Get admin password with command above"
+  echo "  2. Login to admin panel: /?admin"
+  echo "  3. Username: admin"
+  echo "  4. Go to Domains → Add Domain"
+  echo "  5. Add domain: ${BASE_DOMAIN}"
+  echo "  6. IMAP Server: mailserver"
+  echo "  7. IMAP Port: 143"
+  echo "  8. SMTP Server: mailserver"
+  echo "  9. SMTP Port: 587"
+  echo "  10. Use STARTTLS for both"
+  echo
+  echo "Users can then login with:"
+  echo "  Email: their-email@${BASE_DOMAIN}"
+  echo "  Password: their Docker-Mailserver password"
+  echo
+  echo "Documentation: https://github.com/the-djmaze/snappymail/wiki"
 fi
 
 # --- Update Script Info (Placeholder) ---

@@ -195,6 +195,11 @@
     reverse_proxy mailpit:8025
 }
 
+# SnappyMail Webmail Client
+{$SNAPPYMAIL_HOSTNAME} {
+    reverse_proxy snappymail:8888
+}
+
 # Neo4j
 {$NEO4J_HOSTNAME} {
     reverse_proxy neo4j:7474

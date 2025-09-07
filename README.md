@@ -43,10 +43,12 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 |------|-------------|---------------|----------|
 | **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | Development/Testing - captures all emails |
 | **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production mail server | ⚡ Optional | Real email delivery for production |
+| **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client | ⚡ Optional | Web interface for Docker-Mailserver |
 
 **Mail Configuration:**
 - Mailpit automatically configured for all services (always active)
 - Docker-Mailserver available for production email delivery (optional)
+- SnappyMail provides a modern web interface for email access (optional, requires Docker-Mailserver)
 - Web UI to view all captured emails
 - Zero manual configuration needed!
 
@@ -199,11 +201,12 @@ The installer will ask you for:
 3. **API keys** (optional) - OpenAI, Anthropic, Groq for enhanced AI features
 4. **Community workflows** - Import 300+ n8n templates (optional, 20-30 min)
 5. **Worker count** - Number of n8n workers for parallel processing (1-4)
-6. **Service selection** - Choose which tools to install (including Docker-Mailserver for production email)
+6. **Service selection** - Choose which tools to install (including Docker-Mailserver and SnappyMail for production email)
 
 **Mail Configuration:** 
 - Mailpit is automatically configured to capture all emails for development/testing (always active)
 - Docker-Mailserver can be selected during installation for production email delivery
+- SnappyMail can be selected as webmail client (requires Docker-Mailserver)
 
 **Installation time:** 10-15 minutes (plus optional workflow import)
 
@@ -227,7 +230,7 @@ docker compose restart
 
 ## 📧 Mail Configuration
 
-AI LaunchKit includes a dual mail system: Mailpit for development/testing (always active) and optional Docker-Mailserver for production email delivery.
+AI LaunchKit includes a comprehensive mail system: Mailpit for development/testing (always active), optional Docker-Mailserver for production email delivery, and SnappyMail as a modern webmail client.
 
 ### 🎯 How It Works
 
@@ -244,6 +247,14 @@ AI LaunchKit includes a dual mail system: Mailpit for development/testing (alway
 - DKIM, SPF, DMARC support for deliverability
 - Spam filtering with Rspamd
 - Select during installation wizard
+
+**SnappyMail** (Optional - Webmail Client):
+- Modern, lightweight webmail interface
+- Ultra-fast with 138KB initial load
+- 99% Lighthouse performance score
+- Multiple account support
+- Mobile responsive
+- Requires Docker-Mailserver to be installed
 
 ### 📬 Docker-Mailserver Setup (Production)
 
@@ -325,6 +336,46 @@ When Docker-Mailserver is active, all services automatically use these settings:
 - **Security:** STARTTLS
 - **From:** `noreply@yourdomain.com`
 - **Authentication:** Configured automatically
+
+### 🌐 SnappyMail Webmail Setup
+
+If you selected SnappyMail during installation:
+
+#### Initial Configuration
+
+1. **Get the admin password:**
+   ```bash
+   docker exec snappymail cat /var/lib/snappymail/_data_/_default_/admin_password.txt
+   ```
+
+2. **Access the admin panel:**
+   - URL: `https://webmail.yourdomain.com/?admin`
+   - Username: `admin`
+   - Password: (from step 1)
+
+3. **Configure your mail domain:**
+   - Go to Domains → Add Domain
+   - Domain: `yourdomain.com`
+   - IMAP Server: `mailserver`
+   - IMAP Port: 143
+   - SMTP Server: `mailserver`
+   - SMTP Port: 587
+   - Use STARTTLS for both
+
+4. **Users can now login:**
+   - URL: `https://webmail.yourdomain.com`
+   - Email: their-email@yourdomain.com
+   - Password: their Docker-Mailserver password
+
+#### SnappyMail Features
+
+- **Ultra-fast performance:** 138KB initial load, 99% Lighthouse score
+- **Multiple accounts:** Manage multiple email accounts in one interface
+- **Mobile responsive:** Works perfectly on all devices
+- **PGP encryption:** Built-in support for encrypted emails
+- **2-Factor authentication:** Enhanced security for webmail access
+- **No database required:** Simple file-based configuration
+- **Dark mode:** Built-in theme support
 
 ### 📮 Service Integration
 
@@ -424,6 +475,15 @@ Most services that support SMTP can be configured similarly:
   - Real-time updates
   - API for automation
 
+**SnappyMail Web UI (Production):**
+- URL: `https://webmail.yourdomain.com`
+- Features:
+  - Full email client functionality
+  - Send and receive emails
+  - Multiple account management
+  - Mobile responsive design
+  - PGP encryption support
+
 **Example: Testing email in development:**
 ```javascript
 // n8n workflow to test email
@@ -439,6 +499,7 @@ Most services that support SMTP can be configured similarly:
 
 - **Mailpit**: No authentication by default (development use)
 - **Docker-Mailserver**: Production-ready with authentication, spam filtering, and security features
+- **SnappyMail**: Has its own login system with optional 2FA
 - **Internal SMTP**: Services communicate internally without exposing ports
 - For additional security, consider using external SMTP services like SendGrid, Mailgun, or AWS SES
 
@@ -449,10 +510,12 @@ Most services that support SMTP can be configured similarly:
 # Check if mail service is running
 docker ps | grep mailpit
 docker ps | grep mailserver
+docker ps | grep snappymail
 
 # Check logs
 docker logs mailpit
 docker logs mailserver
+docker logs snappymail
 
 # Test SMTP connection from n8n
 docker exec n8n nc -zv mailpit 1025
@@ -487,6 +550,21 @@ docker exec mailserver doveadm auth test noreply@yourdomain.com [password]
 
 # Monitor mail queue
 docker exec mailserver postqueue -p
+```
+
+**SnappyMail specific issues:**
+```bash
+# Check if SnappyMail is running
+docker ps | grep snappymail
+
+# Get admin password if lost
+docker exec snappymail cat /var/lib/snappymail/_data_/_default_/admin_password.txt
+
+# Check logs for errors
+docker logs snappymail --tail 50
+
+# Restart if needed
+docker compose restart snappymail
 ```
 
 ---
@@ -2343,6 +2421,47 @@ docker compose restart [service-name]
    Manual Trigger → Send Email → Set recipient to test@example.com
    ```
 
+#### SnappyMail Issues
+
+**Symptom:** Cannot access SnappyMail webmail interface
+
+**Solutions:**
+```bash
+# 1. Check if SnappyMail is running
+docker ps | grep snappymail
+
+# 2. Get admin password
+docker exec snappymail cat /var/lib/snappymail/_data_/_default_/admin_password.txt
+
+# 3. Check logs
+docker logs snappymail --tail 50
+
+# 4. Verify Docker-Mailserver connection
+docker exec snappymail nc -zv mailserver 143
+docker exec snappymail nc -zv mailserver 587
+
+# 5. Restart if needed
+docker compose restart snappymail
+```
+
+**Symptom:** Users cannot login to SnappyMail
+
+**Solutions:**
+1. Ensure domain is configured in admin panel:
+   - Access `https://webmail.yourdomain.com/?admin`
+   - Check if your domain is added
+   - Verify IMAP/SMTP settings point to `mailserver`
+
+2. Verify user account exists in Docker-Mailserver:
+   ```bash
+   docker exec mailserver setup email list
+   ```
+
+3. Test authentication:
+   ```bash
+   docker exec mailserver doveadm auth test user@yourdomain.com [password]
+   ```
+
 </details>
 
 <details>
@@ -2854,6 +2973,7 @@ graph TD
     A --> F[Other Services]
     A --> MP[Mailpit - Mail UI]
     A --> CAL[Cal.com - Scheduling]
+    A --> SM[SnappyMail - Webmail]
     
     CF[Cloudflare Tunnel] -.-> A
     
@@ -2875,6 +2995,8 @@ graph TD
     
     SMTP --> MP2[Mailpit SMTP]
     SMTP -.-> MS[Docker-Mailserver]
+    
+    SM --> MS[Docker-Mailserver IMAP/SMTP]
     
     C --> J[Ollama - Local LLMs]
     D --> J

@@ -65,6 +65,7 @@ base_services_data=(
     "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
     "calcom" "Cal.com (Open Source Scheduling Platform)"
     "mailserver" "Docker-Mailserver (Production email server for all services)"
+    "snappymail" "SnappyMail (Modern webmail client for Docker-Mailserver)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"
     "qdrant" "Qdrant (Vector Database)"
     "supabase" "Supabase (Backend as a Service)"

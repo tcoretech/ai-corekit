@@ -34,6 +34,7 @@ volumes:
   leantime-logs:
   mailpit_data:
   calcom_data:
+  snappymail_data:
 
 x-n8n: &service-n8n
   build:
@@ -320,6 +321,7 @@ services:
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILSERVER_WEBMAIL_HOSTNAME=${MAILSERVER_WEBMAIL_HOSTNAME}
+      - SNAPPYMAIL_HOSTNAME=${SNAPPYMAIL_HOSTNAME}
     cap_drop:
       - ALL
     cap_add:
@@ -1303,6 +1305,30 @@ services:
       retries: 3
     depends_on:
       - caddy  # For SSL certificates
+
+  # SnappyMail Webmail Client (Latest 2025)
+  snappymail:
+    image: djmaze/snappymail:latest
+    container_name: snappymail
+    profiles: ["snappymail"]
+    restart: unless-stopped
+    volumes:
+      - snappymail_data:/var/lib/snappymail
+      - ./shared:/data/shared
+    environment:
+      - UPLOAD_MAX_SIZE=25M
+      - PHP_MEMORY_LIMIT=128M
+      - TZ=${TZ:-UTC}
+    depends_on:
+      - mailserver
+    expose:
+      - "8888"   # Main web interface
+      - "9000"   # PHP-FPM (optional)
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8888/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   smtp-relay:
     image: alpine/socat

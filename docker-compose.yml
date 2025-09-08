@@ -41,6 +41,7 @@ volumes:
   jitsi-prosody-plugins:
   jitsi-jicofo:
   jitsi-jvb:
+  vaultwarden_data:
 
 x-n8n: &service-n8n
   build:
@@ -325,6 +326,7 @@ services:
       - WHISPER_AUTH_PASSWORD_HASH=${WHISPER_AUTH_PASSWORD_HASH}
       - CALCOM_HOSTNAME=${CALCOM_HOSTNAME}
       - JITSI_HOSTNAME=${JITSI_HOSTNAME}
+      - VAULTWARDEN_HOSTNAME=${VAULTWARDEN_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILSERVER_WEBMAIL_HOSTNAME=${MAILSERVER_WEBMAIL_HOSTNAME}
@@ -1448,3 +1450,46 @@ services:
       - TZ=${TZ}
     depends_on:
       - jitsi-prosody
+
+  # VAULTWARDEN - Self-hosted Password Manager
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    profiles: ["vaultwarden"]
+    restart: unless-stopped
+    volumes:
+      - vaultwarden_data:/data
+      - ./shared:/data/shared
+    environment:
+      - DOMAIN=https://${VAULTWARDEN_HOSTNAME}
+      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+      - SMTP_HOST=mailpit
+      - SMTP_FROM=${EMAIL_FROM:-vault@yourdomain.com}
+      - SMTP_FROM_NAME=Vaultwarden
+      - SMTP_PORT=1025
+      - SMTP_AUTH_MECHANISM=Plain
+      - SMTP_SECURITY=off
+      - SMTP_TIMEOUT=15
+      - SIGNUPS_ALLOWED=false
+      - SIGNUPS_DOMAINS_WHITELIST=${SIGNUPS_DOMAINS_WHITELIST:-}
+      - SHOW_PASSWORD_HINT=false
+      - WEB_VAULT_ENABLED=true
+      - WEBSOCKET_ENABLED=true
+      - INVITATIONS_ALLOWED=true
+      - EMERGENCY_ACCESS_ALLOWED=true
+      - SENDS_ALLOWED=true
+      - PASSWORD_ITERATIONS=600000
+      - ICON_CACHE_TTL=2592000
+      - ICON_CACHE_NEGTTL=259200
+      - IP_HEADER=X-Forwarded-For
+      - LOG_LEVEL=warn
+      - EXTENDED_LOGGING=true
+      - TZ=${TZ:-UTC}
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:80/alive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

@@ -244,6 +244,32 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
+# =============================================================================
+# VAULTWARDEN - Self-hosted Password Manager (NO Basic Auth - uses own auth!)
+# =============================================================================
+{$VAULTWARDEN_HOSTNAME} {
+    reverse_proxy vaultwarden:80 {
+        # Send real IP for rate limiting and logging
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    # Security headers for Vaultwarden
+    header {
+        # Enable HSTS
+        Strict-Transport-Security max-age=31536000;
+        # Prevent clickjacking
+        X-Frame-Options DENY
+        # Prevent content-type sniffing
+        X-Content-Type-Options nosniff
+        # XSS protection
+        X-XSS-Protection "1; mode=block"
+        # Referrer policy
+        Referrer-Policy same-origin
+    }
+}
+
 import /etc/caddy/addons/*.conf
 
 # # SearXNG

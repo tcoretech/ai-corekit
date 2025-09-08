@@ -167,6 +167,7 @@ Pre-installed in the n8n container for seamless media manipulation:
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
+| **[Vaultwarden](https://github.com/dani-garcia/vaultwarden)** | Self-hosted Bitwarden-compatible password manager | Secure credential storage for all AI LaunchKit services, team password sharing | `vault.yourdomain.com` |
 | **[Caddy](https://github.com/caddyserver/caddy)** | Modern web server | Automatic HTTPS, reverse proxy, load balancing | All domains |
 | **[Cloudflare Tunnel](https://github.com/cloudflare/cloudflared)** | Secure tunnel to Cloudflare | Zero-trust access, no exposed ports, DDoS protection | Internal |
 | **Python Runner** | Python execution environment for n8n | Custom scripts, data processing, automation tasks | Internal |
@@ -238,6 +239,130 @@ GROQ_API_KEY=gsk_...
 # Restart services
 docker compose restart
 ```
+
+---
+
+## 🔐 Vaultwarden Password Manager
+
+Vaultwarden is a lightweight, self-hosted password manager that's 100% compatible with Bitwarden clients. Perfect for managing all your AI LaunchKit service credentials securely.
+
+### Why Vaultwarden for AI LaunchKit?
+
+With 40+ services generating unique passwords and API keys, credential management becomes critical. Vaultwarden provides:
+- **Central Credential Storage:** All AI LaunchKit passwords in one secure place
+- **Browser Integration:** Auto-fill passwords for all your services
+- **Team Sharing:** Securely share credentials with team members
+- **Mobile Access:** iOS/Android apps for passwords on the go
+- **No Basic Auth:** Unlike other services, Vaultwarden has its own user management
+
+### Initial Setup
+
+**First Steps After Installation:**
+1. **Access Admin Panel:** Navigate to `https://vault.yourdomain.com/admin`
+2. **Enter Admin Token:** Find it in your `.env` file as `VAULTWARDEN_ADMIN_TOKEN`
+3. **Configure SMTP:** Uses your configured mail system (Mailpit or Docker-Mailserver)
+4. **Create First User:** Register at `https://vault.yourdomain.com`
+5. **Install Browser Extension:** Available for all major browsers
+
+### Client Configuration
+
+**Browser Extensions:**
+- Install official Bitwarden extension
+- Set server URL: `https://vault.yourdomain.com`
+- Login with your created account
+
+**Mobile Apps:**
+- Download Bitwarden from App Store/Play Store
+- Tap "Self-hosted" during setup
+- Enter: `https://vault.yourdomain.com`
+
+**Desktop Apps:**
+- Download from bitwarden.com
+- Settings → Server URL → `https://vault.yourdomain.com`
+
+### Organizing AI LaunchKit Credentials
+
+**Recommended Organization:**
+```
+📁 AI LaunchKit
+├── 📁 Core Services
+│   ├── n8n Admin
+│   ├── Supabase Dashboard
+│   └── PostgreSQL Database
+├── 📁 AI Tools
+│   ├── OpenAI API Key
+│   ├── Anthropic API Key
+│   ├── Groq API Key
+│   └── Ollama Admin
+├── 📁 Development
+│   ├── bolt.diy Access
+│   ├── ComfyUI Login
+│   └── GitHub Tokens
+└── 📁 Monitoring
+    ├── Grafana Admin
+    ├── Prometheus Access
+    └── Portainer Login
+```
+
+### Security Features
+
+**No Basic Auth Required:**
+- Vaultwarden is a complete authentication system
+- Users manage their own strong master passwords
+- No interference with browser extensions or mobile apps
+
+**Advanced Security:**
+- **2FA Support:** TOTP, WebAuthn, YubiKey, Email
+- **Password Generator:** Create strong unique passwords
+- **Security Reports:** Identify weak or reused passwords
+- **Emergency Access:** Trusted contacts for recovery
+- **Send Feature:** Securely share text/files with expiration
+
+### Integration Tips
+
+**Auto-Import AI LaunchKit Credentials:**
+After installation, a JSON file with all credentials can be generated:
+```bash
+# Future feature: Auto-export to Vaultwarden format
+cat ai-launchkit-credentials.json
+```
+
+**Password Best Practices:**
+1. Use Vaultwarden's generator for all new services
+2. Enable 2FA on Vaultwarden itself
+3. Create organization for team credential sharing
+4. Regular backups of Vaultwarden data
+
+### Backup & Recovery
+
+**Backup Vaultwarden Data:**
+```bash
+# Create backup
+docker exec vaultwarden tar -czf /data/shared/vaultwarden-backup-$(date +%Y%m%d).tar.gz /data
+
+# Verify backup
+ls -lh ./shared/vaultwarden-backup-*.tar.gz
+```
+
+**Restore from Backup:**
+```bash
+# Stop service
+docker stop vaultwarden
+
+# Restore data
+docker run --rm -v vaultwarden_data:/data -v ./shared:/backup alpine \
+  sh -c "cd /data && tar -xzf /backup/vaultwarden-backup-YYYYMMDD.tar.gz --strip-components=1"
+
+# Restart service
+docker start vaultwarden
+```
+
+### Resource Usage
+
+- **RAM:** Only 50-200MB (vs 2GB+ for official Bitwarden)
+- **Storage:** ~100MB base + user data
+- **CPU:** Minimal, only during access
+- **Perfect for VPS:** Designed for resource-constrained environments
 
 ---
 
@@ -3230,6 +3355,7 @@ graph TD
     A --> CAL[Cal.com - Scheduling]
     A --> SM[SnappyMail - Webmail]
     A --> JM[Jitsi Meet - Video]
+    A --> VW[Vaultwarden - Passwords]
     
     CF[Cloudflare Tunnel] -.-> A
     
@@ -3259,6 +3385,9 @@ graph TD
     SMTP -.-> MS[Docker-Mailserver]
     
     SM --> MS[Docker-Mailserver IMAP/SMTP]
+    
+    VW --> I[Shared Storage]
+    VW --> SMTP[Mail System]
     
     C --> J[Ollama - Local LLMs]
     D --> J

@@ -65,6 +65,7 @@ base_services_data=(
     "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
     "calcom" "Cal.com (Open Source Scheduling Platform)"
     "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
+    "vaultwarden" "Vaultwarden (Self-hosted Bitwarden-compatible password manager)"
     "mailserver" "Docker-Mailserver (Production email server for all services)"
     "snappymail" "SnappyMail (Modern webmail client for Docker-Mailserver)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"

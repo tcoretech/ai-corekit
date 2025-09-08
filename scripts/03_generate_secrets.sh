@@ -75,6 +75,7 @@ declare -A VARS_TO_GENERATE=(
     ["JICOFO_COMPONENT_SECRET"]="password:32"
     ["JICOFO_AUTH_PASSWORD"]="password:32"
     ["JVB_AUTH_PASSWORD"]="password:32"
+    ["VAULTWARDEN_ADMIN_TOKEN"]="apikey:64"
     # Mail Services (keeping for future Docker-Mailserver)
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"

@@ -1,4 +1,4 @@
-#!/bin/bash
+_#!/bin/bash
 
 # Source utilities
 source "$(dirname "$0")/utils.sh"
@@ -11,7 +11,7 @@ ENV_FILE="$PROJECT_ROOT/.env"
 # Function to check if a profile is active
 is_profile_active() {
     local profile="$1"
-    [[ " $COMPOSE_PROFILES " == *" $profile "* ]]
+    [[ ",$COMPOSE_PROFILES," == *",$profile,"* ]]
 }
 
 # Function to generate UUID v4
@@ -112,7 +112,8 @@ EOF
       },
       "collectionIds": [],
       "revisionDate": "$timestamp"
-    }EOF
+    }
+EOF
     }
 
     # Helper function to add a secure note
@@ -146,7 +147,8 @@ EOF
       },
       "collectionIds": [],
       "revisionDate": "$timestamp"
-    }EOF
+    }
+EOF
     }
 
     # Add all service logins
@@ -380,3 +382,4 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     
     generate_vaultwarden_json
 fi
+

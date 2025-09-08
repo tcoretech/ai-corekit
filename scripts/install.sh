@@ -194,4 +194,10 @@ if grep -q "libretranslate" .env 2>/dev/null || docker ps -a | grep -q libretran
     sudo docker compose -p localai --profile libretranslate up -d libretranslate 2>/dev/null || true
 fi
 
+# Generate Vaultwarden import file if Vaultwarden is active
+if [ -f "$SCRIPT_DIR/08_generate_vaultwarden_json.sh" ]; then
+    source "$SCRIPT_DIR/08_generate_vaultwarden_json.sh"
+    generate_vaultwarden_json
+fi
+
 exit 0 

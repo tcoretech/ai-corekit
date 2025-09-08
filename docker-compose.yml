@@ -35,6 +35,12 @@ volumes:
   mailpit_data:
   calcom_data:
   snappymail_data:
+  jitsi-web:
+  jitsi-transcripts:
+  jitsi-prosody-config:
+  jitsi-prosody-plugins:
+  jitsi-jicofo:
+  jitsi-jvb:
 
 x-n8n: &service-n8n
   build:
@@ -318,6 +324,7 @@ services:
       - WHISPER_AUTH_USER=${WHISPER_AUTH_USER}
       - WHISPER_AUTH_PASSWORD_HASH=${WHISPER_AUTH_PASSWORD_HASH}
       - CALCOM_HOSTNAME=${CALCOM_HOSTNAME}
+      - JITSI_HOSTNAME=${JITSI_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILSERVER_WEBMAIL_HOSTNAME=${MAILSERVER_WEBMAIL_HOSTNAME}
@@ -1336,3 +1343,108 @@ services:
     profiles: ["baserow", "calcom", "leantime"]
     restart: unless-stopped
     command: tcp-listen:8025,fork,reuseaddr tcp-connect:mailserver:25
+
+  # Jitsi Web Frontend
+  jitsi-web:
+    image: jitsi/web:stable-10008
+    container_name: jitsi-web
+    profiles: ["jitsi"]
+    restart: unless-stopped
+    volumes:
+      - ./jitsi-web:/config
+      - ./jitsi-transcripts:/usr/share/jitsi-meet/transcripts
+    environment:
+      - ENABLE_LETSENCRYPT=0
+      - ENABLE_HTTP_REDIRECT=0
+      - DISABLE_HTTPS=1
+      - PUBLIC_URL=https://${JITSI_HOSTNAME}
+      - XMPP_DOMAIN=${JITSI_XMPP_DOMAIN}
+      - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}
+      - XMPP_BOSH_URL_BASE=http://jitsi-prosody:5280
+      - XMPP_MUC_DOMAIN=muc.${JITSI_XMPP_DOMAIN}
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.${JITSI_XMPP_DOMAIN}
+      - JICOFO_AUTH_USER=jicofo
+      - JVB_WS_DOMAIN=${JITSI_HOSTNAME}
+      - JVB_WS_SERVER_ID=jvb1
+      - TZ=${TZ}
+    depends_on:
+      - jitsi-prosody
+    expose:
+      - "80"
+
+  # Jitsi XMPP Server (Prosody)
+  jitsi-prosody:
+    image: jitsi/prosody:stable-10008
+    container_name: jitsi-prosody
+    profiles: ["jitsi"]
+    restart: unless-stopped
+    expose:
+      - "5222"
+      - "5347"
+      - "5280"
+    volumes:
+      - ./jitsi-prosody-config:/config
+      - ./jitsi-prosody-plugins:/prosody-plugins-custom
+    environment:
+      - AUTH_TYPE=internal
+      - ENABLE_GUESTS=1
+      - XMPP_DOMAIN=${JITSI_XMPP_DOMAIN}
+      - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}
+      - XMPP_GUEST_DOMAIN=guest.${JITSI_XMPP_DOMAIN}
+      - XMPP_MUC_DOMAIN=muc.${JITSI_XMPP_DOMAIN}
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.${JITSI_XMPP_DOMAIN}
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
+      - JICOFO_AUTH_USER=jicofo
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
+      - TZ=${TZ}
+
+  # Jitsi Conference Focus (Jicofo)
+  jitsi-jicofo:
+    image: jitsi/jicofo:stable-10008
+    container_name: jitsi-jicofo
+    profiles: ["jitsi"]
+    restart: unless-stopped
+    volumes:
+      - ./jitsi-jicofo:/config
+    environment:
+      - XMPP_DOMAIN=${JITSI_XMPP_DOMAIN}
+      - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.${JITSI_XMPP_DOMAIN}
+      - XMPP_MUC_DOMAIN=muc.${JITSI_XMPP_DOMAIN}
+      - XMPP_SERVER=jitsi-prosody
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
+      - JICOFO_AUTH_USER=jicofo
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
+      - JVB_BREWERY_MUC=jvbbrewery
+      - TZ=${TZ}
+    depends_on:
+      - jitsi-prosody
+
+  # Jitsi Video Bridge (JVB) - CRITICAL: Needs UDP Port 10000
+  jitsi-jvb:
+    image: jitsi/jvb:stable-10008
+    container_name: jitsi-jvb
+    profiles: ["jitsi"]
+    restart: unless-stopped
+    ports:
+      - "10000:10000/udp"
+    volumes:
+      - ./jitsi-jvb:/config
+    environment:
+      - DOCKER_HOST_ADDRESS=${JVB_DOCKER_HOST_ADDRESS}
+      - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.${JITSI_XMPP_DOMAIN}
+      - XMPP_SERVER=jitsi-prosody
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
+      - JVB_BREWERY_MUC=jvbbrewery
+      - JVB_PORT=10000
+      - JVB_STUN_SERVERS=meet-jit-si-turnrelay.jitsi.net:443
+      - PUBLIC_URL=https://${JITSI_HOSTNAME}
+      - JVB_WS_DOMAIN=${JITSI_HOSTNAME}
+      - JVB_WS_SERVER_ID=jvb1
+      - TZ=${TZ}
+    depends_on:
+      - jitsi-prosody

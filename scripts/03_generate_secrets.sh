@@ -72,6 +72,9 @@ declare -A VARS_TO_GENERATE=(
     ["LEANTIME_SESSION_PASSWORD"]="password:64"
     ["CALCOM_NEXTAUTH_SECRET"]="apikey:32"
     ["CALCOM_ENCRYPTION_KEY"]="apikey:32"
+    ["JICOFO_COMPONENT_SECRET"]="password:32"
+    ["JICOFO_AUTH_PASSWORD"]="password:32"
+    ["JVB_AUTH_PASSWORD"]="password:32"
     # Mail Services (keeping for future Docker-Mailserver)
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"
@@ -165,6 +168,16 @@ fi
 
 # Save BASE_DOMAIN for mail configuration detection
 generated_values["BASE_DOMAIN"]="$DOMAIN"
+
+# Auto-detect Docker Host Address for JVB (Jitsi)
+if [[ -z "${generated_values[JVB_DOCKER_HOST_ADDRESS]}" ]]; then
+    # Try to detect public IP
+    PUBLIC_IP=$(curl -s -4 ifconfig.me 2>/dev/null || curl -s -4 icanhazip.com 2>/dev/null || echo "")
+    if [[ -n "$PUBLIC_IP" ]]; then
+        generated_values["JVB_DOCKER_HOST_ADDRESS"]="$PUBLIC_IP"
+        log_info "Auto-detected JVB Docker Host Address: $PUBLIC_IP"
+    fi
+fi
 
 # Prompt for user email
 if [[ -z "${existing_env_vars[LETSENCRYPT_EMAIL]}" ]]; then

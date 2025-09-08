@@ -27,6 +27,7 @@ ufw default allow outgoing
 ufw allow ssh
 ufw allow http
 ufw allow https
+ufw allow 10000/udp comment 'Jitsi WebRTC Media'
 ufw reload
 ufw status
 

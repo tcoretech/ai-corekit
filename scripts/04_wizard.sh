@@ -64,6 +64,7 @@ base_services_data=(
     "vikunja" "Vikunja (Modern Task Management - Todoist/TickTick alternative)"
     "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
     "calcom" "Cal.com (Open Source Scheduling Platform)"
+    "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
     "mailserver" "Docker-Mailserver (Production email server for all services)"
     "snappymail" "SnappyMail (Modern webmail client for Docker-Mailserver)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"

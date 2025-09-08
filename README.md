@@ -66,6 +66,19 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[Open WebUI](https://github.com/open-webui/open-webui)** | ChatGPT-like interface for LLMs | AI chat, model switching, conversation management | `webui.yourdomain.com` |
 | **[Postiz](https://github.com/gitroomhq/postiz-app)** | Social media management platform | Content scheduling, analytics, multi-platform posting | `postiz.yourdomain.com` |
 
+### 📹 Video Conferencing
+
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Jitsi Meet](https://github.com/jitsi/jitsi-meet)** ⚠️ | Professional video conferencing platform | Client meetings, team calls, webinars, Cal.com integration | `meet.yourdomain.com` |
+
+**⚠️ Jitsi Meet Requirements:**
+- **CRITICAL:** Requires UDP Port 10000 for WebRTC audio/video
+- Many VPS providers block UDP traffic by default
+- Without UDP 10000: Only chat works, no audio/video!
+- Test UDP connectivity before production use
+- Alternative: Use external services (Zoom, Google Meet) with Cal.com
+
 ### 💼 Business & Productivity
 
 | Tool | Description | Use Cases | Access |
@@ -225,6 +238,170 @@ GROQ_API_KEY=gsk_...
 # Restart services
 docker compose restart
 ```
+
+---
+
+## 📹 Jitsi Meet Video Conferencing
+
+Jitsi Meet provides professional self-hosted video conferencing with Cal.com integration for automated meeting links. Perfect for client calls, team meetings, and webinars without external dependencies.
+
+### ⚠️ CRITICAL Requirements
+
+**UDP Port 10000 is MANDATORY for audio/video:**
+- Without UDP 10000: Only chat works, NO audio/video!
+- Many VPS providers block UDP traffic by default
+- Test UDP connectivity BEFORE relying on Jitsi for production
+
+### Pre-Installation UDP Test
+
+```bash
+# 1. Open UDP port in firewall
+sudo ufw allow 10000/udp
+
+# 2. Test UDP connectivity (requires two terminals)
+# Terminal 1 (on your VPS):
+nc -u -l 10000
+
+# Terminal 2 (from external network):
+nc -u YOUR_VPS_IP 10000
+# Type text and press Enter - should appear in Terminal 1
+
+# 3. If text doesn't appear, UDP is blocked by your provider
+```
+
+### VPS Provider Compatibility
+
+**Known to work well:**
+- Hetzner Cloud (WebRTC-friendly)
+- DigitalOcean (good WebRTC performance)
+- Contabo (game server support = UDP OK)
+
+**Often problematic:**
+- OVH (frequently blocks UDP)
+- Scaleway (firewall restrictions)
+- AWS/GCP (requires NAT configuration)
+
+### Features
+
+- **No Basic Auth:** Guest-friendly access for meeting participants
+- **Lobby Mode:** Control who enters your meetings
+- **HD Video:** Up to 1280x720 resolution
+- **Screen Sharing:** Share desktop or applications
+- **Recording:** Optional local recording
+- **Cal.com Integration:** Automatic meeting room generation
+- **Mobile Apps:** iOS and Android support
+- **No Account Required:** Participants join without registration
+
+### Initial Setup
+
+**After installation:**
+1. Test with a simple meeting: `https://meet.yourdomain.com/test123`
+2. Verify audio/video works from different networks
+3. Configure Cal.com integration (see below)
+
+### Cal.com Integration
+
+Jitsi integrates seamlessly with Cal.com for automated video conferencing:
+
+1. **In Cal.com:**
+   - Go to Settings → Apps → Jitsi Video
+   - Click "Install App"
+   - Server URL: `https://meet.yourdomain.com`
+   - Save configuration
+
+2. **Configure Event Types:**
+   - Edit any event type
+   - Under "Location", select "Jitsi Video"
+   - Meeting links are auto-generated for bookings
+
+3. **Meeting URL Format:**
+   - Automatic: `https://meet.yourdomain.com/cal/[booking-reference]`
+   - Custom: `https://meet.yourdomain.com/YourCompany-ClientName`
+
+### n8n Integration Examples
+
+#### Automated Meeting Reminders
+```javascript
+// 1. Cal.com Trigger: booking.created
+// 2. Wait Node: 1 hour before meeting
+// 3. Send Email Node:
+To: {{ $json.attendees[0].email }}
+Subject: Meeting reminder - {{ $json.title }}
+Body: Your meeting starts in 1 hour!
+Join here: https://meet.yourdomain.com/cal/{{ $json.uid }}
+
+// 4. Slack Node: Notify team
+Channel: #meetings
+Message: Client meeting in 1 hour: {{ $json.conferenceUrl }}
+```
+
+#### Meeting Recording Workflow
+```javascript
+// 1. Schedule Trigger: Daily at 6 PM
+// 2. HTTP Request: Check for completed meetings
+// 3. If recordings exist:
+//    - Move to cloud storage
+//    - Generate transcript with Whisper
+//    - Send summary to participants
+```
+
+### Security Considerations
+
+**Why No Basic Auth for Jitsi:**
+- Meeting participants need direct access to URLs
+- Cal.com integration requires open access
+- Mobile apps expect direct connection
+- Security is handled at room level, not site level
+
+**Room-Level Security Options:**
+- **Lobby Mode:** Approve participants before entry
+- **Meeting Passwords:** Add password to sensitive meetings
+- **Unique URLs:** Use hard-to-guess room names
+- **Time Limits:** Configure maximum meeting duration
+
+### Troubleshooting Jitsi
+
+**No Audio/Video:**
+```bash
+# Check if JVB is running
+docker ps | grep jitsi-jvb
+
+# Check JVB logs for errors
+docker logs jitsi-jvb --tail 100
+
+# Verify UDP port is open
+sudo netstat -ulnp | grep 10000
+
+# Test from external network
+nc -u YOUR_VPS_IP 10000
+```
+
+**Connection Issues:**
+```bash
+# Check all Jitsi components
+docker ps | grep jitsi
+
+# Restart Jitsi services
+docker compose restart jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb
+
+# Check Caddy routing
+docker logs caddy | grep jitsi
+```
+
+**Alternative Solutions:**
+If UDP is blocked by your provider:
+1. Use external services (Zoom, Google Meet) with Cal.com
+2. Set up a TURN server (complex, additional cost)
+3. Use a different VPS provider with UDP support
+4. Consider Jitsi as a Service (8x8.vc, meet.jit.si)
+
+### Performance Tips
+
+- **Bandwidth:** 2-4 Mbps per participant for HD video
+- **CPU:** Video bridge uses ~1 CPU core per 10 participants
+- **RAM:** Allocate 1-2GB for Jitsi services
+- **Participants:** Tested up to 35 on a 4-core VPS
+- **Best Practice:** Use lobby mode for meetings >10 people
 
 ---
 
@@ -1228,6 +1405,7 @@ const STATUS = {
   BLOCKED: 4,       // Blockiert
   REVIEW: 2         // Review
 };
+   - Check header name is exactly `x-api-key`
 
 // Task types
 const TYPES = {
@@ -1285,7 +1463,6 @@ const PRIORITY = {
 
 2. **Authentication Failed:**
    - Verify API key is correct
-   - Check header name is exactly `x-api-key`
 
 3. **Invalid Parameters:**
    - Wrap parameters in `params` object
@@ -1440,6 +1617,7 @@ Operation: Update
 Row ID: "{{ $json.id }}"
 Fields: {
   "Description": "{{ $json.generated_description }}",
+  "invoice_line_ids": "{{ $json.items }}"
   "SEO Keywords": "{{ $json.suggested_keywords }}",
   "Updated": "{{ $now.toISO() }}"
 }
@@ -1625,7 +1803,6 @@ Fields: {
   "partner_id": "{{ $json.vendor }}",
   "invoice_date": "{{ $json.date }}",
   "amount_total": "{{ $json.amount }}",
-  "invoice_line_ids": "{{ $json.items }}"
 }
 ```
 
@@ -1673,6 +1850,7 @@ Automate follow-ups and task creation:
 ```javascript
 // 1. Schedule Trigger: Daily at 9 AM
 // 2. Odoo Node: Get Opportunities
+- **Send Body:** JSON
 Operation: Get All
 Resource: Lead/Opportunity
 Filters: {
@@ -2018,9 +2196,9 @@ LibreTranslate provides a self-hosted translation API with 50+ languages, perfec
 - **Authentication:** None (internal access)
 - **Send Headers:** ON
   - `Content-Type`: `application/json`
-- **Send Body:** JSON
   ```json
   {
+6. HTTP Request → Translate back to original language
     "q": "{{ $json.text }}",
     "source": "auto",
     "target": "de",
@@ -2061,7 +2239,6 @@ LibreTranslate provides a self-hosted translation API with 50+ languages, perfec
      "target": "en"
    }
 5. OpenAI/Ollama → Process in English
-6. HTTP Request → Translate back to original language
    URL: http://libretranslate:5000/translate
    Body: {
      "q": "{{ $json.response }}",
@@ -2461,6 +2638,84 @@ docker compose restart snappymail
    ```bash
    docker exec mailserver doveadm auth test user@yourdomain.com [password]
    ```
+
+</details>
+
+<details>
+<summary><b>📹 Jitsi Meet Issues</b></summary>
+
+#### No Audio/Video in Jitsi
+
+**Symptom:** Participants can join meetings but audio/video doesn't work
+
+**Most Common Cause:** UDP Port 10000 is blocked by VPS provider
+
+**Solutions:**
+```bash
+# 1. Verify UDP port is open in firewall
+sudo ufw status | grep 10000
+
+# 2. Test UDP connectivity from external network
+# Terminal 1 (on VPS):
+nc -u -l 10000
+
+# Terminal 2 (external):
+nc -u YOUR_VPS_IP 10000
+# Type text - should appear in Terminal 1
+
+# 3. Check JVB (Jitsi Video Bridge) is running
+docker ps | grep jitsi-jvb
+
+# 4. Check JVB logs for errors
+docker logs jitsi-jvb --tail 100 | grep -i error
+
+# 5. Verify JVB Docker Host Address is set
+grep JVB_DOCKER_HOST_ADDRESS .env
+```
+
+#### Jitsi Services Not Starting
+
+**Symptom:** One or more Jitsi containers keep restarting
+
+**Solutions:**
+```bash
+# 1. Check all Jitsi components status
+docker ps -a | grep jitsi
+
+# 2. Check logs for each component
+docker logs jitsi-web --tail 50
+docker logs jitsi-prosody --tail 50
+docker logs jitsi-jicofo --tail 50
+docker logs jitsi-jvb --tail 50
+
+# 3. Verify all passwords are generated
+grep JICOFO_COMPONENT_SECRET .env
+grep JICOFO_AUTH_PASSWORD .env
+grep JVB_AUTH_PASSWORD .env
+
+# 4. Restart all Jitsi services
+docker compose restart jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb
+```
+
+#### Cal.com Integration Not Working
+
+**Symptom:** Cal.com doesn't generate Jitsi meeting links
+
+**Solutions:**
+1. In Cal.com Settings → Apps → Jitsi Video
+2. Verify Server URL is `https://meet.yourdomain.com` (no trailing slash)
+3. Test by creating a manual booking
+4. Check Cal.com logs: `docker logs calcom --tail 50`
+
+#### UDP Port Blocked by VPS Provider
+
+**Symptom:** UDP test fails even with firewall configured correctly
+
+**Alternative Solutions:**
+1. **Use External Services:** Configure Cal.com with Zoom/Google Meet instead
+2. **Change VPS Provider:** Switch to Hetzner, DigitalOcean, or Contabo
+3. **Set up TURN Server:** Complex but can work around UDP blocks
+4. **Use Jitsi as a Service:** meet.jit.si or 8x8.vc
 
 </details>
 
@@ -2974,6 +3229,7 @@ graph TD
     A --> MP[Mailpit - Mail UI]
     A --> CAL[Cal.com - Scheduling]
     A --> SM[SnappyMail - Webmail]
+    A --> JM[Jitsi Meet - Video]
     
     CF[Cloudflare Tunnel] -.-> A
     
@@ -2992,6 +3248,12 @@ graph TD
     CAL --> G
     CAL --> H
     CAL --> SMTP
+    CAL --> JM[Jitsi Integration]
+    
+    JM --> JP[Jitsi Prosody - XMPP]
+    JM --> JF[Jitsi Jicofo - Focus]
+    JM --> JV[Jitsi JVB - WebRTC]
+    JV -.-> |UDP 10000| INET[Internet]
     
     SMTP --> MP2[Mailpit SMTP]
     SMTP -.-> MS[Docker-Mailserver]

@@ -66,6 +66,7 @@ base_services_data=(
     "calcom" "Cal.com (Open Source Scheduling Platform)"
     "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
     "vaultwarden" "Vaultwarden (Self-hosted Bitwarden-compatible password manager)"
+    "kopia" "Kopia (Fast and secure backup with Cloud and WebDAV storage)"
     "mailserver" "Docker-Mailserver (Production email server for all services)"
     "snappymail" "SnappyMail (Modern webmail client for Docker-Mailserver)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"

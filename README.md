@@ -41,7 +41,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 
 | Tool | Description | Always Active | Purpose |
 |------|-------------|---------------|----------|
-| **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | Development/Testing - captures all emails |
+| **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI Access: `mail.yourdomain.com` | ✅ Yes | Development/Testing - captures all emails |
 | **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production mail server | ⚡ Optional | Real email delivery for production |
 | **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client Access: `webmail.yourdomain.com` | ⚡ Optional | Web interface for Docker-Mailserver |
 
@@ -174,6 +174,7 @@ Pre-installed in the n8n container for seamless media manipulation:
 | **[Grafana](https://github.com/grafana/grafana)** | Metrics visualization platform | Performance dashboards, alerts, analytics | `grafana.yourdomain.com` |
 | **[Prometheus](https://github.com/prometheus/prometheus)** | Time-series monitoring | Metrics collection, alerting rules, scraping | `prometheus.yourdomain.com` |
 | **[Portainer](https://github.com/portainer/portainer)** | Container management UI | Docker admin, logs, resource monitoring | `portainer.yourdomain.com` |
+| **[Kopia](https://github.com/kopia/kopia)** | Enterprise backup solution | End-to-end encryption, deduplication, WebDAV/S3/B2 support | `backup.yourdomain.com` |
 | **[Langfuse](https://github.com/langfuse/langfuse)** | LLM observability platform | AI performance tracking, cost analysis, debugging | `langfuse.yourdomain.com` |
 
 ### 🔧 AI Support Tools
@@ -363,6 +364,177 @@ docker start vaultwarden
 - **Storage:** ~100MB base + user data
 - **CPU:** Minimal, only during access
 - **Perfect for VPS:** Designed for resource-constrained environments
+
+---
+
+## 🔐 Kopia - Enterprise Backup Solution
+
+Kopia provides fast, secure, and encrypted backups with deduplication and compression, supporting WebDAV (Nextcloud), S3, B2, and local storage. Perfect for automated backups of your AI LaunchKit data.
+
+### Why Kopia for AI LaunchKit?
+
+With critical data across 40+ services, automated backups become essential. Kopia provides:
+- **End-to-End Encryption:** All backups encrypted before leaving the server
+- **Deduplication:** Saves 60-90% storage through intelligent deduplication
+- **Compression:** Further reduces backup size
+- **Incremental Snapshots:** Only changes are backed up after initial snapshot
+- **WebDAV Support:** Direct integration with Nextcloud, ownCloud, etc.
+- **Multiple Storage Options:** S3, B2, Google Cloud, Azure, local storage
+
+### Initial Setup
+
+**First Login to Kopia:**
+1. Navigate to `https://backup.yourdomain.com`
+2. Login with credentials from `.env` file:
+   - Username: `admin`
+   - Password: Check `KOPIA_UI_PASSWORD` in `.env`
+
+**Create Your First Repository (Nextcloud Example):**
+
+1. **Click "Create Repository"**
+2. **Select WebDAV** as storage type
+3. **Configure WebDAV connection:**
+Server URL: https://nextcloud.example.com/remote.php/dav/files/USERNAME/kopia-backup
+Username: your-nextcloud-username
+Password: your-nextcloud-app-password (NOT your regular password!)
+4. **Set Repository Password:**
+- **IMPORTANT:** This MUST be different from your WebDAV password!
+- This password encrypts your backups
+- Store it securely - you'll need it to restore
+
+**Generate Nextcloud App Password:**
+1. In Nextcloud: Settings → Security → App passwords
+2. Create new app password named "Kopia Backup"
+3. Use this password for WebDAV connection (step 3 above)
+
+### Automated Backup Strategy
+
+**Configure Backup Policies:**
+1. In Kopia UI, go to Policies
+2. Set retention (recommended):
+- Keep hourly: 24
+- Keep daily: 7
+- Keep weekly: 4
+- Keep monthly: 12
+- Keep yearly: 3
+
+**What Gets Backed Up:**
+- `/data/shared` - All shared files between services
+- n8n workflows and credentials (via PostgreSQL dumps)
+- Service configurations
+- User-uploaded files
+
+### n8n Integration for Automated Backups
+
+#### Example: Daily Backup Workflow
+
+```javascript
+// 1. Schedule Trigger: Daily at 2 AM
+
+// 2. Execute Command Node: Create database dump
+Command: pg_dump
+Arguments: -U n8n -d n8n -f /data/shared/backups/n8n-backup-{{ $now.format('YYYY-MM-DD') }}.sql
+
+// 3. Execute Command Node: Trigger Kopia snapshot
+Command: docker
+Arguments: exec kopia kopia snapshot create /data/shared
+
+// 4. Execute Command Node: Get snapshot status
+Command: docker
+Arguments: exec kopia kopia snapshot list --json
+
+// 5. Send notification with backup status
+
+#### Example: Test Restore Workflow
+// 1. Manual Trigger
+
+// 2. Execute Command Node: List available snapshots
+Command: docker
+Arguments: exec kopia kopia snapshot list
+
+// 3. Execute Command Node: Mount snapshot
+Command: docker
+Arguments: exec kopia kopia mount k123abc /tmp/restore
+
+// 4. Code Node: Verify files exist
+const fs = require('fs');
+const files = fs.readdirSync('/tmp/restore');
+return { success: files.length > 0, fileCount: files.length };
+
+// 5. Execute Command Node: Unmount
+Command: docker
+Arguments: exec kopia umount /tmp/restore
+
+Manual Backup Operations
+Create snapshot manually:
+bashdocker exec kopia kopia snapshot create /data/shared
+List snapshots:
+bashdocker exec kopia kopia snapshot list
+Restore from snapshot:
+bash# List snapshots
+docker exec kopia kopia snapshot list
+
+# Restore specific file
+docker exec kopia kopia restore k9f8d7c6 /data/shared/restored
+
+# Mount snapshot for browsing
+docker exec kopia kopia mount k9f8d7c6 /tmp/mounted
+Backup Best Practices
+
+3-2-1 Rule:
+
+3 copies of important data
+2 different storage media
+1 offsite backup (Kopia to Nextcloud/S3 = ✅)
+
+
+Test Restores Monthly:
+
+A backup is only good if you can restore from it
+Create n8n workflow for automated restore testing
+
+
+Repository Password Management:
+
+Store separately from server passwords
+Use password manager (Vaultwarden!)
+Keep offline copy in secure location
+
+
+Monitor Storage Usage:
+bashdocker exec kopia kopia repository status
+
+Verify Backup Integrity:
+bashdocker exec kopia kopia snapshot verify
+
+
+Advanced Configuration
+Adding More Backup Paths
+Edit docker-compose.yml to mount additional directories:
+yamlkopia:
+  volumes:
+    - ./shared:/data/shared:ro
+    - ./media:/data/media:ro  # Add this line
+    - kopia_config:/app/config
+    - kopia_cache:/app/cache
+Using S3-Compatible Storage
+For Backblaze B2, Wasabi, or MinIO:
+
+Create new repository
+Select "S3-compatible"
+Configure:
+
+Endpoint: s3.us-west-001.backblazeb2.com
+Bucket: your-bucket-name
+Access Key ID: your-key-id
+Secret Access Key: your-secret-key
+
+Backup Encryption Details
+
+Algorithm: AES-256-GCM or ChaCha20-Poly1305
+Key Derivation: Scrypt with high cost parameters
+Splitter: Content-defined chunking for optimal deduplication
+Compression: Automatic selection (zstd default)
 
 ---
 
@@ -1079,6 +1251,7 @@ Operation: Get available slots
 Filter by AI-extracted preferences
 
 // 4. Code Node - Rank Slots
+   ```json
 Rank slots by:
 - Customer preference
 - Your optimal times
@@ -1778,6 +1951,141 @@ Fields: {
 }
 ```
 
+#### Kopia Troubleshooting
+
+WebDAV Connection Failed:
+# Test from Kopia container
+docker exec kopia curl -u username:password https://nextcloud.example.com/remote.php/dav/
+
+# Check logs
+docker logs kopia --tail 50
+
+Repository Password Issues:
+
+Ensure repository password differs from WebDAV password
+Password is case-sensitive
+Check for special characters that might need escaping
+
+Backup Fails:
+# Check disk space
+df -h
+
+# Check Kopia logs
+docker logs kopia --tail 100
+
+# Verify read permissions
+docker exec kopia ls -la /data/
+
+Restore Issues:
+
+Ensure you have the correct repository password
+Check if snapshot ID is valid
+Verify sufficient disk space for restore
+
+Resource Usage
+
+RAM: 500MB-1GB during backups
+CPU: Moderate during compression/encryption
+Network: Depends on change rate and backup frequency
+Storage: Initial backup full size, incrementals tiny
+
+Security Considerations
+
+Repository Password: Never store in .env or code
+WebDAV over HTTPS: Always use encrypted connections
+Access Control: Kopia UI protected with Basic Auth
+Encryption: All data encrypted before transmission
+Audit Trail: All operations logged
+
+---
+
+## POSITION 3: Im Troubleshooting Abschnitt (neuer Collapse-Block)
+**Suche nach:** Das Ende des letzten `</details>` Tags im Troubleshooting-Bereich
+**Füge VOR dem "---" (der die Architecture Section einleitet) ein:**
+
+```markdown
+<details>
+<summary><b>🔐 Kopia Backup Issues</b></summary>
+
+#### WebDAV Connection Failed
+
+**Symptom:** Cannot connect to Nextcloud/ownCloud WebDAV
+
+**Solutions:**
+```bash
+# 1. Verify Nextcloud URL format
+# Must include: /remote.php/dav/files/USERNAME/
+# Full example: https://cloud.example.com/remote.php/dav/files/john/kopia-backup
+
+# 2. Test WebDAV connection manually
+docker exec kopia curl -u username:app-password \
+  https://cloud.example.com/remote.php/dav/files/USERNAME/
+
+# 3. Check app password
+# In Nextcloud: Settings → Security → App passwords
+# Create new app password specifically for Kopia
+
+# 4. Ensure backup folder exists in Nextcloud
+# Create folder "kopia-backup" in your Nextcloud files
+
+Repository Already Exists Error
+Symptom: "Repository already exists" when trying to create new repository
+Solutions:
+
+Use "Connect to Repository" instead of "Create Repository"
+You'll need the same repository password used during creation
+If password is lost, you'll need to delete the repository and create new one (data loss!)
+
+Backup Snapshot Fails
+Symptom: Snapshot creation fails with permission errors
+Solutions:
+
+# 1. Check permissions
+docker exec kopia ls -la /data/shared
+
+# 2. Verify Kopia can read the directories
+docker exec kopia find /data/shared -type d ! -readable
+
+# 3. Check disk space
+df -h
+
+# 4. Review Kopia logs
+docker logs kopia --tail 100 | grep -i error
+
+Cannot Restore Files
+Symptom: Restore operation fails or files are missing
+Solutions:
+
+# 1. Verify snapshot exists
+docker exec kopia kopia snapshot list
+
+# 2. Check repository password is correct
+# Password is case-sensitive!
+
+# 3. Test with mounting first
+docker exec kopia kopia mount [snapshot-id] /tmp/test
+docker exec kopia ls -la /tmp/test
+docker exec kopia umount /tmp/test
+
+# 4. Ensure sufficient disk space for restore
+df -h /data/sharedHigh Memory Usage During Backup
+Symptom: Kopia uses excessive RAM during snapshots
+Solutions:
+
+# 1. Adjust parallel uploads in Kopia UI
+# Policies → Edit → Upload → Parallel Uploads: 1
+
+# 2. Reduce compression level
+# Policies → Edit → Compression → Algorithm: s2-default
+
+# 3. Monitor memory usage
+docker stats kopia
+
+# 4. Restart Kopia if needed
+docker compose restart kopia
+
+
+
 #### Advanced: Baserow REST API via HTTP Request
 
 For operations not available in the native node:
@@ -2294,9 +2602,9 @@ To add German voices (or other languages) to the Text-to-Speech service:
    ```
 
 4. **Use German voices in n8n:**
-   ```json
    {
      "model": "tts-1",
+URL: http://lightrag:9621/api/query
      "input": "Hallo, dies ist ein Test der deutschen Sprachausgabe.",
      "voice": "thorsten"
    }
@@ -2428,7 +2736,6 @@ Body: {
 
 // Global Query - High-level summaries
 Method: POST
-URL: http://lightrag:9621/api/query
 Body: {
   "query": "What are the main sustainability initiatives?",
   "mode": "global",

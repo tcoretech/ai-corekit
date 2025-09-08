@@ -42,6 +42,10 @@ volumes:
   jitsi-jicofo:
   jitsi-jvb:
   vaultwarden_data:
+  kopia_config:
+  kopia_cache:
+  kopia_logs:
+  kopia_tmp:
 
 x-n8n: &service-n8n
   build:
@@ -327,8 +331,11 @@ services:
       - CALCOM_HOSTNAME=${CALCOM_HOSTNAME}
       - JITSI_HOSTNAME=${JITSI_HOSTNAME}
       - VAULTWARDEN_HOSTNAME=${VAULTWARDEN_HOSTNAME}
+      - KOPIA_HOSTNAME=${KOPIA_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
+      - MAILPIT_USERNAME=${MAILPIT_USERNAME}
+      - MAILPIT_PASSWORD_HASH=${MAILPIT_PASSWORD_HASH}
       - MAILSERVER_WEBMAIL_HOSTNAME=${MAILSERVER_WEBMAIL_HOSTNAME}
       - SNAPPYMAIL_HOSTNAME=${SNAPPYMAIL_HOSTNAME}
     cap_drop:
@@ -1493,3 +1500,56 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # KOPIA - Fast and Secure Backup
+  kopia:
+    image: kopia/kopia:latest
+    container_name: kopia
+    hostname: kopia-server
+    profiles: ["kopia"]
+    restart: unless-stopped
+    volumes:
+      - kopia_config:/app/config
+      - kopia_cache:/app/cache
+      - kopia_logs:/app/logs
+      # Mount Docker volumes for backup (read-only)
+      - /var/lib/docker/volumes:/data/docker-volumes:ro
+      # Mount shared directory for backup (read-only)
+      - ./shared:/data/shared:ro
+      # Mount AI LaunchKit configuration (read-only)
+      - .:/data/ai-launchkit:ro
+      # Mount for temporary operations and snapshot browsing
+      - kopia_tmp:/tmp:shared
+    environment:
+      # Repository encryption password (different from Nextcloud password!)
+      - KOPIA_PASSWORD=${KOPIA_PASSWORD}
+      # Web UI credentials
+      - KOPIA_UI_USERNAME=${KOPIA_UI_USERNAME}
+      - KOPIA_UI_PASSWORD=${KOPIA_UI_PASSWORD}
+      # Nextcloud WebDAV configuration
+      - NEXTCLOUD_WEBDAV_URL=${NEXTCLOUD_WEBDAV_URL}
+      - NEXTCLOUD_USERNAME=${NEXTCLOUD_USERNAME}
+      - NEXTCLOUD_APP_PASSWORD=${NEXTCLOUD_APP_PASSWORD}
+      # Server configuration
+      - KOPIA_PERSIST_CREDENTIALS_ON_CONNECT=true
+      - TZ=${TZ}
+      # Logging
+      - KOPIA_LOG_LEVEL=info
+    command: >
+      server start
+      --address=0.0.0.0:51515
+      --server-username=${KOPIA_UI_USERNAME}
+      --server-password=${KOPIA_UI_PASSWORD}
+      --disable-csrf-token-checks
+      --insecure
+    networks:
+      - localai
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:51515"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - postgres
+      - redis

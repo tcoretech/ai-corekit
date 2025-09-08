@@ -196,8 +196,18 @@ fi
 
 # Generate Vaultwarden import file if Vaultwarden is active
 if [ -f "$SCRIPT_DIR/08_generate_vaultwarden_json.sh" ]; then
-    source "$SCRIPT_DIR/08_generate_vaultwarden_json.sh"
-    generate_vaultwarden_json
+    # Load environment variables from .env
+    if [ -f "$PROJECT_ROOT/.env" ]; then
+        set -a
+        source "$PROJECT_ROOT/.env"
+        set +a
+    fi
+    
+    # Export COMPOSE_PROFILES explicitly
+    export COMPOSE_PROFILES
+    
+    # Run the script with bash to ensure it executes
+    bash "$SCRIPT_DIR/08_generate_vaultwarden_json.sh"
 fi
 
 exit 0 

@@ -190,8 +190,11 @@
 # MAIL SERVICES
 # ============================================================================
 
-# Mailpit Web Interface (Mail Catcher - always active)
+# Mailpit Web Interface (Mail Catcher - always active) - WITH BASIC AUTH
 {$MAILPIT_HOSTNAME} {
+    basic_auth {
+        {$MAILPIT_USERNAME} {$MAILPIT_PASSWORD_HASH}
+    }
     reverse_proxy mailpit:8025
 }
 
@@ -267,6 +270,33 @@ https://{$NEO4J_HOSTNAME}:7687 {
         X-XSS-Protection "1; mode=block"
         # Referrer policy
         Referrer-Policy same-origin
+    }
+}
+
+# =============================================================================
+# KOPIA - Fast and Secure Backup Server (Uses own authentication)
+# =============================================================================
+{$KOPIA_HOSTNAME} {
+    reverse_proxy kopia:51515 {
+        # For WebSocket connections
+        header_up Connection {>Connection}
+        header_up Upgrade {>Upgrade}
+        # Send real IP for logging
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    # Security headers for Kopia
+    header {
+        # Enable HSTS
+        Strict-Transport-Security max-age=31536000;
+        # Prevent clickjacking
+        X-Frame-Options SAMEORIGIN
+        # Prevent content-type sniffing
+        X-Content-Type-Options nosniff
+        # XSS protection
+        X-XSS-Protection "1; mode=block"
     }
 }
 

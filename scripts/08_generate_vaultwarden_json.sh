@@ -193,6 +193,28 @@ EOF
             "Self-hosted ChatGPT-like interface. Create account on first access."
     fi
 
+   # Mailpit
+    add_login_item \
+        "Mailpit Mail Catcher" \
+        "${MAILPIT_USERNAME}" \
+        "${MAILPIT_PASSWORD}" \
+        "https://${MAILPIT_HOSTNAME}" \
+        "Mail catcher for development/testing. All emails sent by services are captured here. Protected with Basic Auth."
+
+    # Kopia
+    if is_profile_active "kopia"; then
+        add_login_item \
+            "Kopia Backup Server" \
+            "${KOPIA_UI_USERNAME}" \
+            "${KOPIA_UI_PASSWORD}" \
+            "https://${KOPIA_HOSTNAME}" \
+            "Enterprise backup solution with Nextcloud WebDAV storage. Repository password: ${KOPIA_PASSWORD}"
+        
+        add_secure_note \
+            "Kopia Repository Settings" \
+            "Repository Password: ${KOPIA_PASSWORD}\\n\\nNextcloud WebDAV:\\nURL: ${NEXTCLOUD_WEBDAV_URL}\\nUsername: ${NEXTCLOUD_USERNAME}\\nApp Password: ${NEXTCLOUD_APP_PASSWORD}\\n\\nIMPORTANT: Repository password is different from UI password!"
+    fi
+
     # Grafana
     if is_profile_active "monitoring"; then
         add_login_item \

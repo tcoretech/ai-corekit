@@ -76,7 +76,9 @@ declare -A VARS_TO_GENERATE=(
     ["JICOFO_AUTH_PASSWORD"]="password:32"
     ["JVB_AUTH_PASSWORD"]="password:32"
     ["VAULTWARDEN_ADMIN_TOKEN"]="apikey:64"
-    # Mail Services (keeping for future Docker-Mailserver)
+    ["KOPIA_UI_PASSWORD"]="password:32"
+    ["KOPIA_PASSWORD"]="password:32"
+    ["MAILPIT_PASSWORD"]="password:32"
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"
 )
@@ -590,6 +592,8 @@ generated_values["LIGHTRAG_USERNAME"]="$USER_EMAIL" # Set LightRAG username for 
 generated_values["PERPLEXICA_USERNAME"]="$USER_EMAIL" # Set Perplexica username for Caddy
 generated_values["ODOO_USERNAME"]="$USER_EMAIL" #Set Odoo username for Caddy
 generated_values["BASEROW_USERNAME"]="$USER_EMAIL" # Set Baserow username for Caddy
+generated_values["KOPIA_UI_USERNAME"]="admin"  # Kopia uses 'admin' by default
+generated_values["MAILPIT_USERNAME"]="$USER_EMAIL"  # Set Mailpit username for Caddy
 
 if [[ -n "$OPENAI_API_KEY" ]]; then
     generated_values["OPENAI_API_KEY"]="$OPENAI_API_KEY"
@@ -641,6 +645,8 @@ found_vars["LIGHTRAG_USERNAME"]=0
 found_vars["PERPLEXICA_USERNAME"]=0
 found_vars["ODOO_USERNAME"]=0
 found_vars["BASEROW_USERNAME"]=0
+found_vars["KOPIA_UI_USERNAME"]=0
+found_vars["MAILPIT_USERNAME"]=0
 found_vars["EMAIL_FROM"]=0
 found_vars["EMAIL_SMTP"]=0
 found_vars["EMAIL_SMTP_HOST"]=0
@@ -702,7 +708,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             # This 'else' block is for lines from template not covered by existing values or VARS_TO_GENERATE.
             # Check if it is one of the user input vars - these are handled by found_vars later if not in template.
             is_user_input_var=0 # Reset for each line
-            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "ODOO_USERNAME" "BASEROW_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN")
+            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "MAILPIT_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN")
             for uivar in "${user_input_vars[@]}"; do
                 if [[ "$varName" == "$uivar" ]]; then
                     is_user_input_var=1
@@ -784,7 +790,7 @@ if [[ -z "${generated_values[SERVICE_ROLE_KEY]}" ]]; then
 fi
 
 # Add any custom variables that weren't found in the template
-for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME" "BASEROW_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN"; do
+for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "MAILPIT_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN"; do
     if [[ ${found_vars["$var"]} -eq 0 && -v generated_values["$var"] ]]; then
         # Before appending, check if it's already in TMP_ENV_FILE to avoid duplicates
         if ! grep -q -E "^${var}=" "$TMP_ENV_FILE"; then
@@ -1014,6 +1020,18 @@ if [[ -z "$FINAL_BASEROW_HASH" && -n "$BASEROW_PLAIN_PASS" ]]; then
     fi
 fi
 _update_or_add_env_var "BASEROW_PASSWORD_HASH" "$FINAL_BASEROW_HASH"
+
+# --- MAILPIT ---
+MAILPIT_PLAIN_PASS="${generated_values["MAILPIT_PASSWORD"]}"
+FINAL_MAILPIT_HASH="${generated_values[MAILPIT_PASSWORD_HASH]}"
+if [[ -z "$FINAL_MAILPIT_HASH" && -n "$MAILPIT_PLAIN_PASS" ]]; then
+    NEW_HASH=$(_generate_and_get_hash "$MAILPIT_PLAIN_PASS")
+    if [[ -n "$NEW_HASH" ]]; then
+        FINAL_MAILPIT_HASH="$NEW_HASH"
+        generated_values["MAILPIT_PASSWORD_HASH"]="$NEW_HASH"
+    fi
+fi
+_update_or_add_env_var "MAILPIT_PASSWORD_HASH" "$FINAL_MAILPIT_HASH"
 
 # Ensure DOMAIN is written to .env for backward compatibility
 if [[ -n "${generated_values[DOMAIN]}" ]]; then

@@ -25,3 +25,11 @@ calcom-docker/
 docker-data/
 dkim_generation.log
 dkim_record.txt
+
+# Jitsi configuration directories
+jitsi-jicofo/
+jitsi-jvb/
+jitsi-prosody-config/
+jitsi-prosody-plugins/
+jitsi-web/
+jitsi-transcripts/

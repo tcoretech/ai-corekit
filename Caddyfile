@@ -214,39 +214,34 @@ https://{$NEO4J_HOSTNAME}:7687 {
 # JITSI MEET - Professional Video Conferencing (NO Auth - for meeting guests!)
 # =============================================================================
 {$JITSI_HOSTNAME} {
-    reverse_proxy jitsi-web:80 {
-        # WebSocket support for Jitsi
-        header_up Connection {>Connection}
-        header_up Upgrade {>Upgrade}
-        
-        # Send real IP for logging
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
-        header_up Host {host}
-        
-        # Timeouts for video conferencing
-        transport http {
-            dial_timeout 30s
-            response_header_timeout 30s
-        }
-    }
-    
-    # Security headers for Jitsi
-    header {
-        Strict-Transport-Security max-age=31536000;
-        X-Frame-Options SAMEORIGIN
-        X-Content-Type-Options nosniff
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy strict-origin-when-cross-origin
-    }
-    
-    # Handle WebSocket connections for JVB
-    @websocket {
+    # WebSocket for XMPP first
+    @websocket_xmpp {
+        path /xmpp-websocket*
         header Connection *Upgrade*
         header Upgrade websocket
     }
-    reverse_proxy @websocket jitsi-jvb:9090
+    reverse_proxy @websocket_xmpp jitsi-prosody:5280
+    
+    # BOSH
+    @bosh {
+        path /http-bind*
+    }
+    reverse_proxy @bosh jitsi-prosody:5280
+    
+    # Colibri WebSocket
+    @websocket_colibri {
+        path /colibri-ws/*
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    reverse_proxy @websocket_colibri jitsi-jvb:9090
+    
+    reverse_proxy jitsi-web:80 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
 }
 
 import /etc/caddy/addons/*.conf

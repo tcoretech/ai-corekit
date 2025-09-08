@@ -45,7 +45,6 @@ volumes:
   kopia_config:
   kopia_cache:
   kopia_logs:
-  kopia_tmp:
 
 x-n8n: &service-n8n
   build:
@@ -1518,8 +1517,6 @@ services:
       - ./shared:/data/shared:ro
       # Mount AI LaunchKit configuration (read-only)
       - .:/data/ai-launchkit:ro
-      # Mount for temporary operations and snapshot browsing
-      - kopia_tmp:/tmp:shared
     environment:
       # Repository encryption password (different from Nextcloud password!)
       - KOPIA_PASSWORD=${KOPIA_PASSWORD}
@@ -1542,8 +1539,6 @@ services:
       --server-password=${KOPIA_UI_PASSWORD}
       --disable-csrf-token-checks
       --insecure
-    networks:
-      - localai
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:51515"]
       interval: 30s

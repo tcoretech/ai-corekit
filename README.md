@@ -250,20 +250,54 @@ Vaultwarden is a lightweight, self-hosted password manager that's 100% compatibl
 ### Why Vaultwarden for AI LaunchKit?
 
 With 40+ services generating unique passwords and API keys, credential management becomes critical. Vaultwarden provides:
-- **Central Credential Storage:** All AI LaunchKit passwords in one secure place
-- **Browser Integration:** Auto-fill passwords for all your services
-- **Team Sharing:** Securely share credentials with team members
-- **Mobile Access:** iOS/Android apps for passwords on the go
-- **No Basic Auth:** Unlike other services, Vaultwarden has its own user management
+
+* **Central Credential Storage:** All AI LaunchKit passwords in one secure place
+* **Browser Integration:** Auto-fill passwords for all your services
+* **Team Sharing:** Securely share credentials with team members
+* **Mobile Access:** iOS/Android apps for passwords on the go
+* **No Basic Auth:** Unlike other services, Vaultwarden has its own user management
 
 ### Initial Setup
 
 **First Steps After Installation:**
+
 1. **Access Admin Panel:** Navigate to `https://vault.yourdomain.com/admin`
-2. **Enter Admin Token:** Find it in your `.env` file as `VAULTWARDEN_ADMIN_TOKEN`
+2. **Enter Admin Token:** Found in the installation final report or `.env` file as `VAULTWARDEN_ADMIN_TOKEN`
 3. **Configure SMTP:** Uses your configured mail system (Mailpit or Docker-Mailserver)
 4. **Create First User:** Register at `https://vault.yourdomain.com`
 5. **Install Browser Extension:** Available for all major browsers
+
+### 🚀 Automatic Credential Import
+
+AI LaunchKit automatically generates a Bitwarden-compatible JSON file with all your service credentials:
+
+```bash
+# Generate and download credentials (after installation)
+sudo bash ./scripts/download_credentials.sh
+```
+
+This script will:
+1. Generate a JSON file with all service passwords, API keys, and tokens
+2. Open port 8889 temporarily (60 seconds)
+3. Display a download link for your browser
+4. Automatically delete the file after download for security
+
+**Import into Vaultwarden:**
+1. Download the file using the link provided
+2. Open Vaultwarden: `https://vault.yourdomain.com`
+3. Go to **Tools** → **Import Data**
+4. Select Format: **Bitwarden (json)**
+5. Choose the downloaded file
+6. Click **Import Data**
+
+All credentials will be organized in an "AI LaunchKit Services" folder.
+
+### Security Notes
+
+* The admin token is displayed in the final installation report for convenience
+* Credential export files are automatically deleted after download
+* Signups are disabled by default - enable in admin panel if needed
+* Configure 2FA for additional security
 
 ### Client Configuration
 

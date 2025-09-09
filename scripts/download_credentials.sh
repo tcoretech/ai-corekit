@@ -5,9 +5,9 @@ echo "====================================="
 echo
 
 # File already exists, just serve it
-if [ ! -f ~/ai-launchkit/ai-launchkit-credentials.json ]; then
+if [ ! -f $HOME/ai-launchkit/ai-launchkit-credentials.json ]; then
     echo "Generating file..."
-    cd ~/ai-launchkit
+    cd $HOME/ai-launchkit
     sudo bash ./scripts/08_generate_vaultwarden_json.sh
 fi
 
@@ -24,7 +24,7 @@ echo
 echo "⏱️  Download within 60 seconds!"
 
 # Start server
-cd ~/ai-launchkit
+cd $HOME/ai-launchkit
 timeout 60 python3 -m http.server 8889 >/dev/null 2>&1
 
 # Cleanup

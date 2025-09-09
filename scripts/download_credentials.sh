@@ -5,7 +5,7 @@ echo "====================================="
 echo
 
 # File already exists, just serve it
-if [ ! -f /home/freddy/ai-launchkit/ai-launchkit-credentials.json ]; then
+if [ ! -f ~/ai-launchkit/ai-launchkit-credentials.json ]; then
     echo "Generating file..."
     cd /home/freddy/ai-launchkit
     sudo bash ./scripts/08_generate_vaultwarden_json.sh

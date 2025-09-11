@@ -305,6 +305,15 @@ https://{$NEO4J_HOSTNAME}:7687 {
     reverse_proxy kimai:8001
 }
 
+# Invoice Ninja - Professional Invoicing Platform
+{$INVOICENINJA_HOSTNAME} {
+    reverse_proxy invoiceninja:8000 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+    }
+}
+
 import /etc/caddy/addons/*.conf
 
 # # SearXNG

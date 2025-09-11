@@ -225,6 +225,23 @@ EOF
             "Professional time tracking system. DSGVO-compliant with 2FA support. First user is Super Admin. Internal API: http://kimai:8001/api"
     fi
 
+    # Invoice Ninja
+    if is_profile_active "invoiceninja"; then
+        add_login_item \
+            "Invoice Ninja Professional Invoicing" \
+            "${INVOICENINJA_ADMIN_EMAIL}" \
+            "${INVOICENINJA_ADMIN_PASSWORD}" \
+            "https://${INVOICENINJA_HOSTNAME}" \
+            "Professional invoicing platform with 40+ payment gateways. Initial admin account - delete IN_USER_EMAIL and IN_PASSWORD from .env after first login. Generate API tokens in Settings → Account Management → API Tokens for n8n integration."
+        
+        # Add APP_KEY as secure note if it exists
+        if [[ -n "${INVOICENINJA_APP_KEY}" ]]; then
+            add_secure_note \
+                "Invoice Ninja APP_KEY" \
+                "APP_KEY: ${INVOICENINJA_APP_KEY}\\n\\nCRITICAL: This key encrypts your data. Never lose it! Required for application to run."
+        fi
+    fi
+
     # Grafana
     if is_profile_active "monitoring"; then
         add_login_item \

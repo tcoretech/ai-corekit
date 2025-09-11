@@ -48,6 +48,9 @@ volumes:
   kimai_data:
   kimai_plugins:
   kimai_mysql:
+  invoiceninja_public:
+  invoiceninja_storage:
+  invoiceninja_mysql:
 
 x-n8n: &service-n8n
   build:
@@ -335,6 +338,7 @@ services:
       - VAULTWARDEN_HOSTNAME=${VAULTWARDEN_HOSTNAME}
       - KOPIA_HOSTNAME=${KOPIA_HOSTNAME}
       - KIMAI_HOSTNAME=${KIMAI_HOSTNAME}
+      - INVOICENINJA_HOSTNAME=${INVOICENINJA_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}
@@ -1601,6 +1605,94 @@ services:
     command: --default-storage-engine=innodb --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${KIMAI_DB_ROOT_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ============================================================================
+  # INVOICE NINJA - Professional Invoicing Platform
+  # ============================================================================
+  invoiceninja:
+    image: invoiceninja/invoiceninja:5
+    container_name: invoiceninja
+    profiles: ["invoiceninja"]
+    restart: unless-stopped
+    volumes:
+      - invoiceninja_public:/var/www/app/public
+      - invoiceninja_storage:/var/www/app/storage
+      - ./shared:/data/shared
+    environment:
+      # Application Settings
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://${INVOICENINJA_HOSTNAME}
+      - APP_KEY=${INVOICENINJA_APP_KEY}
+      - APP_CIPHER=AES-256-CBC
+      - REQUIRE_HTTPS=true
+      - TRUSTED_PROXIES=*
+      
+      # Database Configuration
+      - DB_HOST=invoiceninja_db
+      - DB_PORT=3306
+      - DB_DATABASE=${INVOICENINJA_DB_NAME:-invoiceninja}
+      - DB_USERNAME=${INVOICENINJA_DB_USER:-invoiceninja}
+      - DB_PASSWORD=${INVOICENINJA_DB_PASSWORD}
+      
+      # Initial Admin Account
+      - IN_USER_EMAIL=${INVOICENINJA_ADMIN_EMAIL:-${USER_EMAIL}}
+      - IN_PASSWORD=${INVOICENINJA_ADMIN_PASSWORD}
+      
+      # Mail Configuration
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=${SMTP_HOST:-mailpit}
+      - MAIL_PORT=${SMTP_PORT:-1025}
+      - MAIL_USERNAME=${SMTP_USER}
+      - MAIL_PASSWORD=${SMTP_PASSWORD}
+      - MAIL_ENCRYPTION=${SMTP_ENCRYPTION:-null}
+      - MAIL_FROM_ADDRESS=${INVOICENINJA_MAIL_FROM:-noreply@${BASE_DOMAIN}}
+      - MAIL_FROM_NAME="Invoice Ninja"
+      
+      # PDF Generation
+      - PDF_GENERATOR=snappdf
+      - SNAPPDF_EXECUTABLE_PATH=/usr/bin/chromium-browser
+      
+      # Queue Configuration
+      - QUEUE_CONNECTION=database
+      - BROADCAST_DRIVER=log
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PORT=6379
+      
+    depends_on:
+      invoiceninja_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  invoiceninja_db:
+    image: mysql:8.3
+    container_name: invoiceninja_db
+    profiles: ["invoiceninja"]
+    restart: unless-stopped
+    volumes:
+      - invoiceninja_mysql:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=${INVOICENINJA_DB_NAME:-invoiceninja}
+      - MYSQL_USER=${INVOICENINJA_DB_USER:-invoiceninja}
+      - MYSQL_PASSWORD=${INVOICENINJA_DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${INVOICENINJA_DB_ROOT_PASSWORD}
+    command: --default-storage-engine=innodb --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${INVOICENINJA_DB_ROOT_PASSWORD}"]
       interval: 30s
       timeout: 10s
       retries: 5

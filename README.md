@@ -87,6 +87,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[Vikunja](https://github.com/go-vikunja/vikunja)** | Modern task management platform | Kanban boards, Gantt charts, team collaboration, CalDAV | `vikunja.yourdomain.com` |
 | **[Leantime](https://github.com/Leantime/leantime)** | Goal-oriented project management suite | ADHD-friendly PM, time tracking, sprints, strategy tools | `leantime.yourdomain.com` |
 | **[Kimai](https://github.com/kimai/kimai)** | Professional time tracking | DSGVO-compliant billing, team timesheets, API, 2FA, invoicing | `time.yourdomain.com` |
+| **[Invoice Ninja](https://github.com/invoiceninja/invoiceninja)** | Professional invoicing & payment platform | Multi-currency invoices, 40+ payment gateways, recurring billing, client portal | `invoices.yourdomain.com` |
 | **[Baserow](https://github.com/bram2w/baserow)** | Airtable Alternative with real-time collaboration | Database management, project tracking, collaborative workflows | `baserow.yourdomain.com` |
 | **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
 
@@ -2106,6 +2107,381 @@ docker exec kimai bin/console cache:warmup --env=prod
 - **API Reference:** [kimai.org/documentation/rest-api.html](https://www.kimai.org/documentation/rest-api.html)
 - **Plugin Store:** [kimai.org/store](https://www.kimai.org/store/)
 - **Support Forum:** [github.com/kimai/kimai/discussions](https://github.com/kimai/kimai/discussions)
+
+## 💰 Invoice Ninja Integration
+
+Invoice Ninja provides a complete invoicing and payment platform with 40+ payment gateways, client portal, and comprehensive API for automation workflows.
+
+### Initial Setup
+
+**First Login to Invoice Ninja:**
+1. Navigate to `https://invoices.yourdomain.com`
+2. Login with admin credentials from installation report:
+   - Email: Your email address (set during installation)
+   - Password: Check `.env` file for `INVOICENINJA_ADMIN_PASSWORD`
+3. Complete initial setup:
+   - Company details and logo
+   - Tax rates and invoice customization
+   - Payment gateway configuration (Stripe, PayPal, etc.)
+   - Email templates
+
+**⚠️ IMPORTANT - APP_KEY:**
+- Invoice Ninja requires a Laravel APP_KEY for encryption
+- This is automatically generated during installation
+- If missing, generate manually:
+  ```bash
+  docker run --rm invoiceninja/invoiceninja:5 php artisan key:generate --show
+  # Add the complete output (including "base64:") to .env as INVOICENINJA_APP_KEY
+  ```
+
+**Post-Setup Security:**
+- After first login, remove these from `.env`:
+  - `IN_USER_EMAIL` environment variable
+  - `IN_PASSWORD` environment variable
+- These are only needed for initial account creation
+
+### n8n Integration Setup
+
+Invoice Ninja has **native n8n node support** for seamless integration!
+
+**Create Invoice Ninja Credentials in n8n:**
+1. In n8n, go to Credentials → New → Invoice Ninja API
+2. Configure:
+   - **URL**: `http://invoiceninja:8000` (internal) or `https://invoices.yourdomain.com` (external)
+   - **API Token**: Generate in Invoice Ninja (Settings → Account Management → API Tokens)
+   - **Secret** (optional): For webhook validation
+
+**Generate API Token in Invoice Ninja:**
+1. Login to Invoice Ninja
+2. Settings → Account Management → API Tokens
+3. Click "New Token"
+4. Name: "n8n Integration"
+5. Copy token immediately (shown only once!)
+
+### Example: Automated Invoice Generation from Kimai
+
+Create invoices automatically from tracked time:
+
+```javascript
+// 1. Schedule Trigger: Weekly on Friday at 5 PM
+
+// 2. Kimai Node: Get week's time entries
+// Or HTTP Request to Kimai API
+Method: GET
+URL: http://kimai:8001/api/timesheets
+Query: {
+  begin: {{ $now.startOf('week').toISO() }},
+  end: {{ $now.endOf('week').toISO() }}
+}
+
+// 3. Code Node: Group by customer
+const entries = $input.all();
+const byCustomer = {};
+
+entries.forEach(entry => {
+  const customer = entry.json.customer;
+  if (!byCustomer[customer]) {
+    byCustomer[customer] = {
+      name: customer,
+      items: [],
+      total: 0
+    };
+  }
+  byCustomer[customer].items.push({
+    product_key: entry.json.project,
+    notes: entry.json.description,
+    quantity: entry.json.duration / 3600, // Convert to hours
+    cost: entry.json.hourlyRate
+  });
+  byCustomer[customer].total += entry.json.total;
+});
+
+return Object.values(byCustomer);
+
+// 4. Loop Over Customers
+
+// 5. Invoice Ninja Node: Create Invoice
+Operation: Create Invoice
+Fields: {
+  client_id: {{ $json.client_id }},
+  line_items: {{ $json.items }},
+  due_date: {{ $now.plus(30, 'days').toISO() }}
+}
+
+// 6. Invoice Ninja Node: Send Invoice
+Operation: Send Invoice
+Invoice ID: {{ $('Create Invoice').json.id }}
+```
+
+### Example: Payment Reminder Automation
+
+Send automated reminders for overdue invoices:
+
+```javascript
+// 1. Schedule Trigger: Daily at 9 AM
+
+// 2. Invoice Ninja Node: Get Invoices
+Operation: Get All
+Filters: {
+  status_id: 2, // Sent
+  is_deleted: false,
+  balance: [">", 0], // Has outstanding balance
+  due_date: ["<", "{{ $now.toISO() }}"] // Past due
+}
+
+// 3. Loop Over Invoices
+
+// 4. IF Node: Check days overdue
+{{ $json.days_overdue > 7 }}
+
+// 5. Invoice Ninja Node: Send Reminder
+Operation: Send Invoice Reminder
+Invoice ID: {{ $json.id }}
+Template: reminder1 // or reminder2, reminder3
+
+// 6. Slack/Email: Notify team
+Message: "Reminder sent for invoice #{{ $json.number }}"
+```
+
+### Example: Stripe Payment Webhook Processing
+
+Handle successful payments automatically:
+
+```javascript
+// 1. Webhook Trigger: Stripe payment.succeeded
+
+// 2. Code Node: Extract invoice ID
+const invoiceId = $json.body.metadata.invoice_id;
+return { invoiceId };
+
+// 3. Invoice Ninja Node: Get Invoice
+Operation: Get
+Invoice ID: {{ $json.invoiceId }}
+
+// 4. Invoice Ninja Node: Create Payment
+Operation: Create Payment
+Fields: {
+  invoice_id: {{ $json.invoiceId }},
+  amount: {{ $json.amount / 100 }}, // Convert from cents
+  payment_date: {{ $now.toISO() }},
+  transaction_reference: {{ $json.body.id }}
+}
+
+// 5. Send confirmation email (via configured mail system)
+```
+
+### Example: Expense to Invoice Workflow
+
+Convert approved expenses into client invoices:
+
+```javascript
+// 1. Invoice Ninja Trigger: expense.approved
+
+// 2. Invoice Ninja Node: Get Client
+Operation: Get Client
+Client ID: {{ $json.client_id }}
+
+// 3. Invoice Ninja Node: Create Invoice
+Operation: Create Invoice
+Fields: {
+  client_id: {{ $json.client_id }},
+  line_items: [{
+    product_key: "EXPENSE",
+    notes: {{ $json.public_notes }},
+    quantity: 1,
+    cost: {{ $json.amount }}
+  }],
+  public_notes: "Reimbursable expense from {{ $json.date }}"
+}
+
+// 4. Invoice Ninja Node: Mark Expense as Invoiced
+Operation: Update Expense
+Fields: {
+  invoice_id: {{ $('Create Invoice').json.id }},
+  should_be_invoiced: false
+}
+```
+
+### Payment Gateway Configuration
+
+Invoice Ninja supports 40+ payment gateways. Most popular:
+
+**Stripe Setup:**
+1. Settings → Payment Settings → Configure Gateways
+2. Select Stripe → Configure
+3. Add API keys from Stripe Dashboard
+4. Enable payment methods (Cards, ACH, SEPA, etc.)
+5. Configure webhook: `https://invoices.yourdomain.com/stripe/webhook`
+
+**PayPal Setup:**
+1. Settings → Payment Settings → Configure Gateways
+2. Select PayPal → Configure
+3. Add Client ID and Secret from PayPal Developer
+4. Set return URL: `https://invoices.yourdomain.com/paypal/completed`
+
+**Webhook Security:**
+- Each gateway provides webhook endpoints
+- Use webhook secrets in n8n for validation
+- Test with Stripe CLI or PayPal sandbox first
+
+### Advanced API Usage
+
+For operations not in the native node, use HTTP Request:
+
+```javascript
+// Bulk invoice creation
+Method: POST
+URL: http://invoiceninja:8000/api/v1/invoices/bulk
+Headers: {
+  "X-API-TOKEN": "{{ $credentials.apiToken }}",
+  "Content-Type": "application/json"
+}
+Body: {
+  "ids": [1, 2, 3],
+  "action": "send" // or "download", "archive", "delete"
+}
+
+// Custom reports
+Method: GET
+URL: http://invoiceninja:8000/api/v1/reports/clients
+Query: {
+  date_range: "this_year",
+  report_keys: ["name", "balance", "paid_to_date"]
+}
+
+// Recurring invoice management
+Method: POST
+URL: http://invoiceninja:8000/api/v1/recurring_invoices
+Body: {
+  "client_id": 1,
+  "frequency_id": 4, // Monthly
+  "auto_bill": "always",
+  "line_items": {{ $json.items }}
+}
+```
+
+### Client Portal Features
+
+The client portal allows customers to:
+- View and pay invoices online
+- Download invoices and receipts
+- View payment history
+- Update contact information
+- Approve quotes
+- Access without separate registration
+
+**Portal URL:** `https://invoices.yourdomain.com/client/login`
+
+**Customization:**
+- Settings → Client Portal
+- Enable/disable features
+- Customize terms and privacy policy
+- Set payment methods available to clients
+
+### Tips for Invoice Ninja + n8n
+
+1. **Use Internal URLs:** From n8n, use `http://invoiceninja:8000` for better performance
+2. **API Rate Limits:** Default 300 requests per minute
+3. **Webhook Events:** Enable in Settings → Account Management → Webhooks
+4. **PDF Generation:** Uses Chromium internally, may need 1-2 seconds per invoice
+5. **Currency Handling:** Always specify currency_id for multi-currency setups
+6. **Tax Calculations:** Configure tax rates before creating invoices
+7. **Backup:** Regular database backups recommended for financial data
+
+### Multi-Language & Localization
+
+Invoice Ninja supports 30+ languages:
+
+```javascript
+// Set invoice language per client
+Invoice Ninja Node: Update Client
+Fields: {
+  settings: {
+    language_id: "2", // German
+    currency_id: "2", // EUR
+    country_id: "276" // Germany
+  }
+}
+```
+
+### Migration from Other Systems
+
+Invoice Ninja can import from:
+- QuickBooks
+- FreshBooks  
+- Wave
+- Zoho Invoice
+- CSV files
+
+**Import Process:**
+1. Settings → Import
+2. Select source system
+3. Upload export file
+4. Map fields
+5. Review and confirm
+
+### Troubleshooting
+
+**500 Internal Server Error:**
+```bash
+# Run migrations
+docker exec invoiceninja php artisan migrate --force
+
+# Clear cache
+docker exec invoiceninja php artisan optimize:clear
+docker exec invoiceninja php artisan optimize
+
+# Check logs
+docker logs invoiceninja --tail 100
+```
+
+**PDFs not generating:**
+```bash
+# Check SnappDF
+docker exec invoiceninja php artisan ninja:check-pdf
+
+# Alternative: Use PhantomJS
+# In .env: PDF_GENERATOR=phantom
+```
+
+**Email delivery issues:**
+```bash
+# Test mail configuration
+docker exec invoiceninja php artisan tinker
+>>> Mail::raw('Test', function($m) { $m->to('test@example.com')->subject('Test'); });
+```
+
+**API returns 401:**
+- Verify API token is correct
+- Check token permissions in Invoice Ninja
+- Ensure token hasn't expired
+
+### Resources
+
+- **Documentation:** [invoiceninja.github.io](https://invoiceninja.github.io/)
+- **API Reference:** [api-docs.invoicing.co](https://api-docs.invoicing.co/)
+- **Forum:** [forum.invoiceninja.com](https://forum.invoiceninja.com/)
+- **GitHub:** [github.com/invoiceninja/invoiceninja](https://github.com/invoiceninja/invoiceninja)
+- **YouTube:** [Invoice Ninja Channel](https://www.youtube.com/channel/UCXjmYgQdCTpvHZSQ0x6VFRA)
+- **n8n Node Docs:** Search "Invoice Ninja" in n8n node library
+
+### Performance Optimization
+
+For large-scale operations:
+
+```yaml
+# Increase PHP memory in docker-compose.yml
+environment:
+  - PHP_MEMORY_LIMIT=512M
+  
+# Enable Redis caching (already configured)
+  - CACHE_DRIVER=redis
+  - SESSION_DRIVER=redis
+```
+
+**Queue Processing:**
+- Invoice Ninja uses queues for emails and PDFs
+- Monitor with: `docker exec invoiceninja php artisan queue:work --stop-when-empty`
 
 ### 💾 Baserow Integration with n8n
 

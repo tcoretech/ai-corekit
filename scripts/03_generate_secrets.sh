@@ -81,6 +81,9 @@ declare -A VARS_TO_GENERATE=(
     ["KIMAI_ADMIN_PASSWORD"]="password:32"
     ["KIMAI_DB_PASSWORD"]="password:32"
     ["KIMAI_DB_ROOT_PASSWORD"]="password:32"
+    ["INVOICENINJA_ADMIN_PASSWORD"]="password:32"
+    ["INVOICENINJA_DB_PASSWORD"]="password:32"
+    ["INVOICENINJA_DB_ROOT_PASSWORD"]="password:32"
     ["MAILPIT_PASSWORD"]="password:32"
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"
@@ -597,6 +600,7 @@ generated_values["ODOO_USERNAME"]="$USER_EMAIL" #Set Odoo username for Caddy
 generated_values["BASEROW_USERNAME"]="$USER_EMAIL" # Set Baserow username for Caddy
 generated_values["KOPIA_UI_USERNAME"]="admin"  # Kopia uses 'admin' by default
 generated_values["KIMAI_ADMIN_EMAIL"]="$USER_EMAIL"
+generated_values["INVOICENINJA_ADMIN_EMAIL"]="$USER_EMAIL"
 generated_values["MAILPIT_USERNAME"]="$USER_EMAIL"  # Set Mailpit username for Caddy
 
 if [[ -n "$OPENAI_API_KEY" ]]; then
@@ -651,6 +655,7 @@ found_vars["ODOO_USERNAME"]=0
 found_vars["BASEROW_USERNAME"]=0
 found_vars["KOPIA_UI_USERNAME"]=0
 found_vars["KIMAI_ADMIN_EMAIL"]=0
+found_vars["INVOICENINJA_ADMIN_EMAIL"]=0
 found_vars["MAILPIT_USERNAME"]=0
 found_vars["EMAIL_FROM"]=0
 found_vars["EMAIL_SMTP"]=0
@@ -713,7 +718,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             # This 'else' block is for lines from template not covered by existing values or VARS_TO_GENERATE.
             # Check if it is one of the user input vars - these are handled by found_vars later if not in template.
             is_user_input_var=0 # Reset for each line
-            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "MAILPIT_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN")
+            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "MAILPIT_USERNAME" "INVOICENINJA_ADMIN_EMAIL" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN")
             for uivar in "${user_input_vars[@]}"; do
                 if [[ "$varName" == "$uivar" ]]; then
                     is_user_input_var=1
@@ -795,7 +800,7 @@ if [[ -z "${generated_values[SERVICE_ROLE_KEY]}" ]]; then
 fi
 
 # Add any custom variables that weren't found in the template
-for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "MAILPIT_USERNAME" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN"; do
+for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "MAILPIT_USERNAME" "INVOICENINJA_ADMIN_EMAIL" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN"; do
     if [[ ${found_vars["$var"]} -eq 0 && -v generated_values["$var"] ]]; then
         # Before appending, check if it's already in TMP_ENV_FILE to avoid duplicates
         if ! grep -q -E "^${var}=" "$TMP_ENV_FILE"; then
@@ -1037,6 +1042,28 @@ if [[ -z "$FINAL_MAILPIT_HASH" && -n "$MAILPIT_PLAIN_PASS" ]]; then
     fi
 fi
 _update_or_add_env_var "MAILPIT_PASSWORD_HASH" "$FINAL_MAILPIT_HASH"
+
+# --- INVOICE NINJA APP_KEY ---
+# Special handling for Invoice Ninja APP_KEY (must be generated with Laravel)
+if [[ -z "${generated_values[INVOICENINJA_APP_KEY]}" ]] && [[ -z "${existing_env_vars[INVOICENINJA_APP_KEY]}" ]]; then
+    log_info "Generating Invoice Ninja APP_KEY..."
+    log_warning "If this fails, manually run:"
+    log_warning "docker run --rm invoiceninja/invoiceninja:5 php artisan key:generate --show"
+    
+    # Try to generate with Docker if available
+    if command -v docker &> /dev/null; then
+        APP_KEY=$(docker run --rm invoiceninja/invoiceninja:5 php artisan key:generate --show 2>/dev/null | grep "base64:" || true)
+        if [[ -n "$APP_KEY" ]]; then
+            generated_values["INVOICENINJA_APP_KEY"]="$APP_KEY"
+            _update_or_add_env_var "INVOICENINJA_APP_KEY" "$APP_KEY"
+            log_success "Invoice Ninja APP_KEY generated successfully"
+        else
+            log_error "Failed to generate APP_KEY - you must generate it manually before starting Invoice Ninja"
+        fi
+    else
+        log_warning "Docker not available - generate APP_KEY manually before starting"
+    fi
+fi
 
 # Ensure DOMAIN is written to .env for backward compatibility
 if [[ -n "${generated_values[DOMAIN]}" ]]; then

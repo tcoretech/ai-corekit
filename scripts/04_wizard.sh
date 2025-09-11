@@ -65,6 +65,7 @@ base_services_data=(
     "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
     "calcom" "Cal.com (Open Source Scheduling Platform)"
     "kimai" "Kimai (Professional Time Tracking - DSGVO-compliant, 2FA, invoicing)"
+    "invoiceninja" "Invoice Ninja - Professional invoicing platform"
     "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
     "vaultwarden" "Vaultwarden (Self-hosted Bitwarden-compatible password manager)"
     "kopia" "Kopia (Fast and secure backup with Cloud and WebDAV storage)"

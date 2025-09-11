@@ -191,18 +191,15 @@ if [[ -z "${generated_values[JVB_DOCKER_HOST_ADDRESS]}" ]]; then
     fi
 fi
 
-# Auto-configure Jitsi PUBLIC_URL and WebSocket settings
-if is_profile_active "jitsi"; then
-    # Get JITSI_HOSTNAME from env or use default
+# Auto-configure Jitsi variables (will be used if Jitsi is selected later)
+# Check if Jitsi was previously selected (for re-runs)
+if [[ "${existing_env_vars[COMPOSE_PROFILES]}" == *"jitsi"* ]]; then
     JITSI_HOSTNAME="${existing_env_vars[JITSI_HOSTNAME]:-meet.$DOMAIN}"
-    
-    # Set all required Jitsi variables
     generated_values["PUBLIC_URL"]="https://$JITSI_HOSTNAME"
     generated_values["ENABLE_XMPP_WEBSOCKET"]="true"
     generated_values["XMPP_DOMAIN"]="meet.jitsi"
     generated_values["XMPP_SERVER"]="jitsi-prosody"
-    
-    log_info "Auto-configured Jitsi PUBLIC_URL: https://$JITSI_HOSTNAME"
+    log_info "Jitsi variables configured (from previous installation)"
 fi
 
 # Prompt for user email

@@ -89,6 +89,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[Kimai](https://github.com/kimai/kimai)** | Professional time tracking | DSGVO-compliant billing, team timesheets, API, 2FA, invoicing | `time.yourdomain.com` |
 | **[Invoice Ninja](https://github.com/invoiceninja/invoiceninja)** | Professional invoicing & payment platform | Multi-currency invoices, 40+ payment gateways, recurring billing, client portal | `invoices.yourdomain.com` |
 | **[Baserow](https://github.com/bram2w/baserow)** | Airtable Alternative with real-time collaboration | Database management, project tracking, collaborative workflows | `baserow.yourdomain.com` |
+| **[Formbricks](https://github.com/formbricks/formbricks)** | Privacy-first survey platform | Customer feedback, NPS surveys, market research, form builder, GDPR-compliant | `forms.yourdomain.com` |
 | **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
 
 ### 🎨 AI Content Generation
@@ -2482,6 +2483,99 @@ environment:
 **Queue Processing:**
 - Invoice Ninja uses queues for emails and PDFs
 - Monitor with: `docker exec invoiceninja php artisan queue:work --stop-when-empty`
+
+## 📊 Formbricks Survey Platform Integration
+
+Formbricks provides a privacy-first survey platform that seamlessly integrates with n8n for automated feedback collection, analysis, and response workflows.
+
+### Initial Setup
+
+**First Login to Formbricks:**
+1. Navigate to `https://forms.yourdomain.com`
+2. Click "Sign up" to create the first admin account
+3. First user automatically becomes organization owner
+4. Complete organization setup
+5. Generate API key in Settings → API Keys
+
+### n8n Integration Setup
+
+**Install Native Formbricks Node (Community):**
+```bash
+# In n8n, install community node
+docker exec -it n8n bash
+cd /home/node/.n8n
+npm install @formbricks/n8n-nodes-formbricks
+# Restart n8n
+docker compose -p localai restart n8n
+```
+
+**Create Formbricks Credentials:**
+1. In n8n: Credentials → New → Formbricks API
+2. Configure:
+   - **Host:** `http://formbricks:3000` (internal)
+   - **API Key:** Your generated key from Formbricks
+
+### Example: NPS Score Automation
+
+React to low NPS scores immediately:
+
+```javascript
+// 1. Webhook Trigger: Formbricks survey response
+// Configure in Formbricks: Survey → Settings → Webhooks
+// URL: https://n8n.yourdomain.com/webhook/nps-response
+
+// 2. IF Node: Check NPS score
+Condition: {{ $json.data.nps_score <= 6 }}
+
+// 3. Create Support Ticket (Baserow/Odoo)
+Priority: High
+Type: Detractor Alert
+Score: {{ $json.data.nps_score }}
+Feedback: {{ $json.data.feedback }}
+
+// 4. Send Slack Alert
+Channel: #customer-success
+Message: "⚠️ Detractor Alert! Score: {{ $json.data.nps_score }}"
+
+// 5. Send Email (via configured mail system)
+To: support-team@yourdomain.com
+Subject: Urgent: NPS Detractor Response
+```
+
+### Example: Form to CRM Pipeline
+
+```javascript
+// 1. Webhook: Formbricks form submission
+// 2. Code Node: Parse form data
+const formData = $json.data;
+return {
+  name: formData.name,
+  email: formData.email,
+  company: formData.company,
+  source: 'formbricks',
+  score: formData.qualification_score
+};
+
+// 3. Supabase/Odoo Node: Create lead
+// 4. Cal.com Node: Schedule follow-up if score > 70
+// 5. Email: Send confirmation to submitter
+```
+
+### Survey Types & Use Cases
+
+- **NPS Surveys:** Measure customer satisfaction
+- **CSAT Scores:** Post-interaction feedback
+- **Lead Qualification:** Score and route leads
+- **Employee Pulse:** Team satisfaction surveys
+- **Product Feedback:** Feature requests and bug reports
+
+### Tips for Formbricks + n8n
+
+1. **Use Webhooks:** Configure "On Response Completed" webhooks for real-time processing
+2. **Internal URL:** Use `http://formbricks:3000` from n8n, not external URL
+3. **Multi-Language:** Configure surveys in multiple languages for global reach
+4. **Logic Branching:** Use conditional logic to create dynamic survey flows
+5. **Embed Options:** Use JavaScript SDK for in-app surveys
 
 ### 💾 Baserow Integration with n8n
 

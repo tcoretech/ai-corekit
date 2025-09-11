@@ -66,6 +66,7 @@ base_services_data=(
     "calcom" "Cal.com (Open Source Scheduling Platform)"
     "kimai" "Kimai (Professional Time Tracking - DSGVO-compliant, 2FA, invoicing)"
     "invoiceninja" "Invoice Ninja - Professional invoicing platform"
+    "formbricks" "Formbricks - Privacy-first surveys & forms (Typeform alternative)"
     "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
     "vaultwarden" "Vaultwarden (Self-hosted Bitwarden-compatible password manager)"
     "kopia" "Kopia (Fast and secure backup with Cloud and WebDAV storage)"

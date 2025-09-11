@@ -286,6 +286,13 @@ EOF
             "URL: https://${ODOO_HOSTNAME}\\n\\nFirst Login Setup:\\nMaster Password: ${ODOO_MASTER_PASSWORD}\\nDatabase Name: odoo\\nAdmin Email: Use your email\\nAdmin Password: Create a strong password\\n\\nDatabase Management Protected with:\\nUsername: ${ODOO_USERNAME}\\nPassword: ${ODOO_PASSWORD}"
     fi
 
+    # Formbricks
+    if is_profile_active "formbricks"; then
+        add_secure_note \
+            "Formbricks Survey Platform" \
+            "URL: https://${FORMBRICKS_HOSTNAME}\\n\\nPrivacy-first survey platform (Typeform alternative)\\n\\nFirst user to register becomes organization owner.\\nNo pre-configured credentials - create account on first access.\\n\\nAPI Integration:\\n- Generate API key in Settings → API Keys after login\\n- Webhook URL: https://${FORMBRICKS_HOSTNAME}/api/v1/webhooks\\n- Internal API: http://formbricks:3000/api/v1"
+    fi
+
     # Baserow
     if is_profile_active "baserow"; then
         add_secure_note \

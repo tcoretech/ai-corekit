@@ -314,6 +314,18 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
+# Formbricks - Open Source Survey Platform
+{$FORMBRICKS_HOSTNAME} {
+    reverse_proxy formbricks:3000 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+        # WebSocket support for live updates
+        header_up Connection {http.request.header.Connection}
+        header_up Upgrade {http.request.header.Upgrade}
+    }
+}
+
 import /etc/caddy/addons/*.conf
 
 # # SearXNG

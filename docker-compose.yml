@@ -1629,7 +1629,7 @@ services:
       - APP_URL=https://${INVOICENINJA_HOSTNAME}
       - APP_KEY=${INVOICENINJA_APP_KEY}
       - APP_CIPHER=AES-256-CBC
-      - REQUIRE_HTTPS=true
+      - REQUIRE_HTTPS=false
       - TRUSTED_PROXIES=*
       
       # Database Configuration
@@ -1672,7 +1672,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/v1/health || exit 1"]
+      test: ["CMD-SHELL", "ps aux | grep php-fpm | grep -v grep || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -1697,3 +1697,15 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+
+  invoiceninja_nginx:
+    image: nginx:alpine
+    container_name: invoiceninja_nginx
+    profiles: ["invoiceninja"]
+    restart: unless-stopped
+    volumes:
+      - invoiceninja_public:/var/www/app/public:ro
+      - invoiceninja_storage:/var/www/app/storage:ro
+      - ./invoiceninja-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - invoiceninja

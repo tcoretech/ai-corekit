@@ -307,7 +307,7 @@ https://{$NEO4J_HOSTNAME}:7687 {
 
 # Invoice Ninja - Professional Invoicing Platform
 {$INVOICENINJA_HOSTNAME} {
-    reverse_proxy invoiceninja:8000 {
+    reverse_proxy invoiceninja_nginx:80 {
         header_up X-Forwarded-Proto {scheme}
         header_up X-Forwarded-Host {host}
         header_up X-Real-IP {remote_host}

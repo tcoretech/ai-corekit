@@ -231,7 +231,7 @@ EOF
             "Invoice Ninja Professional Invoicing" \
             "${INVOICENINJA_ADMIN_EMAIL}" \
             "${INVOICENINJA_ADMIN_PASSWORD}" \
-            "https://${INVOICENINJA_HOSTNAME}" \
+            "https://${INVOICENINJA_HOSTNAME}/login" \
             "Professional invoicing platform with 40+ payment gateways. Initial admin account - delete IN_USER_EMAIL and IN_PASSWORD from .env after first login. Generate API tokens in Settings → Account Management → API Tokens for n8n integration."
         
         # Add APP_KEY as secure note if it exists

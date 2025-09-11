@@ -409,7 +409,7 @@ if is_profile_active "invoiceninja"; then
   echo
   echo "================================= Invoice Ninja ========================"
   echo
-  echo "🌐 Access URL: https://${INVOICENINJA_HOSTNAME:-<hostname_not_set>}"
+  echo "🌐 Access URL: https://${INVOICENINJA_HOSTNAME:-<hostname_not_set>}/login"
   echo
   echo "⚠️  APP_KEY Status:"
   if [[ -n "${INVOICENINJA_APP_KEY}" ]]; then

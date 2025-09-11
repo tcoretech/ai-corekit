@@ -1780,11 +1780,11 @@ services:
       - INVITE_DISABLED=0
       - EMAIL_AUTH_DISABLED=0
       - MAIL_FROM=${FORMBRICKS_MAIL_FROM:-noreply@${BASE_DOMAIN}}
-      - SMTP_HOST=mailpit
-      - SMTP_PORT=1025
-      - SMTP_USER=dummy
-      - SMTP_PASSWORD=dummy
-      - SMTP_SECURE_ENABLED=0
+      - SMTP_HOST=${SMTP_HOST:-mailpit}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - SMTP_USER=${SMTP_USER:-dummy}
+      - SMTP_PASSWORD=${SMTP_PASS:-dummy}
+      - SMTP_SECURE_ENABLED=${SMTP_SECURE:-0}
       - UPLOADS_DIR=/home/nextjs/apps/web/uploads
       - ASSET_PREFIX_URL=
       - TELEMETRY_DISABLED=1

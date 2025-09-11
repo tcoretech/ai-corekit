@@ -52,6 +52,7 @@ volumes:
   invoiceninja_storage:
   invoiceninja_mysql:
   formbricks_uploads:
+  formbricks_postgres:
 
 x-n8n: &service-n8n
   build:
@@ -1733,6 +1734,29 @@ services:
       "
     restart: "no"
 
+  # ============================================================================
+  # FORMBRICKS - Open Source Survey Platform (Typeform Alternative)
+  # ============================================================================
+  
+  # Dedicated PostgreSQL with pgvector for Formbricks
+  formbricks_db:
+    image: pgvector/pgvector:pg17
+    container_name: formbricks_db
+    profiles: ["formbricks"]
+    restart: unless-stopped
+    volumes:
+      - formbricks_postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=formbricks
+      - POSTGRES_USER=formbricks
+      - POSTGRES_PASSWORD=${FORMBRICKS_DB_PASSWORD:-formbricks_secure_password}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U formbricks"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
   formbricks:
     image: formbricks/formbricks:latest
     container_name: formbricks
@@ -1746,47 +1770,31 @@ services:
       - WEBAPP_URL=https://${FORMBRICKS_HOSTNAME}
       - NEXTAUTH_URL=https://${FORMBRICKS_HOSTNAME}
       
-      # Database (nutzt vorhandene PostgreSQL)
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/formbricks?schema=public
-      
-      # Security Keys (REQUIRED!)
+      # Database - eigene PostgreSQL mit pgvector!
+      - DATABASE_URL=postgresql://formbricks:${FORMBRICKS_DB_PASSWORD:-formbricks_secure_password}@formbricks_db:5432/formbricks?schema=public
       - NEXTAUTH_SECRET=${FORMBRICKS_NEXTAUTH_SECRET}
       - ENCRYPTION_KEY=${FORMBRICKS_ENCRYPTION_KEY}
       - CRON_SECRET=${FORMBRICKS_CRON_SECRET}
-      
-      # Auth Configuration
       - EMAIL_VERIFICATION_DISABLED=1
       - PASSWORD_RESET_DISABLED=0
       - INVITE_DISABLED=0
       - EMAIL_AUTH_DISABLED=0
-      
-      # Mail Configuration (nutzt Mailpit)
       - MAIL_FROM=${FORMBRICKS_MAIL_FROM:-noreply@${BASE_DOMAIN}}
       - SMTP_HOST=mailpit
       - SMTP_PORT=1025
-      - SMTP_USER=
-      - SMTP_PASSWORD=
+      - SMTP_USER=dummy
+      - SMTP_PASSWORD=dummy
       - SMTP_SECURE_ENABLED=0
-      
-      # Storage
       - UPLOADS_DIR=/home/nextjs/apps/web/uploads
       - ASSET_PREFIX_URL=
-      
-      # Privacy
       - TELEMETRY_DISABLED=1
-      
-      # Optional Features
       - DEFAULT_ORGANIZATION_ID=
       - DEFAULT_ORGANIZATION_ROLE=owner
-      
-      # Redis für bessere Performance (nutzt vorhandene Redis)
       - REDIS_URL=redis://redis:6379
       - REDIS_HTTP_URL=redis://redis:6379
       
     depends_on:
-      formbricks-init:
-        condition: service_completed_successfully
-      postgres:
+      formbricks_db:
         condition: service_healthy
       redis:
         condition: service_healthy

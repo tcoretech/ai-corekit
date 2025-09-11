@@ -87,6 +87,7 @@ declare -A VARS_TO_GENERATE=(
     ["FORMBRICKS_NEXTAUTH_SECRET"]="apikey:32"
     ["FORMBRICKS_ENCRYPTION_KEY"]="apikey:32"
     ["FORMBRICKS_CRON_SECRET"]="apikey:32"
+    ["FORMBRICKS_DB_PASSWORD"]="password:32"
     ["MAILPIT_PASSWORD"]="password:32"
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"

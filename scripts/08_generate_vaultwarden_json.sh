@@ -215,6 +215,16 @@ EOF
             "Repository Password: ${KOPIA_PASSWORD}\\n\\nNextcloud WebDAV:\\nURL: ${NEXTCLOUD_WEBDAV_URL}\\nUsername: ${NEXTCLOUD_USERNAME}\\nApp Password: ${NEXTCLOUD_APP_PASSWORD}\\n\\nIMPORTANT: Repository password is different from UI password!"
     fi
 
+    # Kimai Time Tracking
+    if is_profile_active "kimai"; then
+        add_login_item \
+            "Kimai Time Tracking" \
+            "${KIMAI_ADMIN_EMAIL}" \
+            "${KIMAI_ADMIN_PASSWORD}" \
+            "https://${KIMAI_HOSTNAME}" \
+            "Professional time tracking system. DSGVO-compliant with 2FA support. First user is Super Admin. Internal API: http://kimai:8001/api"
+    fi
+
     # Grafana
     if is_profile_active "monitoring"; then
         add_login_item \

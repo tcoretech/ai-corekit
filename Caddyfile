@@ -300,6 +300,11 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
+# Kimai - Professional Time Tracking
+{$KIMAI_HOSTNAME} {
+    reverse_proxy kimai:8001
+}
+
 import /etc/caddy/addons/*.conf
 
 # # SearXNG

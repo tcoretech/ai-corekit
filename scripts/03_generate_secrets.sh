@@ -78,6 +78,9 @@ declare -A VARS_TO_GENERATE=(
     ["VAULTWARDEN_ADMIN_TOKEN"]="apikey:64"
     ["KOPIA_UI_PASSWORD"]="password:32"
     ["KOPIA_PASSWORD"]="password:32"
+    ["KIMAI_ADMIN_PASSWORD"]="password:32"
+    ["KIMAI_DB_PASSWORD"]="password:32"
+    ["KIMAI_DB_ROOT_PASSWORD"]="password:32"
     ["MAILPIT_PASSWORD"]="password:32"
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"
@@ -593,6 +596,7 @@ generated_values["PERPLEXICA_USERNAME"]="$USER_EMAIL" # Set Perplexica username 
 generated_values["ODOO_USERNAME"]="$USER_EMAIL" #Set Odoo username for Caddy
 generated_values["BASEROW_USERNAME"]="$USER_EMAIL" # Set Baserow username for Caddy
 generated_values["KOPIA_UI_USERNAME"]="admin"  # Kopia uses 'admin' by default
+generated_values["KIMAI_ADMIN_EMAIL"]="$USER_EMAIL"
 generated_values["MAILPIT_USERNAME"]="$USER_EMAIL"  # Set Mailpit username for Caddy
 
 if [[ -n "$OPENAI_API_KEY" ]]; then
@@ -646,6 +650,7 @@ found_vars["PERPLEXICA_USERNAME"]=0
 found_vars["ODOO_USERNAME"]=0
 found_vars["BASEROW_USERNAME"]=0
 found_vars["KOPIA_UI_USERNAME"]=0
+found_vars["KIMAI_ADMIN_EMAIL"]=0
 found_vars["MAILPIT_USERNAME"]=0
 found_vars["EMAIL_FROM"]=0
 found_vars["EMAIL_SMTP"]=0

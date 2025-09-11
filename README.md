@@ -86,6 +86,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[Cal.com](https://github.com/calcom/cal.com)** | Open-source scheduling platform | Meeting bookings, team calendars, payment integrations | `cal.yourdomain.com` |
 | **[Vikunja](https://github.com/go-vikunja/vikunja)** | Modern task management platform | Kanban boards, Gantt charts, team collaboration, CalDAV | `vikunja.yourdomain.com` |
 | **[Leantime](https://github.com/Leantime/leantime)** | Goal-oriented project management suite | ADHD-friendly PM, time tracking, sprints, strategy tools | `leantime.yourdomain.com` |
+| **[Kimai](https://github.com/kimai/kimai)** | Professional time tracking | DSGVO-compliant billing, team timesheets, API, 2FA, invoicing | `time.yourdomain.com` |
 | **[Baserow](https://github.com/bram2w/baserow)** | Airtable Alternative with real-time collaboration | Database management, project tracking, collaborative workflows | `baserow.yourdomain.com` |
 | **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
 
@@ -1834,6 +1835,277 @@ Leantime's "Start with WHY" approach fits perfectly with n8n automation:
 - Generate insights from strategic canvases
 - Create feedback loops between execution and strategy
 - Support neurodiverse team members with consistent processes
+
+## ⏱️ Kimai Time Tracking Integration
+
+Kimai is a professional time tracking solution from Austria that's DSGVO/GDPR-compliant, perfect for freelancers and small teams. It includes built-in user management, 2FA support, and comprehensive API for automation.
+
+### Initial Setup
+
+**First Login to Kimai:**
+1. Navigate to `https://time.yourdomain.com`
+2. Login with admin credentials from installation report:
+   - Email: Your email address (set during installation)
+   - Password: Check `.env` file for `KIMAI_ADMIN_PASSWORD`
+3. Complete initial setup:
+   - Configure company details
+   - Set default currency and timezone
+   - Create customers and projects
+   - Add team members (Settings → Users)
+
+**Generate API Token for n8n:**
+1. Click on your profile icon → API Access
+2. Click "Create Token"
+3. Name it "n8n Integration"
+4. Select all permissions
+5. Copy the token for use in n8n
+
+### n8n Integration Setup
+
+**Create Kimai Credentials in n8n:**
+```javascript
+// HTTP Request Credentials
+Authentication: Header Auth
+Header Name: X-AUTH-USER
+Header Value: admin@example.com
+Additional Header:
+  Name: X-AUTH-TOKEN
+  Value: [Your API token from Kimai]
+```
+
+**Base URL for internal access:** `http://kimai:8001/api`
+
+### Example: Automated Time Tracking from Tasks
+
+Track time automatically when tasks are completed in other systems:
+
+```javascript
+// 1. Vikunja/Baserow Trigger: Task marked as complete
+// 2. Code Node: Calculate duration
+const startTime = new Date($json.task_created);
+const endTime = new Date($json.task_completed);
+const duration = Math.round((endTime - startTime) / 1000); // seconds
+
+return {
+  project: $json.project_id,
+  activity: $json.task_type,
+  description: $json.task_name,
+  duration: duration,
+  begin: startTime.toISOString(),
+  end: endTime.toISOString()
+};
+
+// 3. HTTP Request: Create timesheet entry
+Method: POST
+URL: http://kimai:8001/api/timesheets
+Headers:
+  X-AUTH-USER: admin@example.com
+  X-AUTH-TOKEN: your-api-token
+  Content-Type: application/json
+Body: {
+  "begin": "{{ $json.begin }}",
+  "end": "{{ $json.end }}",
+  "project": {{ $json.project }},
+  "activity": {{ $json.activity }},
+  "description": "{{ $json.description }}"
+}
+
+// 4. Notification: Confirm time tracked
+```
+
+### Example: Weekly Invoice Generation
+
+Automate invoice creation from tracked time:
+
+```javascript
+// 1. Schedule Trigger: Friday at 5 PM
+// 2. HTTP Request: Get week's timesheets
+Method: GET
+URL: http://kimai:8001/api/timesheets
+Query Parameters:
+  begin: {{ $now.startOf('week').toISO() }}
+  end: {{ $now.endOf('week').toISO() }}
+  
+// 3. Code Node: Group by customer
+const timesheets = $input.first().json;
+const byCustomer = {};
+
+timesheets.forEach(ts => {
+  const customer = ts.project.customer.name;
+  if (!byCustomer[customer]) {
+    byCustomer[customer] = {
+      customer: customer,
+      entries: [],
+      total: 0,
+      duration: 0
+    };
+  }
+  byCustomer[customer].entries.push(ts);
+  byCustomer[customer].total += ts.rate;
+  byCustomer[customer].duration += ts.duration;
+});
+
+return Object.values(byCustomer);
+
+// 4. Loop Over Customers
+// 5. Generate PDF Invoice (using Gotenberg or custom template)
+// 6. Send via Email (using configured mail system)
+```
+
+### Example: Project Budget Monitoring
+
+Alert when projects approach budget limits:
+
+```javascript
+// 1. Schedule Trigger: Daily at 9 AM
+// 2. HTTP Request: Get all projects
+Method: GET
+URL: http://kimai:8001/api/projects
+
+// 3. Loop Over Projects
+// 4. HTTP Request: Get project statistics
+Method: GET
+URL: http://kimai:8001/api/projects/{{ $json.id }}/rates
+
+// 5. IF Node: Check if >80% budget used
+Condition: {{ $json.totalRate > ($json.budget * 0.8) }}
+
+// 6. Send Alert
+To: Project Manager
+Subject: Budget Alert - {{ $json.name }}
+Message: Project has used {{ $json.percentage }}% of budget
+```
+
+### Example: Cal.com Meeting Time Tracking
+
+Automatically track time for completed meetings:
+
+```javascript
+// 1. Cal.com Trigger: booking.completed
+// 2. HTTP Request: Find or create Kimai customer
+Method: GET
+URL: http://kimai:8001/api/customers
+Query: name={{ $json.attendees[0].email.split('@')[1] }}
+
+// 3. IF: Customer doesn't exist
+  // Create new customer
+  Method: POST
+  URL: http://kimai:8001/api/customers
+  Body: {
+    "name": "{{ $json.attendees[0].email.split('@')[1] }}",
+    "contact": "{{ $json.attendees[0].name }}"
+  }
+
+// 4. HTTP Request: Create timesheet
+Method: POST
+URL: http://kimai:8001/api/timesheets
+Body: {
+  "begin": "{{ $json.startTime }}",
+  "end": "{{ $json.endTime }}",
+  "project": 1, // Default meeting project
+  "activity": 2, // Meeting activity
+  "description": "Meeting with {{ $json.attendees[0].name }}",
+  "tags": "cal.com,meeting,{{ $json.eventType.slug }}"
+}
+```
+
+### API Endpoints Reference
+
+**Timesheets:**
+- `GET /api/timesheets` - List entries
+- `POST /api/timesheets` - Create entry
+- `PATCH /api/timesheets/{id}` - Update entry
+- `DELETE /api/timesheets/{id}` - Delete entry
+
+**Projects:**
+- `GET /api/projects` - List projects
+- `POST /api/projects` - Create project
+- `GET /api/projects/{id}/rates` - Get project statistics
+
+**Customers:**
+- `GET /api/customers` - List customers
+- `POST /api/customers` - Create customer
+
+**Activities:**
+- `GET /api/activities` - List activities
+- `POST /api/activities` - Create activity
+
+### Mobile Apps Integration
+
+Kimai has official mobile apps for on-the-go time tracking:
+
+**iOS:** [App Store - Kimai Mobile](https://apps.apple.com/app/kimai-mobile/id1463807227)
+**Android:** [Play Store - Kimai Mobile](https://play.google.com/store/apps/details?id=de.cloudrizon.kimai)
+
+Configure mobile app:
+1. Server URL: `https://time.yourdomain.com`
+2. Use API token authentication
+3. Enable offline time tracking
+
+### Tips for Kimai + n8n Integration
+
+1. **Use Internal URL:** Always use `http://kimai:8001` from n8n, not the external URL
+2. **API Authentication:** Both X-AUTH-USER and X-AUTH-TOKEN headers are required
+3. **Time Format:** Use ISO 8601 format for all date/time fields
+4. **Rate Calculation:** Kimai automatically calculates rates based on project/customer settings
+5. **Bulk Operations:** Use the `/api/timesheets/bulk` endpoint for multiple entries
+6. **Webhooks:** Kimai doesn't have webhooks yet, use scheduled triggers for monitoring
+7. **Export Formats:** Kimai supports Excel, CSV, PDF exports via API
+
+### Advanced Features
+
+**Team Management:**
+- First user is Super Admin
+- Role hierarchy: User → Teamlead → Admin → Super-Admin
+- Teams can have restricted access to specific customers/projects
+
+**Invoice Templates:**
+- Customizable invoice templates (Settings → Invoice)
+- Supports multiple languages
+- Can include company logo and custom fields
+
+**Time Rounding:**
+- Configure rounding rules (Settings → Timesheet)
+- Options: 1, 5, 10, 15, 30 minutes
+- Can round up, down, or to nearest
+
+**API Rate Limits:**
+- Default: 1000 requests per hour
+- Can be adjusted in local.yaml configuration
+
+### Troubleshooting
+
+**API Returns 401 Unauthorized:**
+```bash
+# Verify credentials are correct
+docker exec kimai bin/console kimai:user:list
+
+# Check if API is enabled
+docker exec kimai grep -r "api" /opt/kimai/config/
+```
+
+**Database Connection Issues:**
+```bash
+# Check MySQL is running
+docker ps | grep kimai_db
+
+# Test connection
+docker exec kimai_db mysql -u kimai -p${KIMAI_DB_PASSWORD} -e "SHOW DATABASES;"
+```
+
+**Time Entries Not Showing:**
+```bash
+# Clear Kimai cache
+docker exec kimai bin/console cache:clear --env=prod
+docker exec kimai bin/console cache:warmup --env=prod
+```
+
+### Resources
+
+- **Documentation:** [kimai.org/documentation](https://www.kimai.org/documentation/)
+- **API Reference:** [kimai.org/documentation/rest-api.html](https://www.kimai.org/documentation/rest-api.html)
+- **Plugin Store:** [kimai.org/store](https://www.kimai.org/store/)
+- **Support Forum:** [github.com/kimai/kimai/discussions](https://github.com/kimai/kimai/discussions)
 
 ### 💾 Baserow Integration with n8n
 

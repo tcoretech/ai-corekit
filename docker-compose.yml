@@ -1713,7 +1713,7 @@ services:
       - invoiceninja_public:/var/www/app/public:ro
       - invoiceninja_storage:/var/www/app/storage:ro
       - ./invoiceninja-nginx.conf:/etc/nginx/conf.d/default.conf:ro
-     depends_on:
+    depends_on:
       invoiceninja:
         condition: service_healthy
 
@@ -1819,58 +1819,18 @@ services:
     restart: unless-stopped
     volumes:
       - metabase_data:/metabase-data
-      - ./shared:/data/shared
     environment:
-      # Database Configuration (App Database)
       - MB_DB_TYPE=postgres
-      - MB_DB_DBNAME=${METABASE_DB_NAME:-metabase}
+      - MB_DB_DBNAME=metabase
       - MB_DB_PORT=5432
-      - MB_DB_USER=${METABASE_DB_USER:-metabase}
+      - MB_DB_USER=metabase
       - MB_DB_PASS=${METABASE_DB_PASSWORD}
       - MB_DB_HOST=metabase_db
-      
-      # Application Settings
-      - MB_SITE_URL=https://${METABASE_HOSTNAME}
-      - MB_SITE_NAME=${METABASE_SITE_NAME:-Analytics}
-      - MB_ENCRYPTION_SECRET_KEY=${METABASE_ENCRYPTION_KEY}
-      
-      # Email Configuration
-      - MB_EMAIL_FROM_ADDRESS=${METABASE_MAIL_FROM:-analytics@${BASE_DOMAIN}}
-      - MB_EMAIL_FROM_NAME="Metabase Analytics"
-      - MB_EMAIL_SMTP_HOST=${SMTP_HOST:-mailpit}
-      - MB_EMAIL_SMTP_PORT=${SMTP_PORT:-1025}
-      - MB_EMAIL_SMTP_USERNAME=${SMTP_USER}
-      - MB_EMAIL_SMTP_PASSWORD=${SMTP_PASSWORD}
-      - MB_EMAIL_SMTP_SECURITY=none
-      
-      # Performance Settings
-      - JAVA_OPTS=-Xmx${METABASE_MEMORY:-1g} -Xms${METABASE_MEMORY:-1g}
-      - MB_JETTY_MAXTHREADS=50
-      - MB_JETTY_MINTHREADS=10
-      
-      # Features
-      - MB_ENABLE_EMBEDDING=true
-      - MB_ENABLE_PUBLIC_SHARING=true
-      - MB_ENABLE_XRAYS=true
-      - MB_SEND_EMAIL_ON_FIRST_LOGIN_FROM_NEW_DEVICE=false
-      
-      # Localization
-      - MB_SITE_LOCALE=${METABASE_LOCALE:-en}
-      - MB_TIMEZONE=${TZ:-UTC}
-      
-      # Security
-      - MB_PASSWORD_COMPLEXITY=strong
-      - MB_PASSWORD_LENGTH=8
-      - MB_SESSION_TIMEOUT=20160  # 2 weeks in minutes
-      
-      # Telemetry
-      - MB_ANON_TRACKING_ENABLED=false
-      
     depends_on:
       metabase_db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 5

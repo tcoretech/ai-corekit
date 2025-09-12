@@ -90,6 +90,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[Invoice Ninja](https://github.com/invoiceninja/invoiceninja)** | Professional invoicing & payment platform | Multi-currency invoices, 40+ payment gateways, recurring billing, client portal | `invoices.yourdomain.com` |
 | **[Baserow](https://github.com/bram2w/baserow)** | Airtable Alternative with real-time collaboration | Database management, project tracking, collaborative workflows | `baserow.yourdomain.com` |
 | **[Formbricks](https://github.com/formbricks/formbricks)** | Privacy-first survey platform | Customer feedback, NPS surveys, market research, form builder, GDPR-compliant | `forms.yourdomain.com` |
+| **[Metabase](https://github.com/metabase/metabase)** | User-friendly business intelligence platform | No-code dashboards, automated reports, data exploration, team analytics | `analytics.yourdomain.com` |
 | **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
 
 ### 🎨 AI Content Generation
@@ -2576,6 +2577,337 @@ return {
 3. **Multi-Language:** Configure surveys in multiple languages for global reach
 4. **Logic Branching:** Use conditional logic to create dynamic survey flows
 5. **Embed Options:** Use JavaScript SDK for in-app surveys
+
+## 📊 Metabase Business Intelligence Integration
+
+Metabase provides the most user-friendly open-source BI platform for creating dashboards and analyzing data across all your AI LaunchKit services. With its no-code visual query builder and automatic insights, it's perfect for monitoring your entire stack.
+
+### Initial Setup
+
+**First Login to Metabase:**
+1. Navigate to `https://analytics.yourdomain.com`
+2. Complete the setup wizard:
+   - Choose your language
+   - Create admin account (no pre-configured credentials needed)
+   - Optional: Add your first data source (or skip and add later)
+   - Decline usage data collection for privacy
+3. Click "Take me to Metabase"
+
+**Note:** Metabase has its own complete user management system with groups and SSO support, so no Basic Auth is configured in Caddy.
+
+### Connect AI LaunchKit Databases
+
+Metabase can connect to all databases in your AI LaunchKit installation:
+
+#### n8n Workflows Database
+```
+Host: postgres
+Port: 5432
+Database: n8n
+Username: postgres (or check POSTGRES_USER in .env)
+Password: Check POSTGRES_PASSWORD in .env
+```
+
+#### Supabase Database (if installed)
+```
+Host: supabase-db
+Port: 5432
+Database: postgres
+Username: postgres
+Password: Check POSTGRES_PASSWORD in .env
+```
+
+#### Invoice Ninja MySQL (if installed)
+```
+Host: invoiceninja_db
+Port: 3306
+Database: invoiceninja
+Username: invoiceninja
+Password: Check INVOICENINJA_DB_PASSWORD in .env
+```
+
+#### Kimai MySQL (if installed)
+```
+Host: kimai_db
+Port: 3306
+Database: kimai
+Username: kimai
+Password: Check KIMAI_DB_PASSWORD in .env
+```
+
+### Example: n8n Workflow Analytics Dashboard
+
+Create a comprehensive dashboard to monitor your n8n automation performance:
+
+```sql
+-- Daily Workflow Executions
+SELECT 
+  DATE(started_at) as date,
+  COUNT(*) as total_executions,
+  SUM(CASE WHEN finished = true THEN 1 ELSE 0 END) as successful,
+  SUM(CASE WHEN finished = false THEN 1 ELSE 0 END) as failed
+FROM execution_entity
+WHERE started_at > NOW() - INTERVAL '30 days'
+GROUP BY DATE(started_at)
+ORDER BY date DESC;
+
+-- Most Active Workflows
+SELECT 
+  w.name as workflow_name,
+  COUNT(e.id) as execution_count,
+  AVG(EXTRACT(EPOCH FROM (e.stopped_at - e.started_at))) as avg_duration_seconds,
+  SUM(CASE WHEN e.finished = true THEN 1 ELSE 0 END)::float / COUNT(*) * 100 as success_rate
+FROM execution_entity e
+JOIN workflow_entity w ON e.workflow_id = w.id
+WHERE e.started_at > NOW() - INTERVAL '7 days'
+GROUP BY w.name
+ORDER BY execution_count DESC
+LIMIT 10;
+
+-- Error Analysis
+SELECT 
+  w.name as workflow_name,
+  e.execution_error->>'message' as error_message,
+  COUNT(*) as error_count
+FROM execution_entity e
+JOIN workflow_entity w ON e.workflow_id = w.id
+WHERE e.finished = false
+  AND e.started_at > NOW() - INTERVAL '24 hours'
+  AND e.execution_error IS NOT NULL
+GROUP BY w.name, e.execution_error->>'message'
+ORDER BY error_count DESC;
+```
+
+### Example: Cross-Service Business Dashboard
+
+Monitor your entire business stack with a unified dashboard:
+
+#### Revenue Tracking (Invoice Ninja)
+```sql
+-- Monthly Recurring Revenue
+SELECT 
+  DATE_FORMAT(date, '%Y-%m') as month,
+  SUM(amount) as revenue,
+  COUNT(DISTINCT client_id) as active_customers
+FROM invoices
+WHERE status_id = 4 -- Paid
+  AND is_recurring = 1
+GROUP BY month
+ORDER BY month DESC;
+```
+
+#### Time vs Revenue Analysis (Kimai + Invoice Ninja)
+```javascript
+// Create a Question combining data from multiple sources
+// 1. Get hours from Kimai
+// 2. Get revenue from Invoice Ninja
+// 3. Calculate hourly rate efficiency
+// 4. Visualize as combo chart (bars for hours, line for revenue)
+```
+
+#### Project Health Metrics (Leantime)
+```sql
+-- Project completion status
+SELECT 
+  project_name,
+  COUNT(*) as total_tasks,
+  SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as completed,
+  SUM(bookedHours) as hours_spent,
+  AVG(progress) as avg_progress
+FROM tickets
+GROUP BY project_name;
+```
+
+### n8n Integration Examples
+
+#### Automated Report Distribution
+
+```javascript
+// 1. Schedule Trigger: Weekly on Monday 9 AM
+
+// 2. HTTP Request to Metabase API
+Method: POST
+URL: http://metabase:3000/api/session
+Body: {
+  "username": "admin@example.com",
+  "password": "your-password"
+}
+
+// 3. HTTP Request: Get Dashboard Data
+Method: GET
+URL: http://metabase:3000/api/dashboard/1
+Headers: {
+  "X-Metabase-Session": "{{ $json.id }}"
+}
+
+// 4. Code Node: Format Report
+const dashboard = $input.first().json;
+const cards = dashboard.ordered_cards;
+
+let report = `# Weekly Analytics Report\n\n`;
+report += `Generated: ${new Date().toISOString()}\n\n`;
+
+cards.forEach(card => {
+  report += `## ${card.card.name}\n`;
+  report += `${card.card.description || ''}\n\n`;
+});
+
+return { report };
+
+// 5. Send Email (via configured mail system)
+To: team@yourdomain.com
+Subject: Weekly Analytics Report
+Body: {{ $json.report }}
+```
+
+#### Alert on Anomalies
+
+```javascript
+// 1. Schedule Trigger: Every hour
+
+// 2. Metabase Query via API
+// Check for unusual patterns in workflow failures
+
+// 3. IF Node: Failure rate > 20%
+
+// 4. Slack/Email Alert
+Message: "⚠️ High failure rate detected: {{ $json.failure_rate }}%"
+
+// 5. Create incident in tracking system
+```
+
+### Advanced Features
+
+#### X-Ray - Automatic Insights
+1. Click on any table in your database
+2. Click the "X-ray this table" button
+3. Metabase automatically generates:
+   - Distribution charts for all columns
+   - Time series if date columns exist
+   - Correlation analysis
+   - Suggested questions
+
+#### Pulses - Scheduled Reports
+1. Create or open a dashboard
+2. Click "Sharing" → "Dashboard Subscriptions"
+3. Set schedule (daily, weekly, monthly)
+4. Add email recipients or Slack channels
+5. Reports sent automatically with charts/data
+
+#### Public Sharing & Embedding
+```javascript
+// Enable in Admin → Settings → Public Sharing
+// Generate public link for dashboard
+// Embed in your website with iframe:
+<iframe
+  src="https://analytics.yourdomain.com/public/dashboard/YOUR-UUID"
+  frameborder="0"
+  width="800"
+  height="600"
+  allowtransparency
+></iframe>
+```
+
+### Performance Optimization
+
+#### For Large Datasets
+```yaml
+# Increase Java heap in docker-compose.yml
+environment:
+  - JAVA_OPTS=-Xmx2g -Xms2g  # Increase from 1g to 2g
+  - MB_QUERY_TIMEOUT_MINUTES=10  # Increase timeout
+```
+
+#### Enable Caching
+1. Admin → Settings → Caching
+2. Enable caching
+3. Set TTL (e.g., 24 hours for daily reports)
+4. Enable adaptive caching for automatic optimization
+
+#### Create Materialized Views
+```sql
+-- For frequently accessed aggregations
+CREATE MATERIALIZED VIEW workflow_daily_stats AS
+SELECT 
+  DATE(started_at) as date,
+  COUNT(*) as executions,
+  AVG(EXTRACT(EPOCH FROM (stopped_at - started_at))) as avg_duration
+FROM execution_entity
+GROUP BY DATE(started_at);
+
+-- Refresh daily via n8n workflow
+REFRESH MATERIALIZED VIEW workflow_daily_stats;
+```
+
+### Tips for Metabase + n8n Integration
+
+1. **Use Internal URLs:** From n8n, always use `http://metabase:3000` not the external URL
+2. **API Authentication:** Store Metabase session tokens in n8n variables with expiry handling
+3. **Query Optimization:** Use Metabase's query caching for frequently accessed data
+4. **Permissions:** Set up groups in Metabase for different access levels
+5. **Models:** Create Metabase models as cleaned base tables for consistent metrics
+6. **Collections:** Organize dashboards/questions in collections matching your team structure
+7. **Alerts:** Configure Metabase alerts to trigger n8n webhooks for automation
+
+### Common Use Cases
+
+#### SaaS Metrics Dashboard
+- MRR/ARR tracking (from Invoice Ninja)
+- Churn analysis (from customer database)
+- User engagement (from n8n workflow logs)
+- Support metrics (from ticket system)
+
+#### Team Performance Dashboard
+- Time tracking analysis (Kimai)
+- Project completion rates (Leantime/Vikunja)
+- Automation efficiency (n8n metrics)
+- Resource allocation (cross-system)
+
+#### Financial Dashboard
+- Revenue by customer/product
+- Outstanding invoices aging
+- Expense categorization
+- Cash flow projections
+
+### Troubleshooting
+
+**Metabase Container Won't Start:**
+```bash
+# Check logs
+docker logs metabase --tail 100
+
+# Common issue: Database migration pending
+docker exec metabase java -jar /app/metabase.jar migrate up
+
+# If corrupted, reset Metabase database (loses all settings!)
+docker compose down metabase metabase_db
+docker volume rm localai_metabase_postgres
+docker compose up -d metabase metabase_db
+```
+
+**Can't Connect to Database:**
+- Verify hostname (use container names, not localhost)
+- Check credentials in .env file
+- Test connection from Metabase container:
+  ```bash
+  docker exec metabase ping postgres
+  ```
+
+**Slow Queries:**
+- Add indexes to frequently queried columns
+- Use Metabase's caching feature
+- Consider creating summary tables updated via n8n
+
+**Memory Issues:**
+- Increase METABASE_MEMORY in .env (default 1g, can increase to 2g or 4g)
+- Monitor with: `docker stats metabase`
+
+### Resources
+
+- **Documentation:** [metabase.com/docs](https://www.metabase.com/docs)
+- **Learn Metabase:** [metabase.com/learn](https://www.metabase.com/learn)
+- **Community Forum:** [discourse.metabase.com](https://discourse.metabase.com)
+- **SQL Templates:** [metabase.com/learn/sql-templates](https://www.metabase.com/learn/sql-templates)
 
 ### 💾 Baserow Integration with n8n
 

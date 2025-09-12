@@ -293,6 +293,13 @@ EOF
             "URL: https://${FORMBRICKS_HOSTNAME}\\n\\nPrivacy-first survey platform (Typeform alternative)\\n\\nFirst user to register becomes organization owner.\\nNo pre-configured credentials - create account on first access.\\n\\nAPI Integration:\\n- Generate API key in Settings → API Keys after login\\n- Webhook URL: https://${FORMBRICKS_HOSTNAME}/api/v1/webhooks\\n- Internal API: http://formbricks:3000/api/v1"
     fi
 
+    # Metabase
+    if is_profile_active "metabase"; then
+        add_secure_note \
+            "Metabase Business Intelligence" \
+            "URL: https://${METABASE_HOSTNAME}\\n\\nNo-code business intelligence platform\\n\\nFirst-time setup:\\n1. Open URL above\\n2. Complete setup wizard\\n3. Create admin account\\n4. Add data sources\\n\\nConnect to AI LaunchKit databases:\\n- n8n PostgreSQL: postgres:5432\\n- Supabase: supabase-db:5432\\n- Invoice Ninja MySQL: invoiceninja_db:3306\\n- Kimai MySQL: kimai_db:3306\\n\\nFeatures: Visual query builder, X-Ray insights, dashboards, scheduled reports"
+    fi
+
     # Baserow
     if is_profile_active "baserow"; then
         add_secure_note \
@@ -413,16 +420,21 @@ EOF
     echo
     log_info "📋 Import Instructions saved to: VAULTWARDEN_IMPORT.txt"
     echo
-    echo "To download the file from your VPS, use one of these methods:"
+    echo "🚀 EASY DOWNLOAD:"
+    echo "    Run this command for automatic secure download:"
     echo
-    echo "1️⃣  SCP (recommended - from your local computer):"
+    echo "    bash ~/ai-launchkit/scripts/download_credentials.sh"
+    echo
+    echo "    This will:"
+    echo "    • Open a temporary web server (60 seconds)"
+    echo "    • Show you a download link"
+    echo "    • Automatically delete the file after download"
+    echo
+    echo "📝 MANUAL DOWNLOAD (if needed):"
     echo "    scp $(whoami)@${USER_DOMAIN_NAME}:~/ai-launchkit/ai-launchkit-credentials.json ./"
     echo
-    echo "2️⃣  Quick HTTP Server (temporary - be careful!):"
-    echo "    python3 -m http.server 8888"
-    echo "    Then download from: http://$(curl -s ifconfig.me 2>/dev/null):8888/ai-launchkit-credentials.json"
-    echo
-    echo "⚠️  IMPORTANT: Delete the file after import for security!"
+    echo "⚠️  SECURITY: The JSON file contains ALL passwords in plain text!"
+    echo "    The download script automatically deletes it after 60 seconds."
     echo
     
     return 0

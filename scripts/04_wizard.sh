@@ -67,6 +67,7 @@ base_services_data=(
     "kimai" "Kimai (Professional Time Tracking - DSGVO-compliant, 2FA, invoicing)"
     "invoiceninja" "Invoice Ninja - Professional invoicing platform"
     "formbricks" "Formbricks - Privacy-first surveys & forms (Typeform alternative)"
+    "metabase" "Metabase - Business intelligence (No-code dashboards, groups, ETL-ready)"
     "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
     "vaultwarden" "Vaultwarden (Self-hosted Bitwarden-compatible password manager)"
     "kopia" "Kopia (Fast and secure backup with Cloud and WebDAV storage)"

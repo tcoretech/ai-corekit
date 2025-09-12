@@ -88,6 +88,8 @@ declare -A VARS_TO_GENERATE=(
     ["FORMBRICKS_ENCRYPTION_KEY"]="apikey:32"
     ["FORMBRICKS_CRON_SECRET"]="apikey:32"
     ["FORMBRICKS_DB_PASSWORD"]="password:32"
+    ["METABASE_ENCRYPTION_KEY"]="apikey:32"
+    ["METABASE_DB_PASSWORD"]="password:32"
     ["MAILPIT_PASSWORD"]="password:32"
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"
@@ -1064,6 +1066,16 @@ if [[ -z "${generated_values[INVOICENINJA_APP_KEY]}" ]] && [[ -z "${existing_env
     else
         log_warning "Docker not available - generate APP_KEY manually before starting"
     fi
+fi
+
+# --- METABASE ENCRYPTION KEY ---
+# Metabase requires exactly 32 characters for encryption
+if [[ -z "${generated_values[METABASE_ENCRYPTION_KEY]}" ]]; then
+    log_info "Generating Metabase ENCRYPTION_KEY..."
+    # Metabase needs exactly 32 hex characters (16 bytes)
+    ENCRYPTION_KEY=$(openssl rand -hex 16)  # 16 bytes = 32 hex chars
+    generated_values["METABASE_ENCRYPTION_KEY"]="$ENCRYPTION_KEY"
+    _update_or_add_env_var "METABASE_ENCRYPTION_KEY" "$ENCRYPTION_KEY"
 fi
 
 # Ensure DOMAIN is written to .env for backward compatibility

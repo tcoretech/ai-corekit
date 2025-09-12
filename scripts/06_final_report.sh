@@ -275,6 +275,59 @@ if is_profile_active "formbricks"; then
   echo "💬 Discord: https://formbricks.com/discord"
 fi
 
+if is_profile_active "metabase"; then
+  echo
+  echo "================================= Metabase Analytics ==================="
+  echo
+  echo "Access URL: https://${METABASE_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "Initial Setup:"
+  echo "  1. Open the URL above"
+  echo "  2. Complete the setup wizard:"
+  echo "     - Create admin account"
+  echo "     - Add your first data source"
+  echo "     - Invite team members"
+  echo
+  echo "Connect to AI LaunchKit Databases:"
+  echo "  ┌─────────────────────────────────────────────────┐"
+  echo "  │ n8n PostgreSQL:                                │"
+  echo "  │   Host: postgres                               │"
+  echo "  │   Port: 5432                                   │"
+  echo "  │   Database: n8n                                │"
+  echo "  │   Username: ${POSTGRES_USER:-n8n}              │"
+  echo "  │   Password: ${POSTGRES_PASSWORD:-<check_env>}  │"
+  echo "  ├─────────────────────────────────────────────────┤"
+  echo "  │ Supabase PostgreSQL:                           │"
+  echo "  │   Host: supabase-db                            │"
+  echo "  │   Port: 5432                                   │"
+  echo "  │   Database: postgres                           │"
+  echo "  │   Username: postgres                           │"
+  echo "  │   Password: ${POSTGRES_PASSWORD:-<check_env>}  │"
+  echo "  ├─────────────────────────────────────────────────┤"
+  echo "  │ Invoice Ninja MySQL:                           │"
+  echo "  │   Host: invoiceninja_db                        │"
+  echo "  │   Port: 3306                                   │"
+  echo "  │   Database: ${INVOICENINJA_DB_NAME:-invoiceninja} │"
+  echo "  │   Username: ${INVOICENINJA_DB_USER:-invoiceninja} │"
+  echo "  │   Password: ${INVOICENINJA_DB_PASSWORD:-<check_env>} │"
+  echo "  ├─────────────────────────────────────────────────┤"
+  echo "  │ Kimai MySQL:                                   │"
+  echo "  │   Host: kimai_db                               │"
+  echo "  │   Port: 3306                                   │"
+  echo "  │   Database: ${KIMAI_DB_NAME:-kimai}            │"
+  echo "  │   Username: ${KIMAI_DB_USER:-kimai}            │"
+  echo "  │   Password: ${KIMAI_DB_PASSWORD:-<check_env>}  │"
+  echo "  └────────────────────────────────────────────────┘"
+  echo
+  echo "API & Embedding:"
+  echo "  API Base: https://${METABASE_HOSTNAME:-<hostname_not_set>}/api"
+  echo "  Internal: http://metabase:3000/api"
+  echo "  Enable embedding in: Admin → Settings → Embedding"
+  echo
+  echo "Documentation: https://www.metabase.com/docs"
+  echo "Learn: https://www.metabase.com/learn"
+fi
+
 if is_profile_active "vikunja"; then
   echo
   echo "================================= Vikunja ============================="

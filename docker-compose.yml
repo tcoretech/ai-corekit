@@ -1812,7 +1812,7 @@ services:
   # METABASE - Business Intelligence Platform
   # ============================================================================
   metabase:
-    image: metabase/metabase:v0.56
+    image: metabase/metabase:latest
     container_name: metabase
     profiles: ["metabase"]
     restart: unless-stopped

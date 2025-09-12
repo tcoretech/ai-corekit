@@ -32,10 +32,10 @@ fi
 
 # 2. Insert GOOGLE_API_CREDENTIALS to ENV-Block, if not existing
 if ! grep -q "GOOGLE_API_CREDENTIALS=\$GOOGLE_API_CREDENTIALS" Dockerfile; then
-    # Füge einen Backslash an die vorherige Zeile an
+    # Add backslash
     sed -i 's/^\( *BUILD_STANDALONE=true\).*/\1 \\/' Dockerfile
-    # Insert the new ENV-line
-    sed -i '/^\( *BUILD_STANDALONE=true\)/a \    GOOGLE_API_CREDENTIALS=$GOOGLE_API_CREDENTIALS' Dockerfile
+    # Insert the new ENV-line WITH backslash at the end
+    sed -i '/^\( *BUILD_STANDALONE=true\)/a \    GOOGLE_API_CREDENTIALS=$GOOGLE_API_CREDENTIALS \\' Dockerfile
     echo "  -> Added GOOGLE_API_CREDENTIALS to ENV block."
 else
     echo "  -> GOOGLE_API_CREDENTIALS already in ENV block."

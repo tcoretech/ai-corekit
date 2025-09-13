@@ -61,6 +61,7 @@ base_services_data=(
     "postiz" "Postiz (Social publishing platform)"
     "odoo" "Odoo 18 (Open Source ERP/CRM with AI features)"
     "baserow" "Baserow (Airtable Alternative)"
+    "nocodb" "NocoDB (Open-source Airtable alternative, smart spreadsheet UI)"
     "vikunja" "Vikunja (Modern Task Management - Todoist/TickTick alternative)"
     "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
     "calcom" "Cal.com (Open Source Scheduling Platform)"

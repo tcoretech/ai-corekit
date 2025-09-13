@@ -55,6 +55,7 @@ volumes:
   formbricks_postgres:
   metabase_data:
   metabase_postgres:
+  nocodb_data:
 
 x-n8n: &service-n8n
   build:
@@ -292,6 +293,7 @@ services:
       - BASEROW_HOSTNAME=${BASEROW_HOSTNAME}
       - BASEROW_USERNAME=${BASEROW_USERNAME}
       - BASEROW_PASSWORD_HASH=${BASEROW_PASSWORD_HASH}
+      - NOCODB_HOSTNAME=${NOCODB_HOSTNAME}
       - DIFY_HOSTNAME=${DIFY_HOSTNAME}
       - FLOWISE_HOSTNAME=${FLOWISE_HOSTNAME}
       - BOLT_HOSTNAME=${BOLT_HOSTNAME}
@@ -585,6 +587,51 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+  # NocoDB Database Init - Create database
+  nocodb-init:
+    image: postgres:latest
+    container_name: nocodb-init
+    profiles: ["nocodb"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      sh -c "
+      psql -h postgres -U postgres -c \"CREATE DATABASE nocodb\" || true &&
+      echo 'NocoDB database ready'
+      "
+    restart: "no"
+
+  # NocoDB - Open Source Airtable Alternative
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: nocodb
+    profiles: ["nocodb"]
+    restart: unless-stopped
+    volumes:
+      - nocodb_data:/usr/app/data
+      - ./shared:/data/shared
+    environment:
+      # Minimal database configuration
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/nocodb
+      - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
+      - NC_DISABLE_TELE=true
+    depends_on:
+      nocodb-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   searxng:
     container_name: searxng

@@ -89,6 +89,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[Kimai](https://github.com/kimai/kimai)** | Professional time tracking | DSGVO-compliant billing, team timesheets, API, 2FA, invoicing | `time.yourdomain.com` |
 | **[Invoice Ninja](https://github.com/invoiceninja/invoiceninja)** | Professional invoicing & payment platform | Multi-currency invoices, 40+ payment gateways, recurring billing, client portal | `invoices.yourdomain.com` |
 | **[Baserow](https://github.com/bram2w/baserow)** | Airtable Alternative with real-time collaboration | Database management, project tracking, collaborative workflows | `baserow.yourdomain.com` |
+| **[NocoDB](https://github.com/nocodb/nocodb)** | Open-source Airtable alternative with API & webhooks | Smart spreadsheet UI, realtime collaboration, automation | `nocodb.yourdomain.com` |
 | **[Formbricks](https://github.com/formbricks/formbricks)** | Privacy-first survey platform | Customer feedback, NPS surveys, market research, form builder, GDPR-compliant | `forms.yourdomain.com` |
 | **[Metabase](https://github.com/metabase/metabase)** | User-friendly business intelligence platform | No-code dashboards, automated reports, data exploration, team analytics | `analytics.yourdomain.com` |
 | **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
@@ -3058,6 +3059,182 @@ Fields: {
   "Timestamp": "{{ $now.toISO() }}"
 }
 ```
+
+### 🗄️ NocoDB Integration with n8n
+
+NocoDB transforms any database into a smart spreadsheet with powerful automation capabilities, REST & GraphQL APIs, and seamless n8n integration through webhooks and HTTP requests.
+
+#### Initial Setup
+
+**First Login to NocoDB:**
+1. Navigate to `https://nocodb.yourdomain.com`
+2. Login with admin credentials from installation report:
+   - Email: Your email address (set during installation)
+   - Password: Check `.env` file for `NOCODB_ADMIN_PASSWORD`
+3. Create your first base (database)
+4. Generate API token in the UI under "API Tokens"
+
+#### n8n Integration Setup
+
+**Create NocoDB Credentials in n8n:**
+```javascript
+// HTTP Request Node Configuration
+Base URL: http://nocodb:8080
+Headers:
+  xc-token: your-api-token-from-nocodb
+
+Example: Customer Data Pipeline with NocoDB
+Automate customer onboarding with smart data management:
+
+// 1. Webhook Trigger: Receive new customer signup
+// 2. HTTP Request: Create customer in NocoDB
+Method: POST
+URL: http://nocodb:8080/api/v1/db/data/v1/PROJECT_ID/customers
+Headers:
+  xc-token: {{ $credentials.nocodbToken }}
+  Content-Type: application/json
+Body: {
+  "Name": "{{ $json.name }}",
+  "Email": "{{ $json.email }}",
+  "Company": "{{ $json.company }}",
+  "Status": "New",
+  "Created": "{{ $now.toISO() }}"
+}
+
+// 3. HTTP Request: Create linked record in projects table
+Method: POST
+URL: http://nocodb:8080/api/v1/db/data/v1/PROJECT_ID/projects
+Body: {
+  "Customer": {{ $('Create Customer').json.Id }},
+  "ProjectName": "Onboarding - {{ $json.company }}",
+  "Status": "Active"
+}
+
+// 4. NocoDB Webhook: Configure in table settings
+// Triggers n8n workflow on record changes
+
+Example: Form to Database Automation
+Create public forms that feed directly into your database:
+
+// 1. NocoDB Form View: Create public form
+// 2. Webhook from NocoDB: On form submission
+// 3. Code Node: Process and validate data
+const formData = $json;
+
+// Validate email
+if (!formData.email.includes('@')) {
+  throw new Error('Invalid email');
+}
+
+// Enrich data
+return {
+  ...formData,
+  source: 'nocodb_form',
+  processed: true,
+  timestamp: new Date().toISO()
+};
+
+// 4. HTTP Request: Update record with enrichment
+Method: PATCH
+URL: http://nocodb:8080/api/v1/db/data/v1/PROJECT_ID/submissions/{{ $json.Id }}
+Body: {
+  "ProcessedData": "{{ $json.enrichedData }}",
+  "Status": "Processed"
+}
+
+NocoDB Features for Automation
+Multiple Views:
+
+Grid View: Spreadsheet-like interface
+Gallery View: Card-based visualization
+Kanban View: Drag-and-drop task management
+Calendar View: Time-based data visualization
+Form View: Public data collection
+
+Field Types (25+):
+
+LinkToAnotherRecord (relationships)
+Lookup (fetch related data)
+Rollup (aggregate calculations)
+Formula (computed fields)
+Barcode/QR Code
+Attachment (file uploads)
+And many more...
+
+API Capabilities:
+
+REST API (auto-generated)
+GraphQL API (query flexibility)
+Webhooks (real-time triggers)
+Bulk operations support
+Authentication via API tokens
+
+Example: Sync with External Services
+Keep NocoDB synchronized with other systems:
+
+// 1. Schedule Trigger: Every hour
+// 2. HTTP Request: Get NocoDB records modified recently
+Method: GET
+URL: http://nocodb:8080/api/v1/db/data/v1/PROJECT_ID/TABLE_NAME
+Query Parameters:
+  where: (UpdatedAt,gt,{{ $now.minus(1, 'hour').toISO() }})
+  
+// 3. Loop Over Records
+// 4. Switch Node: Sync based on status
+Branch 1 - New Records:
+  // Create in external CRM
+  // Update NocoDB with external ID
+  
+Branch 2 - Updated Records:
+  // Update external system
+  // Log sync timestamp
+  
+Branch 3 - Deleted Records:
+  // Archive in external system
+  // Mark as synced
+
+Tips for NocoDB + n8n Integration
+
+Use Internal URLs: Always use http://nocodb:8080 from n8n, not the external URL
+API Token Security: Store tokens in n8n credentials, never in code
+Webhook Configuration: Set up webhooks in table settings for real-time triggers
+Bulk Operations: Use bulk endpoints for better performance with large datasets
+Field References: Use field names exactly as they appear in NocoDB
+Relationships: Leverage LinkToAnotherRecord for complex data models
+Views API: Different views can have different API endpoints
+Formula Fields: Use for calculated values that update automatically
+
+NocoDB vs Baserow Comparison
+FeatureNocoDBBaserowAPIREST + GraphQLREST onlyWebhooksBuilt-inVia n8nField Types25+ types15+ typesFormula SupportAdvancedBasicViews7 types3 typesRelationshipsMany-to-ManyOne-to-ManyPerformanceExcellentGoodResource UsageLightweightModerate
+Choose NocoDB when you need:
+
+GraphQL API support
+Advanced formula fields
+More view types (Calendar, Gantt)
+Many-to-many relationships
+Lower resource consumption
+
+Choose Baserow when you need:
+
+Simpler interface
+Real-time collaboration focus
+Trash/restore functionality
+Native n8n node (coming soon)
+
+## POSITION 4: In der Feature Highlight Section
+**Suche nach:** "### 💾 Baserow Integration with n8n" (der kurze Hinweis im Feature Highlight Bereich)
+**Füge DANACH ein:**
+```markdown
+### 🗄️ NocoDB Smart Spreadsheets
+
+NocoDB provides a powerful Airtable alternative with advanced automation capabilities:
+
+- **25+ Field Types:** Including formulas, rollups, lookups, and barcodes
+- **Multiple Views:** Grid, Gallery, Kanban, Calendar, Form, and Gantt
+- **Dual APIs:** Both REST and GraphQL for maximum flexibility
+- **Webhooks:** Real-time triggers for n8n workflows
+- **Lightweight:** Uses minimal resources compared to alternatives
+- **Relationships:** Support for complex many-to-many relationships
 
 #### Kopia Troubleshooting
 

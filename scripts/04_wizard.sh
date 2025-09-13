@@ -91,6 +91,7 @@ base_services_data=(
     "ollama" "Ollama (Local LLM Runner - select hardware in next step)"
     "comfyui" "ComfyUI (Node-based Stable Diffusion UI)"
     "speech" "Speech Stack (Whisper ASR + OpenedAI TTS - CPU optimized)"
+    "ocr" "OCR Bundle (Tesseract + EasyOCR - Extract text from images/PDFs)"
     "libretranslate" "LibreTranslate (Self-hosted translation API - 50+ languages)"
 )
 

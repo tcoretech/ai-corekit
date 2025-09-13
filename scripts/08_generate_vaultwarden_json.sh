@@ -350,6 +350,13 @@ EOF
             "Admin Panel: https://${VAULTWARDEN_HOSTNAME}/admin\\nAdmin Token: ${VAULTWARDEN_ADMIN_TOKEN}\\nUse this token to access the Vaultwarden admin panel for server configuration, user management, and SMTP settings."
     fi
 
+    # OCR Services
+    if is_profile_active "ocr"; then
+        add_secure_note \
+            "OCR Bundle (Tesseract + EasyOCR)" \
+            "Internal services for text extraction from images/PDFs\\n\\nTesseract OCR (Fast Mode):\\nURL: http://tesseract-ocr:8884\\nMethod: POST multipart/form-data\\nFields: 'file' and 'options'\\nBest for: Clean scans, bulk processing\\n\\nEasyOCR (Quality Mode):\\nURL: http://easyocr:2000\\nSecret Key: ${EASYOCR_SECRET_KEY}\\nMethod: POST application/json\\nBody: {\"image_url\": \"...\", \"secret_key\": \"...\"}\\nBest for: Photos, receipts, handwriting\\n\\nn8n Integration: Use HTTP Request node with above URLs"
+    fi
+
     # Database Credentials
     add_secure_note \
         "PostgreSQL Database (Internal)" \

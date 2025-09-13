@@ -58,6 +58,7 @@ declare -A VARS_TO_GENERATE=(
     ["LIBRETRANSLATE_PASSWORD"]="password:32" # Added LibreTranslate basic auth password
     ["WHISPER_AUTH_PASSWORD"]="password:32" # Added Whisper basic auth password
     ["TTS_AUTH_PASSWORD"]="password:32" # Added TTS basic auth password
+    ["EASYOCR_SECRET_KEY"]="apikey:32"
     ["LIGHTRAG_PASSWORD"]="password:32"
     ["LIGHTRAG_TOKEN_SECRET"]="apikey:64"
     ["LIGHTRAG_AUTH_ACCOUNTS"]="special:lightrag_auth"

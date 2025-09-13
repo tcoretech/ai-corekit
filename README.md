@@ -123,13 +123,14 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[Qdrant](https://github.com/qdrant/qdrant)** | High-performance vector database | Semantic search, recommendations, RAG storage | `qdrant.yourdomain.com` |
 | **[Weaviate](https://github.com/weaviate/weaviate)** | AI-native vector database | Hybrid search, multi-modal data, GraphQL API | `weaviate.yourdomain.com` |
 
-### 🎙️ Speech & Language Processing
+### 🎙️ Speech, Language & Text Processing
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[Faster-Whisper](https://github.com/SYSTRAN/faster-whisper)** | OpenAI-compatible Speech-to-Text | Transcription, voice commands, meeting notes | Port 8001 |
 | **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech | Voice assistants, audiobooks, notifications | Port 5001 |
 | **[LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)** | Self-hosted translation API | 50+ languages, document translation, privacy-focused | `translate.yourdomain.com` |
+| **[OCR Bundle](https://tesseract-ocr.github.io/)** | Dual OCR engines: Tesseract (fast) + EasyOCR (quality) | Text extraction from images/PDFs, receipt scanning, document digitization | Internal API |
 
 ### 🔍 Search & Web Data
 
@@ -3901,6 +3902,176 @@ The voice models will be automatically downloaded on first use. Available German
 - **kerstin**: Female voice (low quality, fast)
 
 You can find more voices at [Piper Voice Samples](https://rhasspy.github.io/piper-samples/).
+
+### 🔍 OCR Bundle Integration
+
+The OCR Bundle provides two complementary OCR engines for different use cases: Tesseract for speed and EasyOCR for quality, especially on photos and handwritten text.
+
+#### Text Extraction with Tesseract (Fast Mode)
+
+**Best for:** Clean scans, PDFs, bulk processing, high-contrast documents  
+**Speed:** ~3-4 seconds per image  
+**Languages:** 90+ languages supported
+
+**n8n HTTP Request Node Configuration:**
+- **Method:** POST
+- **URL:** `http://tesseract-ocr:8884/tesseract`
+- **Send Body:** Form Data Multipart
+- **Body Parameters:**
+  1. Binary File:
+     - Parameter Type: `n8n Binary File`
+     - Name: `file`
+     - Input Data Field Name: `data`
+  2. OCR Options:
+     - Parameter Type: `Form Data`
+     - Name: `options`
+     - Value: `{"languages":["eng","deu"],"psm":3}`
+
+**PSM (Page Segmentation Modes):**
+- `3` = Fully automatic page segmentation (default)
+- `6` = Uniform block of text
+- `11` = Sparse text, find as much as possible
+- `13` = Raw line, treat image as single text line
+
+#### Text Extraction with EasyOCR (Quality Mode)
+
+**Best for:** Photos, receipts, invoices, handwritten text, low-quality images  
+**Speed:** ~7-8 seconds per image (first request ~30s for model loading)  
+**Languages:** 80+ languages supported
+
+**n8n HTTP Request Node Configuration:**
+- **Method:** POST
+- **URL:** `http://easyocr:2000/ocr`
+- **Send Headers:** ON
+  - `Content-Type`: `application/json`
+- **Send Body:** JSON
+```json
+  {
+    "secret_key": "{{ $env.EASYOCR_SECRET_KEY }}",
+    "image_url": "{{ $json.imageUrl }}",
+    "languages": ["en", "de"],
+    "detail": 1,
+    "paragraph": true
+  }
+
+Note: EasyOCR requires either an image_url or base64-encoded image data.
+
+Smart OCR Selection Workflow
+// Function Node: Choose OCR Engine Based on Document Type
+const fileType = $input.item.binary.data.mimeType;
+const fileName = $input.item.binary.data.fileName || '';
+const fileSize = $input.item.binary.data.fileSize;
+
+// Logic for engine selection
+let ocrEngine = 'tesseract'; // default
+
+// Use EasyOCR for photos and complex documents
+if (fileType.includes('jpeg') || fileType.includes('png')) {
+  // Photos typically need EasyOCR
+  ocrEngine = 'easyocr';
+} else if (fileName.toLowerCase().includes('receipt') || 
+           fileName.toLowerCase().includes('invoice')) {
+  // Receipts/invoices with numbers work better with EasyOCR
+  ocrEngine = 'easyocr';
+} else if (fileSize > 5000000) {
+  // Large files (>5MB) use Tesseract for speed
+  ocrEngine = 'tesseract';
+}
+
+return {
+  json: {
+    ocrEngine,
+    endpoint: ocrEngine === 'easyocr' 
+      ? 'http://easyocr:2000/ocr'
+      : 'http://tesseract-ocr:8884/tesseract',
+    method: ocrEngine
+  }
+};
+
+Example: Document Processing Pipeline
+
+1. Email Trigger → Receive PDF/image attachments
+2. Extract Attachment → Get binary file
+3. Function → Determine best OCR engine
+4. Switch → Route to appropriate OCR service
+   - Branch 1: HTTP Request → Tesseract OCR
+   - Branch 2: HTTP Request → EasyOCR
+5. Text Processing → Clean and structure extracted text
+6. AI Agent → Analyze/summarize content
+7. Database → Store extracted data
+
+Language Configuration
+Tesseract Languages:
+
+{
+  "languages": ["eng", "deu", "fra", "spa", "ita", "nld", "por", "rus", "chi_sim", "jpn", "kor"]
+}
+
+EasyOCR Languages:
+
+
+{
+  "languages": ["en", "de", "fr", "es", "it", "nl", "pt", "ru", "ch_sim", "ja", "ko"]
+}
+
+Common language codes:
+
+English: eng (Tesseract) / en (EasyOCR)
+German: deu / de
+French: fra / fr
+Spanish: spa / es
+Chinese Simplified: chi_sim / ch_sim
+Japanese: jpn / ja
+Arabic: ara / ar
+Russian: rus / ru
+
+Tips for Best Results
+
+Image Preprocessing (for better accuracy):
+
+Convert to grayscale
+Increase contrast
+Resize to 300 DPI
+Remove noise/blur
+
+
+Choose the right engine:
+
+Tesseract: Business documents, books, newspapers, clean PDFs
+EasyOCR: Photos, street signs, handwriting, receipts, screenshots
+
+
+Batch Processing:
+
+For multiple files, use Tesseract with worker pool configuration
+Set OCR_CPU_CORES in .env to control parallel processing
+
+
+Performance Optimization:
+
+First EasyOCR request loads models (~30s), subsequent requests are fast
+Tesseract is consistently fast (~3-4s per image)
+For mixed workloads, run both engines in parallel
+
+
+
+Troubleshooting
+Issue: Empty or garbled text output
+
+Solution: Try the other OCR engine, check image quality, verify language settings
+
+Issue: EasyOCR timeout on first request
+
+Solution: Normal behavior - model loading takes ~30s, increase HTTP timeout to 60s
+
+Issue: Special characters not recognized
+
+Solution: Ensure correct language pack is specified, use EasyOCR for complex scripts
+
+Issue: Poor accuracy on photos
+
+Solution: Use EasyOCR instead of Tesseract, enable paragraph mode for better context
+
 
 ### 🌍 LibreTranslate Integration
 

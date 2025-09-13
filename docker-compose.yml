@@ -588,6 +588,23 @@ services:
       timeout: 10s
       retries: 5
 
+  # NocoDB Database Init - Create database
+  nocodb-init:
+    image: postgres:latest
+    container_name: nocodb-init
+    profiles: ["nocodb"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      sh -c "
+      psql -h postgres -U postgres -c \"CREATE DATABASE nocodb\" || true &&
+      echo 'NocoDB database ready'
+      "
+    restart: "no"
+
   # NocoDB - Open Source Airtable Alternative
   nocodb:
     image: nocodb/nocodb:latest
@@ -596,30 +613,19 @@ services:
     restart: unless-stopped
     volumes:
       - nocodb_data:/usr/app/data
-      - ./shared:/data/shared  # For file sharing with n8n and other services
+      - ./shared:/data/shared
     environment:
-      # Database configuration (using existing PostgreSQL)
       - NC_DB=pg://postgres:${POSTGRES_PASSWORD}@postgres:5432/nocodb?sslmode=disable
-      
-      # Security
       - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
-      
-      # Public URL for proper routing
       - NC_PUBLIC_URL=https://${NOCODB_HOSTNAME}
-      
-      # Redis for caching (optional but recommended)
       - NC_REDIS_URL=redis://redis:6379
-      
-      # Admin configuration
       - NC_ADMIN_EMAIL=${USER_EMAIL}
       - NC_ADMIN_PASSWORD=${NOCODB_ADMIN_PASSWORD}
-      
-      # Optional: Allow local webhooks for n8n integration
       - NC_ALLOW_LOCAL_HOOKS=true
-      
-      # Optional: Disable telemetry
       - NC_DISABLE_TELE=true
     depends_on:
+      nocodb-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:

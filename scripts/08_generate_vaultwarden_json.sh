@@ -321,6 +321,16 @@ EOF
             "URL: https://${BASEROW_HOSTNAME}\\nFirst user to register becomes admin.\\nNo pre-configured credentials - create account on first access."
     fi
 
+    # NocoDB
+    if is_profile_active "nocodb"; then
+        add_login_item \
+            "NocoDB (Airtable Alternative)" \
+            "${USER_EMAIL}" \
+            "${NOCODB_ADMIN_PASSWORD}" \
+            "https://${NOCODB_HOSTNAME}" \
+            "Open-source Airtable alternative with smart spreadsheet UI. Admin account uses your email address. Generate API tokens in user settings for n8n integration. Internal API: http://nocodb:8080"
+    fi
+
     # Perplexica
     if is_profile_active "perplexica"; then
         add_login_item \

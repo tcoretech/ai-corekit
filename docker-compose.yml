@@ -55,6 +55,7 @@ volumes:
   formbricks_postgres:
   metabase_data:
   metabase_postgres:
+  nocodb_data:
 
 x-n8n: &service-n8n
   build:
@@ -292,6 +293,7 @@ services:
       - BASEROW_HOSTNAME=${BASEROW_HOSTNAME}
       - BASEROW_USERNAME=${BASEROW_USERNAME}
       - BASEROW_PASSWORD_HASH=${BASEROW_PASSWORD_HASH}
+      - NOCODB_HOSTNAME=${NOCODB_HOSTNAME}
       - DIFY_HOSTNAME=${DIFY_HOSTNAME}
       - FLOWISE_HOSTNAME=${FLOWISE_HOSTNAME}
       - BOLT_HOSTNAME=${BOLT_HOSTNAME}
@@ -585,6 +587,49 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+  # NocoDB - Open Source Airtable Alternative
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: nocodb
+    profiles: ["nocodb"]
+    restart: unless-stopped
+    volumes:
+      - nocodb_data:/usr/app/data
+      - ./shared:/data/shared  # For file sharing with n8n and other services
+    environment:
+      # Database configuration (using existing PostgreSQL)
+      - NC_DB=pg://postgres:${POSTGRES_PASSWORD}@postgres:5432/nocodb?sslmode=disable
+      
+      # Security
+      - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
+      
+      # Public URL for proper routing
+      - NC_PUBLIC_URL=https://${NOCODB_HOSTNAME}
+      
+      # Redis for caching (optional but recommended)
+      - NC_REDIS_URL=redis://redis:6379
+      
+      # Admin configuration
+      - NC_ADMIN_EMAIL=${USER_EMAIL}
+      - NC_ADMIN_PASSWORD=${NOCODB_ADMIN_PASSWORD}
+      
+      # Optional: Allow local webhooks for n8n integration
+      - NC_ALLOW_LOCAL_HOOKS=true
+      
+      # Optional: Disable telemetry
+      - NC_DISABLE_TELE=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   searxng:
     container_name: searxng

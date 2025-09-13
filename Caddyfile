@@ -165,6 +165,20 @@
     reverse_proxy baserow:80
 }
 
+# NocoDB - Open Source Airtable Alternative
+{$NOCODB_HOSTNAME} {
+    reverse_proxy nocodb:8080 {
+        # WebSocket support for realtime collaboration
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        # Explicit WebSocket headers
+        header_up Connection {http.request.header.Connection}
+        header_up Upgrade {http.request.header.Upgrade}
+    }
+}
+
 # Vikunja - Task Management
 {$VIKUNJA_HOSTNAME} {
     reverse_proxy vikunja:3456

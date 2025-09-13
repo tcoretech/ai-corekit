@@ -615,13 +615,9 @@ services:
       - nocodb_data:/usr/app/data
       - ./shared:/data/shared
     environment:
-      - NC_DB=pg://postgres:${POSTGRES_PASSWORD}@postgres:5432/nocodb?sslmode=disable
+      # Minimal database configuration
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/nocodb
       - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
-      - NC_PUBLIC_URL=https://${NOCODB_HOSTNAME}
-      - NC_REDIS_URL=redis://redis:6379
-      - NC_ADMIN_EMAIL=${USER_EMAIL}
-      - NC_ADMIN_PASSWORD=${NOCODB_ADMIN_PASSWORD}
-      - NC_ALLOW_LOCAL_HOOKS=true
       - NC_DISABLE_TELE=true
     depends_on:
       nocodb-init:

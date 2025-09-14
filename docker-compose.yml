@@ -1322,47 +1322,15 @@ services:
     command: >
       sh -c "
         while true; do
-          php /var/www/html/bin/console mautic:segments:update
-          php /var/www/html/bin/console mautic:campaigns:update
-          php /var/www/html/bin/console mautic:campaigns:trigger
-          php /var/www/html/bin/console mautic:emails:send
-          php /var/www/html/bin/console mautic:messages:send
-          php /var/www/html/bin/console mautic:webhooks:process
-          php /var/www/html/bin/console mautic:reports:scheduler
-          php /var/www/html/bin/console mautic:import
-          php /var/www/html/bin/console mautic:dnc:import
-          sleep 60
+          php /var/www/html/bin/console mautic:segments:update --no-interaction
+          php /var/www/html/bin/console mautic:campaigns:update --no-interaction
+          php /var/www/html/bin/console mautic:campaigns:trigger --no-interaction
+          php /var/www/html/bin/console mautic:messages:send --no-interaction
+          php /var/www/html/bin/console mautic:webhooks:process --no-interaction
+          php /var/www/html/bin/console mautic:reports:scheduler --no-interaction
+          php /var/www/html/bin/console mautic:import --no-interaction
+          sleep 300
         done
-      "
-
-  mautic_cron:
-    image: mautic/mautic:latest
-    container_name: mautic_cron
-    profiles: ["mautic"]
-    restart: unless-stopped
-    depends_on:
-      mautic_web:
-        condition: service_healthy
-    volumes:
-      - mautic_data:/var/www/html
-    environment:
-      # Same as mautic_web
-      - MAUTIC_DB_HOST=mautic_db
-      - MAUTIC_DB_PORT=3306
-      - MAUTIC_DB_NAME=mautic
-      - MAUTIC_DB_USER=${MAUTIC_DB_USER}
-      - MAUTIC_DB_PASSWORD=${MAUTIC_DB_PASSWORD}
-      - MAUTIC_REDIS_HOST=mautic_redis
-      - MAUTIC_REDIS_PORT=6379
-    command: >
-      sh -c "
-        echo '*/5 * * * * php /var/www/html/bin/console mautic:segments:update' > /etc/crontabs/www-data
-        echo '*/5 * * * * php /var/www/html/bin/console mautic:campaigns:update' >> /etc/crontabs/www-data
-        echo '*/5 * * * * php /var/www/html/bin/console mautic:campaigns:trigger' >> /etc/crontabs/www-data
-        echo '0 * * * * php /var/www/html/bin/console mautic:maintenance:cleanup --days-old=30' >> /etc/crontabs/www-data
-        echo '0 4 * * * php /var/www/html/bin/console mautic:iplookup:download' >> /etc/crontabs/www-data
-        echo '*/15 * * * * php /var/www/html/bin/console mautic:broadcasts:send' >> /etc/crontabs/www-data
-        crond -f -l 8
       "
 
   # Vikunja Database Init - Create database

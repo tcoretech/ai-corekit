@@ -317,6 +317,16 @@ EOF
             "Full-featured CRM with workflows and automation. Admin account pre-configured. Create additional users at Administration > Users. API endpoint: http://espocrm:80/api/v1/ - Generate API key in user preferences for n8n integration."
     fi
 
+    # Mautic
+    if is_profile_active "mautic"; then
+        add_login_item \
+            "Mautic Marketing Automation" \
+            "${MAUTIC_ADMIN_EMAIL}" \
+            "${MAUTIC_ADMIN_PASSWORD}" \
+            "https://${MAUTIC_HOSTNAME}" \
+            "Marketing Automation Platform with lead management, email campaigns, landing pages, and analytics. Admin account uses your email. After login: Enable API in Settings → Configuration → API Settings. Create OAuth2 credentials for n8n integration. Internal API: http://mautic_web/api"
+    fi
+
     # Formbricks
     if is_profile_active "formbricks"; then
         add_secure_note \

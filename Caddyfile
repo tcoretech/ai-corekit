@@ -184,6 +184,45 @@
     }
 }
 
+# ============================================
+# MAUTIC - Marketing Automation Platform
+# ============================================
+{$MAUTIC_HOSTNAME} {
+    # Security Headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Proxy to Mautic
+    reverse_proxy mautic_web:80 {
+        # Important for Mautic tracking
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+        
+        # Increase timeouts for large imports
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+        }
+    }
+
+    # Cache static assets
+    @static {
+        path *.css *.js *.jpg *.jpeg *.png *.gif *.ico *.svg *.woff *.woff2
+    }
+    header @static Cache-Control "public, max-age=604800"
+
+    # File upload size
+    request_body {
+        max_size 50MB
+    }
+}
+
 # Baserow (Airtable Alternative)
 {$BASEROW_HOSTNAME} {
     reverse_proxy baserow:80

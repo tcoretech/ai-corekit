@@ -65,6 +65,9 @@ volumes:
   twenty_redis_data:
   espocrm_data:
   espocrm_db_data:
+  mautic_data:
+  mautic_db_data:
+  mautic_redis_data:
 
 x-n8n: &service-n8n
   build:
@@ -324,6 +327,7 @@ services:
       - ODOO_PASSWORD_HASH=${ODOO_PASSWORD_HASH}
       - TWENTY_CRM_HOSTNAME=${TWENTY_CRM_HOSTNAME}
       - ESPOCRM_HOSTNAME=${ESPOCRM_HOSTNAME}
+      - MAUTIC_HOSTNAME=${MAUTIC_HOSTNAME}
       - PERPLEXICA_HOSTNAME=${PERPLEXICA_HOSTNAME}
       - PERPLEXICA_USERNAME=${PERPLEXICA_USERNAME}
       - PERPLEXICA_PASSWORD_HASH=${PERPLEXICA_PASSWORD_HASH}
@@ -1212,6 +1216,154 @@ services:
     entrypoint: docker-daemon.sh
     depends_on:
       - espocrm
+
+  # ============================================
+  # MAUTIC - Marketing Automation Platform
+  # ============================================
+  
+  mautic_db:
+    image: mariadb:10.11
+    container_name: mautic_db
+    profiles: ["mautic"]
+    restart: unless-stopped
+    volumes:
+      - mautic_db_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MAUTIC_DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=mautic
+      - MYSQL_USER=${MAUTIC_DB_USER}
+      - MYSQL_PASSWORD=${MAUTIC_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${MAUTIC_DB_ROOT_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  mautic_redis:
+    image: redis:7-alpine
+    container_name: mautic_redis
+    profiles: ["mautic"]
+    restart: unless-stopped
+    volumes:
+      - mautic_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  mautic_web:
+    image: mautic/mautic:latest    # Changed to latest (6.0)
+    container_name: mautic_web
+    profiles: ["mautic"]
+    restart: unless-stopped
+    depends_on:
+      mautic_db:
+        condition: service_healthy
+      mautic_redis:
+        condition: service_healthy
+    volumes:
+      - mautic_data:/var/www/html
+      - ./shared:/data/shared
+    environment:
+      # Database Configuration
+      - MAUTIC_DB_HOST=mautic_db
+      - MAUTIC_DB_PORT=3306
+      - MAUTIC_DB_NAME=mautic
+      - MAUTIC_DB_USER=${MAUTIC_DB_USER}
+      - MAUTIC_DB_PASSWORD=${MAUTIC_DB_PASSWORD}
+      
+      # Redis Cache
+      - MAUTIC_REDIS_HOST=mautic_redis
+      - MAUTIC_REDIS_PORT=6379
+      
+      # Mautic Configuration
+      - MAUTIC_ADMIN_EMAIL=${MAUTIC_ADMIN_EMAIL}
+      - MAUTIC_ADMIN_PASSWORD=${MAUTIC_ADMIN_PASSWORD}
+      - MAUTIC_TRUSTED_PROXIES=["0.0.0.0/0"]
+      - MAUTIC_URL=https://${MAUTIC_HOSTNAME}
+      
+      # Mail Configuration (using Mailpit)
+      - MAUTIC_MAILER_DSN=smtp://mailpit:1025
+      
+      # Performance Settings
+      - PHP_MEMORY_LIMIT=512M
+      - PHP_MAX_EXECUTION_TIME=300
+      - PHP_UPLOAD_MAX_FILESIZE=50M
+      - PHP_POST_MAX_SIZE=50M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/s/login || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  mautic_worker:
+    image: mautic/mautic:latest    # Changed to latest (6.0)
+    container_name: mautic_worker
+    profiles: ["mautic"]
+    restart: unless-stopped
+    depends_on:
+      mautic_web:
+        condition: service_healthy
+    volumes:
+      - mautic_data:/var/www/html
+      - ./shared:/data/shared
+    environment:
+      # Same as mautic_web
+      - MAUTIC_DB_HOST=mautic_db
+      - MAUTIC_DB_PORT=3306
+      - MAUTIC_DB_NAME=mautic
+      - MAUTIC_DB_USER=${MAUTIC_DB_USER}
+      - MAUTIC_DB_PASSWORD=${MAUTIC_DB_PASSWORD}
+      - MAUTIC_REDIS_HOST=mautic_redis
+      - MAUTIC_REDIS_PORT=6379
+    command: >
+      sh -c "
+        while true; do
+          php /var/www/html/bin/console mautic:segments:update
+          php /var/www/html/bin/console mautic:campaigns:update
+          php /var/www/html/bin/console mautic:campaigns:trigger
+          php /var/www/html/bin/console mautic:emails:send
+          php /var/www/html/bin/console mautic:messages:send
+          php /var/www/html/bin/console mautic:webhooks:process
+          php /var/www/html/bin/console mautic:reports:scheduler
+          php /var/www/html/bin/console mautic:import
+          php /var/www/html/bin/console mautic:dnc:import
+          sleep 60
+        done
+      "
+
+  mautic_cron:
+    image: mautic/mautic:latest
+    container_name: mautic_cron
+    profiles: ["mautic"]
+    restart: unless-stopped
+    depends_on:
+      mautic_web:
+        condition: service_healthy
+    volumes:
+      - mautic_data:/var/www/html
+    environment:
+      # Same as mautic_web
+      - MAUTIC_DB_HOST=mautic_db
+      - MAUTIC_DB_PORT=3306
+      - MAUTIC_DB_NAME=mautic
+      - MAUTIC_DB_USER=${MAUTIC_DB_USER}
+      - MAUTIC_DB_PASSWORD=${MAUTIC_DB_PASSWORD}
+      - MAUTIC_REDIS_HOST=mautic_redis
+      - MAUTIC_REDIS_PORT=6379
+    command: >
+      sh -c "
+        echo '*/5 * * * * php /var/www/html/bin/console mautic:segments:update' > /etc/crontabs/www-data
+        echo '*/5 * * * * php /var/www/html/bin/console mautic:campaigns:update' >> /etc/crontabs/www-data
+        echo '*/5 * * * * php /var/www/html/bin/console mautic:campaigns:trigger' >> /etc/crontabs/www-data
+        echo '0 * * * * php /var/www/html/bin/console mautic:maintenance:cleanup --days-old=30' >> /etc/crontabs/www-data
+        echo '0 4 * * * php /var/www/html/bin/console mautic:iplookup:download' >> /etc/crontabs/www-data
+        echo '*/15 * * * * php /var/www/html/bin/console mautic:broadcasts:send' >> /etc/crontabs/www-data
+        crond -f -l 8
+      "
 
   # Vikunja Database Init - Create database
   vikunja-init:

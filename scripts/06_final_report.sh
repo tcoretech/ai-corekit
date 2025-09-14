@@ -291,6 +291,38 @@ if is_profile_active "twenty-crm" && is_profile_active "espocrm"; then
   echo "  - Unified reporting dashboard combining both CRMs"
 fi
 
+if is_profile_active "mautic"; then
+  echo
+  echo "================================= MAUTIC =============================="
+  echo
+  echo "Marketing Automation Platform"
+  echo
+  echo "Access URL: https://${MAUTIC_HOSTNAME:-<hostname_not_set>}"
+  echo "Admin Email: ${MAUTIC_ADMIN_EMAIL:-<not_set_in_env>}"
+  echo "Admin Password: ${MAUTIC_ADMIN_PASSWORD:-<not_set_in_env>}"
+  echo
+  echo "API Access (for n8n):"
+  echo "  Base URL: https://${MAUTIC_HOSTNAME:-<hostname_not_set>}/api"
+  echo "  Internal: http://mautic_web/api"
+  echo "  Enable API: Settings → Configuration → API Settings"
+  echo "  Create API credentials: Settings → API Credentials"
+  echo
+  echo "n8n Integration:"
+  echo "  1. Add Mautic node in n8n"
+  echo "  2. Use URL: http://mautic_web"
+  echo "  3. Create OAuth2 credentials in Mautic"
+  echo "  4. Configure webhook: http://n8n:5678/webhook/mautic"
+  echo
+  echo "Initial Setup:"
+  echo "  1. Complete installation wizard at https://${MAUTIC_HOSTNAME:-<hostname_not_set>}"
+  echo "  2. Configure email settings (Mailpit pre-configured)"
+  echo "  3. Import contacts or create forms"
+  echo "  4. Build your first campaign"
+  echo
+  echo "Documentation: https://docs.mautic.org"
+  echo "Community: https://forum.mautic.org"
+fi
+
 if is_profile_active "baserow"; then
   echo
   echo "================================= Baserow ============================"

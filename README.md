@@ -95,6 +95,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
 | **[Twenty CRM](https://github.com/twentyhq/twenty)** | Modern Notion-like CRM | Customer pipelines, GraphQL API, team collaboration, lightweight CRM for startups | `twenty.yourdomain.com` |
 | **[EspoCRM](https://github.com/espocrm/espocrm)** | Full-featured CRM platform | Email campaigns, workflow automation, advanced reporting, role-based access | `espocrm.yourdomain.com` |
+| **[Mautic](https://github.com/mautic/mautic)** | Marketing automation platform | Lead scoring, email campaigns, landing pages, multi-channel marketing, automation workflows | `mautic.yourdomain.com` |
 
 ### 🎨 AI Content Generation
 
@@ -4070,6 +4071,640 @@ Attachments: Generated PDF report
 // Use n8n to maintain data consistency
 // Create unified dashboards in Metabase
 ```
+
+# 📧 Mautic Marketing Automation Integration with n8n
+
+Mautic is a powerful open-source marketing automation platform that enables sophisticated lead nurturing, email campaigns, and multi-channel marketing. With its comprehensive API and native n8n integration, you can create advanced marketing workflows that connect with your entire tech stack.
+
+## Initial Setup
+
+### First Login to Mautic
+
+1. Navigate to `https://mautic.yourdomain.com`
+2. Complete the installation wizard with admin credentials
+3. Configure email settings (Mailpit is pre-configured)
+4. Enable API access in Settings → Configuration → API Settings
+5. Generate API credentials in Settings → API Credentials
+
+### Configure Mautic for Production
+
+```bash
+# Access Mautic container for advanced configuration
+docker exec -it mautic_web bash
+
+# Clear cache after configuration changes
+php bin/console cache:clear
+
+# Warm up cache for better performance
+php bin/console cache:warmup
+```
+
+## n8n Integration Setup
+
+### Method 1: Native Mautic Node (Recommended)
+
+**Install Mautic Node in n8n:**
+1. Go to Settings → Community Nodes
+2. Install: `@digital-boss/n8n-nodes-mautic`
+3. Restart n8n workflow editor
+
+**Create OAuth2 Credentials:**
+```javascript
+// Mautic OAuth2 Credentials
+Authorization URL: http://mautic_web/oauth/v2/authorize
+Access Token URL: http://mautic_web/oauth/v2/token
+Client ID: [from Mautic API Credentials]
+Client Secret: [from Mautic API Credentials]
+Scope: Leave empty for full access
+Auth URI Query Parameters: {}
+Authentication: Body
+```
+
+### Method 2: HTTP Request with Basic Auth
+
+```javascript
+// Mautic API with Basic Auth
+Base URL: http://mautic_web
+Authentication: Basic Auth
+Username: [your-mautic-username]
+Password: [your-mautic-password]
+Headers: {
+  "Content-Type": "application/json"
+}
+```
+
+## Example 1: Advanced Lead Scoring & Nurturing
+
+Automatically score leads based on behavior and engagement:
+
+```javascript
+// 1. Webhook Trigger: Form submission from website
+Webhook URL: https://n8n.yourdomain.com/webhook/lead-capture
+
+// 2. Code Node: Enrich lead data
+const email = $json.email;
+const domain = email.split('@')[1];
+const leadData = {
+  email: email,
+  firstname: $json.firstname,
+  lastname: $json.lastname,
+  company: $json.company || domain,
+  website: $json.website || `https://${domain}`,
+  tags: ['website-form', $json.form_id],
+  ipAddress: $json.ip_address
+};
+return [{json: leadData}];
+
+// 3. Mautic Node: Create/Update Contact
+Operation: Create/Update Contact
+Email: {{ $json.email }}
+Fields: {
+  firstname: {{ $json.firstname }},
+  lastname: {{ $json.lastname }},
+  company: {{ $json.company }},
+  website: {{ $json.website }},
+  last_active: {{ $now.toISO() }}
+}
+Tags: {{ $json.tags.join(',') }}
+
+// 4. HTTP Request: Check email deliverability
+Method: GET
+URL: https://api.zerobounce.net/v2/validate
+Query Parameters: {
+  api_key: "your-zerobounce-key",
+  email: "{{ $json.email }}"
+}
+
+// 5. Code Node: Calculate lead score
+const baseScore = 10;
+let score = baseScore;
+
+// Email quality scoring
+const emailQuality = $json.zerobounce_result;
+if (emailQuality === 'valid') score += 20;
+else if (emailQuality === 'catch-all') score += 10;
+else if (emailQuality === 'unknown') score += 5;
+else score -= 10;
+
+// Company size scoring (from enrichment)
+if ($json.company_size > 100) score += 30;
+else if ($json.company_size > 10) score += 20;
+else score += 10;
+
+// Engagement scoring
+if ($json.form_id === 'demo-request') score += 40;
+else if ($json.form_id === 'whitepaper') score += 20;
+else if ($json.form_id === 'newsletter') score += 10;
+
+// Industry scoring
+const highValueIndustries = ['saas', 'technology', 'finance', 'healthcare'];
+if (highValueIndustries.includes($json.industry?.toLowerCase())) {
+  score += 25;
+}
+
+return [{json: {score, reasoning: {...}}}];
+
+// 6. Mautic Node: Update lead score and segment
+Operation: Edit Contact Points
+Contact ID: {{ $('Create Contact').json.id }}
+Points: {{ $json.score }}
+
+// 7. Mautic Node: Add to segment based on score
+Operation: Add Contact to Segment
+Segment: {{ $json.score > 70 ? 'hot-leads' : $json.score > 40 ? 'warm-leads' : 'cold-leads' }}
+
+// 8. Mautic Node: Trigger campaign
+Operation: Add Contact to Campaign
+Campaign: {{ $json.score > 70 ? 'sales-outreach' : 'nurture-sequence' }}
+
+// 9. Conditional: High-value lead alert
+If: {{ $json.score > 80 }}
+  Slack Node: Send to #sales-alerts
+  Twenty CRM Node: Create opportunity
+  Cal.com Node: Offer priority booking slot
+```
+
+## Example 2: Multi-Channel Campaign Orchestration
+
+Coordinate campaigns across email, SMS, and social media:
+
+```javascript
+// 1. Schedule Trigger: Daily at 9 AM
+// 2. Mautic Node: Get campaign contacts
+Operation: Get Contacts
+Segment: active-campaign-recipients
+Limit: 100
+
+// 3. Loop: Process each contact
+// 4. Mautic Node: Get contact activity
+Operation: Get Contact Activity
+Contact ID: {{ $json.id }}
+Date From: {{ $now.minus(7, 'days').toISO() }}
+
+// 5. Code Node: Determine next best action
+const activity = $json.activity;
+const lastEmail = activity.filter(a => a.type === 'email.read').pop();
+const lastClick = activity.filter(a => a.type === 'link.click').pop();
+const daysSinceEmail = lastEmail ? 
+  DateTime.fromISO(lastEmail.date).diffNow('days').days : 999;
+
+let nextAction = 'email';
+let content = 'standard';
+
+if (lastClick && daysSinceEmail < 2) {
+  nextAction = 'sms';
+  content = 'urgent-offer';
+} else if (lastEmail && !lastClick && daysSinceEmail < 7) {
+  nextAction = 'email';
+  content = 'alternative-content';
+} else if (daysSinceEmail > 14) {
+  nextAction = 'reactivation';
+  content = 'win-back';
+}
+
+return [{json: {nextAction, content, contactId: $json.id}}];
+
+// 6. Switch Node: Route by next action
+Case 'email':
+  // Mautic Node: Send email
+  Operation: Send Email to Contact
+  Email ID: {{ $json.content === 'urgent-offer' ? 15 : 12 }}
+  Contact ID: {{ $json.contactId }}
+
+Case 'sms':
+  // Twilio Node: Send SMS
+  To: {{ $json.phone }}
+  Message: "Exclusive offer ending soon! Check your email for details."
+
+Case 'reactivation':
+  // Mautic Node: Move to reactivation campaign
+  Operation: Remove from Campaign
+  Campaign: current-campaign
+  
+  // Mautic Node: Add to win-back campaign
+  Operation: Add to Campaign
+  Campaign: win-back-sequence
+
+// 7. Mautic Node: Log custom activity
+Operation: Add Contact Note
+Note: "Multi-channel action triggered: {{ $json.nextAction }}"
+
+// 8. Metabase: Update campaign dashboard
+```
+
+## Example 3: Dynamic Content Personalization
+
+Create personalized content based on lead behavior and preferences:
+
+```javascript
+// 1. Mautic Webhook: Email opened
+// 2. HTTP Request: Get contact full profile
+Method: GET
+URL: http://mautic_web/api/contacts/{{ $json.contactId }}
+
+// 3. OpenAI Node: Generate personalized content
+Model: gpt-4
+System: You are a marketing content specialist.
+Prompt: |
+  Create a personalized email for:
+  - Name: {{ $json.firstname }}
+  - Company: {{ $json.company }}
+  - Industry: {{ $json.industry }}
+  - Previous interactions: {{ $json.tags }}
+  - Lead score: {{ $json.points }}
+  
+  Focus on their pain points and our solution benefits.
+  Keep it under 150 words.
+
+// 4. Code Node: Build dynamic email template
+const template = `
+<!DOCTYPE html>
+<html>
+<head><title>Personalized for ${$json.firstname}</title></head>
+<body>
+  <h2>Hi ${$json.firstname},</h2>
+  ${$json.ai_content}
+  
+  <!-- Dynamic CTA based on lead score -->
+  ${$json.points > 70 ? 
+    '<a href="{trackinglink=1}">Schedule a Demo</a>' :
+    '<a href="{trackinglink=2}">Learn More</a>'
+  }
+  
+  <!-- Dynamic product recommendations -->
+  ${$json.industry === 'SaaS' ? 
+    '{dynamiccontent="saas-features"}' :
+    '{dynamiccontent="enterprise-features"}'
+  }
+</body>
+</html>
+`;
+
+return [{json: {template, contactId: $json.contactId}}];
+
+// 5. Mautic Node: Create dynamic email
+Operation: Create Email
+Name: "Personalized - {{ $now.format('YYYY-MM-DD') }}"
+Subject: "{{ $json.firstname }}, quick question about {{ $json.company }}"
+Template: {{ $json.template }}
+
+// 6. Mautic Node: Send to contact
+Operation: Send Email
+Email ID: {{ $json.email_id }}
+Contact ID: {{ $json.contactId }}
+```
+
+## Example 4: Lead Attribution & ROI Tracking
+
+Track marketing attribution and calculate campaign ROI:
+
+```javascript
+// 1. Webhook: Conversion event (purchase/signup)
+// 2. Mautic Node: Get contact journey
+Operation: Get Contact
+Include Events: true
+Contact ID: {{ $json.contact_id }}
+
+// 3. Code Node: Analyze attribution path
+const events = $json.events;
+const touchpoints = [];
+
+// Extract all marketing touchpoints
+events.forEach(event => {
+  if (['email.read', 'page.hit', 'form.submitted', 'asset.download'].includes(event.type)) {
+    touchpoints.push({
+      type: event.type,
+      timestamp: event.timestamp,
+      campaign: event.campaign_id,
+      source: event.source,
+      value: event.metadata
+    });
+  }
+});
+
+// Calculate attribution (linear model)
+const attribution = {};
+const weight = 1 / touchpoints.length;
+
+touchpoints.forEach(tp => {
+  const key = tp.campaign || tp.source || 'direct';
+  attribution[key] = (attribution[key] || 0) + weight;
+});
+
+// Find first and last touch
+const firstTouch = touchpoints[0];
+const lastTouch = touchpoints[touchpoints.length - 1];
+
+return [{json: {
+  attribution,
+  firstTouch,
+  lastTouch,
+  touchpointCount: touchpoints.length,
+  conversionValue: $json.order_value
+}}];
+
+// 4. HTTP Request: Update campaign ROI in database
+Method: POST
+URL: http://metabase:3000/api/dataset
+Body: {
+  "database": 1,
+  "native": {
+    "query": "INSERT INTO campaign_attribution (campaign_id, revenue, attribution_weight) VALUES (?, ?, ?)",
+    "params": [
+      "{{ $json.lastTouch.campaign }}",
+      "{{ $json.conversionValue }}",
+      "{{ $json.attribution }}"
+    ]
+  }
+}
+
+// 5. Mautic Node: Update contact with LTV
+Operation: Edit Contact
+Custom Fields: {
+  lifetime_value: {{ $json.conversionValue }},
+  conversion_date: {{ $now.toISO() }},
+  attribution_path: {{ JSON.stringify($json.attribution) }}
+}
+
+// 6. Invoice Ninja: Create invoice if applicable
+// 7. Slack: Notify sales team of conversion
+```
+
+## Example 5: Behavioral Trigger Automation
+
+Create sophisticated behavioral triggers for timely engagement:
+
+```javascript
+// 1. Mautic Webhook: Page visit tracking
+// 2. Code Node: Analyze behavior pattern
+const currentVisit = $json;
+const recentActivity = $('Get Recent Activity').json;
+
+// Calculate engagement velocity
+const last24h = recentActivity.filter(a => 
+  DateTime.fromISO(a.timestamp).diffNow('hours').hours > -24
+);
+
+const engagementScore = {
+  pageViews: last24h.filter(a => a.type === 'page.hit').length,
+  emailOpens: last24h.filter(a => a.type === 'email.read').length,
+  downloads: last24h.filter(a => a.type === 'asset.download').length,
+  totalScore: 0
+};
+
+engagementScore.totalScore = 
+  (engagementScore.pageViews * 1) +
+  (engagementScore.emailOpens * 3) +
+  (engagementScore.downloads * 10);
+
+// Detect buying signals
+const buyingSignals = [];
+if (currentVisit.url.includes('/pricing')) buyingSignals.push('pricing-viewed');
+if (currentVisit.url.includes('/demo')) buyingSignals.push('demo-interest');
+if (currentVisit.url.includes('/case-studies')) buyingSignals.push('social-proof');
+if (engagementScore.totalScore > 20) buyingSignals.push('high-engagement');
+
+return [{json: {engagementScore, buyingSignals, contactId: currentVisit.contact_id}}];
+
+// 3. Switch: Route based on signals
+Case: buyingSignals.includes('pricing-viewed')
+  // Mautic Node: Send pricing follow-up
+  // Cal.com Node: Offer consultation slot
+  // Twenty CRM: Create hot opportunity
+
+Case: buyingSignals.includes('high-engagement')
+  // Chatbot Node: Trigger proactive chat
+  // Mautic: Move to fast-track campaign
+  // Alert sales team
+
+// 4. Mautic Node: Update behavioral segment
+Operation: Add Tags
+Tags: {{ $json.buyingSignals.join(',') }}
+
+// 5. Real-time personalization
+If: Engagement > 30
+  // Return personalized content recommendations
+  // Trigger in-app messages
+  // Adjust email frequency
+```
+
+## Example 6: A/B Testing & Optimization
+
+Implement sophisticated A/B testing with automatic winner selection:
+
+```javascript
+// 1. Schedule: Every 4 hours
+// 2. Mautic Node: Get A/B test results
+Operation: Get Email Statistics
+Email IDs: [45, 46] // A/B variants
+
+// 3. Code Node: Statistical analysis
+const variantA = $json[0];
+const variantB = $json[1];
+
+// Calculate conversion rates
+const rateA = variantA.unique_clicks / variantA.sent;
+const rateB = variantB.unique_clicks / variantB.sent;
+
+// Simple statistical significance (z-test)
+const pooledRate = (variantA.unique_clicks + variantB.unique_clicks) / 
+                   (variantA.sent + variantB.sent);
+const se = Math.sqrt(pooledRate * (1 - pooledRate) * 
+           (1/variantA.sent + 1/variantB.sent));
+const zScore = Math.abs(rateA - rateB) / se;
+const isSignificant = zScore > 1.96; // 95% confidence
+
+const winner = rateA > rateB ? 'A' : 'B';
+const uplift = ((Math.max(rateA, rateB) / Math.min(rateA, rateB)) - 1) * 100;
+
+return [{json: {
+  winner,
+  isSignificant,
+  uplift,
+  rateA,
+  rateB,
+  confidence: isSignificant ? '95%' : `${(zScore/1.96*95).toFixed(0)}%`
+}}];
+
+// 4. If: Test is significant
+Condition: {{ $json.isSignificant === true }}
+
+  // 5. Mautic Node: Declare winner
+  Operation: Update Email
+  Email ID: {{ $json.winner === 'A' ? 45 : 46 }}
+  A/B Winner: true
+  
+  // 6. Create new test with winner as control
+  Operation: Clone Email
+  Source: {{ $json.winner === 'A' ? 45 : 46 }}
+  
+  // 7. OpenAI: Generate new variant
+  Prompt: |
+    Current winner subject: {{ $json.winnerSubject }}
+    Click rate: {{ $json.winner === 'A' ? $json.rateA : $json.rateB }}
+    
+    Generate a new subject line variant to test.
+
+// 8. Document results
+Google Sheets Node: Append test results
+Metabase: Update optimization dashboard
+```
+
+## Integration Patterns
+
+### Mautic + Twenty CRM
+
+```javascript
+// Bi-directional sync between Mautic and Twenty
+// Mautic for marketing, Twenty for sales
+
+// 1. Mautic Webhook: Lead score change
+// 2. If score > 70: Create Twenty opportunity
+// 3. Twenty updates: Sync back to Mautic
+// 4. Closed deals: Update Mautic segments
+```
+
+### Mautic + Cal.com
+
+```javascript
+// Automated appointment booking for qualified leads
+
+// 1. Mautic: High-value lead identified
+// 2. Cal.com: Check sales team availability
+// 3. Mautic: Send personalized booking link
+// 4. Cal.com: Booking confirmed
+// 5. Mautic: Update lead status and notify team
+```
+
+### Mautic + Invoice Ninja
+
+```javascript
+// Automate billing for marketing services
+
+// 1. Mautic: Campaign completed
+// 2. Calculate campaign metrics
+// 3. Invoice Ninja: Generate invoice
+// 4. Mautic: Send invoice email
+// 5. Track payment status
+```
+
+## Best Practices
+
+### Performance Optimization
+
+```bash
+# Monitor Mautic performance
+docker exec mautic_web php bin/console mautic:segments:update --no-interaction
+docker exec mautic_web php bin/console mautic:campaigns:update --no-interaction
+docker exec mautic_web php bin/console mautic:campaigns:trigger --no-interaction
+
+# Database optimization
+docker exec mautic_db mysql -u root -p -e "OPTIMIZE TABLE mautic.leads;"
+
+# Clear cache regularly
+docker exec mautic_web php bin/console cache:clear
+```
+
+### Data Management
+
+1. **Segment regularly**: Keep segments under 10,000 contacts for performance
+2. **Archive old data**: Move inactive contacts to archive segments
+3. **Clean bounce list**: Regular cleanup of hard bounces
+4. **Monitor API limits**: Implement rate limiting in n8n
+
+### Security
+
+```javascript
+// Always sanitize webhook inputs
+const sanitized = {
+  email: $json.email?.toLowerCase().trim(),
+  firstname: $json.firstname?.replace(/[^a-zA-Z\s]/g, ''),
+  // Validate before processing
+};
+
+// Use environment variables for sensitive data
+const apiKey = $env.MAUTIC_API_KEY;
+// Never hardcode credentials
+```
+
+### GDPR Compliance
+
+```javascript
+// Implement consent tracking
+// 1. Track consent in Mautic custom fields
+// 2. Check consent before sending emails
+// 3. Provide unsubscribe in all communications
+// 4. Implement data deletion workflows
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Webhook not receiving data:**
+```bash
+# Check Mautic webhook configuration
+docker exec mautic_web php bin/console mautic:webhooks:process
+
+# Verify n8n webhook URL is accessible
+curl -X POST https://n8n.yourdomain.com/webhook/test
+```
+
+**API authentication failures:**
+```bash
+# Regenerate API credentials
+docker exec mautic_web php bin/console mautic:oauth:client:create \
+  --name="n8n Integration" \
+  --redirect-uri="https://n8n.yourdomain.com/callback"
+```
+
+**Performance issues:**
+```bash
+# Check queue status
+docker exec mautic_worker php bin/console mautic:queue:process
+
+# Monitor Redis
+docker exec mautic_redis redis-cli INFO stats
+```
+
+## Advanced Configurations
+
+### Custom Fields Setup
+
+```sql
+-- Add custom fields via SQL (advanced)
+INSERT INTO mautic_lead_fields (alias, label, type, field_group)
+VALUES 
+  ('lead_score_ml', 'ML Lead Score', 'number', 'professional'),
+  ('predictive_ltv', 'Predicted LTV', 'number', 'professional'),
+  ('engagement_tier', 'Engagement Tier', 'select', 'behavior');
+```
+
+### Webhook Security
+
+```javascript
+// Verify webhook signature in n8n
+const crypto = require('crypto');
+const signature = $headers['mautic-signature'];
+const payload = JSON.stringify($json);
+const secret = $env.MAUTIC_WEBHOOK_SECRET;
+
+const expectedSig = crypto
+  .createHmac('sha256', secret)
+  .update(payload)
+  .digest('hex');
+
+if (signature !== expectedSig) {
+  throw new Error('Invalid webhook signature');
+}
+```
+
+## Resources
+
+- **Mautic API Documentation**: https://developer.mautic.org
+- **n8n Mautic Node**: https://www.npmjs.com/package/@digital-boss/n8n-nodes-mautic
+- **Mautic Community**: https://forum.mautic.org
+- **Best Practices**: https://docs.mautic.org/en/best-practices
 
 ### 🔎 Perplexica Integration with n8n
 

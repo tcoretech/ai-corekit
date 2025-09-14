@@ -754,8 +754,8 @@ if is_profile_active "stirling-pdf"; then
   echo "Advanced PDF manipulation with 100+ features"
   echo
   echo "Host: ${STIRLING_HOSTNAME:-<hostname_not_set>}"
-  echo "User: ${STIRLING_USERNAME:-<not_set_in_env>}"
-  echo "Password: ${STIRLING_PASSWORD:-<not_set_in_env>}"
+  echo "  Initial Login: admin / stirling"
+  echo "  Note: You'll be prompted to change password on first login"
   echo
   echo "Access:"
   echo "  External (HTTPS): https://${STIRLING_HOSTNAME:-<hostname_not_set>}"

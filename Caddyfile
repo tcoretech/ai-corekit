@@ -123,6 +123,24 @@
     reverse_proxy openedai-speech:8000
 }
 
+# Scriberr - AI Audio Transcription with Speaker Diarization
+{$SCRIBERR_HOSTNAME} {
+    basic_auth {
+        {$SCRIBERR_USERNAME} {$SCRIBERR_PASSWORD_HASH}
+    }
+    reverse_proxy scriberr:8080 {
+        # Für große Audio-Uploads
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        # Größere Timeouts für lange Transkriptions-Prozesse
+        transport http {
+            read_timeout 600s
+            write_timeout 600s
+        }
+    }
+}
+
 # LibreTranslate (Self-hosted Translation API)
 {$LIBRETRANSLATE_HOSTNAME} {
     basic_auth {

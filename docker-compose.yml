@@ -68,6 +68,7 @@ volumes:
   mautic_data:
   mautic_db_data:
   mautic_redis_data:
+  scriberr_data:
 
 x-n8n: &service-n8n
   build:
@@ -349,6 +350,9 @@ services:
       - TTS_AUTH_USER=${TTS_AUTH_USER}
       - TTS_AUTH_PASSWORD_HASH=${TTS_AUTH_PASSWORD_HASH}
       - TTS_HOSTNAME=${TTS_HOSTNAME}
+      - SCRIBERR_HOSTNAME=${SCRIBERR_HOSTNAME}
+      - SCRIBERR_USERNAME=${SCRIBERR_USERNAME}
+      - SCRIBERR_PASSWORD_HASH=${SCRIBERR_PASSWORD_HASH}
       - VIKUNJA_HOSTNAME=${VIKUNJA_HOSTNAME}
       - WEAVIATE_HOSTNAME=${WEAVIATE_HOSTNAME}
       - WEBUI_HOSTNAME=${WEBUI_HOSTNAME}
@@ -999,6 +1003,44 @@ services:
     #   timeout: 10s
     #   retries: 5
     #   start_period: 120s
+
+  # ============================================================================
+  # SCRIBERR - AI Audio Transcription with Speaker Diarization
+  # ============================================================================
+  scriberr:
+    image: ghcr.io/rishikanthc/scriberr:latest
+    container_name: scriberr
+    profiles: ["scriberr"]
+    restart: unless-stopped
+    volumes:
+      - scriberr_data:/app/data
+      - ./shared/audio:/app/data/uploads  # Shared folder for n8n Integration
+    environment:
+      # Server Configuration
+      - HOST=0.0.0.0
+      - PORT=8080
+      # Storage Paths
+      - DATABASE_PATH=/app/data/scriberr.db
+      - UPLOAD_DIR=/app/data/uploads
+      - WHISPERX_ENV=/app/data/whisperx-env
+      # Optional API Keys for summaries
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # Whisper Model Configuration
+      - WHISPER_MODEL=${SCRIBERR_WHISPER_MODEL:-base}
+      # Speaker Diarization
+      - ENABLE_SPEAKER_DIARIZATION=${SCRIBERR_SPEAKER_DIARIZATION:-true}
+      - MIN_SPEAKERS=${SCRIBERR_MIN_SPEAKERS:-2}
+      - MAX_SPEAKERS=${SCRIBERR_MAX_SPEAKERS:-4}
+      # Performance Settings
+      - WHISPER_THREADS=${SCRIBERR_THREADS:-4}
+      - BATCH_SIZE=${SCRIBERR_BATCH_SIZE:-16}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || wget -q --spider http://localhost:8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   python-runner:
     image: python:3.11-slim

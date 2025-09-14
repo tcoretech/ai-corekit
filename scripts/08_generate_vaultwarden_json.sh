@@ -384,6 +384,16 @@ EOF
             "Internal services for text extraction from images/PDFs\\n\\nTesseract OCR (Fast Mode):\\nURL: http://tesseract-ocr:8884\\nMethod: POST multipart/form-data\\nFields: 'file' and 'options'\\nBest for: Clean scans, bulk processing\\n\\nEasyOCR (Quality Mode):\\nURL: http://easyocr:2000\\nSecret Key: ${EASYOCR_SECRET_KEY}\\nMethod: POST application/json\\nBody: {\"image_url\": \"...\", \"secret_key\": \"...\"}\\nBest for: Photos, receipts, handwriting\\n\\nn8n Integration: Use HTTP Request node with above URLs"
     fi
 
+    # Scriberr
+    if is_profile_active "scriberr"; then
+        add_login_item \
+            "Scriberr AI Audio Transcription" \
+            "${SCRIBERR_USERNAME}" \
+            "${SCRIBERR_PASSWORD}" \
+            "https://${SCRIBERR_HOSTNAME}" \
+            "AI-powered audio transcription with WhisperX and speaker diarization. Upload audio files or YouTube links for transcription with speaker detection. Model: ${SCRIBERR_WHISPER_MODEL}. Internal API: http://scriberr:8080/api"
+    fi
+
     # Stirling-PDF
     if is_profile_active "stirling-pdf"; then
         add_login_item \

@@ -134,6 +134,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech | Voice assistants, audiobooks, notifications | Internal API |
 | **[LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)** | Self-hosted translation API | 50+ languages, document translation, privacy-focused | `translate.yourdomain.com` |
 | **OCR Bundle: [Tesseract](https://github.com/tesseract-ocr/tesseract) & [EasyOCR](https://github.com/JaidedAI/EasyOCR)** | Dual OCR engines: Tesseract (fast) + EasyOCR (quality) | Text extraction from images/PDFs, receipt scanning, document digitization | Internal API |
+| **[Scriberr](https://github.com/rishikanthc/Scriberr)** | AI audio transcription with WhisperX & speaker diarization | Meeting transcripts, podcast processing, call recordings, speaker identification | `scriberr.yourdomain.com` |
 
 ### 🔍 Search & Web Data
 
@@ -4955,6 +4956,69 @@ The voice models will be automatically downloaded on first use. Available German
 - **kerstin**: Female voice (low quality, fast)
 
 You can find more voices at [Piper Voice Samples](https://rhasspy.github.io/piper-samples/).
+
+### 🎤 Scriberr - Advanced Audio Transcription
+
+Scriberr provides AI-powered audio transcription with speaker diarization (identifying who said what), perfect for meetings, interviews, and podcasts.
+
+#### Features
+- **WhisperX-powered transcription** - High accuracy with timestamp precision
+- **Speaker diarization** - Automatically identifies and labels different speakers
+- **AI summaries** - Generate summaries using OpenAI/Anthropic
+- **YouTube support** - Transcribe directly from YouTube links
+- **REST API** - Full automation support
+
+#### n8n Integration - Audio Transcription Workflow
+
+**Upload and Transcribe:**
+```javascript
+// HTTP Request Node Configuration
+Method: POST
+URL: http://scriberr:8080/api/upload
+Send Body: Form Data Multipart
+Body Parameters:
+  - file: (n8n Binary File)
+  - speaker_detection: true
+  - min_speakers: 2
+  - max_speakers: 4
+
+Get Transcript:
+// HTTP Request Node Configuration
+Method: GET
+URL: http://scriberr:8080/api/transcripts/{{$json.transcript_id}}
+
+Generate Summary:
+// HTTP Request Node Configuration
+Method: POST
+URL: http://scriberr:8080/api/summary
+Send Body: JSON
+{
+  "transcript_id": "{{$json.transcript_id}}",
+  "prompt": "Create meeting minutes with action items"
+}
+
+Example Workflow: Meeting Recording to Action Items
+1. Webhook Trigger → Receive audio file
+2. HTTP Request → Upload to Scriberr with speaker detection
+3. Wait Node → 30 seconds (for processing)
+4. HTTP Request → Get transcript with speaker labels
+5. HTTP Request → Generate AI summary
+6. Email → Send meeting minutes to participants
+
+Model Selection Guide
+
+tiny (~1GB RAM): Draft transcripts, quick processing
+base (~1.5GB RAM): Good balance, recommended default
+small (~3GB RAM): Better accuracy for accents
+medium (~5GB RAM): Professional transcription
+large (~10GB RAM): Maximum accuracy, slow processing
+
+Tips for Best Results
+
+Use WAV or MP3 format for best compatibility
+Set correct min/max speakers for accurate diarization
+First transcription downloads models (2-5 minutes)
+Processing time ≈ audio length (30min audio = 30min processing)
 
 ### 🔍 OCR Bundle Integration
 

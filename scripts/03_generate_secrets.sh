@@ -58,6 +58,7 @@ declare -A VARS_TO_GENERATE=(
     ["LIBRETRANSLATE_PASSWORD"]="password:32" # Added LibreTranslate basic auth password
     ["WHISPER_AUTH_PASSWORD"]="password:32" # Added Whisper basic auth password
     ["TTS_AUTH_PASSWORD"]="password:32" # Added TTS basic auth password
+    ["SCRIBERR_PASSWORD"]="password:32"
     ["EASYOCR_SECRET_KEY"]="apikey:32"
     ["LIGHTRAG_PASSWORD"]="password:32"
     ["LIGHTRAG_TOKEN_SECRET"]="apikey:64"
@@ -608,6 +609,7 @@ generated_values["RAGAPP_USERNAME"]="$USER_EMAIL" # Set RAGApp username for Cadd
 generated_values["LIBRETRANSLATE_USERNAME"]="$USER_EMAIL" # Set LibreTranslate username for Caddy
 generated_values["WHISPER_AUTH_USER"]="$USER_EMAIL" # Set Whisper username for Caddy
 generated_values["TTS_AUTH_USER"]="$USER_EMAIL" # Set TTS username for Caddy
+generated_values["SCRIBERR_USERNAME"]="$USER_EMAIL"
 generated_values["LIGHTRAG_USERNAME"]="$USER_EMAIL" # Set LightRAG username for Caddy
 generated_values["PERPLEXICA_USERNAME"]="$USER_EMAIL" # Set Perplexica username for Caddy
 generated_values["ODOO_USERNAME"]="$USER_EMAIL" #Set Odoo username for Caddy
@@ -665,6 +667,7 @@ found_vars["RAGAPP_USERNAME"]=0
 found_vars["LIBRETRANSLATE_USERNAME"]=0
 found_vars["WHISPER_AUTH_USER"]=0
 found_vars["TTS_AUTH_USER"]=0
+found_vars["SCRIBERR_USERNAME"]=0
 found_vars["LIGHTRAG_USERNAME"]=0
 found_vars["PERPLEXICA_USERNAME"]=0
 found_vars["ODOO_USERNAME"]=0
@@ -1000,6 +1003,18 @@ if [[ -z "$FINAL_TTS_HASH" && -n "$TTS_PLAIN_PASS" ]]; then
     fi
 fi
 _update_or_add_env_var "TTS_AUTH_PASSWORD_HASH" "$FINAL_TTS_HASH"
+
+# --- SCRIBERR ---
+SCRIBERR_PLAIN_PASS="${generated_values["SCRIBERR_PASSWORD"]}"
+FINAL_SCRIBERR_HASH="${generated_values[SCRIBERR_PASSWORD_HASH]}"
+if [[ -z "$FINAL_SCRIBERR_HASH" && -n "$SCRIBERR_PLAIN_PASS" ]]; then
+    NEW_HASH=$(_generate_and_get_hash "$SCRIBERR_PLAIN_PASS")
+    if [[ -n "$NEW_HASH" ]]; then
+        FINAL_SCRIBERR_HASH="$NEW_HASH"
+        generated_values["SCRIBERR_PASSWORD_HASH"]="$NEW_HASH"
+    fi
+fi
+_update_or_add_env_var "SCRIBERR_PASSWORD_HASH" "$FINAL_SCRIBERR_HASH"
 
 # --- LIGHTRAG ---
 LIGHTRAG_PLAIN_PASS="${generated_values["LIGHTRAG_PASSWORD"]}"

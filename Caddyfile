@@ -345,6 +345,14 @@ https://{$NEO4J_HOSTNAME}:7687 {
     reverse_proxy metabase:3000
 }
 
+# Stirling-PDF - Advanced PDF Tools
+{$STIRLING_HOSTNAME} {
+    reverse_proxy stirling-pdf:8080 {
+        # For large PDF uploads
+        header_up X-Real-IP {remote_host}
+    }
+}
+
 import /etc/caddy/addons/*.conf
 
 # # SearXNG

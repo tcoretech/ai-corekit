@@ -57,6 +57,9 @@ volumes:
   metabase_postgres:
   nocodb_data:
   easyocr_models:
+  stirling_data:
+  stirling_configs:
+  stirling_logs:
 
 x-n8n: &service-n8n
   build:
@@ -348,6 +351,8 @@ services:
       - INVOICENINJA_HOSTNAME=${INVOICENINJA_HOSTNAME}
       - FORMBRICKS_HOSTNAME=${FORMBRICKS_HOSTNAME}
       - METABASE_HOSTNAME=${METABASE_HOSTNAME}
+      - STIRLING_HOSTNAME=${STIRLING_HOSTNAME}
+      - STIRLING_USERNAME=${STIRLING_USERNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}

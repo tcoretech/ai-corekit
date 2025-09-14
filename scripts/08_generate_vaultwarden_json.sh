@@ -357,6 +357,16 @@ EOF
             "Internal services for text extraction from images/PDFs\\n\\nTesseract OCR (Fast Mode):\\nURL: http://tesseract-ocr:8884\\nMethod: POST multipart/form-data\\nFields: 'file' and 'options'\\nBest for: Clean scans, bulk processing\\n\\nEasyOCR (Quality Mode):\\nURL: http://easyocr:2000\\nSecret Key: ${EASYOCR_SECRET_KEY}\\nMethod: POST application/json\\nBody: {\"image_url\": \"...\", \"secret_key\": \"...\"}\\nBest for: Photos, receipts, handwriting\\n\\nn8n Integration: Use HTTP Request node with above URLs"
     fi
 
+    # Stirling-PDF
+    if is_profile_active "stirling-pdf"; then
+        add_login_item \
+            "Stirling-PDF Document Tools" \
+            "${STIRLING_USERNAME}" \
+            "${STIRLING_PASSWORD}" \
+            "https://${STIRLING_HOSTNAME}" \
+            "Advanced PDF manipulation with 100+ features. Merge, split, OCR, sign, watermark, convert. Internal API: http://stirling-pdf:8080/api/v1"
+    fi
+
     # Database Credentials
     add_secure_note \
         "PostgreSQL Database (Internal)" \

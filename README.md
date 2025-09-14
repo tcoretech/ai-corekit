@@ -189,6 +189,7 @@ Pre-installed in the n8n container for seamless media manipulation:
 |------|-------------|-----------|--------|
 | **[Ollama](https://github.com/ollama/ollama)** | Local LLM runtime | Run Llama, Mistral, Gemma models locally | `ollama.yourdomain.com` |
 | **[Gotenberg](https://github.com/gotenberg/gotenberg)** | Document conversion API | PDF generation, HTML to PDF, Office conversions | Internal API |
+| **[Stirling-PDF](https://github.com/Stirling-Tools/Stirling-PDF)** | Complete PDF toolkit with 100+ features | Merge, split, OCR, sign, watermark, convert documents | `pdf.yourdomain.com` |
 
 ---
 
@@ -4072,6 +4073,310 @@ Issue: Poor accuracy on photos
 
 Solution: Use EasyOCR instead of Tesseract, enable paragraph mode for better context
 
+### 📄 Stirling-PDF Integration
+
+Stirling-PDF provides a comprehensive PDF manipulation toolkit with over 100 features, perfect for document automation workflows in n8n. With built-in user management and API support, it's ideal for processing invoices, contracts, reports, and any PDF-based workflows.
+
+#### Initial Setup
+
+**First Login to Stirling-PDF:**
+1. Navigate to `https://pdf.yourdomain.com`
+2. Login with credentials from installation report:
+   - Username: Your email address (set during installation)
+   - Password: Check `.env` file for `STIRLING_PASSWORD`
+3. Explore the web interface for manual operations
+4. API documentation available at: `http://stirling-pdf:8080/api/v1/docs`
+
+#### n8n Integration via HTTP Request
+
+**Base Configuration:**
+- **Internal URL:** `http://stirling-pdf:8080`
+- **API Endpoint:** `/api/v1/[operation]`
+- **Authentication:** Use session cookie or API key (if configured)
+
+#### Example: Invoice Processing Pipeline
+
+Automatically process incoming invoices:
+
+```javascript
+// 1. Email Trigger: Receive PDF attachments
+// 2. Extract from File: Get PDF binary
+
+// 3. HTTP Request: Extract text with OCR
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/convert/pdf-to-text
+Headers:
+  Content-Type: multipart/form-data
+Body: 
+  - Parameter: file (binary)
+  - Parameter: outputFormat: "txt"
+
+// 4. Code Node: Parse invoice data
+const text = $json.text;
+const invoice = {
+  number: text.match(/Invoice #: (\d+)/)?.[1],
+  date: text.match(/Date: ([\d-/]+)/)?.[1],
+  total: text.match(/Total: \$?([\d,]+\.?\d*)/)?.[1],
+  vendor: text.match(/From: (.+)/)?.[1]
+};
+return invoice;
+
+// 5. Invoice Ninja/Odoo: Create vendor bill
+```
+
+#### Example: Document Watermarking Workflow
+
+Add watermarks to sensitive documents:
+
+```javascript
+// 1. Webhook: Receive document for processing
+
+// 2. HTTP Request: Add watermark
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/security/add-watermark
+Headers:
+  Content-Type: multipart/form-data
+Body:
+  - file: {{ $binary.data }}
+  - watermarkText: "CONFIDENTIAL - {{ $now.format('YYYY-MM-DD') }}"
+  - fontSize: 48
+  - opacity: 0.3
+  - rotation: 45
+
+// 3. HTTP Request: Add password protection
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/security/add-password
+Body:
+  - file: {{ $json.data }}
+  - password: {{ generatePassword() }}
+  - keyLength: 256
+
+// 4. Save to shared folder or send via email
+```
+
+#### Example: PDF Merge & Split Automation
+
+Combine multiple documents and split by sections:
+
+```javascript
+// 1. Schedule Trigger: Daily report generation
+
+// 2. Get multiple PDFs from various sources
+// (Database reports, invoices, etc.)
+
+// 3. HTTP Request: Merge PDFs
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/general/merge-pdfs
+Headers:
+  Content-Type: multipart/form-data
+Body:
+  - files: [pdf1.pdf, pdf2.pdf, pdf3.pdf]
+  - sortType: "alphabetical"
+
+// 4. HTTP Request: Split by page numbers
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/general/split-pdfs
+Body:
+  - file: {{ $binary.mergedPdf }}
+  - pageNumbers: "1-10,11-20,21-30"
+
+// 5. Loop: Process each section differently
+```
+
+#### Example: Form Processing Pipeline
+
+Extract and process PDF forms:
+
+```javascript
+// 1. Webhook: Receive filled form
+
+// 2. HTTP Request: Extract form data
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/convert/pdf-to-json
+Headers:
+  Content-Type: multipart/form-data
+Body:
+  - file: {{ $binary.formPdf }}
+
+// 3. Code Node: Process form fields
+const formData = $json.fields;
+const submission = {
+  name: formData.full_name,
+  email: formData.email,
+  date: new Date().toISOString(),
+  responses: formData
+};
+
+// 4. Baserow/Supabase: Store in database
+// 5. Email: Send confirmation
+```
+
+#### Example: Contract Redaction Workflow
+
+Automatically redact sensitive information:
+
+```javascript
+// 1. Trigger: New contract uploaded
+
+// 2. HTTP Request: Auto-redact SSNs
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/security/auto-redact
+Body:
+  - file: {{ $binary.contract }}
+  - redactPattern: "\\d{3}-\\d{2}-\\d{4}" // SSN pattern
+  - color: "black"
+
+// 3. HTTP Request: Remove metadata
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/security/sanitize-pdf
+Body:
+  - file: {{ $json.redactedPdf }}
+  - removeMetadata: true
+  - removeLinks: false
+  - removeJavaScript: true
+
+// 4. Store sanitized version
+```
+
+#### Available Operations
+
+**Document Manipulation:**
+- Merge/Split PDFs
+- Rotate pages
+- Reorder pages
+- Extract specific pages
+- Remove pages
+- Scale/resize PDFs
+- Crop PDFs
+
+**Conversion:**
+- PDF to Text (with OCR)
+- PDF to Word/Excel/PowerPoint
+- Images to PDF
+- HTML to PDF
+- Markdown to PDF
+- PDF to images (PNG/JPEG)
+
+**Security:**
+- Add/remove passwords
+- Add watermarks
+- Digital signatures
+- Redact content
+- Remove metadata
+- Certificate signing
+
+**Forms & Data:**
+- Extract form data
+- Fill forms programmatically
+- Flatten forms
+- Add form fields
+
+**Optimization:**
+- Compress PDFs
+- Optimize for web
+- Reduce file size
+- Fix corrupted PDFs
+
+#### Tips for Stirling-PDF + n8n Integration
+
+1. **Use Internal URL:** Always use `http://stirling-pdf:8080` from n8n, not the external URL
+2. **Binary Data:** Most operations require binary file input - use proper multipart/form-data
+3. **Chaining Operations:** Stirling-PDF operations can be chained for complex workflows
+4. **Error Handling:** Add Try/Catch nodes for robust document processing
+5. **File Size Limits:** Default max is 256MB, configurable in docker-compose.yml
+6. **OCR Languages:** Multiple languages supported, specify in API calls
+7. **Batch Processing:** Process multiple files in loops with Wait nodes to avoid overload
+
+#### Advanced: Pipeline Mode
+
+Stirling-PDF supports pipeline mode for complex multi-step operations:
+
+```javascript
+// HTTP Request: Execute pipeline
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/pipeline
+Headers:
+  Content-Type: application/json
+Body: {
+  "pipeline": [
+    {
+      "operation": "rotate",
+      "parameters": {"angle": 90}
+    },
+    {
+      "operation": "compress", 
+      "parameters": {"quality": 85}
+    },
+    {
+      "operation": "watermark",
+      "parameters": {"text": "PROCESSED"}
+    }
+  ],
+  "input": "{{ $binary.data }}"
+}
+```
+
+#### Performance Optimization
+
+For high-volume processing:
+
+```yaml
+# Increase memory limits in docker-compose.yml
+stirling-pdf:
+  environment:
+    - DOCKER_ENABLE_SECURITY=true
+    - SYSTEM_MAXFILESIZE=512  # Increase from 256MB
+    - SYSTEM_CONNECTIONTIMEOUTMINUTES=10  # For large operations
+```
+
+#### Common Use Cases
+
+1. **Invoice Automation:** Extract data → Process → Store in ERP
+2. **Contract Management:** Redact → Sign → Archive
+3. **Report Generation:** Merge sections → Add TOC → Watermark
+4. **Form Processing:** Extract data → Validate → Update database
+5. **Document Security:** Password protect → Encrypt → Distribute
+6. **Compliance:** Sanitize metadata → Redact PII → Audit trail
+
+#### Troubleshooting
+
+**PDF Processing Fails:**
+```bash
+# Check Stirling-PDF logs
+docker logs stirling-pdf --tail 100
+
+# Verify service is running
+docker ps | grep stirling-pdf
+
+# Test API endpoint
+curl http://localhost:8080/api/v1/info/status
+```
+
+**OCR Not Working:**
+```bash
+# Check if Tesseract is installed
+docker exec stirling-pdf tesseract --version
+
+# For additional languages
+docker exec stirling-pdf apt-get update
+docker exec stirling-pdf apt-get install tesseract-ocr-deu  # German
+```
+
+**Memory Issues with Large PDFs:**
+```bash
+# Increase Docker memory limit
+docker update --memory="2g" stirling-pdf
+
+# Or restart with new limits
+docker compose up -d stirling-pdf
+```
+
+#### Resources
+
+- **Documentation:** [docs.stirlingpdf.com](https://docs.stirlingpdf.com)
+- **API Reference:** Access at `https://pdf.yourdomain.com/swagger-ui/index.html`
+- **GitHub:** [github.com/Stirling-Tools/Stirling-PDF](https://github.com/Stirling-Tools/Stirling-PDF)
+- **Community:** [GitHub Discussions](https://github.com/Stirling-Tools/Stirling-PDF/discussions)
 
 ### 🌍 LibreTranslate Integration
 

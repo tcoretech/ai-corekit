@@ -82,6 +82,7 @@ base_services_data=(
     "neo4j" "Neo4j (Graph Database)"
     "letta" "Letta (Agent Server & SDK)"
     "gotenberg" "Gotenberg (Document Conversion API)"
+    "stirling-pdf" "Stirling-PDF (100+ PDF Tools: Merge, Split, OCR, Sign)"
     "crawl4ai" "Crawl4ai (Web Crawler for AI)"
     "ragapp" "RAGApp (Open-source RAG UI + API)"
     "open-webui" "Open WebUI (ChatGPT-like Interface)"

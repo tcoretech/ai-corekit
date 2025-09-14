@@ -60,6 +60,11 @@ volumes:
   stirling_data:
   stirling_configs:
   stirling_logs:
+  twenty_data:
+  twenty_db_data:
+  twenty_redis_data:
+  espocrm_data:
+  espocrm_db_data:
 
 x-n8n: &service-n8n
   build:
@@ -317,6 +322,8 @@ services:
       - ODOO_HOSTNAME=${ODOO_HOSTNAME}
       - ODOO_USERNAME=${ODOO_USERNAME}
       - ODOO_PASSWORD_HASH=${ODOO_PASSWORD_HASH}
+      - TWENTY_CRM_HOSTNAME=${TWENTY_CRM_HOSTNAME}
+      - ESPOCRM_HOSTNAME=${ESPOCRM_HOSTNAME}
       - PERPLEXICA_HOSTNAME=${PERPLEXICA_HOSTNAME}
       - PERPLEXICA_USERNAME=${PERPLEXICA_USERNAME}
       - PERPLEXICA_PASSWORD_HASH=${PERPLEXICA_PASSWORD_HASH}
@@ -1084,7 +1091,127 @@ services:
       timeout: 10s
       retries: 3
 
+  # ============================================================================
+  # TWENTY CRM - Modern Customer Relationship Management
+  # ============================================================================
+  twenty-crm:
+    image: twentycrm/twenty:latest
+    container_name: twenty-crm
+    profiles: ["twenty-crm"]
+    restart: unless-stopped
+    volumes:
+      - twenty_data:/app/packages/twenty-server/.local-storage
+      - ./shared:/data/shared
+    environment:
+      - NODE_PORT=3000
+      - PG_DATABASE_URL=postgresql://${TWENTY_CRM_DB_USER}:${TWENTY_CRM_DB_PASSWORD}@twenty-db:5432/default
+      - REDIS_URL=redis://twenty-redis:6379
+      - SERVER_URL=https://${TWENTY_CRM_HOSTNAME}
+      - APP_SECRET=${TWENTY_CRM_APP_SECRET}
+      - STORAGE_TYPE=local
+      - DISABLE_DB_MIGRATIONS=false
+    depends_on:
+      twenty-db:
+        condition: service_healthy
+      twenty-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
+  twenty-db:
+    image: postgres:16-alpine
+    container_name: twenty-db
+    profiles: ["twenty-crm"]
+    restart: unless-stopped
+    volumes:
+      - twenty_db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${TWENTY_CRM_DB_PASSWORD}
+      - POSTGRES_USER=${TWENTY_CRM_DB_USER}
+      - POSTGRES_DB=default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TWENTY_CRM_DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  twenty-redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    profiles: ["twenty-crm"]
+    restart: unless-stopped
+    volumes:
+      - twenty_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # ESPOCRM - Full-Featured Customer Relationship Management
+  # ============================================================================
+  espocrm:
+    image: espocrm/espocrm:latest
+    container_name: espocrm
+    profiles: ["espocrm"]
+    restart: unless-stopped
+    volumes:
+      - espocrm_data:/var/www/html
+      - ./shared:/data/shared
+    environment:
+      - ESPOCRM_DATABASE_PLATFORM=Mysql
+      - ESPOCRM_DATABASE_HOST=espocrm-db
+      - ESPOCRM_DATABASE_NAME=${ESPOCRM_DB_NAME}
+      - ESPOCRM_DATABASE_USER=${ESPOCRM_DB_USER}
+      - ESPOCRM_DATABASE_PASSWORD=${ESPOCRM_DB_PASSWORD}
+      - ESPOCRM_ADMIN_USERNAME=${ESPOCRM_ADMIN_USERNAME}
+      - ESPOCRM_ADMIN_PASSWORD=${ESPOCRM_ADMIN_PASSWORD}
+      - ESPOCRM_SITE_URL=https://${ESPOCRM_HOSTNAME}
+    depends_on:
+      espocrm-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/api/v1/App/user || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  espocrm-db:
+    image: mariadb:latest
+    container_name: espocrm-db
+    profiles: ["espocrm"]
+    restart: unless-stopped
+    volumes:
+      - espocrm_db_data:/var/lib/mysql
+    environment:
+      - MARIADB_ROOT_PASSWORD=${ESPOCRM_DB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=${ESPOCRM_DB_NAME}
+      - MARIADB_USER=${ESPOCRM_DB_USER}
+      - MARIADB_PASSWORD=${ESPOCRM_DB_PASSWORD}
+    command: --max-allowed-packet=64MB
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  espocrm-daemon:
+    image: espocrm/espocrm:latest
+    container_name: espocrm-daemon
+    profiles: ["espocrm"]
+    restart: unless-stopped
+    volumes:
+      - espocrm_data:/var/www/html
+    entrypoint: docker-daemon.sh
+    depends_on:
+      - espocrm
 
   # Vikunja Database Init - Create database
   vikunja-init:

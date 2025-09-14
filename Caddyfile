@@ -160,6 +160,30 @@
     }
 }
 
+# =============================================================================
+# CRM SYSTEMS
+# =============================================================================
+
+# Twenty CRM - Modern Customer Relationship Management
+{$TWENTY_CRM_HOSTNAME} {
+    reverse_proxy twenty-crm:3000 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+}
+
+# EspoCRM - Full-Featured Customer Relationship Management
+{$ESPOCRM_HOSTNAME} {
+    reverse_proxy espocrm:80 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+}
+
 # Baserow (Airtable Alternative)
 {$BASEROW_HOSTNAME} {
     reverse_proxy baserow:80

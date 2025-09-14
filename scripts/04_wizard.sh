@@ -60,6 +60,8 @@ base_services_data=(
     "cloudflare-tunnel" "Cloudflare Tunnel (Zero-Trust Secure Access)"
     "postiz" "Postiz (Social publishing platform)"
     "odoo" "Odoo 18 (Open Source ERP/CRM with AI features)"
+    "twenty-crm" "Twenty CRM (Modern Notion-like customer management)"
+    "espocrm" "EspoCRM (Full-featured CRM with workflows & automation)"
     "baserow" "Baserow (Airtable Alternative)"
     "nocodb" "NocoDB (Open-source Airtable alternative, smart spreadsheet UI)"
     "vikunja" "Vikunja (Modern Task Management - Todoist/TickTick alternative)"

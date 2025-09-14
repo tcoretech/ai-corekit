@@ -93,6 +93,8 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[Formbricks](https://github.com/formbricks/formbricks)** | Privacy-first survey platform | Customer feedback, NPS surveys, market research, form builder, GDPR-compliant | `forms.yourdomain.com` |
 | **[Metabase](https://github.com/metabase/metabase)** | User-friendly business intelligence platform | No-code dashboards, automated reports, data exploration, team analytics | `analytics.yourdomain.com` |
 | **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
+| **[Twenty CRM](https://github.com/twentyhq/twenty)** | Modern Notion-like CRM | Customer pipelines, GraphQL API, team collaboration, lightweight CRM for startups | `twenty.yourdomain.com` |
+| **[EspoCRM](https://github.com/espocrm/espocrm)** | Full-featured CRM platform | Email campaigns, workflow automation, advanced reporting, role-based access | `espocrm.yourdomain.com` |
 
 ### 🎨 AI Content Generation
 
@@ -3653,6 +3655,421 @@ Leverage Odoo's built-in AI capabilities:
 4. **Caching**: Store frequently accessed data (like product lists) in variables
 5. **Webhooks**: Set up Odoo automated actions to trigger n8n workflows
 6. **Custom Fields**: Create custom fields in Odoo for AI-generated content
+
+### 🚀 Twenty CRM Integration with n8n
+
+Twenty CRM offers a modern, Notion-like interface for customer relationship management with powerful GraphQL and REST APIs. Its lightweight design makes it perfect for startups and small teams looking for a flexible CRM solution.
+
+#### Initial Setup
+
+**First Login to Twenty CRM:**
+1. Navigate to `https://twenty.yourdomain.com`
+2. Create your first workspace during initial setup
+3. Configure workspace settings and customize fields
+4. Generate API key in Settings → Developers → API Keys
+
+#### Native n8n HTTP Request Setup
+
+**Create Twenty CRM Credentials in n8n:**
+```javascript
+// Twenty CRM API Credentials
+Base URL: http://twenty-crm:3000
+Authentication: Bearer Token
+Token: your-api-key-from-twenty-settings
+Headers: {
+  "Content-Type": "application/json"
+}
+```
+
+#### Example: Lead Qualification Pipeline
+
+Automatically qualify and score leads using AI:
+
+```javascript
+// 1. Webhook Trigger: Receive new lead from website
+// 2. HTTP Request Node: Create lead in Twenty
+Method: POST
+URL: http://twenty-crm:3000/rest/companies
+Headers: {
+  "Authorization": "Bearer {{ $credentials.twenty_api_key }}"
+}
+Body: {
+  "name": "{{ $json.company_name }}",
+  "domainName": "{{ $json.website }}",
+  "employees": "{{ $json.company_size }}",
+  "address": "{{ $json.location }}"
+}
+
+// 3. OpenAI Node: Analyze lead quality
+Model: gpt-4o-mini
+Prompt: |
+  Analyze this lead and provide a score (1-10):
+  Company: {{ $json.company_name }}
+  Industry: {{ $json.industry }}
+  Size: {{ $json.company_size }}
+  Budget: {{ $json.budget_range }}
+  
+  Provide score and reasoning in JSON format.
+
+// 4. HTTP Request Node: Update lead with AI score
+Method: PATCH
+URL: http://twenty-crm:3000/rest/companies/{{ $('Create Lead').json.id }}
+Body: {
+  "customFields": {
+    "leadScore": "{{ $json.score }}",
+    "aiAnalysis": "{{ $json.reasoning }}",
+    "priority": "{{ $json.score >= 7 ? 'High' : 'Normal' }}"
+  }
+}
+
+// 5. Slack Node: Notify sales team for high-value leads
+If: {{ $json.score >= 8 }}
+Channel: #sales-alerts
+Message: "🔥 High-value lead: {{ $json.company_name }} (Score: {{ $json.score }}/10)"
+```
+
+#### Example: Customer Onboarding Automation
+
+Streamline customer onboarding with automated tasks:
+
+```javascript
+// 1. Twenty CRM Webhook: On opportunity won
+// 2. HTTP Request Node: Get customer details
+Method: GET
+URL: http://twenty-crm:3000/rest/companies/{{ $json.companyId }}
+
+// 3. Invoice Ninja Node: Create customer account
+Operation: Create Customer
+Name: "{{ $json.name }}"
+Email: "{{ $json.email }}"
+Address: "{{ $json.address }}"
+
+// 4. Cal.com Node: Schedule onboarding call
+Operation: Create Booking
+Event Type: onboarding-call
+Customer Email: "{{ $json.email }}"
+Preferred Time: "{{ $now.plus(2, 'days').toISO() }}"
+
+// 5. HTTP Request Node: Update Twenty CRM pipeline stage
+Method: PATCH
+URL: http://twenty-crm:3000/rest/opportunities/{{ $json.opportunityId }}
+Body: {
+  "stage": "Onboarding",
+  "customFields": {
+    "onboardingStarted": "{{ $now.toISO() }}",
+    "invoiceCreated": true,
+    "meetingScheduled": "{{ $json.booking_time }}"
+  }
+}
+
+// 6. Email Node: Send welcome package
+To: "{{ $json.email }}"
+Subject: "Welcome to {{ $json.company_name }}!"
+Body: Custom HTML template with onboarding steps
+```
+
+#### Example: GraphQL Advanced Queries
+
+Leverage Twenty's powerful GraphQL API for complex operations:
+
+```javascript
+// 1. Schedule Trigger: Weekly sales report
+// 2. HTTP Request Node: GraphQL query for pipeline metrics
+Method: POST
+URL: http://twenty-crm:3000/graphql
+Body: {
+  "query": `
+    query GetPipelineMetrics {
+      opportunities(
+        where: {
+          createdAt: { gte: "{{ $now.minus(7, 'days').toISO() }}" }
+        }
+      ) {
+        edges {
+          node {
+            id
+            name
+            amount
+            stage
+            probability
+            company {
+              name
+              domainName
+            }
+          }
+        }
+      }
+    }
+  `
+}
+
+// 3. Code Node: Calculate metrics
+const opportunities = items[0].json.data.opportunities.edges;
+const metrics = {
+  total_value: opportunities.reduce((sum, opp) => sum + opp.node.amount, 0),
+  weighted_pipeline: opportunities.reduce((sum, opp) => 
+    sum + (opp.node.amount * opp.node.probability / 100), 0),
+  by_stage: {}
+};
+
+// Group by stage
+opportunities.forEach(opp => {
+  const stage = opp.node.stage;
+  if (!metrics.by_stage[stage]) {
+    metrics.by_stage[stage] = { count: 0, value: 0 };
+  }
+  metrics.by_stage[stage].count++;
+  metrics.by_stage[stage].value += opp.node.amount;
+});
+
+return [{ json: metrics }];
+
+// 4. Metabase Node: Update dashboard
+// 5. Slack Node: Send weekly summary
+```
+
+---
+
+### 📊 EspoCRM Integration with n8n
+
+EspoCRM provides a comprehensive CRM solution with built-in workflow automation, email campaigns, and advanced reporting capabilities. Its extensive API makes it ideal for complex business processes.
+
+#### Initial Setup
+
+**First Login to EspoCRM:**
+1. Navigate to `https://espocrm.yourdomain.com`
+2. Login with admin credentials (from .env file)
+3. Configure email settings in Administration → Outbound Emails
+4. Generate API key in User Profile → API Users
+
+#### Native n8n HTTP Request Setup
+
+**Create EspoCRM Credentials in n8n:**
+```javascript
+// EspoCRM API Credentials
+Base URL: http://espocrm:80
+Authentication: API Key
+Headers: {
+  "X-Api-Key": "your-api-key-from-espocrm",
+  "Content-Type": "application/json"
+}
+```
+
+#### Example: Email Campaign Automation
+
+Create and manage email campaigns with lead scoring:
+
+```javascript
+// 1. Schedule Trigger: Daily at 10 AM
+// 2. HTTP Request Node: Get new leads from last 24h
+Method: GET
+URL: http://espocrm:80/api/v1/Lead
+Query Parameters: {
+  "where[0][type]": "after",
+  "where[0][attribute]": "createdAt",
+  "where[0][value]": "{{ $now.minus(1, 'day').toISO() }}"
+}
+
+// 3. Loop Over Items
+// 4. Perplexica Node: Research lead company
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.companyName }} latest news revenue",
+  "focusMode": "webSearch"
+}
+
+// 5. HTTP Request Node: Update lead with research
+Method: PUT
+URL: http://espocrm:80/api/v1/Lead/{{ $json.id }}
+Body: {
+  "description": "{{ $json.research_summary }}",
+  "customScore": "{{ $json.relevance_score }}",
+  "status": "Qualified"
+}
+
+// 6. HTTP Request Node: Add to email campaign
+Method: POST
+URL: http://espocrm:80/api/v1/CampaignLogRecord
+Body: {
+  "campaignId": "nurture-campaign-id",
+  "targetId": "{{ $json.id }}",
+  "targetType": "Lead",
+  "action": "Sent"
+}
+```
+
+#### Example: Advanced Workflow with Custom Entities
+
+Manage custom business processes using EspoCRM's entity system:
+
+```javascript
+// 1. Webhook Trigger: Custom entity created (e.g., Service Request)
+// 2. HTTP Request Node: Get related account details
+Method: GET
+URL: http://espocrm:80/api/v1/Account/{{ $json.accountId }}
+Query Parameters: {
+  "select": "name,website,industry,assignedUserId"
+}
+
+// 3. HTTP Request Node: Check SLA requirements
+Method: GET
+URL: http://espocrm:80/api/v1/ServiceContract
+Query Parameters: {
+  "where[0][type]": "equals",
+  "where[0][attribute]": "accountId",
+  "where[0][value]": "{{ $json.accountId }}"
+}
+
+// 4. Code Node: Calculate priority and SLA
+const account = items[0].json;
+const contract = items[1].json.list[0];
+const priority = contract?.type === 'Premium' ? 'High' : 'Normal';
+const slaHours = {
+  'Premium': 4,
+  'Standard': 24,
+  'Basic': 48
+}[contract?.type] || 72;
+
+const dueDate = new Date();
+dueDate.setHours(dueDate.getHours() + slaHours);
+
+return [{
+  json: {
+    priority,
+    dueDate: dueDate.toISOString(),
+    assignedUserId: account.assignedUserId
+  }
+}];
+
+// 5. HTTP Request Node: Create task for assigned user
+Method: POST
+URL: http://espocrm:80/api/v1/Task
+Body: {
+  "name": "Service Request: {{ $('Webhook').json.subject }}",
+  "status": "Not Started",
+  "priority": "{{ $json.priority }}",
+  "dateEnd": "{{ $json.dueDate }}",
+  "assignedUserId": "{{ $json.assignedUserId }}",
+  "parentType": "ServiceRequest",
+  "parentId": "{{ $('Webhook').json.id }}"
+}
+
+// 6. Email Node: Send confirmation to customer
+```
+
+#### Example: Sales Pipeline Automation
+
+Automate opportunity management and forecasting:
+
+```javascript
+// 1. EspoCRM Webhook: Opportunity stage changed
+// 2. Switch Node: Route based on new stage
+
+Branch: "Proposal Sent"
+  // HTTP Request Node: Generate proposal document
+  Method: POST
+  URL: http://espocrm:80/api/v1/Attachment
+  Body: {
+    "name": "Proposal_{{ $json.opportunityName }}.pdf",
+    "type": "application/pdf",
+    "relatedType": "Opportunity",
+    "relatedId": "{{ $json.opportunityId }}"
+  }
+  
+  // Invoice Ninja Node: Create draft invoice
+  // Email Node: Send proposal with tracking
+
+Branch: "Negotiation"
+  // Cal.com Node: Schedule negotiation meeting
+  // Slack Node: Alert sales manager
+  // HTTP Request Node: Update probability to 60%
+
+Branch: "Closed Won"
+  // HTTP Request Node: Convert to Account
+  Method: POST
+  URL: http://espocrm:80/api/v1/Account
+  Body: {
+    "name": "{{ $json.accountName }}",
+    "website": "{{ $json.website }}",
+    "industry": "{{ $json.industry }}"
+  }
+  
+  // Twenty CRM Node: Sync to secondary CRM
+  // Kimai Node: Create project for time tracking
+  // Vaultwarden Node: Store customer credentials
+
+Branch: "Closed Lost"
+  // HTTP Request Node: Create follow-up task for 90 days
+  // Survey Node: Send loss reason survey
+  // Update analytics dashboard
+```
+
+#### Example: Report Generation and Distribution
+
+Create automated reports with data from multiple sources:
+
+```javascript
+// 1. Schedule Trigger: First Monday of month
+// 2. HTTP Request Node: Get monthly metrics
+Method: GET
+URL: http://espocrm:80/api/v1/Opportunity
+Query Parameters: {
+  "select": "amount,stage,closeDate,probability",
+  "where[0][type]": "currentMonth",
+  "where[0][attribute]": "closeDate"
+}
+
+// 3. Code Node: Calculate KPIs
+const opportunities = $json.list;
+const kpis = {
+  total_pipeline: opportunities.reduce((sum, opp) => sum + opp.amount, 0),
+  weighted_forecast: opportunities.reduce((sum, opp) => 
+    sum + (opp.amount * opp.probability / 100), 0),
+  average_deal_size: opportunities.length > 0 ? 
+    opportunities.reduce((sum, opp) => sum + opp.amount, 0) / opportunities.length : 0,
+  conversion_rate: (opportunities.filter(o => o.stage === 'Closed Won').length / 
+    opportunities.length * 100).toFixed(2)
+};
+
+// 4. HTTP Request Node: Get activity metrics
+Method: GET
+URL: http://espocrm:80/api/v1/Meeting
+Query Parameters: {
+  "where[0][type]": "currentMonth",
+  "where[0][attribute]": "dateStart",
+  "groupBy": "assignedUserId"
+}
+
+// 5. Metabase Node: Update executive dashboard
+// 6. Google Sheets Node: Export to monthly report
+// 7. Email Node: Send report to stakeholders
+To: "executives@company.com"
+Subject: "Monthly CRM Report - {{ $now.format('MMMM YYYY') }}"
+Attachments: Generated PDF report
+```
+
+### CRM Integration Best Practices
+
+**When to Use Twenty CRM:**
+- Startups and small teams needing flexibility
+- Projects requiring custom fields and views
+- GraphQL API integration requirements
+- Notion-style workspace organization
+
+**When to Use EspoCRM:**
+- Established businesses needing full CRM features
+- Email marketing and campaign management
+- Complex workflow automation requirements
+- Advanced reporting and analytics needs
+
+**Combining Both CRMs:**
+```javascript
+// Sync contacts between systems
+// Twenty for daily operations, EspoCRM for campaigns
+// Use n8n to maintain data consistency
+// Create unified dashboards in Metabase
+```
 
 ### 🔎 Perplexica Integration with n8n
 

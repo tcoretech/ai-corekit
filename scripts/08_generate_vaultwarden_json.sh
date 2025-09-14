@@ -300,6 +300,23 @@ EOF
             "URL: https://${ODOO_HOSTNAME}\\nFirst Login Setup:\\nMaster Password: ${ODOO_MASTER_PASSWORD}\\nDatabase Name: odoo\\nAdmin Email: Use your email\\nAdmin Password: Create a strong password\\nDatabase Management Protected with:\\nUsername: ${ODOO_USERNAME}\\nPassword: ${ODOO_PASSWORD}"
     fi
 
+    # Twenty CRM
+    if is_profile_active "twenty-crm"; then
+        add_secure_note \
+            "Twenty CRM Setup" \
+            "URL: https://${TWENTY_CRM_HOSTNAME}\\nModern Notion-like CRM\\nFirst-time setup:\\n1. Visit URL above\\n2. Create your first workspace\\n3. Configure workspace settings\\n4. Generate API key for integrations\\n\\nAPI Endpoints:\\nGraphQL: http://twenty-crm:3000/graphql\\nREST: http://twenty-crm:3000/rest\\n\\nFeatures:\\n- Kanban pipeline management\\n- Modern UI similar to Notion\\n- GraphQL + REST APIs\\n- Ideal for startups and small teams"
+    fi
+
+    # EspoCRM
+    if is_profile_active "espocrm"; then
+        add_login_item \
+            "EspoCRM Professional CRM" \
+            "${ESPOCRM_ADMIN_USERNAME}" \
+            "${ESPOCRM_ADMIN_PASSWORD}" \
+            "https://${ESPOCRM_HOSTNAME}" \
+            "Full-featured CRM with workflows and automation. Admin account pre-configured. Create additional users at Administration > Users. API endpoint: http://espocrm:80/api/v1/ - Generate API key in user preferences for n8n integration."
+    fi
+
     # Formbricks
     if is_profile_active "formbricks"; then
         add_secure_note \

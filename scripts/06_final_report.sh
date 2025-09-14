@@ -220,6 +220,77 @@ if is_profile_active "odoo"; then
   echo "Documentation: https://www.odoo.com/documentation/18.0/"
 fi
 
+# Twenty CRM Report
+if is_profile_active "twenty-crm"; then
+  echo
+  echo "================================= Twenty CRM =========================="
+  echo
+  echo "Host: ${TWENTY_CRM_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "Access:"
+  echo "  External (HTTPS): https://${TWENTY_CRM_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal (Docker): http://twenty-crm:3000"
+  echo
+  echo "Setup:"
+  echo "  1. Visit https://${TWENTY_CRM_HOSTNAME:-<hostname_not_set>}"
+  echo "  2. Create your first workspace during initial setup"
+  echo "  3. Configure workspace settings and invite team members"
+  echo
+  echo "n8n Integration:"
+  echo "  GraphQL Endpoint: http://twenty-crm:3000/graphql"
+  echo "  REST API: http://twenty-crm:3000/rest"
+  echo "  Note: Generate API key in workspace settings after setup"
+  echo
+  echo "Documentation: https://twenty.com/developers"
+fi
+
+# EspoCRM Report  
+if is_profile_active "espocrm"; then
+  echo
+  echo "================================= EspoCRM ============================="
+  echo
+  echo "Host: ${ESPOCRM_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "Initial Admin Account:"
+  echo "  Username: ${ESPOCRM_ADMIN_USERNAME:-admin}"
+  echo "  Password: ${ESPOCRM_ADMIN_PASSWORD:-<not_set_in_env>}"
+  echo
+  echo "Access:"
+  echo "  External (HTTPS): https://${ESPOCRM_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal (Docker): http://espocrm:80"
+  echo
+  echo "Setup:"
+  echo "  1. Visit https://${ESPOCRM_HOSTNAME:-<hostname_not_set>}"
+  echo "  2. Login with admin credentials above"
+  echo "  3. Configure additional users at Administration > Users"
+  echo "  4. Set up email integration for campaigns"
+  echo
+  echo "n8n Integration:"
+  echo "  API Endpoint: http://espocrm:80/api/v1/"
+  echo "  Authentication: API Key (generate in user preferences)"
+  echo "  Webhooks: Administration > Webhooks (for real-time events)"
+  echo
+  echo "Documentation: https://docs.espocrm.com/"
+fi
+
+# Both CRMs active - show integration tips
+if is_profile_active "twenty-crm" && is_profile_active "espocrm"; then
+  echo
+  echo "========================== CRM Integration Tips ====================="
+  echo
+  echo "Since you have both CRMs active, consider these integration patterns:"
+  echo
+  echo "• Use Twenty CRM for quick daily customer interactions"
+  echo "• Use EspoCRM for detailed analytics and email campaigns"
+  echo "• Create n8n workflows to sync data between both systems"
+  echo "• Example: New Twenty contact → Auto-create in EspoCRM"
+  echo
+  echo "n8n Sync Workflow Ideas:"
+  echo "  - Two-way contact synchronization"
+  echo "  - Opportunity stage updates across both systems"
+  echo "  - Unified reporting dashboard combining both CRMs"
+fi
+
 if is_profile_active "baserow"; then
   echo
   echo "================================= Baserow ============================"

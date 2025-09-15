@@ -386,12 +386,9 @@ EOF
 
     # Scriberr
     if is_profile_active "scriberr"; then
-        add_login_item \
+        add_secure_note \
             "Scriberr AI Audio Transcription" \
-            "${SCRIBERR_USERNAME}" \
-            "${SCRIBERR_PASSWORD}" \
-            "https://${SCRIBERR_HOSTNAME}" \
-            "AI-powered audio transcription with WhisperX and speaker diarization. Upload audio files or YouTube links for transcription with speaker detection. Model: ${SCRIBERR_WHISPER_MODEL}. Internal API: http://scriberr:8080/api"
+            "URL: https://${SCRIBERR_HOSTNAME}\\nAI-powered audio transcription with WhisperX and speaker diarization.\\n\\nScriberr has its own authentication system:\\n- Create account on first access\\n- Generate API keys in the UI for automation\\n\\nModel: ${SCRIBERR_WHISPER_MODEL}\\nInternal API: http://scriberr:8080/api\\n\\nFeatures:\\n- Speaker detection (who said what)\\n- YouTube link transcription\\n- AI summaries with OpenAI/Anthropic"
     fi
 
     # Stirling-PDF

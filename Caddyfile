@@ -125,15 +125,12 @@
 
 # Scriberr - AI Audio Transcription with Speaker Diarization
 {$SCRIBERR_HOSTNAME} {
-    basic_auth {
-        {$SCRIBERR_USERNAME} {$SCRIBERR_PASSWORD_HASH}
-    }
     reverse_proxy scriberr:8080 {
-        # Für große Audio-Uploads
+        # For larger Audio-Uploads
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
         header_up X-Forwarded-Proto {scheme}
-        # Größere Timeouts für lange Transkriptions-Prozesse
+        # Larger Timeouts for big transcription process
         transport http {
             read_timeout 600s
             write_timeout 600s

@@ -828,14 +828,17 @@ if is_profile_active "scriberr"; then
   echo "🎙️ AI Audio Transcription with Speaker Diarization"
   echo
   echo "Host: ${SCRIBERR_HOSTNAME:-<hostname_not_set>}"
-  echo "User: ${SCRIBERR_USERNAME:-<not_set_in_env>}"
-  echo "Password: ${SCRIBERR_PASSWORD:-<not_set_in_env>}"
   echo "Whisper Model: ${SCRIBERR_WHISPER_MODEL:-base}"
   echo "Speaker Detection: ${SCRIBERR_SPEAKER_DIARIZATION:-true}"
   echo
   echo "Access:"
   echo "  External (HTTPS): https://${SCRIBERR_HOSTNAME:-<hostname_not_set>}"
   echo "  Internal API: http://scriberr:8080/api"
+  echo
+  echo "Authentication:"
+  echo "  ✓ Scriberr has its own user management"
+  echo "  ✓ Create your account on first access"
+  echo "  ✓ API keys can be generated in the UI"
   echo
   echo "API Endpoints:"
   echo "  Upload: POST http://scriberr:8080/api/upload"

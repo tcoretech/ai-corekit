@@ -132,9 +132,22 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 |------|-------------|-----------|--------|
 | **[Faster-Whisper](https://github.com/SYSTRAN/faster-whisper)** | OpenAI-compatible Speech-to-Text | Transcription, voice commands, meeting notes | Internal API |
 | **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech | Voice assistants, audiobooks, notifications | Internal API |
+| **[TTS Chatterbox](https://github.com/resemble-ai/chatterbox)** | State-of-the-art TTS with emotion control & voice cloning | AI voices with emotional expression, voice synthesis, outperforms ElevenLabs | `chatterbox.yourdomain.com` |
 | **[LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)** | Self-hosted translation API | 50+ languages, document translation, privacy-focused | `translate.yourdomain.com` |
 | **OCR Bundle: [Tesseract](https://github.com/tesseract-ocr/tesseract) & [EasyOCR](https://github.com/JaidedAI/EasyOCR)** | Dual OCR engines: Tesseract (fast) + EasyOCR (quality) | Text extraction from images/PDFs, receipt scanning, document digitization | Internal API |
 | **[Scriberr](https://github.com/rishikanthc/Scriberr)** | AI audio transcription with WhisperX & speaker diarization | Meeting transcripts, podcast processing, call recordings, speaker identification | `scriberr.yourdomain.com` |
+
+### 📱 Communication & Messaging
+
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[Evolution API](https://github.com/EvolutionAPI/evolution-api)** ⚠️ | WhatsApp Business Integration API | Customer support, notifications, marketing campaigns, chatbot integration | `evolutionapi.yourdomain.com` |
+
+**⚠️ Evolution API Warning:**
+- **CRITICAL:** Default Baileys mode violates WhatsApp Terms of Service
+- Risk of permanent WhatsApp account ban
+- For production: Apply for official WhatsApp Business API via Meta
+- Use Baileys mode ONLY for development/testing
 
 ### 🔍 Search & Web Data
 
@@ -5019,6 +5032,417 @@ Use WAV or MP3 format for best compatibility
 Set correct min/max speakers for accurate diarization
 First transcription downloads models (2-5 minutes)
 Processing time ≈ audio length (30min audio = 30min processing)
+
+# TTS Chatterbox & Evolution API Integration Guide
+
+## 🎤 TTS Chatterbox - Advanced Voice Synthesis
+
+### Features
+- **State-of-the-art TTS** - 63.75% preference over ElevenLabs in blind tests
+- **Emotion control** - Adjust emotional intensity with exaggeration parameter (0.25-2.0)
+- **Voice cloning** - Clone any voice with just 10-30 seconds of audio
+- **Multilingual** - Support for 22+ languages with language-aware synthesis
+- **OpenAI-compatible** - Drop-in replacement for OpenAI TTS API
+- **Built-in watermarking** - PerTh neural watermarking for traceability
+
+### n8n Integration - Text-to-Speech with Emotion
+
+**Configuration:**
+```javascript
+// HTTP Request Node
+Method: POST
+URL: http://chatterbox-tts:4123/v1/audio/speech
+Headers:
+  X-API-Key: {{$env.CHATTERBOX_API_KEY}}
+  Content-Type: application/json
+Body (JSON):
+{
+  "model": "chatterbox",
+  "voice": "default",  // or your cloned voice ID
+  "input": "{{$json.text}}",
+  "response_format": "mp3",
+  "exaggeration": 0.5,  // 0.25=calm, 1.0=normal, 2.0=very emotional
+  "language_id": "en"   // or "de", "fr", "es", etc.
+}
+Response Format: File
+Put Output in Field: data
+```
+
+### Voice Cloning Setup
+
+1. **Prepare voice sample:**
+   ```bash
+   # Create voice directory
+   mkdir -p ~/ai-launchkit/shared/tts/voices
+   
+   # Copy your voice sample (10-30 seconds, WAV/MP3)
+   cp your-voice.wav ~/ai-launchkit/shared/tts/voices/
+   ```
+
+2. **Clone voice via API:**
+   ```javascript
+   // HTTP Request Node for voice cloning
+   Method: POST
+   URL: http://chatterbox-tts:4123/v1/voice/clone
+   Body (Form Data):
+     audio_file: (binary file)
+     voice_name: "my_voice"
+   ```
+
+3. **Use cloned voice:**
+   ```json
+   {
+     "voice": "my_voice",
+     "input": "Text to speak with cloned voice"
+   }
+   ```
+
+### Example Workflow: Dynamic Voice Assistant
+
+```
+1. Webhook Trigger → Receive text + emotion parameter
+2. Set Node → Map emotion to exaggeration value
+   - happy: 1.5
+   - sad: 0.3
+   - excited: 2.0
+   - calm: 0.25
+3. HTTP Request → Generate speech with Chatterbox
+4. Respond to Webhook → Return audio file
+```
+
+### Performance Tips
+
+- **CPU Mode**: ~5-10 seconds per sentence
+- **GPU Mode**: <1 second per sentence (set `CHATTERBOX_DEVICE=cuda`)
+- **Memory**: First model load takes ~2GB RAM
+- **Chunking**: Long texts are automatically split at sentence boundaries
+- **Caching**: Models are cached after first load for faster subsequent requests
+
+### Supported Languages
+
+Arabic, Chinese, Danish, Dutch, English, Finnish, French, German, Greek, Hebrew, Hindi, Italian, Japanese, Korean, Malay, Norwegian, Polish, Portuguese, Russian, Spanish, Swahili + more
+
+---
+
+## 📱 Evolution API - WhatsApp Business Integration
+
+### ⚠️ CRITICAL WARNING
+- **Default Baileys mode violates WhatsApp Terms of Service**
+- **Risk of PERMANENT account ban**
+- **For production: Apply for official WhatsApp Business API via Meta**
+- **Use Baileys ONLY for development/testing**
+
+### Features
+- **Multi-instance management** - Handle multiple WhatsApp accounts
+- **Full message support** - Text, media, documents, location, contacts
+- **Webhook integration** - Real-time message events
+- **Group management** - Create, manage, and monitor groups
+- **Status updates** - Send and receive status messages
+- **TypeBot integration** - Build conversational flows
+- **Database storage** - PostgreSQL for message history
+
+### n8n Integration Setup
+
+#### 1. Install Evolution API Node
+```bash
+# In n8n container
+cd /home/node/.n8n
+npm install n8n-nodes-evolution-api
+```
+
+#### 2. Create WhatsApp Instance
+
+**HTTP Request Node:**
+```javascript
+Method: POST
+URL: http://evolution-api:8080/instance/create
+Headers:
+  apikey: {{$env.EVOLUTION_API_KEY}}
+Body (JSON):
+{
+  "instanceName": "business_account",
+  "integration": "WHATSAPP-BAILEYS",
+  "number": "+1234567890",
+  "qrcode": true
+}
+```
+
+#### 3. Get QR Code for Connection
+
+```javascript
+Method: GET
+URL: http://evolution-api:8080/instance/connect/business_account
+Headers:
+  apikey: {{$env.EVOLUTION_API_KEY}}
+```
+
+#### 4. Configure Webhook in Evolution
+
+```javascript
+Method: POST
+URL: http://evolution-api:8080/webhook/set/business_account
+Headers:
+  apikey: {{$env.EVOLUTION_API_KEY}}
+Body:
+{
+  "url": "http://n8n:5678/webhook/evolution",
+  "enabled": true,
+  "events": [
+    "MESSAGES_UPSERT",
+    "MESSAGES_UPDATE",
+    "MESSAGES_DELETE",
+    "CONNECTION_UPDATE"
+  ]
+}
+```
+
+### n8n Workflow Examples
+
+#### Send Text Message
+```javascript
+// HTTP Request Node
+Method: POST
+URL: http://evolution-api:8080/message/sendText/business_account
+Headers:
+  apikey: {{$env.EVOLUTION_API_KEY}}
+Body:
+{
+  "number": "{{$json.phoneNumber}}",
+  "text": "{{$json.message}}",
+  "delay": 1000  // milliseconds
+}
+```
+
+#### Send Media with Caption
+```javascript
+Method: POST
+URL: http://evolution-api:8080/message/sendMedia/business_account
+Headers:
+  apikey: {{$env.EVOLUTION_API_KEY}}
+Body:
+{
+  "number": "{{$json.phoneNumber}}",
+  "mediatype": "image",
+  "media": "{{$binary.data}}",  // or URL
+  "caption": "Check out this image!"
+}
+```
+
+#### Receive Messages (Webhook)
+```javascript
+// Webhook Node
+Path: evolution
+Method: POST
+Response Mode: Immediately
+
+// Parse incoming message
+const message = $json.data.message;
+const from = message.key.remoteJid;
+const text = message.message?.conversation || 
+             message.message?.extendedTextMessage?.text;
+const isGroup = from.includes('@g.us');
+```
+
+### Complete WhatsApp Bot Workflow
+
+```
+1. Webhook (Evolution) → Receive WhatsApp messages
+2. Switch Node → Route by message type
+   - Text → Process command
+   - Image → Run OCR
+   - Audio → Transcribe with Whisper
+3. OpenAI Node → Generate response
+4. HTTP Request → Send reply via Evolution API
+5. PostgreSQL → Log conversation
+```
+
+### Advanced Features
+
+#### Group Management
+```javascript
+// Create group
+POST /group/create/business_account
+{
+  "subject": "AI LaunchKit Users",
+  "participants": ["+1234567890", "+0987654321"]
+}
+
+// Send to group
+POST /message/sendText/business_account
+{
+  "number": "123456789@g.us",
+  "text": "Group announcement"
+}
+```
+
+#### Broadcast Lists
+```javascript
+// Send to multiple recipients
+POST /message/sendText/business_account
+{
+  "number": ["+1234567890", "+0987654321"],
+  "text": "Broadcast message"
+}
+```
+
+#### Status Updates
+```javascript
+// Post status
+POST /message/sendStatus/business_account
+{
+  "type": "text",
+  "content": "Working with AI LaunchKit!",
+  "backgroundColor": "#000000",
+  "font": 1
+}
+```
+
+### Production Migration Path
+
+1. **Development (Baileys)**
+   - Test flows with personal number
+   - Build and refine bot logic
+   - Document all endpoints used
+
+2. **Apply for Business API**
+   - Register at business.facebook.com
+   - Complete business verification
+   - Apply for WhatsApp Business API access
+
+3. **Switch to Cloud API**
+   ```javascript
+   // Update instance creation
+   {
+     "integration": "WHATSAPP-BUSINESS",
+     "token": "YOUR_META_TOKEN",
+     "businessId": "YOUR_BUSINESS_ID"
+   }
+   ```
+
+4. **Update Webhooks**
+   - Configure Meta webhook URL
+   - Update message templates
+   - Implement rate limiting
+
+### Rate Limits & Best Practices
+
+- **Message delays**: Add 1-3 second delays between messages
+- **Media size**: Max 16MB for documents, 5MB for images
+- **Groups**: Max 256 members per group
+- **Broadcast**: Max 256 recipients per broadcast
+- **Status**: Visible for 24 hours
+- **Session**: Reconnect required every 2-4 weeks (Baileys)
+
+### Troubleshooting
+
+#### QR Code Not Loading
+```bash
+# Check logs
+docker logs evolution-api
+
+# Restart instance
+docker restart evolution-api
+```
+
+#### Messages Not Sending
+```javascript
+// Check connection status
+GET /instance/connectionState/business_account
+
+// Reconnect if needed
+GET /instance/connect/business_account
+```
+
+#### Webhook Not Firing
+```bash
+# Test webhook endpoint
+curl -X POST http://n8n:5678/webhook/evolution \
+  -H "Content-Type: application/json" \
+  -d '{"test": true}'
+```
+
+### Security Recommendations
+
+1. **API Key Rotation**
+   ```bash
+   # Generate new key monthly
+   openssl rand -hex 32
+   ```
+
+2. **IP Whitelisting**
+   ```nginx
+   # In Caddy/Nginx
+   allow 10.0.0.0/8;
+   deny all;
+   ```
+
+3. **Message Encryption**
+   - Use HTTPS for webhooks
+   - Encrypt sensitive data in PostgreSQL
+   - Implement message signing
+
+4. **Rate Limiting**
+   ```javascript
+   // n8n Rate Limit node
+   Max: 1000 messages/hour
+   Per: Instance
+   ```
+
+### Integration with TTS Chatterbox
+
+Create voice messages from text:
+
+```
+1. Webhook → Receive WhatsApp text
+2. ChatGPT → Generate response
+3. Chatterbox TTS → Convert to speech
+4. Evolution API → Send audio message
+```
+
+**Combined Workflow:**
+```javascript
+// Generate voice message
+const ttsResponse = await $http.request({
+  method: 'POST',
+  url: 'http://chatterbox-tts:4123/v1/audio/speech',
+  headers: { 'X-API-Key': process.env.CHATTERBOX_API_KEY },
+  body: {
+    model: 'chatterbox',
+    voice: 'friendly_assistant',
+    input: responseText,
+    exaggeration: 0.7
+  }
+});
+
+// Send as WhatsApp audio
+await $http.request({
+  method: 'POST',
+  url: 'http://evolution-api:8080/message/sendMedia/business_account',
+  headers: { 'apikey': process.env.EVOLUTION_API_KEY },
+  body: {
+    number: senderNumber,
+    mediatype: 'audio',
+    media: ttsResponse.binary
+  }
+});
+```
+
+## 📚 Resources
+
+### TTS Chatterbox
+- GitHub: https://github.com/travisvn/chatterbox-tts-api
+- Model Info: https://www.resemble.ai/chatterbox/
+- API Docs: http://chatterbox:4123/docs
+
+### Evolution API
+- Documentation: https://doc.evolution-api.com
+- Discord: https://evolution-api.com/discord
+- Manager UI: https://evolutionapi.yourdomain.com/manager
+
+### n8n Templates
+- WhatsApp Bot: https://n8n.io/workflows/6462
+- Voice Assistant: https://n8n.io/workflows/2092
+- Message Forwarder: https://n8n.io/workflows/6544
 
 ### 🔍 OCR Bundle Integration
 

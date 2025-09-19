@@ -821,6 +821,94 @@ if is_profile_active "speech"; then
   echo "Note: Services are CPU-optimized for VPS"
 fi
 
+# TTS Chatterbox Report
+if is_profile_active "tts-chatterbox"; then
+  echo
+  echo "================================= TTS Chatterbox ======================"
+  echo
+  echo "🎙️ State-of-the-Art Text-to-Speech with Emotion Control"
+  echo
+  echo "Host: ${CHATTERBOX_HOSTNAME:-<hostname_not_set>}"
+  echo "API Key: ${CHATTERBOX_API_KEY:-<not_set_in_env>}"
+  echo "Device: ${CHATTERBOX_DEVICE:-cpu}"
+  echo "Emotion Level: ${CHATTERBOX_EXAGGERATION:-0.5} (0.25-2.0)"
+  echo
+  echo "Access:"
+  echo "  External (HTTPS): https://${CHATTERBOX_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal (Docker): http://chatterbox-tts:4123"
+  echo
+  echo "API Endpoints:"
+  echo "  OpenAI Compatible: POST /v1/audio/speech"
+  echo "  Health Check: GET /health"
+  echo "  Voices List: GET /v1/voices"
+  echo "  Voice Clone: POST /v1/voice/clone"
+  echo
+  echo "n8n Integration:"
+  echo "  Use HTTP Request node with URL: http://chatterbox-tts:4123/v1/audio/speech"
+  echo "  Add header: X-API-Key: \${CHATTERBOX_API_KEY}"
+  echo
+  echo "Voice Cloning:"
+  echo "  1. Place 10-30 second audio samples in: ./shared/tts/voices/"
+  echo "  2. Supported formats: wav, mp3, ogg, flac"
+  echo "  3. Use voice ID in API calls"
+  echo
+  echo "Performance:"
+  echo "  CPU Mode: ~5-10 seconds per sentence"
+  echo "  GPU Mode: <1 second per sentence (set CHATTERBOX_DEVICE=cuda)"
+  echo
+  echo "Documentation: https://github.com/travisvn/chatterbox-tts-api"
+  echo "Model Info: https://www.resemble.ai/chatterbox/"
+fi
+
+# Evolution API Report
+if is_profile_active "evolution-api"; then
+  echo
+  echo "================================= Evolution API ========================"
+  echo
+  echo "⚠️  CRITICAL WARNING: Default BAILEYS mode violates WhatsApp Terms of Service!"
+  echo "⚠️  Risk of PERMANENT WhatsApp account ban! Use only for development/testing."
+  echo "⚠️  For production: Apply for official WhatsApp Business API via Meta."
+  echo
+  echo "Manager Interface:"
+  echo "  URL: https://${EVOLUTION_HOSTNAME:-<hostname_not_set>}/manager"
+  echo "  Server URL: ${EVOLUTION_SERVER_URL:-https://evolutionapi.yourdomain.com}"
+  echo "  API Key: ${EVOLUTION_API_KEY:-<not_set>}"
+  echo
+  echo "API Access:"
+  echo "  Base URL: https://${EVOLUTION_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal: http://evolution-api:8080"
+  echo "  Docs: https://${EVOLUTION_HOSTNAME:-<hostname_not_set>}/docs"
+  echo
+  echo "Quick Start:"
+  echo "  1. Open Manager: https://${EVOLUTION_HOSTNAME:-<hostname_not_set>}/manager"
+  echo "  2. Login with API Key: ${EVOLUTION_API_KEY:-<not_set>}"
+  echo "  3. Create Instance: Click 'New Instance'"
+  echo "  4. Scan QR Code with WhatsApp"
+  echo "  5. Configure webhooks for n8n"
+  echo
+  echo "n8n Integration:"
+  echo "  Install: Community node 'n8n-nodes-evolution-api'"
+  echo "  Webhook URL: ${EVOLUTION_WEBHOOK_URL:-http://n8n:5678/webhook/evolution}"
+  echo "  Instance API: http://evolution-api:8080"
+  echo
+  echo "API Examples:"
+  echo "  Create instance: POST /instance/create"
+  echo "  Send text: POST /message/sendText/INSTANCE_NAME"
+  echo "  Send media: POST /message/sendMedia/INSTANCE_NAME"
+  echo "  Get QR: GET /instance/qr/INSTANCE_NAME"
+  echo
+  echo "Production Checklist:"
+  echo "  [ ] Apply for WhatsApp Business API"
+  echo "  [ ] Get Meta Business Verification"
+  echo "  [ ] Switch from BAILEYS to official API"
+  echo "  [ ] Configure webhook security"
+  echo "  [ ] Set up message templates"
+  echo "  [ ] Implement rate limiting"
+  echo
+  echo "Documentation: https://doc.evolution-api.com"
+  echo "Discord: https://evolution-api.com/discord"
+fi
+
 if is_profile_active "scriberr"; then
   echo
   echo "================================= Scriberr ============================"

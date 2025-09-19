@@ -431,6 +431,35 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
+# ============================================
+# TTS Chatterbox - Advanced Text-to-Speech
+# ============================================
+{$CHATTERBOX_HOSTNAME} {
+    reverse_proxy chatterbox-tts:4123 {
+        # Streaming support for audio
+        flush_interval -1
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        # Audio streaming headers
+        header_up Accept-Ranges bytes
+    }
+}
+
+# ============================================
+# Evolution API - WhatsApp Integration
+# ============================================
+{$EVOLUTION_HOSTNAME} {
+    reverse_proxy evolution-api:8080 {
+        # WebSocket support for WhatsApp connections
+        flush_interval -1
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up Upgrade websocket
+        header_up Connection upgrade
+    }
+}
+
 import /etc/caddy/addons/*.conf
 
 # # SearXNG

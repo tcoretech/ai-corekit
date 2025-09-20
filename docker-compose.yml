@@ -2318,72 +2318,28 @@ services:
   # Evolution API - WhatsApp Integration
   # ============================================
   evolution-api:
-    image: atendai/evolution-api:v2.1.1
-    container_name: evolution-api
+    image: atendai/evolution-api:v1.7.4
+    container_name: evolution_api
     profiles: ["evolution-api"]
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
     volumes:
       - evolution_instances:/evolution/instances
       - evolution_store:/evolution/store
-      - ./shared:/data/shared
     environment:
-      # Authentication
-      - SERVER_URL=${EVOLUTION_SERVER_URL:-https://whatsapp.yourdomain.com}
+      - SERVER_URL=${EVOLUTION_SERVER_URL:-https://evolutionapi.yourdomain.com}
       - AUTHENTICATION_TYPE=apikey
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
       - AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
-      
-      # Database Configuration
-      - DATABASE_ENABLED=true
-      - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/evolution
-      - DATABASE_CONNECTION_CLIENT_NAME=evolution_api
-      - DATABASE_SAVE_DATA_INSTANCE=true
-      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
-      - DATABASE_SAVE_MESSAGE_UPDATE=true
-      - DATABASE_SAVE_DATA_CONTACTS=true
-      - DATABASE_SAVE_DATA_CHATS=true
-      
-      # Redis Cache
-      - CACHE_REDIS_ENABLED=true
-      - CACHE_REDIS_URI=redis://redis:6379/2
-      - CACHE_REDIS_PREFIX_KEY=evolution
-      - CACHE_REDIS_TTL=86400
-      - CACHE_LOCAL_ENABLED=false
-      
-      # WebSocket & Webhooks
-      - WEBSOCKET_ENABLED=true
-      - WEBHOOK_GLOBAL_ENABLED=${EVOLUTION_WEBHOOK_ENABLED:-false}
-      - WEBHOOK_GLOBAL_URL=${EVOLUTION_WEBHOOK_URL:-http://n8n:5678/webhook/evolution}
-      - WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS=${EVOLUTION_WEBHOOK_EVENTS:-false}
-      
-      # Instance Configuration
-      - CONFIG_SESSION_PHONE_CLIENT=AI LaunchKit
-      - CONFIG_SESSION_PHONE_NAME=Chrome
-      - QRCODE_LIMIT=10
-      - QRCODE_EXPIRATION_TIME=60
-      - DEL_INSTANCE=false
-      - INSTANCE_MAX_RETRY_QR=3
-      
-      # Logging
-      - LOG_LEVEL=${EVOLUTION_LOG_LEVEL:-ERROR}
-      - LOG_BAILEYS=${EVOLUTION_LOG_BAILEYS:-silent}
-      - LOG_COLOR=true
-      
-      # Optional S3 Storage
-      - S3_ENABLED=${EVOLUTION_S3_ENABLED:-false}
-      - S3_ACCESS_KEY_ID=${EVOLUTION_S3_ACCESS_KEY}
-      - S3_SECRET_ACCESS_KEY=${EVOLUTION_S3_SECRET_KEY}
-      - S3_BUCKET=${EVOLUTION_S3_BUCKET:-evolution}
-      - S3_ENDPOINT=${EVOLUTION_S3_ENDPOINT:-http://minio:9000}
+      - STORE_MESSAGES=true
+      - STORE_CONTACTS=true
+      - CLEAN_STORE_CLEANING_INTERVAL=7200
+      - CONNECTION_TIMEOUT=120000
+      - QRCODE_EXPIRATION_TIME=120
+      - INSTANCE_MAX_RETRY_QR=10
+      - LOG_LEVEL=VERBOSE
+      - LOG_BAILEYS=trace
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s

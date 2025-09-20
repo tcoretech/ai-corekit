@@ -465,7 +465,7 @@ https://{$NEO4J_HOSTNAME}:7687 {
     @root path /
     redir @root /manager permanent
     
-    reverse_proxy evolution-api:8080 {
+    reverse_proxy evolution_api:8080 {
         transport http {
             read_timeout 60s
             write_timeout 60s

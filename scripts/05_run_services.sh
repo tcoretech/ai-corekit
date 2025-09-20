@@ -84,4 +84,15 @@ log_info "Launching services using start_services.py..."
 # Execute start_services.py
 ./start_services.py
 
+# Explicitly start services with profiles that need building
+if [[ "$COMPOSE_PROFILES" == *"tts-chatterbox"* ]]; then
+    log_info "Starting Chatterbox services..."
+    docker compose -p localai --profile tts-chatterbox up -d
+fi
+
+if [[ "$COMPOSE_PROFILES" == *"evolution-api"* ]]; then
+    log_info "Starting Evolution API..."
+    docker compose -p localai --profile evolution-api up -d
+fi
+
 exit 0 

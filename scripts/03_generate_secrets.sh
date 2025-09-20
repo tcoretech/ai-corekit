@@ -642,6 +642,19 @@ if [[ -n "$BASE_DOMAIN" ]]; then
     if [[ -z "${generated_values[MAILPIT_HOSTNAME]}" ]]; then
         generated_values["MAILPIT_HOSTNAME"]="mail.${BASE_DOMAIN}"
     fi
+    
+    # Chatterbox TTS hostnames (if not already set)
+    if [[ -z "${generated_values[CHATTERBOX_HOSTNAME]}" ]]; then
+        generated_values["CHATTERBOX_HOSTNAME"]="chatterbox.${BASE_DOMAIN}"
+    fi
+    if [[ -z "${generated_values[CHATTERBOX_FRONTEND_HOSTNAME]}" ]]; then
+        generated_values["CHATTERBOX_FRONTEND_HOSTNAME"]="voice.${BASE_DOMAIN}"
+    fi
+    
+    # Evolution API hostname (if not already set)
+    if [[ -z "${generated_values[EVOLUTION_HOSTNAME]}" ]]; then
+        generated_values["EVOLUTION_HOSTNAME"]="evolutionapi.${BASE_DOMAIN}"
+    fi
 fi
 
 # Create a temporary file for processing

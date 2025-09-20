@@ -837,6 +837,9 @@ if is_profile_active "tts-chatterbox"; then
   echo "  External (HTTPS): https://${CHATTERBOX_HOSTNAME:-<hostname_not_set>}"
   echo "  Internal (Docker): http://chatterbox-tts:4123"
   echo
+  echo "Web UI Access:"  
+  echo "  Frontend: https://${CHATTERBOX_FRONTEND_HOSTNAME:-<hostname_not_set>}"
+  echo
   echo "API Endpoints:"
   echo "  OpenAI Compatible: POST /v1/audio/speech"
   echo "  Health Check: GET /health"

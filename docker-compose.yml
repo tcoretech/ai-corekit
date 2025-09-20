@@ -370,6 +370,7 @@ services:
       - STIRLING_HOSTNAME=${STIRLING_HOSTNAME}
       - STIRLING_USERNAME=${STIRLING_USERNAME}
       - CHATTERBOX_HOSTNAME=${CHATTERBOX_HOSTNAME}
+      - CHATTERBOX_FRONTEND_HOSTNAME=${CHATTERBOX_FRONTEND_HOSTNAME}
       - EVOLUTION_HOSTNAME=${EVOLUTION_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
@@ -2275,7 +2276,9 @@ services:
   # TTS Chatterbox - State-of-the-Art Text-to-Speech
   # ============================================
   chatterbox-tts:
-    image: travisvn/chatterbox-tts-api:latest
+    build:
+      context: ./chatterbox-frontend
+      dockerfile: docker/Dockerfile
     container_name: chatterbox-tts
     profiles: ["tts-chatterbox"]
     restart: unless-stopped
@@ -2297,6 +2300,19 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  # Chatterbox Frontend (Web UI)
+  chatterbox-frontend:
+    build:
+      context: ./chatterbox-frontend/frontend
+      dockerfile: Dockerfile
+    container_name: chatterbox-frontend
+    profiles: ["tts-chatterbox"]
+    restart: unless-stopped
+    depends_on:
+      - chatterbox-tts
+    environment:
+      - VITE_API_URL=http://chatterbox-tts:5123
 
   # ============================================
   # Evolution API - WhatsApp Integration

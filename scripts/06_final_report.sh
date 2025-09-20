@@ -863,55 +863,6 @@ if is_profile_active "tts-chatterbox"; then
   echo "Model Info: https://www.resemble.ai/chatterbox/"
 fi
 
-# Evolution API Report
-if is_profile_active "evolution-api"; then
-  echo
-  echo "================================= Evolution API ========================"
-  echo
-  echo "⚠️  CRITICAL WARNING: Default BAILEYS mode violates WhatsApp Terms of Service!"
-  echo "⚠️  Risk of PERMANENT WhatsApp account ban! Use only for development/testing."
-  echo "⚠️  For production: Apply for official WhatsApp Business API via Meta."
-  echo
-  echo "Manager Interface:"
-  echo "  URL: https://${EVOLUTION_HOSTNAME:-<hostname_not_set>}/manager"
-  echo "  Server URL: ${EVOLUTION_SERVER_URL:-https://evolutionapi.yourdomain.com}"
-  echo "  API Key: ${EVOLUTION_API_KEY:-<not_set>}"
-  echo
-  echo "API Access:"
-  echo "  Base URL: https://${EVOLUTION_HOSTNAME:-<hostname_not_set>}"
-  echo "  Internal: http://evolution-api:8080"
-  echo "  Docs: https://${EVOLUTION_HOSTNAME:-<hostname_not_set>}/docs"
-  echo
-  echo "Quick Start:"
-  echo "  1. Open Manager: https://${EVOLUTION_HOSTNAME:-<hostname_not_set>}/manager"
-  echo "  2. Login with API Key: ${EVOLUTION_API_KEY:-<not_set>}"
-  echo "  3. Create Instance: Click 'New Instance'"
-  echo "  4. Scan QR Code with WhatsApp"
-  echo "  5. Configure webhooks for n8n"
-  echo
-  echo "n8n Integration:"
-  echo "  Install: Community node 'n8n-nodes-evolution-api'"
-  echo "  Webhook URL: ${EVOLUTION_WEBHOOK_URL:-http://n8n:5678/webhook/evolution}"
-  echo "  Instance API: http://evolution-api:8080"
-  echo
-  echo "API Examples:"
-  echo "  Create instance: POST /instance/create"
-  echo "  Send text: POST /message/sendText/INSTANCE_NAME"
-  echo "  Send media: POST /message/sendMedia/INSTANCE_NAME"
-  echo "  Get QR: GET /instance/qr/INSTANCE_NAME"
-  echo
-  echo "Production Checklist:"
-  echo "  [ ] Apply for WhatsApp Business API"
-  echo "  [ ] Get Meta Business Verification"
-  echo "  [ ] Switch from BAILEYS to official API"
-  echo "  [ ] Configure webhook security"
-  echo "  [ ] Set up message templates"
-  echo "  [ ] Implement rate limiting"
-  echo
-  echo "Documentation: https://doc.evolution-api.com"
-  echo "Discord: https://evolution-api.com/discord"
-fi
-
 if is_profile_active "scriberr"; then
   echo
   echo "================================= Scriberr ============================"

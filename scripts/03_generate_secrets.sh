@@ -102,9 +102,6 @@ declare -A VARS_TO_GENERATE=(
     ["METABASE_ENCRYPTION_KEY"]="apikey:32"
     ["METABASE_DB_PASSWORD"]="password:32"
     ["CHATTERBOX_API_KEY"]="apikey:32"
-    ["EVOLUTION_API_KEY"]="apikey:32"
-    ["EVOLUTION_S3_ACCESS_KEY"]="apikey:20"
-    ["EVOLUTION_S3_SECRET_KEY"]="password:40"
     ["MAILPIT_PASSWORD"]="password:32"
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"
@@ -649,11 +646,6 @@ if [[ -n "$BASE_DOMAIN" ]]; then
     fi
     if [[ -z "${generated_values[CHATTERBOX_FRONTEND_HOSTNAME]}" ]]; then
         generated_values["CHATTERBOX_FRONTEND_HOSTNAME"]="voice.${BASE_DOMAIN}"
-    fi
-    
-    # Evolution API hostname (if not already set)
-    if [[ -z "${generated_values[EVOLUTION_HOSTNAME]}" ]]; then
-        generated_values["EVOLUTION_HOSTNAME"]="evolutionapi.${BASE_DOMAIN}"
     fi
 fi
 

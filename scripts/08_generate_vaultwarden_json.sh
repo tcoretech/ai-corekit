@@ -398,13 +398,6 @@ EOF
             "URL: https://${CHATTERBOX_HOSTNAME}\\nAPI Key: ${CHATTERBOX_API_KEY}\\nDevice: ${CHATTERBOX_DEVICE:-cpu}\\nEmotion Level: ${CHATTERBOX_EXAGGERATION:-0.5}\\n\\nAPI Endpoints:\\n- OpenAI Compatible: POST /v1/audio/speech\\n- Health: GET /health\\n- Voices: GET /v1/voices\\n- Clone: POST /v1/voice/clone\\n\\nInternal Access: http://chatterbox-tts:4123\\n\\nn8n Integration:\\nHTTP Request node: http://chatterbox-tts:4123/v1/audio/speech\\nHeader: X-API-Key: ${CHATTERBOX_API_KEY}\\n\\nVoice Cloning:\\n1. Place samples in ./shared/tts/voices/\\n2. 10-30 second audio files\\n3. Formats: wav, mp3, ogg, flac\\n\\nPerformance: Outperforms ElevenLabs with emotion control"
     fi
 
-    # Evolution API
-    if is_profile_active "evolution-api"; then
-        add_secure_note \
-            "Evolution API - WhatsApp Business Integration" \
-            "⚠️ CRITICAL WARNING:\\nDefault BAILEYS mode violates WhatsApp ToS!\\nRisk of PERMANENT account ban!\\nFor production: Use official WhatsApp Business API\\n\\nManager: https://${EVOLUTION_HOSTNAME}/manager\\nAPI Key: ${EVOLUTION_API_KEY}\\nServer URL: ${EVOLUTION_SERVER_URL}\\nDocs: https://${EVOLUTION_HOSTNAME}/docs\\n\\nInternal API: http://evolution-api:8080\\nWebhook URL: ${EVOLUTION_WEBHOOK_URL:-http://n8n:5678/webhook/evolution}\\n\\nn8n Integration:\\n- Install: n8n-nodes-evolution-api\\n- Use internal URL: http://evolution-api:8080\\n\\nQuick Start:\\n1. Open Manager with API key\\n2. Create Instance\\n3. Scan QR with WhatsApp\\n4. Configure webhooks\\n\\nProduction Checklist:\\n[ ] Apply for WhatsApp Business API\\n[ ] Get Meta Business Verification\\n[ ] Switch from BAILEYS to official API\\n[ ] Implement rate limiting"
-    fi
-
     # Stirling-PDF
     if is_profile_active "stirling-pdf"; then
         add_login_item \

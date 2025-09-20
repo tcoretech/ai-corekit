@@ -99,7 +99,6 @@ base_services_data=(
     "scriberr" "Scriberr (AI audio transcription with speaker diarization)"
     "ocr" "OCR Bundle (Tesseract + EasyOCR - Extract text from images/PDFs)"
     "libretranslate" "LibreTranslate (Self-hosted translation API - 50+ languages)"
-    "evolution-api" "Evolution API (WhatsApp Business Integration)"
 )
 
 services=() # This will be the final array for whiptail

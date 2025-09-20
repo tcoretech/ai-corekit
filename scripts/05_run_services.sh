@@ -90,9 +90,4 @@ if [[ "$COMPOSE_PROFILES" == *"tts-chatterbox"* ]]; then
     docker compose -p localai --profile tts-chatterbox up -d
 fi
 
-if [[ "$COMPOSE_PROFILES" == *"evolution-api"* ]]; then
-    log_info "Starting Evolution API..."
-    docker compose -p localai --profile evolution-api up -d
-fi
-
 exit 0 

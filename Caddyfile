@@ -458,22 +458,7 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
-# Evolution API - WhatsApp Integration
-# ============================================
-{$EVOLUTION_HOSTNAME} {
-    # forwarding root url to /manager
-    @root path /
-    redir @root /manager permanent
-    
-    reverse_proxy evolution_api:8080 {
-        transport http {
-            read_timeout 60s
-            write_timeout 60s
-        }
-    }
-}
-
-# # SearXNG
+# SearXNG
 {$SEARXNG_HOSTNAME} {
     @protected not remote_ip 127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10
 

@@ -1249,25 +1249,93 @@ log_info "To update the services, run the 'update.sh' script: bash ./scripts/upd
 # ============================================
 # Cloudflare Tunnel Security Notice
 # ============================================
-if is_profile_active "cloudflare-tunnel"; then
+cloudflare_web_active=$(is_profile_active "cloudflare-tunnel" && echo "true" || echo "false")
+cloudflare_ssh_active=$(is_profile_active "cloudflare-ssh-tunnel" && echo "true" || echo "false")
+
+if [ "$cloudflare_web_active" = "true" ] || [ "$cloudflare_ssh_active" = "true" ]; then
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "🔒 CLOUDFLARE TUNNEL SECURITY"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
-  echo "✅ Cloudflare Tunnel is configured and running!"
-  echo ""
-  echo "Your services are accessible through Cloudflare's secure network."
-  echo "All traffic is encrypted and routed through the tunnel."
-  echo ""
-  echo "🛡️  RECOMMENDED SECURITY ENHANCEMENT:"
+  
+  # Handle Web Services Tunnel
+  if [ "$cloudflare_web_active" = "true" ]; then
+    echo "✅ WEB SERVICES TUNNEL STATUS:"
+    echo "   🌐 Web services are accessible through Cloudflare's secure network"
+    echo "   🔒 All web traffic is encrypted and routed through the tunnel"
+    echo "   📡 Monitor: docker compose logs cloudflared-web"
+    echo ""
+  fi
+  
+  # Handle SSH Tunnel (independent service)
+  if [ "$cloudflare_ssh_active" = "true" ]; then
+    echo "🔐 SSH TUNNEL STATUS:"
+    echo "   ✅ SSH Tunnel is configured and running independently!"
+    echo "   📡 SSH Access: ssh username@ssh.yourdomain.com (configure in Cloudflare)"
+    echo "   🛡️  Uses host networking for direct SSH port 22 access"
+    echo "   📊 Monitor: docker compose logs cloudflared-ssh"
+    echo ""
+    echo "   Test SSH access with: ssh username@ssh.yourdomain.com"
+    echo "   After confirming SSH works, close port 22:"
+    echo "     sudo ufw delete allow 22/tcp"
+    echo "     sudo ufw reload"
+    echo ""
+  fi
+  
+  echo "🛡️  RECOMMENDED SECURITY ENHANCEMENTS:"
   echo "   For maximum security, close the following ports in your VPS firewall:"
-  echo "   • Port 80 (HTTP)"
-  echo "   • Port 443 (HTTPS)" 
-  echo "   • Port 7687 (Neo4j Bolt)"
+  if [ "$cloudflare_web_active" = "true" ]; then
+    echo "   • Port 80 (HTTP) - if all web services use tunnel"
+    echo "   • Port 443 (HTTPS) - if all web services use tunnel" 
+    echo "   • Port 7687 (Neo4j Bolt) - if Neo4j uses tunnel"
+  fi
+  if [ "$cloudflare_ssh_active" = "true" ]; then
+    echo "   • Port 22 (SSH) - after confirming SSH tunnel works"
+  fi
   echo ""
   echo "   ⚠️  Only close ports AFTER confirming tunnel connectivity!"
   echo ""
+  
+  echo "📋 TUNNEL MANAGEMENT & MONITORING:"
+  if [ "$cloudflare_web_active" = "true" ]; then
+    echo "   • Monitor web tunnel: docker compose logs cloudflared-web"
+  fi
+  if [ "$cloudflare_ssh_active" = "true" ]; then
+    echo "   • Monitor SSH tunnel: docker compose logs cloudflared-ssh"
+  fi
+  
+  tunnel_services=""
+  if [ "$cloudflare_web_active" = "true" ]; then
+    tunnel_services="cloudflared-web"
+  fi
+  if [ "$cloudflare_ssh_active" = "true" ]; then
+    if [ -n "$tunnel_services" ]; then
+      tunnel_services="${tunnel_services} cloudflared-ssh"
+    else
+      tunnel_services="cloudflared-ssh"
+    fi
+  fi
+  
+  if [ -n "$tunnel_services" ]; then
+    echo "   • Restart tunnels: docker compose restart ${tunnel_services}"
+  fi
+  echo "   • Tunnel status: docker compose ps | grep cloudflared"
+  echo "   • Tunnel dashboard: https://one.dash.cloudflare.com/"
+  echo ""
+  
+  echo "🚀 HIGH AVAILABILITY FEATURES:"
+  echo "   • Automatic restart (restart: always)"
+  echo "   • Memory reservations (64MB minimum)"
+  echo "   • OOM kill protection enabled"
+  echo "   • Enhanced health checks"
+  if [ "$cloudflare_web_active" = "true" ] && [ "$cloudflare_ssh_active" = "true" ]; then
+    echo "   • Independent container isolation (web + SSH)"
+  else
+    echo "   • Container isolation"
+  fi
+  echo ""
+  
 fi
 
 echo

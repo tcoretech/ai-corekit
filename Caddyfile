@@ -3,6 +3,16 @@
     email {$LETSENCRYPT_EMAIL}
 }
 
+# Main Website (Base Domain)
+{$BASE_DOMAIN} {
+    root * /srv/website
+    file_server
+    encode gzip
+    
+    # Optional: Fallback für SPA oder custom 404
+    try_files {path} /index.html
+}
+
 # N8N
 {$N8N_HOSTNAME} {
     # For domains, Caddy will automatically use Let's Encrypt

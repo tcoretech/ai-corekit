@@ -300,7 +300,9 @@ services:
       - ./caddy-addon:/etc/caddy/addons:ro
       - caddy-data:/data:rw
       - caddy-config:/config:rw
+      - ./website:/srv/website
     environment:
+      - BASE_DOMAIN=${BASE_DOMAIN}
       - COMFYUI_HOSTNAME=${COMFYUI_HOSTNAME}
       - COMFYUI_PASSWORD_HASH=${COMFYUI_PASSWORD_HASH}
       - COMFYUI_USERNAME=${COMFYUI_USERNAME}
@@ -1063,16 +1065,17 @@ services:
       - ./shared:/app/data/inputs
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - LLM_BINDING=ollama
-      - LLM_BINDING_HOST=http://ollama:11434
-      - EMBEDDING_BINDING=ollama
-      - EMBEDDING_BINDING_HOST=http://ollama:11434
-      - LLM_MODEL=llama3.2
-      - EMBEDDING_MODEL=nomic-embed-text
-      - EMBEDDING_DIM=768
+      - LLM_BINDING=openai
+      - LLM_BINDING_HOST=https://api.openai.com/v1
+      - EMBEDDING_BINDING=openai
+      - EMBEDDING_BINDING_HOST=https://api.openai.com/v1
+      - LLM_MODEL=gpt-4o-mini
+      - EMBEDDING_MODEL=text-embedding-3-small
+      - EMBEDDING_DIM=1536
       - WORKSPACE=${LIGHTRAG_WORKSPACE:-default}
       - AUTH_ACCOUNTS=${LIGHTRAG_AUTH_ACCOUNTS}
       - TOKEN_SECRET=${LIGHTRAG_TOKEN_SECRET}
+      - TIMEOUT=600
 
   # Odoo Database Init - Create user and DB
   odoo-init:

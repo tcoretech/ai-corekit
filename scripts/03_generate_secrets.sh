@@ -649,6 +649,16 @@ if [[ -n "$BASE_DOMAIN" ]]; then
     fi
 fi
 
+# Create website directory and default landing page
+if [ ! -d "./website" ]; then
+    echo_info "Creating website directory for landing page..."
+    mkdir -p ./website
+fi
+
+if [ ! -f "./website/index.html" ]; then
+    echo_info "Default landing page will be created. You can customize it later in ./website/index.html"
+fi
+
 # Create a temporary file for processing
 TMP_ENV_FILE=$(mktemp)
 # Ensure temp file is cleaned up on exit

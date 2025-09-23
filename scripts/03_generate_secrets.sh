@@ -656,7 +656,13 @@ if [ ! -d "./website" ]; then
 fi
 
 if [ ! -f "./website/index.html" ]; then
-    log_info "Default landing page will be created. You can customize it later in ./website/index.html"
+    log_info "Creating default landing page..."
+    if [ -f "./templates/landing-page.html" ]; then
+        cp ./templates/landing-page.html ./website/index.html
+        log_success "Landing page installed at main domain"
+    else
+        log_warning "Landing page template not found in ./templates/"
+    fi
 fi
 
 # Create a temporary file for processing

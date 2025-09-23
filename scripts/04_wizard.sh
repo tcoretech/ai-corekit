@@ -58,7 +58,7 @@ base_services_data=(
     "monitoring" "Monitoring Suite (Prometheus, Grafana, cAdvisor, Node-Exporter)"
     "portainer" "Portainer (Docker management UI)"
     "cloudflare-tunnel" "Cloudflare Tunnel (Zero-Trust Secure Access for Web Services)"
-    "cloudflare-ssh-tunnel" "Cloudflare SSH Tunnel (ecure SSH via Cloudflare - requires additional tunnel setup)"
+    "cloudflare-ssh-tunnel" "Cloudflare SSH Tunnel (Secure SSH via Cloudflare tunnel)"
     "postiz" "Postiz (Social publishing platform)"
     "odoo" "Odoo 18 (Open Source ERP/CRM with AI features)"
     "twenty-crm" "Twenty CRM (Modern Notion-like customer management)"

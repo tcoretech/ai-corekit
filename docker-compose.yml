@@ -1667,9 +1667,11 @@ services:
     profiles: ["mailserver"]
     restart: unless-stopped
     ports:
-      - "25:25"     # SMTP (receiving)
-      - "587:587"   # SMTP (submission)
-      - "993:993"   # IMAP (optional, nur wenn User Mailboxen brauchen)
+      - "25:25"     # SMTP (receiving from external)
+      - "465:465"   # SMTP (submission with SSL)
+      - "587:587"   # SMTP (submission with STARTTLS)
+      - "993:993"   # IMAPS (IMAP over SSL)
+      - "143:143"   # IMAP (with STARTTLS)
     volumes:
       - ./docker-data/dms/mail-data/:/var/mail/
       - ./docker-data/dms/mail-state/:/var/mail-state/
@@ -1683,16 +1685,26 @@ services:
       - LOG_LEVEL=info
       - SUPERVISOR_LOGLEVEL=warn
       
-      # Network
+      # Network & Docker
       - PERMIT_DOCKER=network
-      - NETWORK_INTERFACE=
+      - NETWORK_INTERFACE=eth0
       
-      # Security & SSL (Caddy Zertifikate nutzen)
-      - SSL_TYPE=
+      # SSL Configuration (Using Caddy certificates)
+      - SSL_TYPE=manual
       - SSL_CERT_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.crt
       - SSL_KEY_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.key
+      - TLS_LEVEL=modern
       
-      # Features
+      # SMTP Settings
+      - POSTFIX_INET_PROTOCOLS=ipv4
+      - SMTP_ONLY=0              # Enable both SMTP and IMAP
+      
+      # Dovecot IMAP Settings
+      - DOVECOT_INET_PROTOCOLS=ipv4
+      - DOVECOT_TLS=yes
+      - DOVECOT_MAILBOX_FORMAT=maildir
+      
+      # Security Features
       - ENABLE_RSPAMD=1          # Better than SpamAssassin
       - ENABLE_CLAMAV=0          # Disabled by default (saves RAM)
       - ENABLE_FAIL2BAN=1        # Brute-force protection
@@ -1703,17 +1715,28 @@ services:
       - ENABLE_GETMAIL=0         # Not needed
       - ENABLE_AMAVIS=0          # Not needed with Rspamd
       
+      # Authentication & Delivery
+      - ENABLE_IMAP=1            # Enable IMAP service
+      - ENABLE_POP3=0            # Disable POP3 (use IMAP instead)
+      - ENABLE_MANAGESIEVE=1     # Enable Sieve mail filtering
+      - ENABLE_QUOTAS=1          # Enable mailbox quotas
+      
       # Mail Settings
       - ONE_DIR=1                # Better for Docker
       - DMS_DEBUG=0
       - POSTMASTER_ADDRESS=postmaster@${BASE_DOMAIN}
       - POSTFIX_MESSAGE_SIZE_LIMIT=20480000  # 20MB
+      - DEFAULT_RELAY_HOST=      # Leave empty for direct delivery
+      
+      # Account Settings
+      - ACCOUNT_PROVISIONER=FILE # Use file-based account management
+      - ENABLE_UPDATE_CHECK=0    # Disable update checks
       
     cap_add:
       - NET_ADMIN
       - SYS_PTRACE
     healthcheck:
-      test: ["CMD", "ss", "-lnp", "|", "grep", ":25"]
+      test: ["CMD", "supervisorctl", "status", "postfix", "dovecot"]
       interval: 30s
       timeout: 10s
       retries: 3

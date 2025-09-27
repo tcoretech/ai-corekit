@@ -271,7 +271,39 @@ services:
       - ./neo4j/data:/data
       - ./neo4j/plugins:/plugins
     environment:
-      - NEO4J_AUTH=${NEO4J_AUTH_USERNAME}/${NEO4J_AUTH_PASSWORD}
+      # Authentication
+      - NEO4J_AUTH=${NEO4J_AUTH_USERNAME:-neo4j}/${NEO4J_AUTH_PASSWORD}
+      
+      # Cloudflare Tunnel Configuration
+      # Tell Neo4j it's accessible via HTTPS through the tunnel
+      - NEO4J_server_default__advertised__address=${NEO4J_HOSTNAME}
+      - NEO4J_server_bolt_advertised__address=${NEO4J_HOSTNAME}:7687
+      - NEO4J_server_http_advertised__address=${NEO4J_HOSTNAME}
+      
+      # Enable TLS for Bolt protocol (required for WSS connections)
+      - NEO4J_server_bolt_tls__level=OPTIONAL
+      
+      # Browser configuration for HTTPS access
+      - NEO4J_browser_remote__content__hostname__whitelist=${NEO4J_HOSTNAME}
+      - NEO4J_browser_post__connect__cmd=play start
+      
+      # Memory settings
+      - NEO4J_server_memory_heap_initial__size=512m
+      - NEO4J_server_memory_heap_max__size=1G
+      - NEO4J_server_memory_pagecache_size=256m
+      
+      # Network settings
+      - NEO4J_server_default__listen__address=0.0.0.0
+      - NEO4J_server_bolt_listen__address=0.0.0.0:7687
+      - NEO4J_server_http_listen__address=0.0.0.0:7474
+      
+      # Security and misc settings
+      - NEO4J_dbms_security_auth__enabled=true
+      - NEO4J_client_allow__telemetry=false
+      - NEO4J_dbms_allow__upgrade=true
+    expose:
+      - "7474"
+      - "7687"
     healthcheck:
       test:
         [

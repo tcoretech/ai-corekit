@@ -1669,8 +1669,8 @@ services:
       
       # SSL Configuration (Manual - using Caddy's certificates for mailserver hostname)  
       - SSL_TYPE=manual
-      - SSL_CERT_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.crt
-      - SSL_KEY_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.key
+      - SSL_CERT_PATH=/certs/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.crt
+      - SSL_KEY_PATH=/certs/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.key
       - TLS_LEVEL=modern
       
       # SMTP Settings

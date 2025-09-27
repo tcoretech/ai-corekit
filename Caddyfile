@@ -296,10 +296,8 @@
 }
 
 # Mailserver Certificate Generation - Only if different from SnappyMail hostname
-{if $MAILSERVER_WEBMAIL_HOSTNAME != $SNAPPYMAIL_HOSTNAME} {
-    {$MAILSERVER_WEBMAIL_HOSTNAME} {
-        respond "Certificate endpoint for mailserver" 200
-    }
+{$MAILSERVER_WEBMAIL_HOSTNAME} {
+    # Empty block - certificate will be generated automatically
 }
 
 # Neo4j

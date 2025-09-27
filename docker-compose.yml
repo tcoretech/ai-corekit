@@ -381,6 +381,11 @@ services:
       options:
         max-size: "1m"
         max-file: "1"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2019/metrics", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
         
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -1629,13 +1634,17 @@ services:
       timeout: 10s
       retries: 3
 
-# Docker-Mailserver - Production email server
+# ==============================================================================
+# Production Mail Server Setup (Activate "mailserver" profile to enable):
+# 
+# Mailserver: SMTP/IMAP email server using the docker-mailserver image
   mailserver:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
     container_name: mailserver
-    hostname: mail.${BASE_DOMAIN}
+    hostname: ${MAILSERVER_WEBMAIL_HOSTNAME}
     profiles: ["mailserver"]
     restart: unless-stopped
+    # Direct port exposure (mail protocols cannot be HTTP proxied)
     ports:
       - "25:25"     # SMTP (receiving from external)
       - "465:465"   # SMTP (submission with SSL)
@@ -1646,12 +1655,11 @@ services:
       - ./docker-data/dms/mail-data/:/var/mail/
       - ./docker-data/dms/mail-state/:/var/mail-state/
       - ./docker-data/dms/config/:/tmp/docker-mailserver/
-      - caddy-data:/certs/:ro  # Uses Caddy's Let's Encrypt Certificates
+      - caddy-data:/certs/:ro  # Mount Caddy's certificate volume  
       - /etc/localtime:/etc/localtime:ro
       - ./shared:/data/shared
     environment:
       # Basic Configuration
-      - OVERRIDE_HOSTNAME=mail.${BASE_DOMAIN}
       - LOG_LEVEL=info
       - SUPERVISOR_LOGLEVEL=warn
       
@@ -1659,10 +1667,10 @@ services:
       - PERMIT_DOCKER=network
       - NETWORK_INTERFACE=eth0
       
-      # SSL Configuration (Using Caddy certificates)
+      # SSL Configuration (Manual - using Caddy's certificates for mailserver hostname)  
       - SSL_TYPE=manual
-      - SSL_CERT_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.crt
-      - SSL_KEY_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.key
+      - SSL_CERT_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.crt
+      - SSL_KEY_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.key
       - TLS_LEVEL=modern
       
       # SMTP Settings
@@ -1710,8 +1718,14 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    # Add restart delay to allow time for Caddy to generate certificates
+    deploy:
+      restart_policy:
+        condition: on-failure  
+        delay: 15s
+        max_attempts: 3
     depends_on:
-      - caddy  # For SSL certificates
+      - caddy  # For domain certificate generation (HTTP endpoint only)
 
   # SnappyMail Webmail Client (Latest 2025)
   snappymail:

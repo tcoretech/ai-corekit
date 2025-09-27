@@ -39,18 +39,17 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 
 ### 📧 Mail System
 
-| Tool | Description | Always Active | Purpose |
-|------|-------------|---------------|----------|
-| **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI Access: `mail.yourdomain.com` | ✅ Yes | Development/Testing - captures all emails |
-| **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production mail server | ⚡ Optional | Real email delivery for production |
-| **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client Access: `webmail.yourdomain.com` | ⚡ Optional | Web interface for Docker-Mailserver |
+| Tool | Description | Always Active | Access | Purpose |
+|------|-------------|---------------|---------|----------|
+| **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | `mailpit.yourdomain.com` | Development/Testing - captures all emails |
+| **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production SMTP/IMAP server | ⚡ Optional | `mail.yourdomain.com` | Send/receive real emails |
+| **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client | ⚡ Optional | `webmail.yourdomain.com` | Web interface for email access |
 
 **Mail Configuration:**
-- Mailpit automatically configured for all services (always active)
-- Docker-Mailserver available for production email delivery (optional)
-- SnappyMail provides a modern web interface for email access (optional, requires Docker-Mailserver)
-- Web UI to view all captured emails
-- Zero manual configuration needed!
+- **Mailpit:** Always active for development - captures emails from all services
+- **Docker-Mailserver:** Optional production email server with full SMTP/IMAP support
+- **SnappyMail:** Optional webmail interface (requires Docker-Mailserver)
+- Each service uses a dedicated hostname for easy management
 
 ### 🔧 Workflow Automation
 
@@ -230,9 +229,9 @@ The installer will ask you for:
 6. **Service selection** - Choose which tools to install (including Docker-Mailserver and SnappyMail for production email)
 
 **Mail Configuration:** 
-- Mailpit is automatically configured to capture all emails for development/testing (always active)
-- Docker-Mailserver can be selected during installation for production email delivery
-- SnappyMail can be selected as webmail client (requires Docker-Mailserver)
+- Mailpit automatically captures all emails for development/testing (always active)
+- Docker-Mailserver can be selected for production email delivery (send/receive emails)
+- SnappyMail provides webmail interface (requires Docker-Mailserver)
 
 **Installation time:** 10-15 minutes (plus optional workflow import)
 
@@ -755,7 +754,7 @@ AI LaunchKit includes a comprehensive mail system: Mailpit for development/testi
 
 **Mailpit** (Always Active):
 - Captures ALL emails sent by any service
-- Web UI to view emails: `https://mail.yourdomain.com`
+- Web UI to view emails: `https://mailpit.yourdomain.com`
 - No emails leave your server - perfect for development and testing
 - No authentication needed for web UI
 - All services automatically configured to use Mailpit by default
@@ -986,7 +985,7 @@ Most services that support SMTP can be configured similarly:
 ### 📊 Viewing Captured Emails
 
 **Mailpit Web UI (Development/Testing):**
-- URL: `https://mail.yourdomain.com`
+- URL: `https://mailpit.yourdomain.com`
 - Features:
   - Search emails
   - View HTML/Text/Source

@@ -295,6 +295,13 @@
     reverse_proxy snappymail:8888
 }
 
+# Mailserver Certificate Generation - Only if different from SnappyMail hostname
+{if $MAILSERVER_WEBMAIL_HOSTNAME != $SNAPPYMAIL_HOSTNAME} {
+    {$MAILSERVER_WEBMAIL_HOSTNAME} {
+        respond "Certificate endpoint for mailserver" 200
+    }
+}
+
 # Neo4j
 {$NEO4J_HOSTNAME} {
     reverse_proxy neo4j:7474

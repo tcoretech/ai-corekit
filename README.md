@@ -33,6 +33,98 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 
 ATTENTION! The AI LaunchKit is currently in development. It is regularly tested and updated. However, use is at your own risk!
 
+# ⚠️ CRITICAL: PostgreSQL 18 Breaking Change ⚠️
+
+**DO NOT RUN `update.sh` or `docker compose pull` until this is fixed!**
+
+PostgreSQL 18 was released on Sept 26, 2024 and introduces breaking changes. 
+The data format is incompatible with PostgreSQL 17 and earlier versions.
+
+## Affected Users - Emergency Fix
+
+If you already updated and see errors like:
+- "database files are incompatible with server"
+- "The data directory was initialized by PostgreSQL version 17"
+- Services failing to start after update
+
+Follow these steps:
+
+```bash
+# 1. BACKUP YOUR DATA (CRITICAL!)
+docker exec postgres pg_dumpall -U postgres > backup_emergency.sql
+
+# 2. Verify backup is valid (should show SQL commands)
+head -50 backup_emergency.sql
+
+# 3. Stop all services
+docker compose -p localai down
+
+# 4. Remove incompatible volume
+docker volume rm localai_langfuse_postgres_data
+
+# 5. Pin PostgreSQL to version 17
+sed -i 's/image: postgres:latest/image: postgres:17-alpine/g' docker-compose.yml
+
+# 6. Start only PostgreSQL
+docker compose -p localai up -d postgres
+
+# 7. Wait for PostgreSQL to initialize
+sleep 10
+
+# 8. Restore your data
+docker exec -i postgres psql -U postgres < backup_emergency.sql
+
+# 9. Start all services
+docker compose -p localai up -d
+```
+
+## Prevention for Unaffected Users
+
+If you haven't updated yet, pin the PostgreSQL version NOW:
+
+```bash
+# Pin PostgreSQL version BEFORE updating
+sed -i 's/image: postgres:latest/image: postgres:17-alpine/g' docker-compose.yml
+
+# For macOS users (use gsed or)
+sed -i '' 's/image: postgres:latest/image: postgres:17-alpine/g' docker-compose.yml
+```
+
+## Verification
+
+After applying the fix, verify PostgreSQL is running version 17:
+
+```bash
+docker exec postgres psql -U postgres -c "SELECT version();"
+```
+
+Should show: `PostgreSQL 17.x ...`
+
+## Services Affected
+
+The following services use the shared PostgreSQL instance and may be impacted:
+- n8n (workflow automation)
+- Langfuse (LLM observability)
+- Baserow (no-code database)
+- NocoDB (smart spreadsheet)
+- Postiz (social media scheduler)
+- Vikunja (task management)
+- Cal.com (scheduling)
+- Odoo (ERP/CRM)
+
+## Long-term Solution
+
+A permanent fix is being developed that will:
+1. Pin PostgreSQL to a stable version
+2. Provide a safe upgrade path for major versions
+3. Implement automated backup before updates
+
+Track progress: https://github.com/freddy-schuetz/ai-launchkit/issues/[TBD]
+
+---
+
+**Last updated:** September 28, 2024
+
 ---
 
 ## ✨ What's Included

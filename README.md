@@ -37,7 +37,7 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 
 **DO NOT RUN `update.sh` or `docker compose pull` until this is fixed!**
 
-PostgreSQL 18 was released on Sept 26, 2024 and introduces breaking changes. 
+PostgreSQL 18 was released on Sept 26, 2025 and introduces breaking changes. 
 The data format is incompatible with PostgreSQL 17 and earlier versions.
 
 ## Affected Users - Emergency Fix

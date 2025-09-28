@@ -558,7 +558,7 @@ services:
 
   # Baserow Database Init - Create database
   baserow-init:
-    image: postgres:latest
+    image: postgres:${POSTGRES_VERSION:-17}
     container_name: baserow-init
     profiles: ["baserow"]
     depends_on:
@@ -614,7 +614,7 @@ services:
 
   # NocoDB Database Init - Create database
   nocodb-init:
-    image: postgres:latest
+    image: postgres:${POSTGRES_VERSION:-17}
     container_name: nocodb-init
     profiles: ["nocodb"]
     depends_on:
@@ -1079,7 +1079,7 @@ services:
 
   # Odoo Database Init - Create user and DB
   odoo-init:
-    image: postgres:latest
+    image: postgres:${POSTGRES_VERSION:-17}
     container_name: odoo-init
     profiles: ["odoo"]
     depends_on:
@@ -1381,7 +1381,7 @@ services:
 
   # Vikunja Database Init - Create database
   vikunja-init:
-    image: postgres:latest
+    image: postgres:${POSTGRES_VERSION:-17}
     container_name: vikunja-init
     profiles: ["vikunja"]
     depends_on:
@@ -2069,7 +2069,7 @@ services:
   
   # Database Init für Formbricks
   formbricks-init:
-    image: postgres:latest
+    image: postgres:${POSTGRES_VERSION:-17}
     container_name: formbricks-init
     profiles: ["formbricks"]
     depends_on:

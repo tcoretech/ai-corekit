@@ -33,97 +33,67 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 
 ATTENTION! The AI LaunchKit is currently in development. It is regularly tested and updated. However, use is at your own risk!
 
-# ⚠️ CRITICAL: PostgreSQL 18 Breaking Change ⚠️
+# ✅ PostgreSQL 18 Issue - FIXED
 
-**DO NOT RUN `update.sh` or `docker compose pull` until this is fixed!**
+**The PostgreSQL 18 compatibility issue has been resolved.** 
+You can now safely run `update.sh` or `docker compose pull`.
 
-PostgreSQL 18 was released on Sept 26, 2025 and introduces breaking changes. 
-The data format is incompatible with PostgreSQL 17 and earlier versions.
+## What Happened
+PostgreSQL 18 was released on Sept 26, 2025 with breaking changes. The data format is incompatible with PostgreSQL 17. We've now pinned all services to PostgreSQL 17 to prevent automatic major version upgrades.
 
-## Affected Users - Emergency Fix
+## For Users Who Already Experienced Issues
 
-If you already updated and see errors like:
-- "database files are incompatible with server"
-- "The data directory was initialized by PostgreSQL version 17"
-- Services failing to start after update
+If you updated before the fix and saw errors like "database files are incompatible", follow the emergency recovery steps below:
 
-Follow these steps:
+<details>
+<summary>📋 Emergency Recovery Steps (click to expand)</summary>
 
 ```bash
 # 1. BACKUP YOUR DATA (CRITICAL!)
 docker exec postgres pg_dumpall -U postgres > backup_emergency.sql
 
-# 2. Verify backup is valid (should show SQL commands)
-head -50 backup_emergency.sql
-
-# 3. Stop all services
+# 2. Stop all services
 docker compose -p localai down
 
-# 4. Remove incompatible volume
+# 3. Remove incompatible volume
 docker volume rm localai_langfuse_postgres_data
 
-# 5. Pin PostgreSQL to version 17
-sed -i 's/image: postgres:latest/image: postgres:17-alpine/g' docker-compose.yml
+# 4. Pull the latest fixes
+git pull
 
-# 6. Start only PostgreSQL
+# 5. Start PostgreSQL (now pinned to v17)
 docker compose -p localai up -d postgres
-
-# 7. Wait for PostgreSQL to initialize
 sleep 10
 
-# 8. Restore your data
+# 6. Restore your data
 docker exec -i postgres psql -U postgres < backup_emergency.sql
 
-# 9. Start all services
+# 7. Start all services
+docker compose -p localai up -d
+```
+</details>
+
+## For All Users - Recommended Action
+
+Simply update to get the fix:
+```bash
+git pull
 docker compose -p localai up -d
 ```
 
-## Prevention for Unaffected Users
-
-If you haven't updated yet, pin the PostgreSQL version NOW:
-
+Verify you're running PostgreSQL 17:
 ```bash
-# Pin PostgreSQL version BEFORE updating
-sed -i 's/image: postgres:latest/image: postgres:17-alpine/g' docker-compose.yml
-
-# For macOS users (use gsed or)
-sed -i '' 's/image: postgres:latest/image: postgres:17-alpine/g' docker-compose.yml
+docker exec postgres postgres --version
+# Should show: postgres (PostgreSQL) 17.x
 ```
 
-## Verification
-
-After applying the fix, verify PostgreSQL is running version 17:
-
-```bash
-docker exec postgres psql -U postgres -c "SELECT version();"
-```
-
-Should show: `PostgreSQL 17.x ...`
-
-## Services Affected
-
-The following services use the shared PostgreSQL instance and may be impacted:
-- n8n (workflow automation)
-- Langfuse (LLM observability)
-- Baserow (no-code database)
-- NocoDB (smart spreadsheet)
-- Postiz (social media scheduler)
-- Vikunja (task management)
-- Cal.com (scheduling)
-- Odoo (ERP/CRM)
-
-## Long-term Solution
-
-A permanent fix is being developed that will:
-1. Pin PostgreSQL to a stable version
-2. Provide a safe upgrade path for major versions
-3. Implement automated backup before updates
-
-Track progress: https://github.com/freddy-schuetz/ai-launchkit/issues/[TBD]
+## Technical Details
+- All PostgreSQL instances are now pinned to version 17
+- Major version upgrades will require manual migration
+- See `.env.example` for version configuration options
 
 ---
-
-**Last updated:** September 28, 2024
+**Issue resolved:** September 28, 2025
 
 ---
 

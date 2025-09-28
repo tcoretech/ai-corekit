@@ -96,9 +96,7 @@ docker compose -p localai up -d
 
 Simply update to get the fix:
 ```bash
-git pull
-docker compose -p localai up -d
-```
+sudo bash scripts/update.sh
 
 ## Verification
 

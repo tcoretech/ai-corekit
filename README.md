@@ -36,14 +36,33 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 # ✅ PostgreSQL 18 Issue - FIXED
 
 **The PostgreSQL 18 compatibility issue has been resolved.** 
-You can now safely run `update.sh` or `docker compose pull`.
+You can now safely run `update.sh` after following the appropriate steps below.
 
 ## What Happened
 PostgreSQL 18 was released on Sept 26, 2025 with breaking changes. The data format is incompatible with PostgreSQL 17. We've now pinned all services to PostgreSQL 17 to prevent automatic major version upgrades.
 
-## For Users Who Already Experienced Issues
+## Which Group Are You In?
 
-If you updated before the fix and saw errors like "database files are incompatible", follow the emergency recovery steps below:
+### 🆕 Group A: Installed AI LaunchKit AFTER Sept 26, 2025
+
+Check your PostgreSQL version first:
+```bash
+docker exec postgres postgres --version
+```
+
+If you have PostgreSQL 18.x:
+```bash
+# Pin your version BEFORE updating (important!)
+echo "POSTGRES_VERSION=18" >> .env
+
+# Now you can safely update
+bash scripts/update.sh
+```
+Your data remains on PostgreSQL 18 and everything continues working.
+
+### 🔄 Group B: Already Experienced Update Issues
+
+If you updated and saw errors like "database files are incompatible", follow the emergency recovery steps:
 
 <details>
 <summary>📋 Emergency Recovery Steps (click to expand)</summary>
@@ -73,7 +92,7 @@ docker compose -p localai up -d
 ```
 </details>
 
-## For All Users - Recommended Action
+### ✅ Group C: Installed BEFORE Sept 26 (PostgreSQL 17 or older)
 
 Simply update to get the fix:
 ```bash
@@ -81,14 +100,19 @@ git pull
 docker compose -p localai up -d
 ```
 
-Verify you're running PostgreSQL 17:
+## Verification
+
+After updating, verify your PostgreSQL version:
 ```bash
 docker exec postgres postgres --version
-# Should show: postgres (PostgreSQL) 17.x
+# Should show either:
+# - PostgreSQL 17.x (most users)
+# - PostgreSQL 18.x (if you pinned it)
 ```
 
 ## Technical Details
-- All PostgreSQL instances are now pinned to version 17
+- Default PostgreSQL version is now pinned to 17
+- Users with v18 can keep it by setting `POSTGRES_VERSION=18` in `.env`
 - Major version upgrades will require manual migration
 - See `.env.example` for version configuration options
 

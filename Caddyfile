@@ -354,13 +354,9 @@ https://{$NEO4J_HOSTNAME}:7687 {
 # =============================================================================
 {$LIVEKIT_HOSTNAME} {
     reverse_proxy livekit-server:7880 {
-        # WebSocket support for real-time communication
-        header_up Connection {>Connection}
-        header_up Upgrade {>Upgrade}
-        # Send real IP for logging
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
+        transport http {
+            versions 1.1
+        }
     }
 }
 

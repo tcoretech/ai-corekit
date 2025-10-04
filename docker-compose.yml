@@ -1837,9 +1837,8 @@ services:
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
-    expose:
-      - "7880"
-      - "7881"
+    ports:
+      - "7880:7880"
     depends_on:
       redis:
         condition: service_healthy

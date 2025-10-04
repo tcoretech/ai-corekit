@@ -28,6 +28,7 @@ ufw allow ssh
 ufw allow http
 ufw allow https
 ufw allow 10000/udp comment 'Jitsi WebRTC Media'
+ufw allow 7880/tcp comment 'LiveKit WebSocket'
 ufw reload
 ufw status
 

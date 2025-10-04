@@ -199,7 +199,7 @@ docker exec postgres postgres --version
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[Flowise](https://github.com/FlowiseAI/Flowise)** | Visual AI agent builder | Chatbots, customer support, AI workflows | `flowise.yourdomain.com` |
-| **[LiveKit](https://github.com/livekit/livekit)** | Real-time voice & video infrastructure (WebRTC SFU) | AI voice agents, real-time AI interactions, voice chat bots, requires UDP 50000-50100 | `livekit.yourdomain.com` |
+| **[LiveKit](https://github.com/livekit/livekit)** + Agents | Real-time voice agents with WebRTC (auto-uses Whisper/TTS/Ollama or OpenAI) | AI voice assistants, conversational AI, ChatGPT-like voice bots, requires UDP 50000-50100 | `livekit.yourdomain.com` |
 | **[Dify](https://github.com/langgenius/dify)** | LLMOps platform for AI apps | Production AI apps, model management, prompt engineering | `dify.yourdomain.com` |
 | **[Letta](https://github.com/letta-ai/letta)** | Stateful agent server | Persistent AI assistants, memory management | `letta.yourdomain.com` |
 

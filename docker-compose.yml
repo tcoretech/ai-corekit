@@ -1872,6 +1872,32 @@ services:
       livekit-server:
         condition: service_healthy
 
+  livekit-agents:
+    image: python:3.11-slim
+    container_name: livekit-agents
+    profiles: ["livekit"]
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./livekit-agents:/app
+      - ./shared:/data/shared
+    environment:
+      - LIVEKIT_URL=ws://livekit-server:7880
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - WHISPER_URL=http://faster-whisper:8000
+      - TTS_URL=http://openedai-speech:8000
+      - OLLAMA_URL=http://ollama:11434
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
+    depends_on:
+      - livekit-server
+    command: >
+      bash -c "
+      pip install livekit-agents livekit-plugins-openai livekit-plugins-silero &&
+      python agent.py
+      "
+
   # VAULTWARDEN - Self-hosted Password Manager
   vaultwarden:
     image: vaultwarden/server:latest

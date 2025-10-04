@@ -736,6 +736,21 @@ if is_profile_active "livekit"; then
   echo "  - Swift (iOS/macOS)"
   echo "  - Kotlin/Java (Android)"
   echo
+  echo "================================= LiveKit Agents ======================"
+  echo
+  echo "Voice Agent Status: Running"
+  echo "Mode: $(if [[ -n "${OPENAI_API_KEY}" ]]; then echo "OpenAI (Cloud)"; else echo "Local (Ollama/Whisper/TTS)"; fi)"
+  echo
+  echo "How to use:"
+  echo "  1. Create LiveKit room via n8n or API"
+  echo "  2. Generate JWT token with API Key/Secret"
+  echo "  3. Connect client with token"
+  echo "  4. Agent joins automatically and responds to voice"
+  echo
+  echo "Test Interface: Create file website/voice-test.html"
+  echo "n8n JWT Generation: Use JavaScript node with jsonwebtoken"
+  echo
+  echo "Agent Logs: docker logs livekit-agents -f"
   echo "Documentation: https://docs.livekit.io/"
   echo "SDK Examples: https://github.com/livekit/livekit-examples"
 fi

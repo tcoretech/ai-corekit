@@ -4,25 +4,20 @@ from livekit.agents import (
     JobContext,
     WorkerOptions,
     cli,
-    llm,
 )
 from livekit.agents import Agent, AgentSession
 from livekit.plugins import openai, silero
 
-# Check if OpenAI API key is available
 USE_OPENAI = bool(os.getenv("OPENAI_API_KEY"))
-
 print(f"[LiveKit Agent] Starting in {'OpenAI' if USE_OPENAI else 'Local'} mode")
 
 async def entrypoint(ctx: JobContext):
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
     
-    # Create agent instructions
     agent = Agent(
         instructions="You are a helpful AI voice assistant. Keep responses concise and conversational."
     )
     
-    # Configure session based on mode
     if USE_OPENAI:
         session = AgentSession(
             vad=silero.VAD.load(),
@@ -31,7 +26,6 @@ async def entrypoint(ctx: JobContext):
             tts=openai.TTS(voice="alloy"),
         )
     else:
-        # Local mode - custom plugins for Whisper/Ollama/TTS
         class WhisperSTT(openai.STT):
             def __init__(self):
                 super().__init__(
@@ -63,10 +57,12 @@ async def entrypoint(ctx: JobContext):
             tts=LocalTTS(),
         )
     
+    # Start session and keep running
     await session.start(agent=agent, room=ctx.room)
     
+    # Generate initial greeting
     await session.generate_reply(
-        instructions="greet the user and ask how you can help"
+        instructions="greet the user briefly and ask how you can help"
     )
 
 if __name__ == "__main__":

@@ -1832,22 +1832,17 @@ services:
     restart: unless-stopped
     volumes:
       - livekit_data:/data
-      - ./livekit:/etc/livekit
+      - ./livekit/entrypoint.sh:/entrypoint.sh:ro
     environment:
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     expose:
-      - "7880"  # WebSocket
-      - "7881"  # HTTP API
+      - "7880"
+      - "7881"
     depends_on:
       redis:
         condition: service_healthy
-    command: >
-      --config /etc/livekit/config.yaml
-      --bind 0.0.0.0
-      --redis-host redis:6379
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:7880"]
       interval: 30s
@@ -1895,7 +1890,7 @@ services:
     command: >
       bash -c "
       pip install livekit-agents livekit-plugins-openai livekit-plugins-silero &&
-      python agent.py
+      python agent.py start
       "
 
   # VAULTWARDEN - Self-hosted Password Manager

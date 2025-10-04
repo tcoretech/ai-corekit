@@ -199,6 +199,7 @@ docker exec postgres postgres --version
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[Flowise](https://github.com/FlowiseAI/Flowise)** | Visual AI agent builder | Chatbots, customer support, AI workflows | `flowise.yourdomain.com` |
+| **[LiveKit](https://github.com/livekit/livekit)** | Real-time voice & video infrastructure (WebRTC SFU) | AI voice agents, real-time AI interactions, voice chat bots, requires UDP 50000-50100 | `livekit.yourdomain.com` |
 | **[Dify](https://github.com/langgenius/dify)** | LLMOps platform for AI apps | Production AI apps, model management, prompt engineering | `dify.yourdomain.com` |
 | **[Letta](https://github.com/letta-ai/letta)** | Stateful agent server | Persistent AI assistants, memory management | `letta.yourdomain.com` |
 
@@ -831,6 +832,449 @@ If UDP is blocked by your provider:
 - **Best Practice:** Use lobby mode for meetings >10 people
 
 ---
+
+## 🎙️ LiveKit Real-Time Voice & Video Infrastructure
+
+LiveKit provides professional WebRTC infrastructure for AI voice agents, real-time communication, and live streaming. Used by ChatGPT's Advanced Voice Mode and thousands of production applications.
+
+### ⚠️ CRITICAL Requirements
+
+**UDP Ports 50000-50100 are MANDATORY for audio/video:**
+- Without UDP: Only signaling works, NO media streaming!
+- Many VPS providers block UDP traffic by default
+- TCP Port 7882 required as fallback
+- Test UDP connectivity BEFORE building voice agents
+
+### Pre-Installation UDP Test
+
+```bash
+# 1. Open UDP port range in firewall
+sudo ufw allow 50000:50100/udp
+sudo ufw allow 7882/tcp
+
+# 2. Test UDP connectivity (requires two terminals)
+# Terminal 1 (on your VPS):
+nc -u -l 50000
+
+# Terminal 2 (from external network):
+nc -u YOUR_VPS_IP 50000
+# Type text and press Enter - should appear in Terminal 1
+
+# 3. If text doesn't appear, UDP is blocked by your provider
+```
+
+### VPS Provider Compatibility
+
+**Known to work well:**
+- Hetzner Cloud (WebRTC-friendly, recommended)
+- DigitalOcean (good UDP performance)
+- Contabo (game server support = UDP OK)
+
+**Often problematic:**
+- OVH (frequently blocks UDP)
+- Scaleway (firewall restrictions)
+- AWS/GCP (requires NAT configuration)
+
+### Key Differences vs Jitsi
+
+| Feature | LiveKit | Jitsi Meet |
+|---------|---------|------------|
+| **Primary Use** | AI voice agents, SDKs | Video conferencing |
+| **Authentication** | JWT tokens (backend) | No auth required |
+| **Web UI** | None (API only) | Full meeting interface |
+| **Integration** | SDK-first | Browser-first |
+| **UDP Ports** | 50000-50100 | 10000 |
+| **Best For** | Developers, AI agents | End users, meetings |
+
+### Features
+
+- **JWT-Based Auth:** Secure token-based client authentication
+- **SFU Architecture:** Scalable selective forwarding unit
+- **AI Agent Ready:** Built for voice AI applications
+- **Multi-Platform SDKs:** JavaScript, React, Flutter, Swift, Kotlin
+- **Low Latency:** <100ms glass-to-glass latency
+- **Simulcast:** Multiple quality streams per participant
+- **E2E Encryption:** Optional end-to-end encryption
+- **Recording:** Server-side recording with Egress service
+
+### Architecture
+
+```
+┌─────────────┐      WebSocket      ┌──────────────┐
+│   Client    │ ←─────────────────→ │   LiveKit    │
+│   (Browser) │      JWT Token      │   Server     │
+└─────────────┘                     └──────────────┘
+                                           │
+                 ┌─────────────────────────┼─────────────────────────┐
+                 │                         │                         │
+           ┌─────▼──────┐           ┌─────▼──────┐           ┌─────▼──────┐
+           │  WebRTC    │           │  WebRTC    │           │  WebRTC    │
+           │  Media     │           │  Media     │           │  Media     │
+           │ UDP 50000+ │           │ UDP 50000+ │           │ UDP 50000+ │
+           └────────────┘           └────────────┘           └────────────┘
+           Client A                 Client B                 Client C
+```
+
+### Initial Setup
+
+**After installation, you need:**
+1. API Key: `${LIVEKIT_API_KEY}` (from .env)
+2. API Secret: `${LIVEKIT_API_SECRET}` (from .env)
+3. WebSocket URL: `wss://livekit.yourdomain.com`
+
+**LiveKit has NO web interface** - you must build clients using SDKs or use existing applications.
+
+### Generating Access Tokens
+
+LiveKit requires JWT tokens for client authentication. Generate them in your backend:
+
+#### Node.js Example (for n8n)
+```javascript
+// Install in n8n: npm install livekit-server-sdk
+const { AccessToken } = require('livekit-server-sdk');
+
+// Create token for a participant
+const at = new AccessToken(
+  process.env.LIVEKIT_API_KEY,
+  process.env.LIVEKIT_API_SECRET,
+  {
+    identity: 'user-' + Date.now(),
+    name: 'User Name'
+  }
+);
+
+// Grant room permissions
+at.addGrant({
+  roomJoin: true,
+  room: 'my-room',
+  canPublish: true,
+  canSubscribe: true
+});
+
+const token = at.toJwt();
+console.log('Access Token:', token);
+```
+
+#### Python Example
+```python
+from livekit import AccessToken, VideoGrants
+
+# Create token
+token = AccessToken(
+    api_key=os.getenv('LIVEKIT_API_KEY'),
+    api_secret=os.getenv('LIVEKIT_API_SECRET')
+)
+
+# Set identity and grants
+token.identity = f"user-{int(time.time())}"
+token.name = "User Name"
+token.add_grant(VideoGrants(
+    room_join=True,
+    room="my-room",
+    can_publish=True,
+    can_subscribe=True
+))
+
+jwt_token = token.to_jwt()
+print(f"Access Token: {jwt_token}")
+```
+
+### n8n Integration Examples
+
+#### AI Voice Agent Workflow
+```javascript
+// 1. Webhook Trigger: User requests voice call
+// 2. Function Node: Generate LiveKit token
+const { AccessToken } = require('livekit-server-sdk');
+
+const token = new AccessToken(
+  'your-api-key',
+  'your-api-secret',
+  {
+    identity: $json.userId,
+    name: $json.userName
+  }
+);
+
+token.addGrant({
+  roomJoin: true,
+  room: $json.roomName,
+  canPublish: true,
+  canSubscribe: true
+});
+
+return {
+  token: token.toJwt(),
+  wsUrl: 'wss://livekit.yourdomain.com',
+  roomName: $json.roomName
+};
+
+// 3. HTTP Response Node: Return token to client
+// 4. Webhook in Loop: Listen for room events
+// 5. Process audio with Whisper
+// 6. Generate response with LLM
+// 7. Synthesize speech with TTS
+// 8. Publish audio back to LiveKit room
+```
+
+#### Meeting Recording Automation
+```javascript
+// 1. LiveKit Webhook: recording.finished
+// 2. HTTP Request Node: Download recording
+URL: http://livekit-server:7881/recordings/{{ $json.recordingId }}
+Headers: { Authorization: Bearer YOUR_TOKEN }
+
+// 3. Whisper Node: Transcribe audio
+// 4. LLM Node: Generate meeting summary
+// 5. Email Node: Send summary to participants
+// 6. Save to Database: Store transcript
+```
+
+#### Real-Time AI Voice Assistant
+```javascript
+// Backend generates token and room for user
+// Frontend connects to LiveKit
+// Audio stream flows: User → LiveKit → n8n → AI → LiveKit → User
+
+// n8n workflow:
+// 1. LiveKit Webhook: track.published (user speaks)
+// 2. Stream Audio to Whisper STT
+// 3. Process text with LLM (OpenAI/Claude)
+// 4. Generate speech with TTS
+// 5. Publish audio track back to room
+// 6. User hears AI response in real-time
+```
+
+### Client SDK Integration
+
+#### JavaScript/TypeScript (Web)
+```javascript
+import { Room, RoomEvent } from 'livekit-client';
+
+// Get token from your backend
+const token = await fetch('/api/get-livekit-token').then(r => r.json());
+
+// Connect to room
+const room = new Room();
+await room.connect('wss://livekit.yourdomain.com', token);
+
+// Enable microphone
+await room.localParticipant.setMicrophoneEnabled(true);
+
+// Listen for other participants
+room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+  if (track.kind === 'audio') {
+    track.attach(document.getElementById('audio-element'));
+  }
+});
+```
+
+#### React Example
+```jsx
+import { LiveKitRoom, AudioTrack } from '@livekit/components-react';
+
+function VoiceChat() {
+  const [token, setToken] = useState('');
+
+  useEffect(() => {
+    // Fetch token from backend
+    fetch('/api/livekit-token')
+      .then(r => r.json())
+      .then(data => setToken(data.token));
+  }, []);
+
+  return (
+    <LiveKitRoom
+      serverUrl="wss://livekit.yourdomain.com"
+      token={token}
+      connect={true}
+      audio={true}
+    >
+      <AudioTrack />
+    </LiveKitRoom>
+  );
+}
+```
+
+### AI Voice Agent Use Cases
+
+**Customer Support Bot:**
+- User calls in via browser
+- LiveKit streams audio to n8n
+- Whisper transcribes in real-time
+- LLM generates responses
+- TTS synthesizes voice
+- Bot responds naturally
+
+**Language Learning Assistant:**
+- Student practices conversation
+- AI analyzes pronunciation
+- Provides instant feedback
+- Tracks progress over time
+
+**Voice-Controlled Automation:**
+- "Turn on the lights"
+- LiveKit → Whisper → Intent detection
+- n8n triggers home automation
+- TTS confirms action
+
+**Live Translation:**
+- Multi-language conference
+- Real-time transcription
+- Translation via LibreTranslate
+- TTS in target language
+
+### Security Considerations
+
+**Why JWT Authentication:**
+- Tokens expire automatically
+- Granular permissions per room
+- Backend controls access
+- No shared passwords
+- Revocable per session
+
+**Token Permissions:**
+```javascript
+// Minimal permissions (view only)
+token.addGrant({
+  roomJoin: true,
+  room: 'room-name',
+  canPublish: false,
+  canSubscribe: true
+});
+
+// Full permissions (speak and listen)
+token.addGrant({
+  roomJoin: true,
+  room: 'room-name',
+  canPublish: true,
+  canSubscribe: true
+});
+
+// Admin permissions
+token.addGrant({
+  roomJoin: true,
+  room: 'room-name',
+  canPublish: true,
+  canSubscribe: true,
+  roomAdmin: true
+});
+```
+
+### Troubleshooting LiveKit
+
+**No Audio/Video:**
+```bash
+# Check if LiveKit server is running
+docker ps | grep livekit
+
+# Check server logs
+docker logs livekit-server --tail 100
+docker logs livekit-sfu --tail 100
+
+# Verify UDP ports are open
+sudo netstat -ulnp | grep 50000
+
+# Test UDP connectivity
+nc -u YOUR_VPS_IP 50000
+```
+
+**Token Issues:**
+```bash
+# Check API Key/Secret in .env
+cat .env | grep LIVEKIT
+
+# Verify token generation
+# Invalid tokens will fail with 401 Unauthorized
+```
+
+**WebSocket Connection Failed:**
+```bash
+# Check Caddy routing
+docker logs caddy | grep livekit
+
+# Test WebSocket connection
+curl -i -N -H "Connection: Upgrade" \
+  -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Version: 13" \
+  -H "Sec-WebSocket-Key: test" \
+  https://livekit.yourdomain.com
+```
+
+**Media Stream Issues:**
+```bash
+# Check SFU logs for errors
+docker logs livekit-sfu --tail 100
+
+# Verify JVB_DOCKER_HOST_ADDRESS is set
+cat .env | grep JVB_DOCKER_HOST_ADDRESS
+
+# Should be your public IP
+```
+
+### Performance Tips
+
+- **Bandwidth:** 50-100 kbps per audio stream
+- **CPU:** ~0.5 cores per 10 audio participants
+- **RAM:** 512MB base + 50MB per active room
+- **Participants:** Tested up to 100 audio streams per VPS
+- **Best Practice:** Use simulcast for video streams
+- **Latency:** Enable DTX (discontinuous transmission) for bandwidth
+
+### Monitoring & Debugging
+
+**LiveKit Admin API:**
+```bash
+# List active rooms
+curl -X GET http://livekit-server:7881/rooms \
+  -H "Authorization: Bearer YOUR_API_SECRET"
+
+# Get room details
+curl -X GET http://livekit-server:7881/rooms/room-name \
+  -H "Authorization: Bearer YOUR_API_SECRET"
+
+# End a room
+curl -X DELETE http://livekit-server:7881/rooms/room-name \
+  -H "Authorization: Bearer YOUR_API_SECRET"
+```
+
+**Webhook Events:**
+Configure webhooks in n8n to receive events:
+- `room_started`
+- `room_finished`
+- `participant_joined`
+- `participant_left`
+- `track_published`
+- `track_unpublished`
+
+### Alternative Solutions
+
+**If UDP is blocked:**
+1. Use TURN server (requires additional setup)
+2. Switch to a WebRTC-friendly VPS provider
+3. Use LiveKit Cloud (managed service)
+4. Configure TCP fallback (higher latency)
+
+### Resources
+
+- **Official Docs:** https://docs.livekit.io/
+- **SDK Examples:** https://github.com/livekit/livekit-examples
+- **Playground:** https://meet.livekit.io/ (test your server)
+- **Discord Community:** https://livekit.io/discord
+- **n8n Community Node:** Search for "livekit" in n8n community nodes
+
+### Production Checklist
+
+- [ ] UDP ports 50000-50100 verified open
+- [ ] TCP port 7882 accessible
+- [ ] API Key/Secret stored securely
+- [ ] Token generation tested
+- [ ] WebSocket connection working
+- [ ] Audio stream flow validated
+- [ ] Monitoring webhooks configured
+- [ ] Client SDK integrated
+- [ ] Error handling implemented
+- [ ] Scaling plan defined
 
 ## 📧 Mail Configuration
 

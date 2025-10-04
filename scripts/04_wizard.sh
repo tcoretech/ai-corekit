@@ -73,6 +73,7 @@ base_services_data=(
     "formbricks" "Formbricks - Privacy-first surveys & forms (Typeform alternative)"
     "metabase" "Metabase - Business intelligence (No-code dashboards, groups, ETL-ready)"
     "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
+    "livekit" "LiveKit (Real-time voice & video - WebRTC, REQUIRES UDP 50000-50100!)"
     "vaultwarden" "Vaultwarden (Self-hosted Bitwarden-compatible password manager)"
     "kopia" "Kopia (Fast and secure backup with Cloud and WebDAV storage)"
     "mailserver" "Docker-Mailserver (Production email server for all services)"

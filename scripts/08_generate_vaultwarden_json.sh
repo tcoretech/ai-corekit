@@ -368,6 +368,13 @@ EOF
             "Open-source Perplexity AI alternative. Protected with Basic Auth."
     fi
 
+    # LiveKit
+    if is_profile_active "livekit"; then
+        add_secure_note \
+            "LiveKit Real-Time Communication" \
+            "WebSocket URL: wss://${LIVEKIT_HOSTNAME}\\nAPI Key: ${LIVEKIT_API_KEY}\\nAPI Secret: ${LIVEKIT_API_SECRET}\\n\\nAuthentication: JWT-based (no login UI)\\nGenerate access tokens using API Key/Secret\\n\\nInternal Access:\\n- WebSocket: ws://livekit-server:7880\\n- HTTP API: http://livekit-server:7881\\n\\nNetwork Requirements:\\n- UDP Ports: 50000-50100\\n- TCP Port: 7882\\n\\nn8n Integration:\\n1. Install LiveKit SDK: npm install livekit-server-sdk\\n2. Use API Key/Secret to generate JWT tokens\\n3. Pass tokens to client applications\\n\\nUse Cases:\\n- Voice chat applications\\n- Video conferencing\\n- AI voice agents (like ChatGPT)\\n\\nDocumentation: https://docs.livekit.io/"
+    fi
+
     # Add important secure notes
     
     # Vaultwarden Admin Token

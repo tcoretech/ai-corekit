@@ -979,6 +979,33 @@ jwt_token = token.to_jwt()
 print(f"Access Token: {jwt_token}")
 ```
 
+#### CLI Helper Script (Quickest for Testing)
+
+For quick testing without writing code, use the included helper script:
+```bash
+# Generate token with default values
+bash scripts/generate_livekit_token.sh
+
+# Specify room and user
+bash scripts/generate_livekit_token.sh my-room my-user
+
+# Output:
+# Token generated successfully!
+# Access token: eyJhbGc...
+# Use this token in LiveKit Playground:
+# https://agents-playground.livekit.io
+
+Parameters:
+
+room-name (optional): Room to join, defaults to voice-test
+user-id (optional): User identity, defaults to user-<timestamp>
+
+Use cases:
+
+Quick testing in LiveKit Playground
+Development/debugging without building frontend
+Token validation
+
 ### n8n Integration Examples
 
 #### AI Voice Agent Workflow

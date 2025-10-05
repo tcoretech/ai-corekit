@@ -1839,6 +1839,8 @@ services:
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     ports:
       - "7880:7880"
+      - "7882:7882/tcp"
+      - "50000-50100:50000-50100/udp"
     depends_on:
       redis:
         condition: service_healthy
@@ -1847,24 +1849,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
-
-  # LiveKit SFU - Media routing (like jitsi-jvb)
-  livekit-sfu:
-    image: livekit/livekit-server:latest
-    container_name: livekit-sfu
-    profiles: ["livekit"]
-    restart: unless-stopped
-    ports:
-      - "7882:7882/tcp"   # TURN/TCP
-      - "50000-50100:50000-50100/udp"  # WebRTC Media (reduced range)
-    environment:
-      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
-      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
-      - NODE_IP=${JVB_DOCKER_HOST_ADDRESS}  # Same as Jitsi JVB
-    depends_on:
-      livekit-server:
-        condition: service_healthy
 
   livekit-agents:
     image: python:3.11-slim

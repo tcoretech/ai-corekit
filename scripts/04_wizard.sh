@@ -75,6 +75,7 @@ base_services_data=(
     "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
     "livekit" "LiveKit (Real-time voice & video - WebRTC, REQUIRES UDP 50000-50100!)"
     "vaultwarden" "Vaultwarden (Self-hosted Bitwarden-compatible password manager)"
+    "ai-security" "AI Security Suite - LLM Guard + Presidio (AI safety & GDPR-compliant PII)"
     "kopia" "Kopia (Fast and secure backup with Cloud and WebDAV storage)"
     "mailserver" "Docker-Mailserver (Production email server for all services)"
     "snappymail" "SnappyMail (Modern webmail client for Docker-Mailserver)"

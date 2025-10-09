@@ -802,6 +802,42 @@ if is_profile_active "vaultwarden"; then
   echo "Documentation: https://github.com/dani-garcia/vaultwarden"
 fi
 
+if is_profile_active "ai-security"; then
+  echo
+  echo "================================= AI Security Suite ==================="
+  echo
+  echo "🛡️  LLM Guard (Prompt Injection Protection)"
+  echo "  Internal API: http://llm-guard:8000"
+  echo "  API Token: ${LLM_GUARD_TOKEN:-<not_set_in_env>}"
+  echo
+  echo "🔐  Microsoft Presidio (GDPR-Compliant PII Handling)"
+  echo "  Analyzer API: http://presidio-analyzer:3000"
+  echo "  Anonymizer API: http://presidio-anonymizer:3000"
+  echo "  Min Score: ${PRESIDIO_MIN_SCORE:-0.5}"
+  echo
+  echo "📚  n8n Integration Examples:"
+  echo
+  echo "  LLM Guard - Pre-processing check:"
+  echo "    POST http://llm-guard:8000/analyze/prompt"
+  echo "    Headers: { \"Authorization\": \"Bearer \${LLM_GUARD_TOKEN}\" }"
+  echo "    Body: { \"prompt\": \"user input text\" }"
+  echo
+  echo "  Presidio - PII Detection:"
+  echo "    POST http://presidio-analyzer:3000/analyze"
+  echo "    Body: { \"text\": \"...\", \"language\": \"de\" }"
+  echo
+  echo "  Presidio - Anonymization:"
+  echo "    POST http://presidio-anonymizer:3000/anonymize"
+  echo "    Body: { \"text\": \"...\", \"analyzer_results\": [...] }"
+  echo
+  echo "💡 Workflow Pattern:"
+  echo "  User Input → LLM Guard (security) → Presidio (PII) → LLM → Output"
+  echo
+  echo "Documentation:"
+  echo "  LLM Guard: https://llm-guard.com/docs"
+  echo "  Presidio: https://microsoft.github.io/presidio"
+fi
+
 if is_profile_active "kopia"; then
   echo
   echo "================================= Kopia Backup ========================"

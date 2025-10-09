@@ -2372,3 +2372,65 @@ services:
       - chatterbox-tts
     environment:
       - VITE_API_URL=http://chatterbox-tts:5123
+
+  # ============================================================================
+  # AI SECURITY SUITE - LLM Protection & GDPR-compliant PII Detection
+  # ============================================================================
+  
+  # LLM Guard - AI Security & Prompt Protection
+  llm-guard:
+    image: laiyer/llm-guard-api:latest
+    container_name: llm-guard
+    profiles: ["ai-security"]
+    restart: unless-stopped
+    environment:
+      - AUTH_TOKEN=${LLM_GUARD_TOKEN}
+      - LOG_LEVEL=${LLM_GUARD_LOG_LEVEL:-INFO}
+      - APP_WORKERS=2
+      - CACHE_MAX_SIZE=100
+      - CACHE_TTL=3600
+      - SCAN_FAIL_FAST=false
+    volumes:
+      - ./shared:/data/shared
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Presidio Analyzer - PII Detection (GDPR)
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    container_name: presidio-analyzer
+    profiles: ["ai-security"]
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      # Enable German and other EU languages for GDPR
+      - RECOGNIZERS_STORE_SPI_ADDITIONAL_LANGUAGES=de,fr,es,it,nl
+      - ANALYZER_MIN_SCORE=${PRESIDIO_MIN_SCORE:-0.5}
+    volumes:
+      - ./shared:/data/shared
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Presidio Anonymizer - Data Anonymization
+  presidio-anonymizer:
+    image: mcr.microsoft.com/presidio-anonymizer:latest
+    container_name: presidio-anonymizer
+    profiles: ["ai-security"]
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+    volumes:
+      - ./shared:/data/shared
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

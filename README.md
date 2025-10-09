@@ -281,6 +281,19 @@ Pre-installed in the n8n container for seamless media manipulation:
 | **[Gotenberg](https://github.com/gotenberg/gotenberg)** | Document conversion API | PDF generation, HTML to PDF, Office conversions | Internal API |
 | **[Stirling-PDF](https://github.com/Stirling-Tools/Stirling-PDF)** | Complete PDF toolkit with 100+ features | Merge, split, OCR, sign, watermark, convert documents | `pdf.yourdomain.com` |
 
+### 🛡️ AI Security & Compliance
+
+| Tool | Description | Use Cases | Access |
+|------|-------------|-----------|--------|
+| **[LLM Guard](https://github.com/protectai/llm-guard)** | AI security toolkit for LLM applications | Prompt injection detection, PII scanning, toxicity filtering, jailbreak prevention | Internal API |
+| **[Microsoft Presidio](https://github.com/microsoft/presidio)** | GDPR-compliant PII detection & anonymization | Multi-language PII detection (DE/FR/ES/IT/NL), data anonymization, German ID formats | Internal API |
+
+**Security Features:**
+- LLM Guard: Real-time threat detection for AI applications
+- Presidio: Enterprise-grade PII handling with customizable recognizers
+- Combined workflow: Input validation → PII detection → LLM processing → Output sanitization
+- No external access required - internal APIs only for n8n integration
+
 ---
 
 ## 🚀 Installation
@@ -495,6 +508,505 @@ docker start vaultwarden
 - **Storage:** ~100MB base + user data
 - **CPU:** Minimal, only during access
 - **Perfect for VPS:** Designed for resource-constrained environments
+
+---
+
+# 🛡️ AI Security Suite - LLM Guard + Microsoft Presidio
+
+Enterprise-grade AI security and GDPR-compliant PII protection for your LLM applications. Protect against prompt injection, detect sensitive data, and ensure regulatory compliance—all running locally within your infrastructure.
+
+## Why AI Security Suite for AI LaunchKit?
+
+With LLMs processing sensitive user data across 40+ services, security and compliance become critical. The AI Security Suite provides:
+- **Prompt Injection Protection:** Detect and block malicious prompts trying to manipulate AI behavior
+- **PII Detection & Anonymization:** GDPR-compliant handling of personal data across EU languages
+- **Toxicity Filtering:** Prevent harmful or biased content in LLM outputs
+- **Data Leakage Prevention:** Scan for secrets, API keys, and sensitive information
+- **Multi-Language Support:** Native support for German, French, Spanish, Italian, Dutch
+- **Zero External Dependencies:** All processing happens locally—no data leaves your server
+
+## Components Overview
+
+### LLM Guard - AI Application Security
+**Purpose:** Real-time threat detection for LLM interactions  
+**Access:** Internal API only (`http://llm-guard:8000`)  
+**Authentication:** Bearer token via `LLM_GUARD_TOKEN`
+
+**Key Features:**
+- Prompt injection & jailbreak detection
+- Secrets scanner (API keys, passwords, tokens)
+- Toxicity & bias detection
+- Output validation & sanitization
+- Code injection prevention
+- URL & regex-based filtering
+
+### Microsoft Presidio - PII Detection & Anonymization
+**Purpose:** GDPR-compliant personal data handling  
+**Access:** Internal APIs only  
+- Analyzer: `http://presidio-analyzer:3000`
+- Anonymizer: `http://presidio-anonymizer:3000`
+
+**Key Features:**
+- Multi-language PII detection (DE, FR, ES, IT, NL, EN)
+- German-specific recognizers (Personalausweis, Steuernummer, etc.)
+- Customizable confidence thresholds
+- Multiple anonymization operators (mask, replace, redact, hash)
+- Context-aware entity recognition
+
+## Initial Setup
+
+**Configuration Location:**
+Both services are pre-configured and ready to use. Configuration files are located at:
+- LLM Guard: `./config/llm-guard/scanners.yml`
+- Presidio: `./config/presidio/` (optional custom recognizers)
+
+**API Token:**
+Your `LLM_GUARD_TOKEN` is auto-generated during installation. Find it in your `.env` file.
+
+**Minimum Score Adjustment:**
+The `PRESIDIO_MIN_SCORE` setting (default: 0.5) controls detection sensitivity:
+- **Lower (0.3-0.4):** More detections, more false positives
+- **Higher (0.6-0.8):** Fewer false positives, might miss some PII
+- Adjust in `.env` file, then restart: `docker compose restart presidio-analyzer`
+
+## n8n Integration Examples
+
+### Example 1: Pre-LLM Security Check
+
+**Workflow:** User Input → LLM Guard → Presidio → LLM → Response
+
+```javascript
+// 1. Webhook Trigger: Receive user input
+// Input: {{ $json.userMessage }}
+
+// 2. HTTP Request Node: LLM Guard Security Check
+Method: POST
+URL: http://llm-guard:8000/analyze/prompt
+Headers: {
+  "Authorization": "Bearer {{$env.LLM_GUARD_TOKEN}}",
+  "Content-Type": "application/json"
+}
+Body: {
+  "prompt": "{{ $json.userMessage }}"
+}
+
+// 3. IF Node: Check if prompt is safe
+Condition: {{ $json.is_safe }} === true
+
+// 4a. If SAFE → HTTP Request: Presidio PII Detection
+Method: POST
+URL: http://presidio-analyzer:3000/analyze
+Body: {
+  "text": "{{ $('Webhook').item.json.userMessage }}",
+  "language": "de"
+}
+
+// 4b. If UNSAFE → Return error to user
+Output: "Your input contains potentially harmful content"
+
+// 5. IF Node: Check if PII detected
+Condition: {{ $json.length }} > 0
+
+// 6a. If PII FOUND → HTTP Request: Anonymize
+Method: POST
+URL: http://presidio-anonymizer:3000/anonymize
+Body: {
+  "text": "{{ $('Webhook').item.json.userMessage }}",
+  "analyzer_results": {{ $json }},
+  "operators": {
+    "DEFAULT": { "type": "replace", "new_value": "<REDACTED>" }
+  }
+}
+
+// 6b. If NO PII → Use original text
+// Continue with anonymized text to LLM
+
+// 7. OpenAI/Ollama Node: Send to LLM
+// Use either anonymized or original text
+
+// 8. HTTP Request: Validate LLM Output (Optional)
+Method: POST
+URL: http://llm-guard:8000/analyze/output
+Headers: { "Authorization": "Bearer {{$env.LLM_GUARD_TOKEN}}" }
+Body: {
+  "prompt": "{{ $('Webhook').item.json.userMessage }}",
+  "output": "{{ $('OpenAI').item.json.choices[0].message.content }}"
+}
+
+// 9. Return sanitized response to user
+```
+
+### Example 2: PII Anonymization for Data Export
+
+**Workflow:** Extract customer data → Detect PII → Anonymize → Export GDPR-compliant dataset
+
+```javascript
+// 1. Postgres Node: Fetch customer records
+SQL: SELECT * FROM customers WHERE created_at > NOW() - INTERVAL '30 days'
+
+// 2. Function Node: Combine fields into text
+const text = `
+  Name: ${$json.name}
+  Email: ${$json.email}
+  Phone: ${$json.phone}
+  Address: ${$json.address}
+  Notes: ${$json.notes}
+`;
+return { text, original: $json };
+
+// 3. HTTP Request: Presidio Analyzer
+Method: POST
+URL: http://presidio-analyzer:3000/analyze
+Body: {
+  "text": "{{ $json.text }}",
+  "language": "de",
+  "entities": ["PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "LOCATION", "IBAN"]
+}
+
+// 4. HTTP Request: Presidio Anonymizer
+Method: POST
+URL: http://presidio-anonymizer:3000/anonymize
+Body: {
+  "text": "{{ $('Function').item.json.text }}",
+  "analyzer_results": {{ $json }},
+  "operators": {
+    "PERSON": { "type": "replace", "new_value": "PERSON_{{index}}" },
+    "EMAIL_ADDRESS": { "type": "mask", "masking_char": "*", "chars_to_mask": 6, "from_end": false },
+    "PHONE_NUMBER": { "type": "mask", "masking_char": "*", "chars_to_mask": 7, "from_end": false },
+    "IBAN": { "type": "replace", "new_value": "IBAN_REDACTED" }
+  }
+}
+
+// 5. Function Node: Parse anonymized result
+const anonymized = $json.text;
+const original = $('Function').item.json.original;
+return { ...original, anonymized_data: anonymized };
+
+// 6. Write to File or Database
+// Export anonymized dataset for analysis
+```
+
+### Example 3: Real-time Chat Moderation
+
+**Workflow:** Chat message → Security check → Toxicity filter → PII removal → Forward to chat
+
+```javascript
+// 1. Webhook: Incoming chat message
+// Input: { "user_id": "123", "message": "...", "channel": "support" }
+
+// 2. HTTP Request: LLM Guard - Full scan
+Method: POST
+URL: http://llm-guard:8000/analyze/prompt
+Headers: { "Authorization": "Bearer {{$env.LLM_GUARD_TOKEN}}" }
+Body: {
+  "prompt": "{{ $json.message }}",
+  "scanners": ["Toxicity", "PromptInjection", "Secrets", "BanTopics"]
+}
+
+// 3. IF Node: Message is clean
+Condition: {{ $json.is_safe }} === true
+
+// 4. HTTP Request: Presidio - Remove PII
+Method: POST
+URL: http://presidio-analyzer:3000/analyze
+Body: {
+  "text": "{{ $('Webhook').item.json.message }}",
+  "language": "de"
+}
+
+// 5. HTTP Request: Anonymize if needed
+Method: POST
+URL: http://presidio-anonymizer:3000/anonymize
+Body: {
+  "text": "{{ $('Webhook').item.json.message }}",
+  "analyzer_results": {{ $json }}
+}
+
+// 6. Post to Chat System
+// Send cleaned message to Slack/Discord/etc.
+
+// 7. Log for compliance
+// Store original + anonymized in audit log
+```
+
+## Advanced Configuration
+
+### Custom LLM Guard Scanners
+
+Edit `./config/llm-guard/scanners.yml`:
+
+```yaml
+- type: Toxicity
+  params:
+    threshold: 0.5
+    use_onnx: true
+
+- type: PromptInjection
+  params:
+    threshold: 0.9
+    use_onnx: true
+
+- type: Secrets
+  params:
+    redact_mode: all
+
+- type: BanTopics
+  params:
+    topics: ["violence", "hate_speech"]
+    threshold: 0.75
+```
+
+Restart: `docker compose restart llm-guard`
+
+### Custom Presidio Recognizers
+
+Create custom German recognizers for specific formats:
+
+**Example: German Tax ID (Steuernummer)**
+
+File: `./config/presidio/custom_recognizers.py`
+
+```python
+from presidio_analyzer import Pattern, PatternRecognizer
+
+class GermanTaxIdRecognizer(PatternRecognizer):
+    def __init__(self):
+        patterns = [
+            Pattern(
+                "German Tax ID",
+                r"\b\d{2}/\d{3}/\d{5}\b",  # Format: 12/345/67890
+                0.7
+            )
+        ]
+        super().__init__(
+            supported_entity="DE_TAX_ID",
+            patterns=patterns,
+            context=["Steuernummer", "Steuer-ID", "Tax"]
+        )
+```
+
+Mount and restart:
+```bash
+docker compose restart presidio-analyzer
+```
+
+### Multi-Language Support
+
+Presidio automatically loads language models for:
+- **German (de):** Personalausweis, Steuernummer, German names
+- **French (fr):** Numéro de sécurité sociale
+- **Spanish (es):** NIE, DNI
+- **Italian (it):** Codice Fiscale
+- **Dutch (nl):** BSN
+
+**Usage in API calls:**
+```json
+{
+  "text": "Mein Name ist Max Mustermann und meine Steuer-ID ist 12/345/67890",
+  "language": "de"
+}
+```
+
+## Common Use Cases
+
+### 1. GDPR Compliance for Customer Support
+**Problem:** Customer support chats contain PII that must be anonymized before analysis  
+**Solution:** Presidio Analyzer → Anonymizer → Store sanitized transcripts
+
+### 2. AI Assistant Input Validation
+**Problem:** Users might try prompt injection or submit malicious content  
+**Solution:** LLM Guard pre-check → Block unsafe prompts → Log attempts
+
+### 3. Data Export for Analytics
+**Problem:** Need to export customer data for analysis while protecting PII  
+**Solution:** Presidio bulk anonymization → Export masked dataset
+
+### 4. Multi-Tenant AI Applications
+**Problem:** Different customers shouldn't see each other's sensitive data  
+**Solution:** Presidio per-request anonymization → Tenant isolation
+
+### 5. LLM Output Validation
+**Problem:** LLMs might leak training data or generate harmful content  
+**Solution:** LLM Guard output scanner → Filter before showing to users
+
+## Performance Optimization
+
+**LLM Guard:**
+- CPU-optimized by default
+- Average processing: 100-200ms per request
+- Concurrent requests: Limited by `APP_WORKERS` (default: 2)
+- Increase workers in docker-compose.yml if needed
+
+**Presidio:**
+- Loads NLP models on first request (10-15 seconds)
+- Subsequent requests: 50-100ms per text
+- Consider lazy loading in production (set in config)
+
+**Scaling Tips:**
+- Use Redis caching for repeated queries
+- Batch process large datasets overnight
+- Scale horizontally by adding more containers
+
+## Monitoring & Debugging
+
+**Check Service Health:**
+```bash
+# LLM Guard
+curl http://localhost:8000/health
+
+# Presidio Analyzer
+curl http://localhost:3000/health
+
+# Presidio Anonymizer
+curl http://localhost:3000/health
+```
+
+**View Logs:**
+```bash
+docker logs llm-guard -f
+docker logs presidio-analyzer -f
+docker logs presidio-anonymizer -f
+```
+
+**Common Issues:**
+
+**1. LLM Guard returns 401 Unauthorized**
+- Check `LLM_GUARD_TOKEN` in `.env`
+- Verify `Authorization: Bearer <token>` header
+
+**2. Presidio not detecting German PII**
+- Ensure `language: de` in request body
+- Check `PRESIDIO_MIN_SCORE` threshold
+- Add context words for better detection
+
+**3. Slow first request**
+- Normal: Models load on first request
+- Enable lazy loading in config for faster startup
+
+## Security Best Practices
+
+### 1. Always validate user input
+```javascript
+User Input → LLM Guard → [BLOCKED] → Error
+                      → [SAFE] → Process
+```
+
+### 2. Anonymize before storage
+```javascript
+Customer Data → Presidio → Anonymize → Database
+```
+
+### 3. Validate LLM outputs
+```javascript
+LLM Response → LLM Guard Output Scanner → Filter → User
+```
+
+### 4. Log for compliance
+```javascript
+Request → Security Check → Log (timestamp, result, action) → Audit Trail
+```
+
+### 5. Regular config reviews
+- Review banned topics quarterly
+- Update PII patterns for new regulations
+- Adjust thresholds based on false positive rate
+
+## Integration with Other Services
+
+### Langfuse Integration
+Track AI security metrics:
+```javascript
+// After LLM Guard check
+POST http://langfuse-web:3000/api/public/ingestion
+Body: {
+  "trace_id": "{{ $('Webhook').item.json.trace_id }}",
+  "metadata": {
+    "security_score": {{ $json.score }},
+    "threats_detected": {{ $json.detected_threats }}
+  }
+}
+```
+
+### Open WebUI Integration
+Add security layer to chat interface:
+```javascript
+// Create n8n webhook that wraps Open WebUI
+OpenWebUI → n8n webhook → LLM Guard → Presidio → Ollama → Response
+```
+
+### Supabase Row-Level Security
+Combine with Presidio for database-level PII protection:
+```sql
+CREATE POLICY anonymize_pii ON customer_data
+FOR SELECT USING (
+  current_user_role() = 'admin' OR
+  pii_anonymized = true
+);
+```
+
+## Compliance & Certifications
+
+**GDPR Compliance:**
+- Presidio is designed for GDPR Article 25 (data protection by design)
+- Supports right to erasure (anonymization = deletion)
+- Audit logs for Article 30 (records of processing)
+
+**Industry Standards:**
+- NIST Privacy Framework compatible
+- ISO 27001 information security principles
+- SOC 2 Type II audit requirements
+
+## Troubleshooting Guide
+
+### LLM Guard Issues
+
+**Problem:** High false positive rate  
+**Solution:** Adjust scanner thresholds in `scanners.yml`
+
+**Problem:** Slow response times  
+**Solution:** Increase `APP_WORKERS` or enable ONNX optimization
+
+**Problem:** Specific prompts not detected  
+**Solution:** Add custom patterns or use stricter thresholds
+
+### Presidio Issues
+
+**Problem:** German names not detected  
+**Solution:** Add context words like "Name", "Herr", "Frau" in request
+
+**Problem:** False positives on product codes  
+**Solution:** Increase `PRESIDIO_MIN_SCORE` or add deny list
+
+**Problem:** Missing PII entities  
+**Solution:** Check if language pack is loaded, add custom recognizers
+
+## Further Resources
+
+**LLM Guard:**
+- Documentation: https://llm-guard.com/docs
+- GitHub: https://github.com/protectai/llm-guard
+- Scanner Reference: https://llm-guard.com/docs/scanners
+
+**Microsoft Presidio:**
+- Documentation: https://microsoft.github.io/presidio
+- GitHub: https://github.com/microsoft/presidio
+- Analyzer Docs: https://microsoft.github.io/presidio/analyzer
+- Anonymizer Docs: https://microsoft.github.io/presidio/anonymizer
+
+**n8n Community:**
+- AI Security workflows: https://n8n.io/workflows (search "security")
+- Template: "LLM Guard Integration" (community-contributed)
+
+## Support
+
+**Issues or Questions?**
+1. Check service logs: `docker logs <service-name>`
+2. Test APIs with curl: `curl -X POST http://llm-guard:8000/health`
+3. Review n8n workflow execution logs
+4. Open GitHub issue: https://github.com/freddy-schuetz/ai-launchkit/issues
+
+**Contributing:**
+Found a useful pattern? Share your workflow in the community templates!
 
 ---
 

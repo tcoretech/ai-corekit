@@ -287,6 +287,7 @@ Pre-installed in the n8n container for seamless media manipulation:
 |------|-------------|-----------|--------|
 | **[LLM Guard](https://github.com/protectai/llm-guard)** | AI security toolkit for LLM applications | Prompt injection detection, PII scanning, toxicity filtering, jailbreak prevention | Internal API |
 | **[Microsoft Presidio](https://github.com/microsoft/presidio)** | GDPR-compliant PII detection & anonymization | Multi-language PII detection (DE/FR/ES/IT/NL), data anonymization, German ID formats | Internal API |
+| **[Flair NER](https://github.com/flairNLP/flair)** | State-of-the-art German & multi-language PII detection | German names/addresses, IBAN, phone numbers, 95%+ accuracy for DE text | Internal API |
 
 **Security Features:**
 - LLM Guard: Real-time threat detection for AI applications

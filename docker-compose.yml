@@ -2407,8 +2407,6 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3000
-      # Enable German and other EU languages for GDPR
-      - RECOGNIZERS_STORE_SPI_ADDITIONAL_LANGUAGES=de,fr,es,it,nl
       - ANALYZER_MIN_SCORE=${PRESIDIO_MIN_SCORE:-0.5}
     volumes:
       - ./shared:/data/shared
@@ -2434,3 +2432,22 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Flair NER - German/Multi-language PII Detection
+  flair-pii:
+    build:
+      context: ./dockerfiles/flair-pii
+      dockerfile: Dockerfile
+    container_name: flair-pii
+    profiles: ["ai-security"]
+    restart: unless-stopped
+    volumes:
+      - ./shared:/data/shared
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    networks:
+      - default

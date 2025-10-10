@@ -90,4 +90,40 @@ if [[ "$COMPOSE_PROFILES" == *"tts-chatterbox"* ]]; then
     docker compose -p localai --profile tts-chatterbox up -d
 fi
 
+# Start Vexa if selected
+if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
+    log_info "Starting Vexa services..."
+    
+    if [ -d "./vexa" ]; then
+        cd vexa
+        
+        # Build bot image
+        log_info "Building Vexa bot image..."
+        make build-bot-image || {
+            log_warning "Failed to build Vexa bot image"
+        }
+        
+        # Build all services
+        log_info "Building Vexa microservices..."
+        make build || {
+            log_warning "Failed to build Vexa services"
+        }
+        
+        # Start services
+        log_info "Starting Vexa microservices..."
+        make up || {
+            log_error "Failed to start Vexa services"
+            cd ..
+            exit 1
+        }
+        
+        cd ..
+        log_success "Vexa services started successfully"
+    else
+        log_warning "Vexa directory not found - run setup script first"
+    fi
+fi
+
+exit 0
+
 exit 0 

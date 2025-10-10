@@ -6110,7 +6110,7 @@ Vexa drops bots into online meetings (Google Meet & Teams) for live transcriptio
 ```javascript
 // HTTP Request Node Configuration
 Method: POST
-URL: http://vexa:8056/bots
+URL: http://api-gateway:8000/bots
 Headers:
   - X-API-Key: {{$env.VEXA_API_KEY}}
 Send Body: JSON
@@ -6125,7 +6125,7 @@ Send Body: JSON
 ```javascript
 // HTTP Request Node Configuration
 Method: POST
-URL: http://vexa:8056/bots
+URL: http://api-gateway:8000/bots
 Headers:
   - X-API-Key: {{$env.VEXA_API_KEY}}
 Send Body: JSON
@@ -6140,7 +6140,7 @@ Send Body: JSON
 ```javascript
 // HTTP Request Node Configuration
 Method: GET
-URL: http://vexa:8056/transcripts/google_meet/{{$json.native_meeting_id}}
+URL: http://api-gateway:8000/transcripts/google_meet/{{$json.native_meeting_id}}
 Headers:
   - X-API-Key: {{$env.VEXA_API_KEY}}
 
@@ -6207,19 +6207,19 @@ VEXA_WHISPER_DEVICE=cpu  # Use 'cuda' for GPU acceleration
 
 ```bash
 # Start bot
-POST http://vexa:8056/bots
+POST http://api-gateway:8000/bots
 
 # Get transcript
-GET http://vexa:8056/transcripts/{platform}/{meeting_id}
+GET http://api-gateway:8000/transcripts/{platform}/{meeting_id}
 
 # Stop bot
-DELETE http://vexa:8056/bots/{bot_id}
+DELETE http://api-gateway:8000/bots/{bot_id}
 
 # Health check
-GET http://vexa:8056/health
+GET http://api-gateway:8000/health
 
 # WebSocket streaming (advanced)
-WS ws://vexa:8056/stream/{meeting_id}
+WS ws://api-gateway:8000/stream/{meeting_id}
 ```
 
 **Documentation:** https://github.com/Vexa-ai/vexa  

@@ -987,8 +987,8 @@ if is_profile_active "vexa"; then
   echo "  ⏳ Zoom (Coming Soon)"
   echo
   echo "Access:"
-  echo "  Internal API: http://vexa:8056"
-  echo "  Admin API: http://vexa:8057 (internal only)"
+  echo "  Internal API: http://api-gateway:8000"
+  echo "  Admin API: http://admin-api:8001 (internal only)"
   echo
   echo "Authentication:"
   echo "  API Key: ${VEXA_API_KEY:-<not_set_in_env>}"
@@ -996,7 +996,7 @@ if is_profile_active "vexa"; then
   echo
   echo "n8n Integration Example (Google Meet):"
   echo "  Method: POST"
-  echo "  URL: http://vexa:8056/bots"
+  echo "  URL: http://api-gateway:8000/bots"
   echo "  Headers: { \"X-API-Key\": \"${VEXA_API_KEY}\" }"
   echo "  Body: {"
   echo "    \"platform\": \"google_meet\","
@@ -1005,7 +1005,7 @@ if is_profile_active "vexa"; then
   echo
   echo "Get Transcript:"
   echo "  Method: GET"
-  echo "  URL: http://vexa:8056/transcripts/google_meet/xxx-xxxx-xxx"
+  echo "  URL: http://api-gateway:8000/transcripts/google_meet/xxx-xxxx-xxx"
   echo "  Headers: { \"X-API-Key\": \"${VEXA_API_KEY}\" }"
   echo
   echo "Whisper Configuration:"

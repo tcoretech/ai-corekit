@@ -101,7 +101,11 @@ log_info "========== STEP 4a: Setting up Perplexica (if selected) =========="
 bash "$SCRIPT_DIR/04a_setup_perplexica.sh" || { log_error "Perplexica setup failed"; exit 1; }
 log_success "Perplexica setup complete!"
 
-log_info "========== STEP 4b: Building Cal.com (if selected) =========="
+log_info "========== STEP 4b: Setting up Vexa (if selected) =========="
+bash "$SCRIPT_DIR/04a_setup_vexa.sh" || { log_error "Vexa setup failed"; exit 1; }
+log_success "Vexa setup complete!"
+
+log_info "========== STEP 4c: Building Cal.com (if selected) =========="
 # Check if calcom profile is in COMPOSE_PROFILES
 if grep -q "calcom" .env 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"calcom"* ]]; then
     if [ -f "$SCRIPT_DIR/build_calcom.sh" ]; then

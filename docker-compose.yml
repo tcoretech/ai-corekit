@@ -72,6 +72,7 @@ volumes:
   chatterbox_models:
   perplexica_data:
   livekit_data:
+  vexa_data:
 
 x-n8n: &service-n8n
   build:
@@ -2451,3 +2452,65 @@ services:
       start_period: 120s
     networks:
       - default
+
+  # ============================================================================
+  # VEXA - Real-time Meeting Transcription API (Google Meet & Teams)
+  # ============================================================================
+  
+  # Vexa Database Init - Create database
+  vexa-init:
+    image: postgres:17
+    container_name: vexa-init
+    profiles: ["vexa"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      sh -c "
+      psql -h postgres -U postgres -c \"CREATE DATABASE vexa\" || true &&
+      echo 'Vexa database ready'
+      "
+    restart: "no"
+
+  # Vexa Main Service
+  vexa:
+    image: ghcr.io/vexa-ai/vexa:latest
+    container_name: vexa
+    profiles: ["vexa"]
+    restart: unless-stopped
+    volumes:
+      - vexa_data:/app/data
+      - ./shared:/data/shared
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/vexa
+      
+      # API Configuration
+      - API_KEY=${VEXA_API_KEY}
+      - ADMIN_API_TOKEN=${VEXA_ADMIN_TOKEN}
+      
+      # Redis Configuration
+      - REDIS_URL=redis://redis:6379
+      
+      # Whisper Configuration
+      - WHISPER_MODEL=${VEXA_WHISPER_MODEL:-base}
+      - WHISPER_DEVICE=${VEXA_WHISPER_DEVICE:-cpu}
+      
+      # Service URLs (internal)
+      - API_HOST=http://vexa:8056
+      - ADMIN_API_HOST=http://vexa:8057
+    depends_on:
+      vexa-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8056/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

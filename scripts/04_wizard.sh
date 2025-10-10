@@ -99,6 +99,7 @@ base_services_data=(
     "speech" "Speech Stack (Whisper ASR + OpenedAI TTS - CPU optimized)"
     "tts-chatterbox" "TTS Chatterbox (State-of-the-art TTS - ElevenLabs alternative)"
     "scriberr" "Scriberr (AI audio transcription with speaker diarization)"
+    "vexa" "Vexa (Live meeting transcription - Google Meet & Teams)"
     "ocr" "OCR Bundle (Tesseract + EasyOCR - Extract text from images/PDFs)"
     "libretranslate" "LibreTranslate (Self-hosted translation API - 50+ languages)"
 )

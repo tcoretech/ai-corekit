@@ -974,6 +974,50 @@ if is_profile_active "tts-chatterbox"; then
   echo "Model Info: https://www.resemble.ai/chatterbox/"
 fi
 
+# Vexa Meeting Transcription Report
+if is_profile_active "vexa"; then
+  echo
+  echo "================================= Vexa (Meeting Transcription) ========"
+  echo
+  echo "🎙️ Real-time Meeting Transcription API (Google Meet & Teams)"
+  echo
+  echo "Platform Support:"
+  echo "  ✅ Google Meet (Live)"
+  echo "  ✅ Microsoft Teams (Live)"
+  echo "  ⏳ Zoom (Coming Soon)"
+  echo
+  echo "Access:"
+  echo "  Internal API: http://vexa:8056"
+  echo "  Admin API: http://vexa:8057 (internal only)"
+  echo
+  echo "Authentication:"
+  echo "  API Key: ${VEXA_API_KEY:-<not_set_in_env>}"
+  echo "  Admin Token: ${VEXA_ADMIN_TOKEN:-<not_set_in_env>}"
+  echo
+  echo "n8n Integration Example (Google Meet):"
+  echo "  Method: POST"
+  echo "  URL: http://vexa:8056/bots"
+  echo "  Headers: { \"X-API-Key\": \"${VEXA_API_KEY}\" }"
+  echo "  Body: {"
+  echo "    \"platform\": \"google_meet\","
+  echo "    \"native_meeting_id\": \"xxx-xxxx-xxx\""
+  echo "  }"
+  echo
+  echo "Get Transcript:"
+  echo "  Method: GET"
+  echo "  URL: http://vexa:8056/transcripts/google_meet/xxx-xxxx-xxx"
+  echo "  Headers: { \"X-API-Key\": \"${VEXA_API_KEY}\" }"
+  echo
+  echo "Whisper Configuration:"
+  echo "  Model: ${VEXA_WHISPER_MODEL:-base}"
+  echo "  Device: ${VEXA_WHISPER_DEVICE:-cpu}"
+  echo "  Models: tiny (fastest) → base → medium → large (best quality)"
+  echo
+  echo "Documentation: https://github.com/Vexa-ai/vexa"
+  echo "n8n Tutorial: https://vexa.ai/blog/google-meet-transcription-n8n-workflow"
+  echo
+fi
+
 if is_profile_active "scriberr"; then
   echo
   echo "================================= Scriberr ============================"

@@ -117,13 +117,18 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
             exit 1
         }
         
+        # Initialize database (NEW!)
+        log_info "Initializing Vexa database..."
+        sleep 10  # Wait for postgres to be fully ready
+        make migrate-or-init || {
+            log_warning "Failed to initialize Vexa database - you may need to run manually"
+        }
+        
         cd ..
         log_success "Vexa services started successfully"
     else
         log_warning "Vexa directory not found - run setup script first"
     fi
 fi
-
-exit 0
 
 exit 0 

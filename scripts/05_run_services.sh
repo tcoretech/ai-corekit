@@ -93,22 +93,18 @@ fi
 # Start Vexa if selected
 if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     log_info "Starting Vexa services..."
-    
     if [ -d "./vexa" ]; then
         cd vexa
-        
         # Build bot image
         log_info "Building Vexa bot image..."
         make build-bot-image || {
             log_warning "Failed to build Vexa bot image"
         }
-        
         # Build all services
         log_info "Building Vexa microservices..."
         make build || {
             log_warning "Failed to build Vexa services"
         }
-        
         # Start services
         log_info "Starting Vexa microservices..."
         make up || {
@@ -116,13 +112,19 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
             cd ..
             exit 1
         }
-        
         # Initialize database (NEW!)
         log_info "Initializing Vexa database..."
         sleep 10  # Wait for postgres to be fully ready
         make migrate-or-init || {
             log_warning "Failed to initialize Vexa database - you may need to run manually"
         }
+        
+        # Configure PostgreSQL password encryption for asyncpg compatibility
+        log_info "Configuring Vexa PostgreSQL password encryption..."
+        docker compose exec -T postgres psql -U postgres -c "ALTER SYSTEM SET password_encryption = 'md5';" 2>/dev/null || true
+        docker compose restart postgres
+        sleep 5
+        log_success "Vexa PostgreSQL configured"
         
         cd ..
         log_success "Vexa services started successfully"

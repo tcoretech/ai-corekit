@@ -115,15 +115,6 @@ EOF
         log_info "pg_hba.conf mount already configured"
     fi
 
-    # Set password encryption to md5 (for asyncpg compatibility)
-    log_info "Setting PostgreSQL password encryption to md5..."
-    docker compose up -d postgres
-    sleep 5
-    docker compose exec -T postgres psql -U postgres -c "ALTER SYSTEM SET password_encryption = 'md5';" 2>/dev/null || true
-    docker compose restart postgres
-    sleep 3
-    log_success "PostgreSQL password encryption configured"
-
     # Create .env file for Vexa from AI LaunchKit variables
     log_info "Creating Vexa .env file..."
     cat > .env << EOF

@@ -16,13 +16,13 @@ fi
 
 if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     log_info "Initializing Vexa with default user and API token..."
-
+    
     cd "$PROJECT_ROOT/vexa"
-
+    
     # Wait for Admin API to be ready
     log_info "Waiting for Vexa Admin API to be ready..."
     for i in {1..60}; do
-        if curl -sf http://localhost:8057/health >/dev/null 2>&1; then
+        if curl -sf http://localhost:8057/ >/dev/null 2>&1; then
             log_success "Admin API is ready"
             break
         fi
@@ -32,13 +32,13 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         fi
         sleep 2
     done
-
+    
     # Create default user via Admin API
     log_info "Creating default Vexa user..."
     USER_RESPONSE=$(curl -s -X POST http://localhost:8057/admin/users \
         -H "Content-Type: application/json" \
         -H "X-Admin-API-Key: ${VEXA_ADMIN_TOKEN}" \
-        -d '{"email":"admin@vexa.local","name":"Admin","max_concurrent_bots":10}')
+        -d "{\"email\":\"${LANGFUSE_INIT_USER_EMAIL}\",\"name\":\"Admin\",\"max_concurrent_bots\":10}")
     
     USER_ID=$(echo "$USER_RESPONSE" | jq -r '.id')
     
@@ -48,7 +48,7 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     fi
     
     log_success "User created with ID: $USER_ID"
-
+    
     # Create API token via Admin API
     log_info "Generating API token for user..."
     TOKEN_RESPONSE=$(curl -s -X POST "http://localhost:8057/admin/users/${USER_ID}/tokens" \
@@ -70,7 +70,7 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     
     log_success "API token created and saved"
     log_success "Vexa initialization complete"
-
+    
     cd "$PROJECT_ROOT"
 else
     log_info "Vexa not selected - skipping initialization"

@@ -16,9 +16,9 @@ fi
 
 if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     log_info "Vexa selected - Setting up Vexa repository..."
-
+    
     cd "$PROJECT_ROOT"
-
+    
     # Clone Vexa repository if it doesn't exist
     if [ ! -d "vexa" ]; then
         log_info "Cloning Vexa repository..."
@@ -26,8 +26,9 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
             log_error "Failed to clone Vexa repository"
             exit 1
         }
+        
         cd vexa
-
+        
         log_info "Initializing git submodules..."
         git submodule update --init --recursive || {
             log_error "Failed to initialize submodules"
@@ -37,72 +38,11 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         log_info "Vexa repository already exists"
         cd vexa
     fi
-
-    # Patch docker-compose.yml to use AI LaunchKit's network
-    log_info "Configuring Vexa to use AI LaunchKit's Docker network..."
-    if ! grep -q "external: true" docker-compose.yml; then
-        # Backup original
-        cp docker-compose.yml docker-compose.yml.backup
-
-        # Replace network configuration
-        sed -i '/^networks:/,/^[^ ]/ {
-            /^networks:/a\
-  vexa_default:\
-    name: localai_default\
-    external: true
-            /^  vexa_default:/d
-            /^    driver: bridge/d
-        }' docker-compose.yml
-
-        log_success "Vexa network configuration updated"
-    else
-        log_info "Vexa network already configured"
-    fi
-
-    # Patch bot-manager to use DOCKER_NETWORK env variable
-    log_info "Patching bot-manager to use AI LaunchKit's network..."
-    if ! grep -q "DOCKER_NETWORK" docker-compose.yml; then
-        sed -i '/bot-manager:/,/^  [a-z]/ {
-            /environment:/a\      - DOCKER_NETWORK=localai_default
-        }' docker-compose.yml
-        log_success "bot-manager network variable configured"
-    else
-        log_info "bot-manager already configured for network"
-    fi
-
-    # Create custom Postgres Dockerfile with pg_hba.conf
-    log_info "Creating custom Postgres 17 image with scram-sha-256..."
     
-    cat > Dockerfile.postgres << 'EOF'
-FROM postgres:17-alpine
-
-# Copy pg_hba.conf to override default
-COPY pg_hba.conf /usr/share/postgresql/pg_hba.conf.sample
-EOF
-
-    # Create pg_hba.conf
-    cat > pg_hba.conf << 'EOF'
-# TYPE  DATABASE        USER            ADDRESS                 METHOD
-local   all             all                                     trust
-host    all             all             127.0.0.1/32            trust
-host    all             all             ::1/128                 trust
-host    replication     all             127.0.0.1/32            trust
-host    replication     all             ::1/128                 trust
-host    all             all             all                     scram-sha-256
-EOF
-    chmod 600 pg_hba.conf
-
-    # Patch docker-compose.yml to use custom Postgres image
-    log_info "Patching docker-compose.yml to use custom Postgres 17 image..."
-    if ! grep -q "Dockerfile.postgres" docker-compose.yml; then
-        sed -i '/^  postgres:/,/^  [a-z]/ {
-            s|image: postgres:15-alpine|build:\n      context: .\n      dockerfile: Dockerfile.postgres|
-        }' docker-compose.yml
-        log_success "Postgres 17 with custom image configured"
-    else
-        log_info "Custom Postgres image already configured"
-    fi
-
+    # Keep Vexa's default bridge network (no patching needed)
+    log_info "Using Vexa's default bridge network..."
+    log_success "Network configuration kept as default"
+    
     # Patch WHISPER_LIVE_URL to use whisperlive-cpu
     log_info "Patching WHISPER_LIVE_URL for CPU deployment..."
     if grep -q "ws://traefik:8081/ws" docker-compose.yml; then
@@ -111,7 +51,7 @@ EOF
     else
         log_info "WHISPER_LIVE_URL already configured"
     fi
-
+    
     # Create .env file for Vexa from AI LaunchKit variables
     log_info "Creating Vexa .env file..."
     cat > .env << EOF
@@ -124,7 +64,7 @@ DEVICE_TYPE=${VEXA_WHISPER_DEVICE:-cpu}
 BOT_IMAGE_NAME=vexa-bot:dev
 
 # Docker Network Configuration
-DOCKER_NETWORK=localai_default
+DOCKER_NETWORK=vexa_dev_vexa_default
 
 # Exposed Host Ports (internal only, not exposed externally)
 API_GATEWAY_HOST_PORT=8056
@@ -139,9 +79,9 @@ WL_MAX_CLIENTS=10
 CONSUL_ENABLE=true
 CONSUL_HTTP_ADDR=http://consul:8500
 EOF
-
+    
     log_success "Vexa .env file created"
-
+    
     cd "$PROJECT_ROOT"
     log_info "Vexa setup completed successfully"
 else

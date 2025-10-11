@@ -986,17 +986,17 @@ if is_profile_active "vexa"; then
   echo "  ✅ Microsoft Teams (Live)"
   echo "  ⏳ Zoom (Coming Soon)"
   echo
-  echo "Access:"
-  echo "  Internal API: http://api-gateway:8000"
-  echo "  Admin API: http://admin-api:8001 (internal only)"
+  echo "Access (via exposed ports):"
+  echo "  API Gateway: http://localhost:8056 or http://YOUR_SERVER_IP:8056"
+  echo "  Admin API: http://localhost:8057 or http://YOUR_SERVER_IP:8057"
   echo
   echo "Authentication:"
-  echo "  API Key: ${VEXA_API_KEY:-<not_set_in_env>}"
+  echo "  User API Key: ${VEXA_API_KEY:-<not_set_in_env>}"
   echo "  Admin Token: ${VEXA_ADMIN_TOKEN:-<not_set_in_env>}"
   echo
   echo "n8n Integration Example (Google Meet):"
   echo "  Method: POST"
-  echo "  URL: http://api-gateway:8000/bots"
+  echo "  URL: http://localhost:8056/bots"
   echo "  Headers: { \"X-API-Key\": \"${VEXA_API_KEY}\" }"
   echo "  Body: {"
   echo "    \"platform\": \"google_meet\","
@@ -1005,7 +1005,7 @@ if is_profile_active "vexa"; then
   echo
   echo "Get Transcript:"
   echo "  Method: GET"
-  echo "  URL: http://api-gateway:8000/transcripts/google_meet/xxx-xxxx-xxx"
+  echo "  URL: http://localhost:8056/transcripts/google_meet/xxx-xxxx-xxx"
   echo "  Headers: { \"X-API-Key\": \"${VEXA_API_KEY}\" }"
   echo
   echo "Whisper Configuration:"
@@ -1013,9 +1013,9 @@ if is_profile_active "vexa"; then
   echo "  Device: ${VEXA_WHISPER_DEVICE:-cpu}"
   echo "  Models: tiny (fastest) → base → medium → large (best quality)"
   echo
-  echo "Documentation: https://github.com/Vexa-ai/vexa"
-  echo "n8n Tutorial: https://vexa.ai/blog/google-meet-transcription-n8n-workflow"
+  echo "⚠️  Note: Vexa runs in separate network. Access via exposed ports only!"
   echo
+  echo "Documentation: https://github.com/Vexa-ai/vexa"
 fi
 
 if is_profile_active "scriberr"; then

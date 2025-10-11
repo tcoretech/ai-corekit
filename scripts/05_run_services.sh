@@ -142,15 +142,18 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     log_info "Waiting for Postgres to initialize..."
     sleep 20
 
-    # KRITISCH: Postgres Password explizit setzen (workaround für Docker initdb issue)
+    # Services neu starten für clean state
+    log_info "Restarting services..."
+    sudo docker compose restart
+    sleep 15
+
+    # KRITISCH: Postgres Password explizit setzen NACH dem Restart (workaround für Docker initdb issue)
     log_info "Ensuring Postgres password is set correctly..."
     sudo docker exec vexa_dev-postgres-1 psql -U postgres -d postgres -c \
         "ALTER USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || true
-
-    # Services neu starten damit sie das neue Password nutzen
-    log_info "Restarting services to apply password..."
-    sudo docker compose restart
-    sleep 10
+    
+    # Kurz warten damit Password wirksam wird
+    sleep 5
 
     # Run smart database migration/initialization
     # This uses Vexa's own logic to detect DB state (fresh/legacy/alembic-managed)

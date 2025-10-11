@@ -65,6 +65,32 @@ else
     log_info "Cal.com not selected, skipping build"
 fi
 
+# Workaround: Setup and initialize Vexa if selected
+if grep -q "vexa" "$PROJECT_ROOT/.env" 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
+    log_info "Vexa detected - running setup and initialization..."
+    
+    # Run setup script if vexa directory doesn't exist
+    if [ ! -d "$PROJECT_ROOT/vexa" ]; then
+        log_info "Vexa directory not found - running setup script..."
+        bash "$SCRIPT_DIR/04a_setup_vexa.sh" || { log_warning "Vexa setup failed - continuing update..."; }
+    fi
+    
+    # Ensure Vexa services are running
+    if [ -d "$PROJECT_ROOT/vexa" ]; then
+        cd "$PROJECT_ROOT/vexa" || true
+        log_info "Building and starting Vexa services..."
+        sudo make build 2>/dev/null || log_warning "Vexa build failed"
+        sudo docker compose up -d 2>/dev/null || log_warning "Vexa start failed"
+        cd "$PROJECT_ROOT" || true
+        
+        # Initialize Vexa if not already done
+        bash "$SCRIPT_DIR/05a_init_vexa.sh" 2>/dev/null || log_info "Vexa already initialized"
+    fi
+fi
+
+# Execute the rest of the update process using the (potentially updated) apply_update.sh
+bash "$APPLY_UPDATE_SCRIPT"
+
 # Execute the rest of the update process using the (potentially updated) apply_update.sh
 bash "$APPLY_UPDATE_SCRIPT"
 

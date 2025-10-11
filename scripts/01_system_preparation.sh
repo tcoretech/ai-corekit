@@ -14,7 +14,7 @@ apt update -y && apt upgrade -y
 # Installing Basic Utilities
 log_info "Installing standard CLI tools..."
 apt install -y \
-  htop git curl make unzip ufw fail2ban python3 psmisc whiptail \
+  htop git curl make unzip ufw fail2ban python3 psmisc whiptail jq \
   build-essential ca-certificates gnupg lsb-release openssl \
   debian-keyring debian-archive-keyring apt-transport-https python3-pip python3-dotenv python3-yaml
 

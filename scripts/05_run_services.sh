@@ -93,37 +93,65 @@ fi
 # Start Vexa if selected
 if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     log_info "Starting Vexa services..."
-    if [ -d "./vexa" ]; then
-        cd vexa
-
-        # Build images
-        log_info "Building Vexa bot image..."
-        make build-bot-image || log_warning "Failed to build Vexa bot image"
-
-        log_info "Building Vexa microservices..."
-        make build || log_warning "Failed to build Vexa services"
-
-        # Start all services with custom Postgres 17 image
-        log_info "Starting all Vexa microservices..."
-        make up || {
-            log_error "Failed to start Vexa services"
-            cd ..
-            exit 1
-        }
-
-        # Wait for services to be ready
-        log_info "Waiting for services to initialize..."
-        sleep 15
-
-        # Run database migrations
-        log_info "Initializing Vexa database..."
-        docker compose exec -T transcription-collector alembic upgrade head || log_warning "Failed to initialize Vexa database"
-
-        cd ..
-        log_success "Vexa services started successfully"
-    else
-        log_warning "Vexa directory not found - run setup script first"
+    
+    # Check if vexa directory exists
+    if [ ! -d "./vexa" ]; then
+        log_error "Vexa directory not found - run setup script first"
+        exit 1
     fi
+    
+    # Check if docker-compose.yml exists in vexa directory
+    if [ ! -f "./vexa/docker-compose.yml" ]; then
+        log_error "Vexa docker-compose.yml not found - setup may be incomplete"
+        exit 1
+    fi
+    
+    cd vexa || {
+        log_error "Failed to enter vexa directory"
+        exit 1
+    }
+
+    # Build images
+    log_info "Building Vexa bot image..."
+    sudo -E make build-bot-image || {
+        log_warning "Failed to build Vexa bot image"
+        cd ..
+        exit 1
+    }
+
+    log_info "Building Vexa microservices..."
+    sudo -E make build || {
+        log_warning "Failed to build Vexa services"
+        cd ..
+        exit 1
+    }
+
+    # Start all services
+    log_info "Starting all Vexa microservices..."
+    sudo -E make up || {
+        log_error "Failed to start Vexa services"
+        cd ..
+        exit 1
+    }
+
+    # Wait for services to be ready
+    log_info "Waiting for Vexa services to initialize..."
+    sleep 15
+
+    # Run smart database migration/initialization
+    # This uses Vexa's own logic to detect DB state (fresh/legacy/alembic-managed)
+    log_info "Initializing Vexa database (smart migration)..."
+    sudo -E make migrate-or-init || {
+        log_error "Vexa database initialization failed"
+        log_error "Check logs with: cd vexa && sudo docker compose logs transcription-collector"
+        cd ..
+        exit 1
+    }
+
+    cd .. || exit 1
+    log_success "Vexa services started successfully"
+else
+    log_info "Vexa not selected - skipping"
 fi
 
 exit 0

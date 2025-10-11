@@ -6092,8 +6092,8 @@ First transcription downloads models (2-5 minutes)
 Processing time ≈ audio length (30min audio = 30min processing)
 
 ```markdown
-### 🎙️ Vexa - Real-time Meeting Transcription
 
+### 🎙️ Vexa - Real-time Meeting Transcription
 Vexa drops bots into online meetings (Google Meet & Teams) for live transcription with speaker identification and multi-language support.
 
 #### Features
@@ -6106,11 +6106,13 @@ Vexa drops bots into online meetings (Google Meet & Teams) for live transcriptio
 
 #### n8n Integration - Live Meeting Transcription
 
+**⚠️ Important:** Vexa runs in a separate Docker network. From n8n, use `http://localhost:8056` to access the API.
+
 **Start Bot in Google Meet:**
 ```javascript
 // HTTP Request Node Configuration
 Method: POST
-URL: http://api-gateway:8000/bots
+URL: http://localhost:8056/bots
 Headers:
   - X-API-Key: {{$env.VEXA_API_KEY}}
 Send Body: JSON
@@ -6118,14 +6120,14 @@ Send Body: JSON
   "platform": "google_meet",
   "native_meeting_id": "abc-defg-hij"
 }
-// Returns: { "bot_id": "bot_123", "status": "joining" }
+// Returns: { "id": 1, "status": "requested", "bot_container_id": "..." }
 ```
 
 **Start Bot in Microsoft Teams:**
 ```javascript
 // HTTP Request Node Configuration
 Method: POST
-URL: http://api-gateway:8000/bots
+URL: http://localhost:8056/bots
 Headers:
   - X-API-Key: {{$env.VEXA_API_KEY}}
 Send Body: JSON
@@ -6140,20 +6142,19 @@ Send Body: JSON
 ```javascript
 // HTTP Request Node Configuration
 Method: GET
-URL: http://api-gateway:8000/transcripts/google_meet/{{$json.native_meeting_id}}
+URL: http://localhost:8056/transcripts/google_meet/{{$json.native_meeting_id}}
 Headers:
   - X-API-Key: {{$env.VEXA_API_KEY}}
-
 // Returns transcript with speaker labels and timestamps
 ```
 
 **Example Workflow: Auto-Transcribe Calendar Meetings**
 ```
 1. Google Calendar Trigger → Meeting started
-2. Extract meeting link → Parse Google Meet ID
-3. HTTP Request → Start Vexa bot
-4. Wait Node → Meeting duration
-5. HTTP Request → Get full transcript
+2. Extract meeting link → Parse Google Meet ID (abc-defg-hij)
+3. HTTP Request → POST http://localhost:8056/bots (Start Vexa bot)
+4. Wait Node → Meeting duration + 2 minutes
+5. HTTP Request → GET http://localhost:8056/transcripts/google_meet/{id}
 6. HTTP Request → Send to OpenAI for summary
 7. Google Docs → Create meeting notes document
 8. Gmail → Email summary to participants
@@ -6163,7 +6164,7 @@ Headers:
 ```
 1. Schedule Trigger → Check for sales calls
 2. HTTP Request → Start bot in meeting
-3. Wait → Until meeting ends
+3. Wait → Until meeting ends (status: "completed")
 4. HTTP Request → Get transcript
 5. Code Node → Extract action items & questions
 6. HTTP Request → Update CRM (HubSpot/Salesforce)
@@ -6171,7 +6172,6 @@ Headers:
 ```
 
 #### Whisper Model Selection
-
 | Model | RAM | Speed | Quality | Best For |
 |-------|-----|-------|---------|----------|
 | **tiny** | ~1GB | Fastest | Good | Development, testing |
@@ -6180,23 +6180,22 @@ Headers:
 | **medium** | ~5GB | Slow | Great | High accuracy needed |
 | **large** | ~10GB | Slowest | Best | Maximum quality |
 
-**Configure in `.env`:**
+**Configure in `.env` before installation:**
 ```bash
 VEXA_WHISPER_MODEL=base  # Change to your preferred model
-VEXA_WHISPER_DEVICE=cpu  # Use 'cuda' for GPU acceleration
+VEXA_WHISPER_DEVICE=cpu  # Use 'cuda' for GPU acceleration (requires NVIDIA GPU)
 ```
 
 #### Tips for Best Results
-
 - **Meeting IDs**: Extract from URL (Google Meet: `meet.google.com/abc-defg-hij` → use `abc-defg-hij`)
 - **Bot joining**: Ensure "Let people join before host" is enabled in Google Meet settings
 - **First transcript**: May take 30-60 seconds after bot joins
 - **Speaker ID**: Works best with clear audio and distinct voices
 - **Meeting must be active**: Bot cannot join meetings that haven't started
 - **Teams passcode**: Required for Teams meetings with lobby enabled
+- **API Keys**: User API key is generated during installation and shown in final report
 
 #### Meeting Platform Support
-
 | Platform | Status | Meeting ID Format | Notes |
 |----------|--------|-------------------|-------|
 | **Google Meet** | ✅ Ready | `abc-defg-hij` | From meet.google.com URL |
@@ -6204,26 +6203,27 @@ VEXA_WHISPER_DEVICE=cpu  # Use 'cuda' for GPU acceleration
 | **Zoom** | ⏳ Coming Soon | - | Planned for future release |
 
 #### API Endpoints Reference
-
 ```bash
-# Start bot
-POST http://api-gateway:8000/bots
+# Start bot (returns bot info with ID and status)
+POST http://localhost:8056/bots
+Body: {"platform": "google_meet", "native_meeting_id": "abc-def-ghi"}
 
-# Get transcript
-GET http://api-gateway:8000/transcripts/{platform}/{meeting_id}
+# Get transcript (polls for updates)
+GET http://localhost:8056/transcripts/{platform}/{meeting_id}
 
-# Stop bot
-DELETE http://api-gateway:8000/bots/{bot_id}
+# Stop bot (bot auto-leaves when meeting ends)
+DELETE http://localhost:8056/bots/{meeting_id}
+
+# Admin API (requires VEXA_ADMIN_TOKEN)
+GET http://localhost:8057/admin/users
+POST http://localhost:8057/admin/users/{user_id}/tokens
 
 # Health check
-GET http://api-gateway:8000/health
-
-# WebSocket streaming (advanced)
-WS ws://api-gateway:8000/stream/{meeting_id}
+GET http://localhost:8056/
 ```
 
 **Documentation:** https://github.com/Vexa-ai/vexa  
-**n8n Tutorial:** https://vexa.ai/blog/google-meet-transcription-n8n-workflow
+**Swagger API Docs:** http://localhost:8057/docs (after installation)
 ```
 
 # TTS Chatterbox Integration Guide

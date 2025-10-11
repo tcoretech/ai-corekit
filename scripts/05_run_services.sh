@@ -103,7 +103,7 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         log_info "Building Vexa microservices..."
         make build || log_warning "Failed to build Vexa services"
         
-        # Start ALL services
+        # Start all services (Postgres now has md5 from first boot!)
         log_info "Starting all Vexa microservices..."
         make up || {
             log_error "Failed to start Vexa services"
@@ -111,33 +111,22 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
             exit 1
         }
         
-        # Wait for Postgres to be ready
-        log_info "Waiting for PostgreSQL to initialize..."
+        # Wait for services to be ready
+        log_info "Waiting for services to initialize..."
         sleep 15
         
-        # NOW configure Postgres (after make up)
-        log_info "Configuring PostgreSQL for md5 authentication..."
-        docker compose exec -T postgres psql -U postgres -c "ALTER SYSTEM SET password_encryption = 'md5';" 2>/dev/null || true
+        # Copy pg_hba.conf into running Postgres
         docker cp pg_hba.conf vexa_dev-postgres-1:/var/lib/postgresql/data/pg_hba.conf
-        docker compose restart postgres
-        sleep 10
-        docker compose exec -T postgres psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || true
         docker compose exec -T postgres psql -U postgres -c "SELECT pg_reload_conf();" 2>/dev/null || true
         
-        # Restart services that need postgres
-        docker compose restart bot-manager admin-api transcription-collector
-        sleep 5
-        
-        log_success "PostgreSQL configured"
-        
-        # Run migrations
+        # Run database migrations
         log_info "Initializing Vexa database..."
-        make migrate-or-init || log_warning "Failed to initialize database"
+        make migrate-or-init || log_warning "Failed to initialize Vexa database"
         
         cd ..
         log_success "Vexa services started successfully"
     else
-        log_warning "Vexa directory not found"
+        log_warning "Vexa directory not found - run setup script first"
     fi
 fi
 

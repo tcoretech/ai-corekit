@@ -103,16 +103,15 @@ EOF
         log_info "pg_hba.conf already exists"
     fi
 
-    # Ensure pg_hba.conf is mounted in docker-compose.yml
-    log_info "Configuring PostgreSQL to mount pg_hba.conf..."
-    if ! grep -q "pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf" docker-compose.yml; then
-        # Insert mount BEFORE postgres-data line in postgres volumes section
-        sed -i '/^  postgres:/,/^  [a-z]/ {
-            /- postgres-data:\/var\/lib\/postgresql\/data/i\      - ./pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+# Patch Postgres to start with md5 password encryption from first boot
+    log_info "Configuring Postgres startup with md5 encryption..."
+    if ! grep -q "password_encryption=md5" docker-compose.yml; then
+        sed -i '/postgres:/,/^  [a-z]/ {
+            /healthcheck:/i\    command: postgres -c password_encryption=md5
         }' docker-compose.yml
-        log_success "pg_hba.conf mount configured"
+        log_success "Postgres command configured for md5"
     else
-        log_info "pg_hba.conf mount already configured"
+        log_info "Postgres command already configured"
     fi
 
     # Create .env file for Vexa from AI LaunchKit variables

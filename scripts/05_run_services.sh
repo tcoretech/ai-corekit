@@ -93,23 +93,27 @@ fi
 # Start Vexa if selected
 if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     log_info "Starting Vexa services..."
-    
+
     # Check if vexa directory exists
     if [ ! -d "./vexa" ]; then
         log_error "Vexa directory not found - run setup script first"
         exit 1
     fi
-    
+
     # Check if docker-compose.yml exists in vexa directory
     if [ ! -f "./vexa/docker-compose.yml" ]; then
         log_error "Vexa docker-compose.yml not found - setup may be incomplete"
         exit 1
     fi
-    
+
     cd vexa || {
         log_error "Failed to enter vexa directory"
         exit 1
     }
+
+    # Clean any existing containers/volumes
+    log_info "Cleaning existing Vexa containers and volumes..."
+    sudo docker compose down -v 2>/dev/null || true
 
     # Build images
     log_info "Building Vexa bot image..."
@@ -134,9 +138,19 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         exit 1
     }
 
-    # Wait for services to be ready
-    log_info "Waiting for Vexa services to initialize..."
-    sleep 15
+    # Wait for Postgres to fully initialize
+    log_info "Waiting for Postgres to initialize..."
+    sleep 20
+
+    # KRITISCH: Postgres Password explizit setzen (workaround für Docker initdb issue)
+    log_info "Ensuring Postgres password is set correctly..."
+    sudo docker exec vexa_dev-postgres-1 psql -U postgres -d postgres -c \
+        "ALTER USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || true
+
+    # Services neu starten damit sie das neue Password nutzen
+    log_info "Restarting services to apply password..."
+    sudo docker compose restart
+    sleep 10
 
     # Run smart database migration/initialization
     # This uses Vexa's own logic to detect DB state (fresh/legacy/alembic-managed)

@@ -110,16 +110,19 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         
         # Configure Postgres BEFORE anything else
         log_info "Configuring PostgreSQL for md5 authentication..."
+        
+        # Set password_encryption
         docker compose exec -T postgres psql -U postgres -c "ALTER SYSTEM SET password_encryption = 'md5';" 2>/dev/null || true
-        docker compose restart postgres
-        sleep 5
         
-        # Drop and recreate postgres user with md5
-        docker compose exec -T postgres psql -U postgres -d postgres -c "DROP USER IF EXISTS postgres CASCADE;" 2>/dev/null || true
-        docker compose exec -T postgres psql -U postgres -d template1 -c "CREATE USER postgres WITH SUPERUSER PASSWORD 'postgres';" 2>/dev/null || true
-        
-        # Copy pg_hba.conf and reload
+        # Copy pg_hba.conf
         docker cp pg_hba.conf vexa_dev-postgres-1:/var/lib/postgresql/data/pg_hba.conf
+        
+        # Restart to apply settings
+        docker compose restart postgres
+        sleep 10
+        
+        # NOW change password (after restart with md5 active!)
+        docker compose exec -T postgres psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || true
         docker compose exec -T postgres psql -U postgres -c "SELECT pg_reload_conf();" 2>/dev/null || true
         
         log_success "PostgreSQL configured with md5 authentication"

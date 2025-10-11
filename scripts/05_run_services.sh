@@ -103,7 +103,7 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         log_info "Building Vexa microservices..."
         make build || log_warning "Failed to build Vexa services"
         
-        # Start all services (Postgres now has md5 from first boot!)
+        # Start all services (pg_hba.conf mounted with scram-sha-256!)
         log_info "Starting all Vexa microservices..."
         make up || {
             log_error "Failed to start Vexa services"
@@ -114,10 +114,6 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         # Wait for services to be ready
         log_info "Waiting for services to initialize..."
         sleep 15
-        
-        # Copy pg_hba.conf into running Postgres
-        docker cp pg_hba.conf vexa_dev-postgres-1:/var/lib/postgresql/data/pg_hba.conf
-        docker compose exec -T postgres psql -U postgres -c "SELECT pg_reload_conf();" 2>/dev/null || true
         
         # Run database migrations
         log_info "Initializing Vexa database..."

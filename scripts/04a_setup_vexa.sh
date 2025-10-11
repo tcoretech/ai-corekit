@@ -62,30 +62,16 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     # Patch bot-manager to use DOCKER_NETWORK env variable
     log_info "Patching bot-manager to use AI LaunchKit's network..."
     if ! grep -q "DOCKER_NETWORK" docker-compose.yml; then
-        # Add DOCKER_NETWORK environment variable to bot-manager service
         sed -i '/bot-manager:/,/^  [a-z]/ {
             /environment:/a\      - DOCKER_NETWORK=localai_default
         }' docker-compose.yml
-
         log_success "bot-manager network variable configured"
     else
         log_info "bot-manager already configured for network"
     fi
 
-    # Patch PostgreSQL to use md5 authentication (fixes scram-sha-256 issue)
-    log_info "Patching PostgreSQL authentication method..."
-    if ! grep -q "POSTGRES_HOST_AUTH_METHOD" docker-compose.yml; then
-        sed -i '/postgres:/,/^  [a-z]/ {
-            /environment:/a\      - POSTGRES_HOST_AUTH_METHOD=md5
-        }' docker-compose.yml
-
-        log_success "PostgreSQL authentication method configured"
-    else
-        log_info "PostgreSQL authentication already configured"
-    fi
-
-    # Create pg_hba.conf with md5 authentication
-    log_info "Creating pg_hba.conf for md5 authentication..."
+    # Create pg_hba.conf with scram-sha-256 authentication
+    log_info "Creating pg_hba.conf for scram-sha-256 authentication..."
     if [ ! -f "pg_hba.conf" ]; then
         cat > pg_hba.conf << 'EOF'
 # PostgreSQL Client Authentication Configuration File
@@ -95,7 +81,7 @@ host    all             all             127.0.0.1/32            trust
 host    all             all             ::1/128                 trust
 host    replication     all             127.0.0.1/32            trust
 host    replication     all             ::1/128                 trust
-host    all             all             all                     md5
+host    all             all             all                     scram-sha-256
 EOF
         chmod 600 pg_hba.conf
         log_success "pg_hba.conf created"
@@ -103,16 +89,22 @@ EOF
         log_info "pg_hba.conf already exists"
     fi
 
-# Patch Postgres to start with md5 password encryption from first boot
-    log_info "Configuring Postgres startup with md5 encryption..."
-    if ! grep -q "command: postgres -c password_encryption=md5" docker-compose.yml; then
-        # Insert command directly after image: line in postgres service
+    # Mount pg_hba.conf in docker-compose.yml
+    log_info "Mounting pg_hba.conf in docker-compose.yml..."
+    if ! grep -q "./pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf" docker-compose.yml; then
         sed -i '/^  postgres:/,/^  [a-z]/ {
-            /image: postgres/a\    command: postgres -c password_encryption=md5
+            /postgres-data:\/var\/lib\/postgresql\/data/a\      - ./pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
         }' docker-compose.yml
-        log_success "Postgres command configured for md5"
+        log_success "pg_hba.conf mount configured"
+    fi
+
+# Patch WHISPER_LIVE_URL to use whisperlive-cpu
+    log_info "Patching WHISPER_LIVE_URL for CPU deployment..."
+    if grep -q "ws://traefik:8081/ws" docker-compose.yml; then
+        sed -i 's|ws://traefik:8081/ws|ws://whisperlive-cpu:9090|g' docker-compose.yml
+        log_success "WHISPER_LIVE_URL patched"
     else
-        log_info "Postgres command already configured"
+        log_info "WHISPER_LIVE_URL already configured"
     fi
 
     # Create .env file for Vexa from AI LaunchKit variables

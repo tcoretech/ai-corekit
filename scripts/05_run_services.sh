@@ -119,6 +119,19 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         log_info "Initializing Vexa database..."
         make migrate-or-init || log_warning "Failed to initialize Vexa database"
         
+        # Create default user and API token
+        log_info "Creating Vexa default user and API token..."
+        docker compose exec -T postgres psql -U postgres -d vexa << EOF
+INSERT INTO users (email, name, created_at, max_concurrent_bots, data)
+VALUES ('admin@vexa.local', 'Admin', NOW(), 10, '{}')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO api_tokens (user_id, token)
+SELECT 1, '${VEXA_API_KEY}'
+WHERE NOT EXISTS (SELECT 1 FROM api_tokens WHERE user_id = 1);
+EOF
+        log_success "Vexa database initialized with default user"
+        
         cd ..
         log_success "Vexa services started successfully"
     else

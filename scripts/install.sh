@@ -123,19 +123,23 @@ log_info "========== STEP 5: Running Services =========="
 bash "$SCRIPT_DIR/05_run_services.sh" || { log_error "Running Services failed"; exit 1; }
 log_success "Running Services complete!"
 
-log_info "========== STEP 5a: Setting up Docker-Mailserver (if selected) =========="
+log_info "========== STEP 5a: Initializing Vexa (if selected) =========="
+bash "$SCRIPT_DIR/05a_init_vexa.sh" || { log_error "Vexa initialization failed"; exit 1; }
+log_success "Vexa initialization complete!"
+
+log_info "========== STEP 5b: Setting up Docker-Mailserver (if selected) =========="
 # Check if mailserver profile is in COMPOSE_PROFILES
 if grep -q "mailserver" .env 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"mailserver"* ]]; then
     if docker ps | grep -q mailserver; then
         log_info "Generating DKIM keys for Docker-Mailserver..."
         sleep 15  # Wait for container to be fully ready
-        
+
         # Load BASE_DOMAIN from .env
         BASE_DOMAIN=$(grep "^BASE_DOMAIN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-        
+
         # Generate DKIM
         docker exec mailserver setup config dkim 2>&1 | tee dkim_generation.log || true
-        
+
         # Extract the DKIM record
         if docker exec mailserver test -f /tmp/docker-mailserver/opendkim/keys/${BASE_DOMAIN}/mail.txt 2>/dev/null; then
             docker exec mailserver cat /tmp/docker-mailserver/opendkim/keys/${BASE_DOMAIN}/mail.txt > dkim_record.txt 2>/dev/null || true
@@ -206,12 +210,12 @@ if [ -f "$SCRIPT_DIR/08_generate_vaultwarden_json.sh" ]; then
         source "$PROJECT_ROOT/.env"
         set +a
     fi
-    
+
     # Export COMPOSE_PROFILES explicitly
     export COMPOSE_PROFILES
-    
+
     # Run the script with bash to ensure it executes
     bash "$SCRIPT_DIR/08_generate_vaultwarden_json.sh"
 fi
 
-exit 0 
+exit 0

@@ -70,7 +70,7 @@ if [[ "$COMPOSE_PROFILES" == *"tts-chatterbox"* ]]; then
             log_warning "Chatterbox Frontend will not be available"
         }
     fi
-    
+
     # Build the frontend if source exists
     if [ -d "./chatterbox-frontend/frontend" ]; then
         log_info "Building Chatterbox Frontend from source..."
@@ -95,43 +95,30 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     log_info "Starting Vexa services..."
     if [ -d "./vexa" ]; then
         cd vexa
-        
+
         # Build images
         log_info "Building Vexa bot image..."
         make build-bot-image || log_warning "Failed to build Vexa bot image"
-        
+
         log_info "Building Vexa microservices..."
         make build || log_warning "Failed to build Vexa services"
-        
-        # Start all services (pg_hba.conf mounted with scram-sha-256!)
+
+        # Start all services with custom Postgres 17 image
         log_info "Starting all Vexa microservices..."
         make up || {
             log_error "Failed to start Vexa services"
             cd ..
             exit 1
         }
-        
+
         # Wait for services to be ready
         log_info "Waiting for services to initialize..."
         sleep 15
-        
+
         # Run database migrations
         log_info "Initializing Vexa database..."
         docker compose exec -T transcription-collector alembic upgrade head || log_warning "Failed to initialize Vexa database"
-        
-        # Create default user and API token
-        log_info "Creating Vexa default user and API token..."
-        docker compose exec -T postgres psql -U postgres -d vexa << EOF
-INSERT INTO users (email, name, created_at, max_concurrent_bots, data)
-VALUES ('admin@vexa.local', 'Admin', NOW(), 10, '{}')
-ON CONFLICT DO NOTHING;
 
-INSERT INTO api_tokens (user_id, token)
-SELECT 1, '${VEXA_API_KEY}'
-WHERE NOT EXISTS (SELECT 1 FROM api_tokens WHERE user_id = 1);
-EOF
-        log_success "Vexa database initialized with default user"
-        
         cd ..
         log_success "Vexa services started successfully"
     else

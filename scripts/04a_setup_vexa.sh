@@ -70,31 +70,40 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         log_info "bot-manager already configured for network"
     fi
 
-    # Create pg_hba.conf as init script
-    log_info "Creating PostgreSQL init script..."
-    mkdir -p docker-entrypoint-initdb.d
-    cat > docker-entrypoint-initdb.d/01-pg_hba.sh << 'EOF'
-#!/bin/bash
-set -e
-cat > /var/lib/postgresql/data/pg_hba.conf << 'PGCONF'
+    # Create custom Postgres Dockerfile with pg_hba.conf
+    log_info "Creating custom Postgres 17 image with scram-sha-256..."
+    
+    cat > Dockerfile.postgres << 'EOF'
+FROM postgres:17-alpine
+
+# Copy pg_hba.conf to override default
+COPY pg_hba.conf /usr/share/postgresql/pg_hba.conf.sample
+EOF
+
+    # Create pg_hba.conf
+    cat > pg_hba.conf << 'EOF'
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
 local   all             all                                     trust
 host    all             all             127.0.0.1/32            trust
 host    all             all             ::1/128                 trust
 host    replication     all             127.0.0.1/32            trust
 host    replication     all             ::1/128                 trust
 host    all             all             all                     scram-sha-256
-PGCONF
 EOF
-    chmod +x docker-entrypoint-initdb.d/01-pg_hba.sh
-    
-    # Mount init script directory
-    if ! grep -q "docker-entrypoint-initdb.d" docker-compose.yml; then
+    chmod 600 pg_hba.conf
+
+    # Patch docker-compose.yml to use custom Postgres image
+    log_info "Patching docker-compose.yml to use custom Postgres 17 image..."
+    if ! grep -q "Dockerfile.postgres" docker-compose.yml; then
         sed -i '/^  postgres:/,/^  [a-z]/ {
-            /postgres-data:\/var\/lib\/postgresql\/data/a\      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+            s|image: postgres:15-alpine|build:\n      context: .\n      dockerfile: Dockerfile.postgres|
         }' docker-compose.yml
+        log_success "Postgres 17 with custom image configured"
+    else
+        log_info "Custom Postgres image already configured"
     fi
 
-# Patch WHISPER_LIVE_URL to use whisperlive-cpu
+    # Patch WHISPER_LIVE_URL to use whisperlive-cpu
     log_info "Patching WHISPER_LIVE_URL for CPU deployment..."
     if grep -q "ws://traefik:8081/ws" docker-compose.yml; then
         sed -i 's|ws://traefik:8081/ws|ws://whisperlive-cpu:9090|g' docker-compose.yml

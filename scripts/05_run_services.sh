@@ -117,7 +117,7 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         
         # Run database migrations
         log_info "Initializing Vexa database..."
-        make migrate-or-init || log_warning "Failed to initialize Vexa database"
+        docker compose exec -T transcription-collector alembic upgrade head || log_warning "Failed to initialize Vexa database"
         
         # Create default user and API token
         log_info "Creating Vexa default user and API token..."

@@ -103,31 +103,7 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         log_info "Building Vexa microservices..."
         make build || log_warning "Failed to build Vexa services"
         
-        # Start ONLY postgres first
-        log_info "Starting PostgreSQL..."
-        docker compose up -d postgres
-        sleep 15
-        
-        # Configure Postgres BEFORE anything else
-        log_info "Configuring PostgreSQL for md5 authentication..."
-        
-        # Set password_encryption
-        docker compose exec -T postgres psql -U postgres -c "ALTER SYSTEM SET password_encryption = 'md5';" 2>/dev/null || true
-        
-        # Copy pg_hba.conf
-        docker cp pg_hba.conf vexa_dev-postgres-1:/var/lib/postgresql/data/pg_hba.conf
-        
-        # Restart to apply settings
-        docker compose restart postgres
-        sleep 10
-        
-        # NOW change password (after restart with md5 active!)
-        docker compose exec -T postgres psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || true
-        docker compose exec -T postgres psql -U postgres -c "SELECT pg_reload_conf();" 2>/dev/null || true
-        
-        log_success "PostgreSQL configured with md5 authentication"
-        
-        # NOW start all other services
+        # Start ALL services
         log_info "Starting all Vexa microservices..."
         make up || {
             log_error "Failed to start Vexa services"
@@ -135,9 +111,27 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
             exit 1
         }
         
+        # Wait for Postgres to be ready
+        log_info "Waiting for PostgreSQL to initialize..."
+        sleep 15
+        
+        # NOW configure Postgres (after make up)
+        log_info "Configuring PostgreSQL for md5 authentication..."
+        docker compose exec -T postgres psql -U postgres -c "ALTER SYSTEM SET password_encryption = 'md5';" 2>/dev/null || true
+        docker cp pg_hba.conf vexa_dev-postgres-1:/var/lib/postgresql/data/pg_hba.conf
+        docker compose restart postgres
+        sleep 10
+        docker compose exec -T postgres psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || true
+        docker compose exec -T postgres psql -U postgres -c "SELECT pg_reload_conf();" 2>/dev/null || true
+        
+        # Restart services that need postgres
+        docker compose restart bot-manager admin-api transcription-collector
+        sleep 5
+        
+        log_success "PostgreSQL configured"
+        
         # Run migrations
         log_info "Initializing Vexa database..."
-        sleep 10
         make migrate-or-init || log_warning "Failed to initialize database"
         
         cd ..
@@ -147,4 +141,4 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     fi
 fi
 
-exit 0 
+exit 0

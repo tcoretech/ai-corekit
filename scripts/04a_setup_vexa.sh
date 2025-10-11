@@ -70,32 +70,28 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
         log_info "bot-manager already configured for network"
     fi
 
-    # Create pg_hba.conf with scram-sha-256 authentication
-    log_info "Creating pg_hba.conf for scram-sha-256 authentication..."
-    if [ ! -f "pg_hba.conf" ]; then
-        cat > pg_hba.conf << 'EOF'
-# PostgreSQL Client Authentication Configuration File
-# TYPE  DATABASE        USER            ADDRESS                 METHOD
+    # Create pg_hba.conf as init script
+    log_info "Creating PostgreSQL init script..."
+    mkdir -p docker-entrypoint-initdb.d
+    cat > docker-entrypoint-initdb.d/01-pg_hba.sh << 'EOF'
+#!/bin/bash
+set -e
+cat > /var/lib/postgresql/data/pg_hba.conf << 'PGCONF'
 local   all             all                                     trust
 host    all             all             127.0.0.1/32            trust
 host    all             all             ::1/128                 trust
 host    replication     all             127.0.0.1/32            trust
 host    replication     all             ::1/128                 trust
 host    all             all             all                     scram-sha-256
+PGCONF
 EOF
-        chmod 600 pg_hba.conf
-        log_success "pg_hba.conf created"
-    else
-        log_info "pg_hba.conf already exists"
-    fi
-
-    # Mount pg_hba.conf in docker-compose.yml
-    log_info "Mounting pg_hba.conf in docker-compose.yml..."
-    if ! grep -q "./pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf" docker-compose.yml; then
+    chmod +x docker-entrypoint-initdb.d/01-pg_hba.sh
+    
+    # Mount init script directory
+    if ! grep -q "docker-entrypoint-initdb.d" docker-compose.yml; then
         sed -i '/^  postgres:/,/^  [a-z]/ {
-            /postgres-data:\/var\/lib\/postgresql\/data/a\      - ./pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+            /postgres-data:\/var\/lib\/postgresql\/data/a\      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
         }' docker-compose.yml
-        log_success "pg_hba.conf mount configured"
     fi
 
 # Patch WHISPER_LIVE_URL to use whisperlive-cpu

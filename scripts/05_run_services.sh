@@ -112,19 +112,31 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
             cd ..
             exit 1
         }
-        # Initialize database (NEW!)
+        
+        # Configure PostgreSQL IMMEDIATELY (BEFORE migrate-or-init!)
+        log_info "Configuring Vexa PostgreSQL..."
+        sleep 10  # Wait for postgres init
+        
+        # Set md5 BEFORE any migrations
+        docker compose exec -T postgres psql -U postgres -c "ALTER SYSTEM SET password_encryption = 'md5';" 2>/dev/null || true
+        
+        # Recreate postgres user with md5 hash
+        docker compose stop bot-manager admin-api transcription-collector
+        docker compose exec -T postgres psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || true
+        
+        # Copy pg_hba.conf and reload
+        docker cp pg_hba.conf vexa_dev-postgres-1:/var/lib/postgresql/data/pg_hba.conf
+        docker compose exec -T postgres psql -U postgres -c "SELECT pg_reload_conf();" 2>/dev/null || true
+        docker compose start bot-manager admin-api transcription-collector
+        
+        log_success "Vexa PostgreSQL configured"
+        
+        # NOW run migrations
         log_info "Initializing Vexa database..."
-        sleep 10  # Wait for postgres to be fully ready
+        sleep 5
         make migrate-or-init || {
             log_warning "Failed to initialize Vexa database - you may need to run manually"
         }
-        
-        # Configure PostgreSQL password encryption for asyncpg compatibility
-        log_info "Configuring Vexa PostgreSQL password encryption..."
-        docker compose exec -T postgres psql -U postgres -c "ALTER SYSTEM SET password_encryption = 'md5';" 2>/dev/null || true
-        docker compose restart postgres
-        sleep 5
-        log_success "Vexa PostgreSQL configured"
         
         cd ..
         log_success "Vexa services started successfully"

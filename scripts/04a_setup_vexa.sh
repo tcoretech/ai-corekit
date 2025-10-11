@@ -105,9 +105,10 @@ EOF
 
 # Patch Postgres to start with md5 password encryption from first boot
     log_info "Configuring Postgres startup with md5 encryption..."
-    if ! grep -q "password_encryption=md5" docker-compose.yml; then
-        sed -i '/postgres:/,/^  [a-z]/ {
-            /healthcheck:/i\    command: postgres -c password_encryption=md5
+    if ! grep -q "command: postgres -c password_encryption=md5" docker-compose.yml; then
+        # Insert command directly after image: line in postgres service
+        sed -i '/^  postgres:/,/^  [a-z]/ {
+            /image: postgres/a\    command: postgres -c password_encryption=md5
         }' docker-compose.yml
         log_success "Postgres command configured for md5"
     else

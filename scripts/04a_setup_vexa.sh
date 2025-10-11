@@ -51,7 +51,13 @@ if [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     else
         log_info "WHISPER_LIVE_URL already configured"
     fi
-    
+
+    # Fix Playwright version mismatch - use latest stable
+    log_info "Fixing Playwright Docker image version to v1.56.0..."
+    sed -i 's|mcr.microsoft.com/playwright:v[0-9.]*-jammy|mcr.microsoft.com/playwright:v1.56.0-jammy|g' \
+        services/vexa-bot/core/Dockerfile
+    log_success "Playwright version set to v1.56.0"
+
     # Create .env file for Vexa from AI LaunchKit variables
     log_info "Creating Vexa .env file..."
     cat > .env << EOF

@@ -29,6 +29,7 @@ ufw allow http
 ufw allow https
 ufw allow 10000/udp comment 'Jitsi WebRTC Media'
 ufw allow 7880/tcp comment 'LiveKit WebSocket'
+ufw allow 8056/tcp comment 'Vexa API Gateway'
 ufw reload
 ufw status
 

@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 # Source the utilities file
@@ -20,7 +19,6 @@ if [ ! -f "$APPLY_UPDATE_SCRIPT" ]; then
     exit 1
 fi
 
-
 log_info "Starting update process..."
 
 # Pull the latest repository changes
@@ -28,18 +26,13 @@ log_info "Pulling latest repository changes..."
 # Check if git is installed
 if ! command -v git &> /dev/null; then
     log_warning "'git' command not found. Skipping repository update."
-    # Decide if we should proceed without git pull or exit. Exiting is safer.
     log_error "Cannot proceed with update without git. Please install git."
     exit 1
-    # Or, if allowing update without pull:
-    # log_warning "Proceeding without pulling latest changes..."
 else
     # Change to project root for git pull
     cd "$PROJECT_ROOT" || { log_error "Failed to change directory to $PROJECT_ROOT"; exit 1; }
     git reset --hard HEAD || { log_warning "Failed to reset repository. Continuing update with potentially unreset local changes..."; }
     git pull || { log_warning "Failed to pull latest repository changes. Continuing update with potentially old version of apply_update.sh..."; }
-    # Change back to script dir or ensure apply_update.sh uses absolute paths or cd's itself
-    # (apply_update.sh already handles cd to PROJECT_ROOT, so we're good)
 fi
 
 # Update Ubuntu packages before running apply_update
@@ -52,6 +45,7 @@ else
 fi
 
 # Build Cal.com if selected (needed for updates)
+# NOTE: This checks EXISTING .env to pre-build Cal.com if it was previously selected
 log_info "Checking if Cal.com needs to be built..."
 if grep -q "calcom" "$PROJECT_ROOT/.env" 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"calcom"* ]]; then
     if [ -f "$SCRIPT_DIR/build_calcom.sh" ]; then
@@ -64,6 +58,10 @@ if grep -q "calcom" "$PROJECT_ROOT/.env" 2>/dev/null || [[ "$COMPOSE_PROFILES" =
 else
     log_info "Cal.com not selected, skipping build"
 fi
+
+# Execute the rest of the update process using the (potentially updated) apply_update.sh
+# This includes: 03_generate_secrets.sh --update, 04_wizard.sh, 05_run_services.sh
+bash "$APPLY_UPDATE_SCRIPT"
 
 # Workaround: Setup and initialize Vexa if selected
 if grep -q "vexa" "$PROJECT_ROOT/.env" 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
@@ -88,12 +86,6 @@ if grep -q "vexa" "$PROJECT_ROOT/.env" 2>/dev/null || [[ "$COMPOSE_PROFILES" == 
     fi
 fi
 
-# Execute the rest of the update process using the (potentially updated) apply_update.sh
-bash "$APPLY_UPDATE_SCRIPT"
-
-# Execute the rest of the update process using the (potentially updated) apply_update.sh
-bash "$APPLY_UPDATE_SCRIPT"
-
 # Workaround: Ensure Supabase DB starts if Supabase was selected
 if grep -q "supabase" "$PROJECT_ROOT/.env" 2>/dev/null; then
     log_info "Ensuring Supabase database container is running..."
@@ -109,6 +101,5 @@ if grep -q "libretranslate" "$PROJECT_ROOT/.env" 2>/dev/null || docker ps -a | g
     sudo docker compose -p localai --profile libretranslate up -d libretranslate 2>/dev/null || true
 fi
 
-# The final success message will now come from apply_update.sh
-log_info "Update script finished." # Changed final message
+log_info "Update script finished."
 exit 0

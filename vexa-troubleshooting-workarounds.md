@@ -152,6 +152,7 @@ The API token exists in the `.env` file but was not inserted into the database. 
 - The init script didn't run correctly during an update
 - The token comes from `03_generate_secrets.sh` but was never passed to the API
 - The database was reset but the `.env` was kept
+- The token validation incorrectly marked an invalid token as valid
 
 ### Solution - Step by Step:
 
@@ -196,64 +197,88 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 ```
 
 **Expected result:**
-- ❌ `(0 rows)` = Token missing in DB (problem confirmed!)
-- ✅ Shows token row = Token exists, different problem
+- ❌ `(0 rows)` = Token missing in DB (problem confirmed! Continue with step 4)
+- ✅ Shows token row = Token exists, skip to step 9 for n8n update
 
 ---
 
-**4. Read token from .env:**
+**4. Check what token is in .env:**
 ```bash
 cd ~/ai-launchkit
 OLD_TOKEN=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
-echo "Old token from .env: $OLD_TOKEN"
+echo "Current token in .env: $OLD_TOKEN"
 ```
 
 ---
 
-**5. Run init script again (generates valid token):**
+**5. FORCE regeneration by clearing the token in .env:**
+
+This is the critical step! If the init script incorrectly thinks the token is valid, we need to clear it first.
+
+```bash
+cd ~/ai-launchkit
+
+# Clear the token value (keep the key name)
+sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
+
+# Verify it's cleared
+sudo grep "VEXA_API_KEY=" .env | head -1
+# Should show: VEXA_API_KEY=""
+```
+
+---
+
+**6. Run init script to generate NEW token:**
 ```bash
 cd ~/ai-launchkit
 sudo bash scripts/05a_init_vexa.sh
 ```
 
-**Expected output with token problem:**
+**Expected output:**
 ```
+[INFO] Initializing Vexa with default user and API token...
+[SUCCESS] Admin API is ready
 [SUCCESS] User created with ID: 1
-[INFO] Found token in .env - validating against API...
-[WARNING] Token in .env is invalid (HTTP 403/405) - generating new one
-[SUCCESS] New API token created and saved
+[INFO] No valid token in .env - generating new API token for user...
+[SUCCESS] API token created and saved
 [SUCCESS] Vexa initialization complete
 ```
 
+**Key message:** Should say "**generating new API token**" NOT "keeping it"!
+
 ---
 
-**6. Read new token:**
+**7. Get the NEW token:**
 ```bash
+cd ~/ai-launchkit
 NEW_TOKEN=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 echo "New token: $NEW_TOKEN"
 ```
 
 ---
 
-**7. Confirm token in database:**
+**8. Verify token is NOW in database:**
 ```bash
+cd ~/ai-launchkit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT token, user_id, created_at FROM api_tokens;"
 ```
 
-**Successful output:**
+**MUST show:**
 ```
                   token                   | user_id |        created_at         
 ------------------------------------------+---------+---------------------------
- 5StNZ1MCYkSwoihUD0oDVElaitwJmEBN16QK01CN |       1 | 2025-10-13 08:28:21
+ 5StNZ1MCYkSwoihUD0oDVElaitwJmEBN16QK01CN |       1 | 2025-10-13 18:14:18
 (1 row)
 ```
 
 ✅ Token is now in the database!
 
+**If still `(0 rows)`:** Something is seriously wrong - proceed to "Complete Reset" section at the end.
+
 ---
 
-**8. Update token in n8n workflows:**
+**9. Update token in ALL n8n workflows:**
 
 Open **EVERY** n8n workflow that uses Vexa:
 
@@ -278,11 +303,14 @@ Headers:
 
 ---
 
-**9. Test workflow:**
+**10. Test the workflow:**
 ```bash
 # Test from server:
+cd ~/ai-launchkit
+API_KEY=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
+
 curl -X POST http://localhost:8056/bots \
-  -H "X-API-Key: $NEW_TOKEN" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"platform":"google_meet","native_meeting_id":"test-token"}'
 ```
@@ -298,8 +326,50 @@ curl -X POST http://localhost:8056/bots \
 ```
 
 **Error responses:**
-- `403 Forbidden` → Token is still invalid, repeat steps
+- `403 Forbidden` → Token STILL invalid - repeat steps 5-8 OR proceed to "Complete Reset"
 - `Connection refused` → Firewall problem (see Problem 3)
+
+---
+
+### Problem 2B: Init script says "keeping token" but token is not in DB
+
+**Special case symptoms:**
+```
+[INFO] Existing API token found - keeping it to maintain workflow compatibility
+[SUCCESS] Vexa initialization complete
+```
+
+BUT when checking database:
+```bash
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT COUNT(*) FROM api_tokens;"
+# Shows: 0
+```
+
+**This means:** The validation check incorrectly passed but the token was never inserted into the database.
+
+**Solution:**
+
+**FORCE regeneration by clearing token first (same as step 5 above):**
+
+```bash
+cd ~/ai-launchkit
+
+# 1. Clear token in .env
+sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
+
+# 2. Run init script again
+sudo bash scripts/05a_init_vexa.sh
+
+# 3. Verify token is in DB
+cd vexa
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT token, user_id FROM api_tokens;"
+
+# 4. Should now show 1 row!
+```
+
+**Why this works:** By clearing the token value, the init script's validation check will fail (no token to validate), forcing it to generate a fresh token and insert it into the database.
 
 ---
 
@@ -458,10 +528,10 @@ Headers:
 **Order of resolution:**
 1. **First:** Vexa directory not found (Problem 1)
 2. **Then:** Open firewall (Problem 3)
-3. **Last:** Validate/regenerate token (Problem 2)
+3. **Then:** Force token regeneration by clearing .env (Problem 2/2B)
 4. **Final:** Update n8n workflows with correct URL AND valid token
 
-**Reasoning:** Setup must be complete before tokens can be generated, and the firewall must be open for token validation to work.
+**Reasoning:** Setup must be complete before tokens can be generated, and the firewall must be open for testing to work properly.
 
 ---
 
@@ -557,13 +627,21 @@ sudo apt update && sudo apt install -y jq
 sudo grep VEXA .env
 ```
 
-### API returns empty response `{}`
+### API gives empty response `{}`
 **Problem:** Admin token or API key is wrong
-**Solution:** Regenerate tokens with Problem 2
+**Solution:** Force regenerate tokens with Problem 2, step 5
 
 ### Port 8056 doesn't appear in `docker ps`
 **Problem:** Vexa uses internal port, not exposed
 **Solution:** This is correct! Caddy/firewall forward traffic
+
+### Init script says "keeping token" but 403 errors in n8n
+**Problem:** This is Problem 2B - token validation incorrectly passed
+**Solution:** Clear token in .env first:
+```bash
+sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
+sudo bash scripts/05a_init_vexa.sh
+```
 
 ---
 
@@ -585,11 +663,19 @@ sudo grep "VEXA_API_KEY=" .env | head -1
 # Should be identical!
 ```
 
-**3. Firewall rules persist:**
+**3. Verify token is in database after updates:**
+```bash
+cd ~/ai-launchkit/vexa
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT COUNT(*) FROM api_tokens;"
+# Should show: 1 (not 0!)
+```
+
+**4. Firewall rules persist:**
 - Port 8056 will NOT be closed during updates
 - If problems occur: Add rule again (see Problem 3)
 
-**4. Create quick-check script:**
+**5. Create quick-check script:**
 ```bash
 cat > ~/check_vexa.sh << 'EOF'
 #!/bin/bash
@@ -649,10 +735,17 @@ sudo bash scripts/03_generate_secrets.sh
 sudo bash scripts/05_run_services.sh
 sudo bash scripts/05a_init_vexa.sh
 
-# 6. Get new token for n8n
+# 6. Verify token is in DB
+cd vexa
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT token, user_id FROM api_tokens;"
+# MUST show 1 row!
+
+# 7. Get new token for n8n
+cd ~/ai-launchkit
 sudo grep "VEXA_API_KEY=" .env | head -1
 
-# 7. Ensure firewall is open
+# 8. Ensure firewall is open
 sudo ufw allow 8056/tcp comment 'Vexa API Gateway'
 sudo ufw reload
 ```
@@ -684,6 +777,13 @@ echo "Docker: $(docker --version)" >> ~/vexa_system_info.txt
 echo "Firewall:" >> ~/vexa_system_info.txt
 sudo ufw status | grep 8056 >> ~/vexa_system_info.txt
 
+# Token status
+echo "Token in .env:" >> ~/vexa_system_info.txt
+sudo grep "VEXA_API_KEY=" .env | head -1 >> ~/vexa_system_info.txt
+echo "Tokens in DB:" >> ~/vexa_system_info.txt
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT COUNT(*) FROM api_tokens;" >> ~/vexa_system_info.txt 2>&1
+
 # Upload to issue
 ```
 
@@ -702,7 +802,9 @@ sudo docker compose logs --tail 20
 - [ ] Setup executed? → `sudo bash scripts/04a_setup_vexa.sh`
 - [ ] Services running? → `sudo docker ps | grep vexa` (5 containers)
 - [ ] Problem 2: Token in DB? → `sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa -c "SELECT COUNT(*) FROM api_tokens;"`
+- [ ] If token NOT in DB: Clear .env token → `sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env`
 - [ ] Init script executed? → `sudo bash scripts/05a_init_vexa.sh`
+- [ ] Verify token NOW in DB → Should show 1 row, not 0!
 - [ ] Problem 3: Firewall open? → `sudo ufw status | grep 8056`
 - [ ] Port allowed? → `sudo ufw allow 8056/tcp`
 - [ ] n8n URLs updated? → Server IP instead of localhost
@@ -711,9 +813,9 @@ sudo docker compose logs --tail 20
 
 **If all points are ✅: Vexa is ready to use!** 🎉
 
-# GERMAN VERSION
+---
 
-# Vexa Troubleshooting Guide - Nach Updates
+# Vexa Fehlerbehebungs-Guide - Nach Updates
 
 Dieser Guide löst alle bekannten Probleme, die nach einem `update.sh` auftreten können.
 
@@ -728,11 +830,11 @@ Dieser Guide löst alle bekannten Probleme, die nach einem `update.sh` auftreten
 ```
 
 ### Ursache:
-Das Update-Script hat erkannt, dass Vexa ausgewählt wurde, aber das Vexa-Repository wurde noch nicht geklont oder das Setup-Script lief nicht durch.
+Das Update-Script hat erkannt, dass Vexa ausgewählt wurde, aber das Vexa-Repository wurde noch nicht geklont oder das Setup-Script lief nicht korrekt durch.
 
 ### Lösung - Schritt für Schritt:
 
-**1. Vexa in COMPOSE_PROFILES prüfen:**
+**1. Prüfen ob Vexa in COMPOSE_PROFILES ist:**
 ```bash
 cd ~/ai-launchkit
 grep "COMPOSE_PROFILES=" .env
@@ -748,7 +850,7 @@ COMPOSE_PROFILES=n8n,vexa,...
 
 ---
 
-**2. Vexa-Verzeichnis prüfen:**
+**2. Prüfen ob Vexa-Verzeichnis existiert:**
 ```bash
 ls -la ~/ai-launchkit/vexa
 ```
@@ -788,7 +890,7 @@ sudo bash scripts/03_generate_secrets.sh
 **Das Script:**
 - Generiert `VEXA_ADMIN_TOKEN` falls fehlend
 - Behält existierende Werte bei
-- Updated die `.env` Datei
+- Aktualisiert die `.env` Datei
 
 ---
 
@@ -839,7 +941,7 @@ sudo docker ps | grep vexa
 
 ---
 
-**8. API Token abrufen für n8n:**
+**8. API Token für n8n abrufen:**
 ```bash
 sudo grep "VEXA_API_KEY=" .env | head -1
 ```
@@ -857,7 +959,7 @@ Diesen Token in n8n Workflows verwenden!
 
 ### Symptome:
 - n8n Workflow zeigt `403 Forbidden` oder `Invalid API token`
-- API Key ist in `.env` vorhanden
+- API Key ist in `.env` Datei vorhanden
 - Vexa Services laufen ohne Fehler
 
 ### Ursache:
@@ -865,6 +967,7 @@ Der API Token existiert in der `.env` Datei, wurde aber nicht in die Datenbank e
 - Das Init-Script während eines Updates nicht korrekt durchlief
 - Der Token aus `03_generate_secrets.sh` stammt, aber nie an die API übergeben wurde
 - Die Datenbank zurückgesetzt wurde, aber die `.env` beibehalten wurde
+- Die Token-Validierung fälschlicherweise einen ungültigen Token als gültig markierte
 
 ### Lösung - Schritt für Schritt:
 
@@ -909,64 +1012,88 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 ```
 
 **Erwartetes Ergebnis:**
-- ❌ `(0 rows)` = Token fehlt in DB (Problem bestätigt!)
-- ✅ Zeigt Token-Zeile = Token existiert, anderes Problem
+- ❌ `(0 rows)` = Token fehlt in DB (Problem bestätigt! Mit Schritt 4 fortfahren)
+- ✅ Zeigt Token-Zeile = Token existiert, zu Schritt 9 für n8n Update springen
 
 ---
 
-**4. Token aus .env auslesen:**
+**4. Prüfen welcher Token in .env ist:**
 ```bash
 cd ~/ai-launchkit
 OLD_TOKEN=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
-echo "Alter Token aus .env: $OLD_TOKEN"
+echo "Aktueller Token in .env: $OLD_TOKEN"
 ```
 
 ---
 
-**5. Init-Script nochmal ausführen (generiert validen Token):**
+**5. Regenerierung ERZWINGEN durch Löschen des Tokens in .env:**
+
+Dies ist der kritische Schritt! Wenn das Init-Script fälschlicherweise denkt, der Token sei gültig, müssen wir ihn zuerst löschen.
+
+```bash
+cd ~/ai-launchkit
+
+# Token-Wert löschen (Key-Name behalten)
+sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
+
+# Verifizieren dass er gelöscht ist
+sudo grep "VEXA_API_KEY=" .env | head -1
+# Sollte zeigen: VEXA_API_KEY=""
+```
+
+---
+
+**6. Init-Script ausführen um NEUEN Token zu generieren:**
 ```bash
 cd ~/ai-launchkit
 sudo bash scripts/05a_init_vexa.sh
 ```
 
-**Erwartete Ausgabe bei Token-Problem:**
+**Erwartete Ausgabe:**
 ```
+[INFO] Initializing Vexa with default user and API token...
+[SUCCESS] Admin API is ready
 [SUCCESS] User created with ID: 1
-[INFO] Found token in .env - validating against API...
-[WARNING] Token in .env is invalid (HTTP 403/405) - generating new one
-[SUCCESS] New API token created and saved
+[INFO] No valid token in .env - generating new API token for user...
+[SUCCESS] API token created and saved
 [SUCCESS] Vexa initialization complete
 ```
 
+**Wichtige Meldung:** Sollte "**generating new API token**" sagen, NICHT "keeping it"!
+
 ---
 
-**6. Neuen Token auslesen:**
+**7. Den NEUEN Token abrufen:**
 ```bash
+cd ~/ai-launchkit
 NEW_TOKEN=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 echo "Neuer Token: $NEW_TOKEN"
 ```
 
 ---
 
-**7. Token in Datenbank bestätigen:**
+**8. Verifizieren dass Token JETZT in Datenbank ist:**
 ```bash
+cd ~/ai-launchkit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT token, user_id, created_at FROM api_tokens;"
 ```
 
-**Erfolgreiche Ausgabe:**
+**MUSS zeigen:**
 ```
                   token                   | user_id |        created_at         
 ------------------------------------------+---------+---------------------------
- 5StNZ1MCYkSwoihUD0oDVElaitwJmEBN16QK01CN |       1 | 2025-10-13 08:28:21
+ 5StNZ1MCYkSwoihUD0oDVElaitwJmEBN16QK01CN |       1 | 2025-10-13 18:14:18
 (1 row)
 ```
 
 ✅ Token ist jetzt in der Datenbank!
 
+**Wenn immer noch `(0 rows)`:** Etwas ist ernsthaft falsch - zum Abschnitt "Kompletter Neustart" am Ende gehen.
+
 ---
 
-**8. Token in n8n Workflows aktualisieren:**
+**9. Token in ALLEN n8n Workflows aktualisieren:**
 
 Öffnen Sie **JEDEN** n8n Workflow, der Vexa nutzt:
 
@@ -991,11 +1118,14 @@ Headers:
 
 ---
 
-**9. Workflow testen:**
+**10. Workflow testen:**
 ```bash
-# Test von Server aus:
+# Test vom Server aus:
+cd ~/ai-launchkit
+API_KEY=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
+
 curl -X POST http://localhost:8056/bots \
-  -H "X-API-Key: $NEW_TOKEN" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"platform":"google_meet","native_meeting_id":"test-token"}'
 ```
@@ -1011,8 +1141,50 @@ curl -X POST http://localhost:8056/bots \
 ```
 
 **Fehler-Antworten:**
-- `403 Forbidden` → Token ist immer noch ungültig, Schritte wiederholen
+- `403 Forbidden` → Token IMMER NOCH ungültig - Schritte 5-8 wiederholen ODER zu "Kompletter Neustart"
 - `Connection refused` → Firewall-Problem (siehe Problem 3)
+
+---
+
+### Problem 2B: Init-Script sagt "keeping token" aber Token ist nicht in DB
+
+**Spezialfall Symptome:**
+```
+[INFO] Existing API token found - keeping it to maintain workflow compatibility
+[SUCCESS] Vexa initialization complete
+```
+
+ABER beim Prüfen der Datenbank:
+```bash
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT COUNT(*) FROM api_tokens;"
+# Zeigt: 0
+```
+
+**Das bedeutet:** Die Validierungsprüfung ist fälschlicherweise durchgelaufen, aber der Token wurde nie in die Datenbank eingefügt.
+
+**Lösung:**
+
+**Regenerierung ERZWINGEN durch vorheriges Löschen des Tokens (gleich wie Schritt 5 oben):**
+
+```bash
+cd ~/ai-launchkit
+
+# 1. Token in .env löschen
+sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
+
+# 2. Init-Script nochmal ausführen
+sudo bash scripts/05a_init_vexa.sh
+
+# 3. Verifizieren dass Token in DB ist
+cd vexa
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT token, user_id FROM api_tokens;"
+
+# 4. Sollte jetzt 1 Zeile zeigen!
+```
+
+**Warum das funktioniert:** Durch Löschen des Token-Wertes wird die Validierungsprüfung des Init-Scripts fehlschlagen (kein Token zum Validieren), wodurch es gezwungen wird, einen frischen Token zu generieren und in die Datenbank einzufügen.
 
 ---
 
@@ -1085,7 +1257,7 @@ hostname -f
 
 ---
 
-**5. Vexa API von Server aus testen:**
+**5. Vexa API vom Server aus testen:**
 ```bash
 cd ~/ai-launchkit
 API_KEY=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
@@ -1171,10 +1343,10 @@ Headers:
 **Reihenfolge der Behebung:**
 1. **Zuerst:** Vexa directory not found (Problem 1)
 2. **Dann:** Firewall öffnen (Problem 3)
-3. **Zuletzt:** Token validieren/neu generieren (Problem 2)
+3. **Dann:** Token-Regenerierung erzwingen durch Löschen in .env (Problem 2/2B)
 4. **Final:** n8n Workflows mit korrekter URL UND gültigem Token aktualisieren
 
-**Begründung:** Setup muss vollständig sein bevor Tokens generiert werden können, und die Firewall muss offen sein damit die Token-Validierung funktioniert.
+**Begründung:** Setup muss vollständig sein bevor Tokens generiert werden können, und die Firewall muss offen sein damit Tests funktionieren.
 
 ---
 
@@ -1191,7 +1363,7 @@ SERVER_IP=$(hostname -I | awk '{print $1}')
 ADMIN_TOKEN=$(sudo grep "VEXA_ADMIN_TOKEN=" .env | cut -d= -f2 | tr -d '"')
 
 echo "============================================"
-echo "Vexa Configuration:"
+echo "Vexa Konfiguration:"
 echo "============================================"
 echo "Server IP: $SERVER_IP"
 echo "API Key: $API_KEY"
@@ -1200,30 +1372,30 @@ echo "============================================"
 
 # 2. Container Status
 echo ""
-echo "Checking Vexa containers..."
+echo "Prüfe Vexa Container..."
 sudo docker ps | grep vexa | awk '{print $2}'
 
 # 3. User in DB prüfen
 echo ""
-echo "Checking users in database..."
+echo "Prüfe User in Datenbank..."
 curl -s http://localhost:8057/admin/users \
   -H "X-Admin-API-Key: $ADMIN_TOKEN" | jq -r '.[].email'
 
 # 4. Token in DB prüfen
 echo ""
-echo "Checking tokens in database..."
+echo "Prüfe Tokens in Datenbank..."
 cd ~/ai-launchkit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT LEFT(token, 20) || '...' as token, user_id FROM api_tokens;"
 
 # 5. Firewall prüfen
 echo ""
-echo "Checking firewall..."
+echo "Prüfe Firewall..."
 sudo ufw status | grep 8056
 
 # 6. API Test
 echo ""
-echo "Testing API with bot creation..."
+echo "Teste API mit Bot-Erstellung..."
 curl -X POST http://$SERVER_IP:8056/bots \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
@@ -1231,8 +1403,8 @@ curl -X POST http://$SERVER_IP:8056/bots \
 
 echo ""
 echo "============================================"
-echo "If you see a bot JSON response above with"
-echo "'status': 'requested', everything works!"
+echo "Wenn Sie oben eine Bot JSON-Antwort mit"
+echo "'status': 'requested' sehen, funktioniert alles!"
 echo "============================================"
 ```
 
@@ -1272,11 +1444,19 @@ sudo grep VEXA .env
 
 ### API gibt leere Antwort `{}`
 **Problem:** Admin Token oder API Key ist falsch
-**Lösung:** Tokens neu generieren mit Problem 2
+**Lösung:** Tokens neu generieren mit Problem 2, Schritt 5
 
 ### Port 8056 erscheint nicht in `docker ps`
 **Problem:** Vexa nutzt internen Port, wird nicht exposed
 **Lösung:** Das ist korrekt so! Caddy/Firewall leiten Traffic weiter
+
+### Init-Script sagt "keeping token" aber 403 Fehler in n8n
+**Problem:** Das ist Problem 2B - Token-Validierung ist fälschlicherweise durchgelaufen
+**Lösung:** Token in .env zuerst löschen:
+```bash
+sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
+sudo bash scripts/05a_init_vexa.sh
+```
 
 ---
 
@@ -1287,7 +1467,7 @@ sudo grep VEXA .env
 sudo grep "VEXA_API_KEY=" .env | head -1 > ~/vexa_token_backup_$(date +%Y%m%d).txt
 ```
 
-**2. Nach jedem Update Token vergleichen:**
+**2. Token nach jedem Update vergleichen:**
 ```bash
 # Backup anzeigen
 cat ~/vexa_token_backup_*.txt | tail -1
@@ -1298,21 +1478,29 @@ sudo grep "VEXA_API_KEY=" .env | head -1
 # Sollten identisch sein!
 ```
 
-**3. Firewall-Regeln bleiben erhalten:**
+**3. Verifizieren dass Token nach Updates in Datenbank ist:**
+```bash
+cd ~/ai-launchkit/vexa
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT COUNT(*) FROM api_tokens;"
+# Sollte zeigen: 1 (nicht 0!)
+```
+
+**4. Firewall-Regeln bleiben erhalten:**
 - Port 8056 wird bei Updates NICHT geschlossen
 - Bei Problemen: Regel erneut hinzufügen (siehe Problem 3)
 
-**4. Quick-Check Script erstellen:**
+**5. Quick-Check Script erstellen:**
 ```bash
 cat > ~/check_vexa.sh << 'EOF'
 #!/bin/bash
-echo "Checking Vexa status..."
+echo "Prüfe Vexa Status..."
 cd ~/ai-launchkit
 
 # Container Status
-echo "1. Containers:"
+echo "1. Container:"
 sudo docker ps | grep vexa | wc -l
-echo "   (Should be 5)"
+echo "   (Sollte 5 sein)"
 
 # Firewall
 echo "2. Firewall:"
@@ -1324,7 +1512,7 @@ cd vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT COUNT(*) FROM api_tokens;" | grep -A 1 count
 
-echo "Done!"
+echo "Fertig!"
 EOF
 
 chmod +x ~/check_vexa.sh
@@ -1362,10 +1550,17 @@ sudo bash scripts/03_generate_secrets.sh
 sudo bash scripts/05_run_services.sh
 sudo bash scripts/05a_init_vexa.sh
 
-# 6. Neuen Token für n8n abrufen
+# 6. Verifizieren dass Token in DB ist
+cd vexa
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT token, user_id FROM api_tokens;"
+# MUSS 1 Zeile zeigen!
+
+# 7. Neuen Token für n8n abrufen
+cd ~/ai-launchkit
 sudo grep "VEXA_API_KEY=" .env | head -1
 
-# 7. Firewall sicherstellen
+# 8. Firewall sicherstellen
 sudo ufw allow 8056/tcp comment 'Vexa API Gateway'
 sudo ufw reload
 ```
@@ -1397,6 +1592,13 @@ echo "Docker: $(docker --version)" >> ~/vexa_system_info.txt
 echo "Firewall:" >> ~/vexa_system_info.txt
 sudo ufw status | grep 8056 >> ~/vexa_system_info.txt
 
+# Token Status
+echo "Token in .env:" >> ~/vexa_system_info.txt
+sudo grep "VEXA_API_KEY=" .env | head -1 >> ~/vexa_system_info.txt
+echo "Tokens in DB:" >> ~/vexa_system_info.txt
+sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
+  -c "SELECT COUNT(*) FROM api_tokens;" >> ~/vexa_system_info.txt 2>&1
+
 # In Issue hochladen
 ```
 
@@ -1415,7 +1617,9 @@ sudo docker compose logs --tail 20
 - [ ] Setup ausgeführt? → `sudo bash scripts/04a_setup_vexa.sh`
 - [ ] Services laufen? → `sudo docker ps | grep vexa` (5 Container)
 - [ ] Problem 2: Token in DB? → `sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa -c "SELECT COUNT(*) FROM api_tokens;"`
+- [ ] Wenn Token NICHT in DB: .env Token löschen → `sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env`
 - [ ] Init-Script ausgeführt? → `sudo bash scripts/05a_init_vexa.sh`
+- [ ] Verifizieren dass Token JETZT in DB ist → Sollte 1 Zeile zeigen, nicht 0!
 - [ ] Problem 3: Firewall offen? → `sudo ufw status | grep 8056`
 - [ ] Port freigeben? → `sudo ufw allow 8056/tcp`
 - [ ] n8n URLs aktualisiert? → Server-IP statt localhost
@@ -1423,3 +1627,9 @@ sudo docker compose logs --tail 20
 - [ ] End-to-End Test erfolgreich? → Siehe "Vollständiger End-to-End Test"
 
 **Wenn alle Punkte ✅ sind: Vexa ist einsatzbereit!** 🎉
+
+---
+
+**Wichtigste Erkenntnis für Problem 2/2B:** Wenn Sie "keeping token" sehen, aber der Token nicht funktioniert, IMMER zuerst den Token in .env löschen bevor Sie das Init-Script nochmal ausführen!
+
+**Key takeaway for Problem 2/2B:** If you see "keeping token" but the token doesn't work, ALWAYS clear the token in .env first before running the init script again!

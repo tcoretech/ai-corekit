@@ -2551,18 +2551,23 @@ services:
   # N8N-MCP - Model Context Protocol for AI Workflow Generation
   # ============================================================================
   
+  # n8n-MCP - Model Context Protocol Server
   n8n-mcp:
-    image: ghcr.io/czlonkowski/n8n-mcp:latest
+    build:
+      context: https://github.com/czlonkowski/n8n-mcp.git
+      dockerfile: Dockerfile
     container_name: n8n-mcp
     profiles: ["n8n-mcp"]
     restart: unless-stopped
     environment:
       - AUTH_TOKEN=${N8N_MCP_TOKEN}
       - USE_FIXED_HTTP=true
-      - N8N_HOST=${N8N_HOSTNAME}
+      - N8N_HOST=n8n
+      - N8N_API_URL=http://n8n:5678
       - N8N_API_KEY=${N8N_API_KEY}
       - LOG_LEVEL=info
       - MCP_MODE=http
+      - PORT=3000
     volumes:
       - n8n-mcp-data:/app/data
     healthcheck:
@@ -2570,5 +2575,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    expose:
-      - "3000"

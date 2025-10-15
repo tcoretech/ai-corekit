@@ -72,6 +72,9 @@ volumes:
   chatterbox_models:
   perplexica_data:
   livekit_data:
+  skyvern-artifacts:
+  browser-use-cache:
+  n8n-mcp-data:
 
 x-n8n: &service-n8n
   build:
@@ -374,6 +377,7 @@ services:
       - CHATTERBOX_HOSTNAME=${CHATTERBOX_HOSTNAME}
       - CHATTERBOX_FRONTEND_HOSTNAME=${CHATTERBOX_FRONTEND_HOSTNAME}
       - LIVEKIT_HOSTNAME=${LIVEKIT_HOSTNAME}
+      - N8N_MCP_HOSTNAME=${N8N_MCP_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}
@@ -2452,3 +2456,119 @@ services:
     networks:
       - default
 
+  # ============================================================================
+  # BROWSER AUTOMATION SUITE - Browserless + Skyvern + Browser-use
+  # ============================================================================
+  
+  # Browserless - Centralized Chrome Runtime
+  browserless:
+    image: ghcr.io/browserless/chromium:latest
+    container_name: browserless
+    profiles: ["browser-suite"]
+    restart: unless-stopped
+    environment:
+      - TOKEN=${BROWSERLESS_TOKEN}
+      - CONCURRENT=${BROWSERLESS_CONCURRENT:-10}
+      - TIMEOUT=${BROWSERLESS_TIMEOUT:-120000}
+      - MAX_QUEUE_LENGTH=${BROWSERLESS_QUEUE:-10}
+      - ENABLE_DEBUGGER=${BROWSERLESS_DEBUGGER:-false}
+      - WORKSPACE_DIR=/workspace
+      - DATA_DIR=/workspace/downloads
+    volumes:
+      - ./shared:/workspace
+      - ./shared/browser-downloads:/workspace/downloads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/pressure"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Internal API only - no external access needed
+    expose:
+      - "3000"
+
+  # Skyvern - Vision-based Browser Automation
+  skyvern:
+    image: public.ecr.aws/skyvern/skyvern:latest
+    container_name: skyvern
+    profiles: ["browser-suite"]
+    restart: unless-stopped
+    environment:
+      # Default: OpenAI Mode (most users have no GPU)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/skyvern
+      - SKYVERN_API_KEY=${SKYVERN_API_KEY}
+      - BROWSERLESS_URL=ws://browserless:3000?token=${BROWSERLESS_TOKEN}
+      - ENABLE_OPENAI=true
+      - LOG_LEVEL=INFO
+      # Optional Ollama Mode (uncomment if you want local LLMs)
+      # - ENABLE_OLLAMA=${ENABLE_OLLAMA:-false}
+      # - LLM_KEY=${SKYVERN_LLM_KEY:-OPENAI}
+      # - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b-instruct}
+      # - OLLAMA_SERVER_URL=http://ollama:11434
+    volumes:
+      - ./shared:/data/shared
+      - skyvern-artifacts:/app/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+      browserless:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    expose:
+      - "8000"
+
+  # Browser-use - LLM-powered Browser Control
+  browser-use:
+    image: python:3.11-slim
+    container_name: browser-use
+    profiles: ["browser-suite"]
+    restart: unless-stopped
+    working_dir: /workspace
+    command: >
+      bash -c "
+      apt-get update && apt-get install -y curl wget && 
+      pip install --no-cache-dir browser-use playwright langchain openai anthropic &&
+      playwright install-deps chromium &&
+      playwright install chromium &&
+      echo 'Browser-use ready - execute via: docker exec browser-use python script.py' &&
+      tail -f /dev/null
+      "
+    environment:
+      - BROWSERLESS_URL=ws://browserless:3000?token=${BROWSERLESS_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - ./shared:/workspace
+      - browser-use-cache:/root/.cache
+    depends_on:
+      - browserless
+
+  # ============================================================================
+  # N8N-MCP - Model Context Protocol for AI Workflow Generation
+  # ============================================================================
+  
+  n8n-mcp:
+    image: ghcr.io/czlonkowski/n8n-mcp:latest
+    container_name: n8n-mcp
+    profiles: ["n8n-mcp"]
+    restart: unless-stopped
+    environment:
+      - AUTH_TOKEN=${N8N_MCP_TOKEN}
+      - USE_FIXED_HTTP=true
+      - N8N_HOST=${N8N_HOSTNAME}
+      - N8N_API_KEY=${N8N_API_KEY}
+      - LOG_LEVEL=info
+      - MCP_MODE=http
+    volumes:
+      - n8n-mcp-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    expose:
+      - "3000"

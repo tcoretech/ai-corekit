@@ -544,4 +544,9 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
+# n8n-MCP - Model Context Protocol Server
+{$N8N_MCP_HOSTNAME} {
+    reverse_proxy n8n-mcp:3000
+}
+
 import /etc/caddy/addons/*.conf

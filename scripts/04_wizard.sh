@@ -51,6 +51,7 @@ current_profiles_for_matching=",$CURRENT_PROFILES_VALUE,"
 # Base service definitions (tag, description)
 base_services_data=(
     "n8n" "n8n, n8n-worker, n8n-import (Workflow Automation)"
+    "n8n-mcp" "n8n-MCP (AI workflow generation for Claude/Cursor)"
     "dify" "Dify (AI Application Development Platform with LLMOps)"
     "flowise" "Flowise (AI Agent Builder)"
     "bolt" "bolt.diy (AI Web Development)"
@@ -102,6 +103,7 @@ base_services_data=(
     "vexa" "Vexa (Live meeting transcription - Google Meet & Teams)"
     "ocr" "OCR Bundle (Tesseract + EasyOCR - Extract text from images/PDFs)"
     "libretranslate" "LibreTranslate (Self-hosted translation API - 50+ languages)"
+    "browser-suite" "Browser Automation Suite (Browserless + Skyvern + Browser-use)"
 )
 
 services=() # This will be the final array for whiptail

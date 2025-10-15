@@ -141,6 +141,7 @@ docker exec postgres postgres --version
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
 | **[n8n](https://github.com/n8n-io/n8n)** | Visual workflow automation platform | API integrations, data pipelines, business automation | `n8n.yourdomain.com` |
+| **[n8n-MCP](https://github.com/czlonkowski/n8n-mcp)** | AI workflow generator for n8n | Claude/Cursor integration, 525+ node docs, workflow validation | `n8nmcp.yourdomain.com` |
 | **300+ Workflows** | Pre-built n8n templates | Email automation, social media, data sync, AI workflows | Imported on install |
 
 ### 🎯 User Interfaces
@@ -202,6 +203,9 @@ docker exec postgres postgres --version
 | **[LiveKit](https://github.com/livekit/livekit)** + Agents | Real-time voice agents with WebRTC (auto-uses Whisper/TTS/Ollama or OpenAI) | AI voice assistants, conversational AI, ChatGPT-like voice bots, requires UDP 50000-50100 | `livekit.yourdomain.com` |
 | **[Dify](https://github.com/langgenius/dify)** | LLMOps platform for AI apps | Production AI apps, model management, prompt engineering | `dify.yourdomain.com` |
 | **[Letta](https://github.com/letta-ai/letta)** | Stateful agent server | Persistent AI assistants, memory management | `letta.yourdomain.com` |
+| **[Browser-use](https://github.com/browser-use/browser-use)** | LLM-powered browser control | Web scraping, form filling, automated testing | Internal API only |
+| **[Skyvern](https://skyvern.com)** | Vision-based browser automation | Complex web tasks, CAPTCHA handling, dynamic sites | Internal API only |
+| **[Browserless](https://browserless.io)** | Headless Chrome service | Puppeteer/Playwright hub, PDF generation, screenshots | Internal WebSocket |
 
 ### 📚 RAG Systems
 
@@ -6880,6 +6884,205 @@ LibreTranslate provides a self-hosted translation API with 50+ languages, perfec
 - Documents (docx, pdf, txt) can be translated via file upload
 - Internal access from n8n doesn't require authentication
 - External access via `https://translate.yourdomain.com` requires Basic Auth
+
+### 🌐 Browser Automation Suite - Web Scraping & Automation
+
+The Browser Automation Suite combines three powerful tools for comprehensive web automation: Browserless (Chrome runtime), Skyvern (AI vision), and Browser-use (LLM control).
+
+#### Features
+- **Browserless** - Centralized Chrome/Chromium instance for multiple automation tools
+- **Skyvern** - Computer vision-based automation that works on any website
+- **Browser-use** - Natural language browser control using GPT-4/Claude
+- **n8n Integration** - Native Puppeteer nodes with WebSocket connection
+- **Concurrent Sessions** - Handle 10+ browser sessions simultaneously
+
+#### n8n Integration - Web Automation Workflows
+
+**Setup Puppeteer with Browserless:**
+```javascript
+// First: Install community node
+// Settings → Community Nodes → Search "n8n-nodes-puppeteer"
+
+// Puppeteer Node Configuration
+WebSocket URL: ws://browserless:3000?token={{$env.BROWSERLESS_TOKEN}}
+Executable Path: (leave empty)
+Options: 
+  - headless: true
+  - args: ['--no-sandbox', '--disable-setuid-sandbox']
+
+// Example: Screenshot Generation
+Launch Browser → Navigate to URL → Screenshot → Close Browser
+```
+
+**Skyvern Vision AI Automation:**
+```javascript
+// HTTP Request Node - Execute Task
+Method: POST
+URL: http://skyvern:8000/v1/execute
+Headers:
+  X-API-Key: {{$env.SKYVERN_API_KEY}}
+Body (JSON):
+{
+  "url": "https://example.com/form",
+  "navigation_goal": "Fill out the contact form with the provided information",
+  "data": {
+    "name": "{{$json.customer_name}}",
+    "email": "{{$json.customer_email}}",
+    "message": "{{$json.inquiry}}"
+  },
+  "wait_for": "Thank you for your submission"
+}
+
+// Get Task Status
+Method: GET
+URL: http://skyvern:8000/v1/tasks/{{$json.task_id}}
+```
+
+**Browser-use LLM Control:**
+```javascript
+// Execute Node - Python Script
+// Save this as browser_automation.py in ./shared/
+
+from browser_use import Browser, Agent
+import asyncio
+
+async def main():
+    browser = Browser(websocket_url="ws://browserless:3000")
+    agent = Agent(browser=browser, model="gpt-4")
+    
+    # Natural language task
+    result = await agent.execute(
+        "Go to LinkedIn, search for 'AI Engineers in Berlin', "
+        "and extract the first 10 profiles with their job titles"
+    )
+    return result
+
+# Run in n8n Execute Command node:
+docker exec browser-use python /workspace/browser_automation.py
+```
+
+#### Example Workflow: Competitor Price Monitoring
+```yaml
+1. Schedule Trigger → Daily at 9 AM
+2. Loop over competitor URLs
+3. Puppeteer → Navigate to product page
+4. Skyvern → Extract price (handles dynamic content)
+5. Compare with yesterday's price
+6. IF price changed → Send alert
+7. Store in database
+```
+
+#### Configuration Tips
+- **OpenAI Mode** (Default): Best accuracy, requires API key
+- **Ollama Mode**: Free, local, set `ENABLE_OLLAMA=true`
+- **Concurrent Limit**: Adjust `BROWSERLESS_CONCURRENT` for parallel tasks
+- **Timeout**: Increase `BROWSERLESS_TIMEOUT` for slow sites
+- **Debug Mode**: Set `BROWSERLESS_DEBUGGER=true` for troubleshooting
+
+---
+
+### 🤖 n8n-MCP - AI Workflow Generation
+
+n8n-MCP enables AI assistants like Claude Desktop and Cursor to generate complete n8n workflows through natural language, with access to documentation for 525+ nodes.
+
+#### Features
+- **Complete node documentation** - Properties, authentication, examples
+- **Workflow generation** - Create complex automations from prompts
+- **Validation** - Ensures correct node configuration
+- **99% coverage** - Supports nearly all n8n node properties
+- **MCP standard** - Works with any MCP-compatible AI tool
+
+#### Setup with Claude Desktop
+
+**1. Configure Claude Desktop (claude_desktop_config.json):**
+```json
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "npx",
+      "args": ["@czlonkowski/n8n-mcp-client"],
+      "env": {
+        "N8N_MCP_URL": "https://n8nmcp.yourdomain.com",
+        "N8N_MCP_TOKEN": "your-token-from-env-file",
+        "N8N_API_URL": "https://n8n.yourdomain.com",
+        "N8N_API_KEY": "your-n8n-api-key"
+      }
+    }
+  }
+}
+```
+
+**2. Setup with Cursor IDE:**
+```json
+// .cursor/mcp_config.json
+{
+  "servers": {
+    "n8n-mcp": {
+      "url": "https://n8nmcp.yourdomain.com",
+      "token": "your-token-from-env-file"
+    }
+  }
+}
+```
+
+#### Example Prompts for Claude/Cursor
+
+**Basic Automation:**
+```
+"Create an n8n workflow that monitors a Gmail inbox for invoices, 
+extracts data using AI, and saves to Google Sheets"
+```
+
+**Complex Integration:**
+```
+"Build a workflow that:
+1. Triggers on new Stripe payment
+2. Creates invoice in QuickBooks
+3. Sends receipt via SendGrid
+4. Updates customer in Airtable
+5. Posts to Slack channel"
+```
+
+**AI Pipeline:**
+```
+"Design a content pipeline that takes YouTube videos, 
+transcribes with Whisper, summarizes with GPT-4, 
+and posts to WordPress with SEO optimization"
+```
+
+#### Available MCP Commands
+- `list_nodes` - Get all available n8n nodes
+- `get_node_docs` - Full documentation for specific node
+- `validate_workflow` - Check workflow configuration
+- `suggest_nodes` - Get node recommendations for task
+
+#### Integration with n8n API
+```javascript
+// HTTP Request to n8n-MCP
+Method: POST
+URL: https://n8nmcp.yourdomain.com/generate
+Headers:
+  Authorization: Bearer {{$env.N8N_MCP_TOKEN}}
+Body:
+{
+  "prompt": "Create workflow to sync Notion database with Google Calendar",
+  "target_n8n": "https://n8n.yourdomain.com",
+  "auto_import": true
+}
+```
+
+#### Tips for Best Results
+- **Be specific** - Include tool names, triggers, and data formats
+- **Use examples** - Provide sample data for better node configuration
+- **Iterate** - Refine the generated workflow through conversation
+- **Test locally** - Validate in n8n before production deployment
+- **Version control** - Export workflows as JSON for Git tracking
+
+#### Troubleshooting
+- **Connection refused**: Check `N8N_MCP_TOKEN` in .env
+- **Invalid workflow**: Ensure n8n API key has full access
+- **Missing nodes**: Update n8n-MCP to latest version
+- **Timeout errors**: Increase timeout in MCP client config
 
 ### 🔮 LightRAG Integration
 

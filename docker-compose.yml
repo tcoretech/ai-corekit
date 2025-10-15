@@ -73,6 +73,7 @@ volumes:
   perplexica_data:
   livekit_data:
   skyvern-artifacts:
+  skyvern_postgres_data:
   browser-use-cache:
   n8n-mcp-data:
 
@@ -2472,54 +2473,53 @@ services:
       - TIMEOUT=${BROWSERLESS_TIMEOUT:-120000}
       - MAX_QUEUE_LENGTH=${BROWSERLESS_QUEUE:-10}
       - ENABLE_DEBUGGER=${BROWSERLESS_DEBUGGER:-false}
-      - WORKSPACE_DIR=/workspace
-      - DATA_DIR=/workspace/downloads
-    volumes:
-      - ./shared:/workspace
-      - ./shared/browser-downloads:/workspace/downloads
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/pressure"]
       interval: 30s
       timeout: 10s
       retries: 3
-    # Internal API only - no external access needed
     expose:
       - "3000"
 
   # Skyvern - Vision-based Browser Automation
+  skyvern-postgres:
+    image: postgres:15-alpine
+    container_name: skyvern-postgres
+    profiles: ["browser-suite"]
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=skyvern
+      - POSTGRES_PASSWORD=skyvern
+      - POSTGRES_DB=skyvern
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - skyvern_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skyvern"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   skyvern:
     image: public.ecr.aws/skyvern/skyvern:latest
     container_name: skyvern
     profiles: ["browser-suite"]
     restart: unless-stopped
     environment:
-      # Default: OpenAI Mode (most users have no GPU)
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/skyvern
+      - DATABASE_STRING=postgresql+psycopg://skyvern:skyvern@skyvern-postgres:5432/skyvern
       - SKYVERN_API_KEY=${SKYVERN_API_KEY}
       - BROWSERLESS_URL=ws://browserless:3000?token=${BROWSERLESS_TOKEN}
       - ENABLE_OPENAI=true
       - LOG_LEVEL=INFO
-      # Optional Ollama Mode (uncomment if you want local LLMs)
-      # - ENABLE_OLLAMA=${ENABLE_OLLAMA:-false}
-      # - LLM_KEY=${SKYVERN_LLM_KEY:-OPENAI}
-      # - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b-instruct}
-      # - OLLAMA_SERVER_URL=http://ollama:11434
     volumes:
-      - ./shared:/data/shared
-      - skyvern-artifacts:/app/artifacts
+      - ./shared/skyvern-artifacts:/data/artifacts
+      - ./shared/skyvern-videos:/data/videos
     depends_on:
-      postgres:
+      skyvern-postgres:
         condition: service_healthy
       browserless:
         condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    expose:
-      - "8000"
 
   # Browser-use - LLM-powered Browser Control
   browser-use:

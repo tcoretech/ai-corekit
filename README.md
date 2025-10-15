@@ -33,92 +33,6 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 
 ATTENTION! The AI LaunchKit is currently in development. It is regularly tested and updated. However, use is at your own risk!
 
-# ✅ PostgreSQL 18 Issue - FIXED
-
-**The PostgreSQL 18 compatibility issue has been resolved.** 
-You can now safely run `update.sh` after following the appropriate steps below.
-
-## What Happened
-PostgreSQL 18 was released on Sept 26, 2025 with breaking changes. The data format is incompatible with PostgreSQL 17. We've now pinned all services to PostgreSQL 17 to prevent automatic major version upgrades.
-
-## Which Group Are You In?
-
-### 🆕 Group A: Installed AI LaunchKit AFTER Sept 26, 2025
-
-Check your PostgreSQL version first:
-```bash
-docker exec postgres postgres --version
-```
-
-If you have PostgreSQL 18.x:
-```bash
-# Pin your version BEFORE updating (important!)
-echo "POSTGRES_VERSION=18" >> .env
-
-# Now you can safely update
-bash scripts/update.sh
-```
-Your data remains on PostgreSQL 18 and everything continues working.
-
-### 🔄 Group B: Already Experienced Update Issues
-
-If you updated and saw errors like "database files are incompatible", follow the emergency recovery steps:
-
-<details>
-<summary>📋 Emergency Recovery Steps (click to expand)</summary>
-
-```bash
-# 1. BACKUP YOUR DATA (CRITICAL!)
-docker exec postgres pg_dumpall -U postgres > backup_emergency.sql
-
-# 2. Stop all services
-docker compose -p localai down
-
-# 3. Remove incompatible volume
-docker volume rm localai_langfuse_postgres_data
-
-# 4. Pull the latest fixes
-git pull
-
-# 5. Start PostgreSQL (now pinned to v17)
-docker compose -p localai up -d postgres
-sleep 10
-
-# 6. Restore your data
-docker exec -i postgres psql -U postgres < backup_emergency.sql
-
-# 7. Start all services
-docker compose -p localai up -d
-```
-</details>
-
-### ✅ Group C: Installed BEFORE Sept 26 (PostgreSQL 17 or older)
-
-Simply update to get the fix:
-```bash
-sudo bash scripts/update.sh
-
-## Verification
-
-After updating, verify your PostgreSQL version:
-```bash
-docker exec postgres postgres --version
-# Should show either:
-# - PostgreSQL 17.x (most users)
-# - PostgreSQL 18.x (if you pinned it)
-```
-
-## Technical Details
-- Default PostgreSQL version is now pinned to 17
-- Users with v18 can keep it by setting `POSTGRES_VERSION=18` in `.env`
-- Major version upgrades will require manual migration
-- See `.env.example` for version configuration options
-
----
-**Issue resolved:** September 28, 2025
-
----
-
 ## ✨ What's Included
 
 ### 📧 Mail System
@@ -7321,6 +7235,92 @@ gs -sDEVICE=txtwrite -o output.txt input.pdf
 
 <details>
 <summary><b>📧 Mail System Issues</b></summary>
+
+# ✅ PostgreSQL 18 Issue - FIXED
+
+**The PostgreSQL 18 compatibility issue has been resolved.** 
+You can now safely run `update.sh` after following the appropriate steps below.
+
+## What Happened
+PostgreSQL 18 was released on Sept 26, 2025 with breaking changes. The data format is incompatible with PostgreSQL 17. We've now pinned all services to PostgreSQL 17 to prevent automatic major version upgrades.
+
+## Which Group Are You In?
+
+### 🆕 Group A: Installed AI LaunchKit AFTER Sept 26, 2025
+
+Check your PostgreSQL version first:
+```bash
+docker exec postgres postgres --version
+```
+
+If you have PostgreSQL 18.x:
+```bash
+# Pin your version BEFORE updating (important!)
+echo "POSTGRES_VERSION=18" >> .env
+
+# Now you can safely update
+bash scripts/update.sh
+```
+Your data remains on PostgreSQL 18 and everything continues working.
+
+### 🔄 Group B: Already Experienced Update Issues
+
+If you updated and saw errors like "database files are incompatible", follow the emergency recovery steps:
+
+<details>
+<summary>📋 Emergency Recovery Steps (click to expand)</summary>
+
+```bash
+# 1. BACKUP YOUR DATA (CRITICAL!)
+docker exec postgres pg_dumpall -U postgres > backup_emergency.sql
+
+# 2. Stop all services
+docker compose -p localai down
+
+# 3. Remove incompatible volume
+docker volume rm localai_langfuse_postgres_data
+
+# 4. Pull the latest fixes
+git pull
+
+# 5. Start PostgreSQL (now pinned to v17)
+docker compose -p localai up -d postgres
+sleep 10
+
+# 6. Restore your data
+docker exec -i postgres psql -U postgres < backup_emergency.sql
+
+# 7. Start all services
+docker compose -p localai up -d
+```
+</details>
+
+### ✅ Group C: Installed BEFORE Sept 26 (PostgreSQL 17 or older)
+
+Simply update to get the fix:
+```bash
+sudo bash scripts/update.sh
+
+## Verification
+
+After updating, verify your PostgreSQL version:
+```bash
+docker exec postgres postgres --version
+# Should show either:
+# - PostgreSQL 17.x (most users)
+# - PostgreSQL 18.x (if you pinned it)
+```
+
+## Technical Details
+- Default PostgreSQL version is now pinned to 17
+- Users with v18 can keep it by setting `POSTGRES_VERSION=18` in `.env`
+- Major version upgrades will require manual migration
+- See `.env.example` for version configuration options
+
+---
+**Issue resolved:** September 28, 2025
+
+---
 
 #### Mailpit Not Receiving Emails
 

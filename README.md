@@ -149,6 +149,8 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 | **[SearXNG](https://github.com/searxng/searxng)** | Privacy-respecting metasearch engine | Web search for agents, no tracking, multiple sources | `searxng.yourdomain.com` |
 | **[Perplexica](https://github.com/ItzCrazyKns/Perplexica)** | Open-source AI-powered search engine | Deep research, academic search, Perplexity AI alternative | `perplexica.yourdomain.com` |
 | **[Crawl4Ai](https://github.com/unclecode/crawl4ai)** | AI-optimized web crawler | Web scraping, data extraction, site monitoring | Internal API |
+| **[GPT Researcher](https://github.com/assafelovic/gpt-researcher)** | Autonomous research agent (2000+ word reports) | Comprehensive research reports, multi-source analysis, citations | `research.yourdomain.com` |
+| **[Local Deep Research](https://github.com/langchain-ai/local-deep-researcher)** | LangChain's iterative deep research (~95% accuracy) | Fact-checking, detailed analysis, research loops with reflection | `deepresearch.yourdomain.com` |
 
 ### 🧠 Knowledge Graphs
 
@@ -6798,6 +6800,202 @@ LibreTranslate provides a self-hosted translation API with 50+ languages, perfec
 - Documents (docx, pdf, txt) can be translated via file upload
 - Internal access from n8n doesn't require authentication
 - External access via `https://translate.yourdomain.com` requires Basic Auth
+
+### 🔬 AI Research Tools Integration
+
+AI LaunchKit includes two complementary research tools that work together: GPT Researcher for comprehensive reports and Local Deep Research for iterative analysis.
+
+#### GPT Researcher (n8n HTTP Request Node)
+
+**Basic Research Request:**
+- **Method:** POST  
+- **URL:** `http://gpt-researcher:8000/api/research`
+- **Authentication:** None (internal access)
+- **Send Headers:** ON
+  - `Content-Type`: `application/json`
+```json
+  {
+    "query": "{{ $json.topic }}",
+    "report_type": "research_report",
+    "max_iterations": 5,
+    "report_format": "APA"
+  }
+```
+
+**Report Types Available:**
+- `research_report` - Comprehensive research report (default)
+- `outline_report` - Structured outline
+- `resource_report` - List of resources
+- `subtopic_report` - Focused subtopic analysis
+
+#### Local Deep Research (n8n HTTP Request Node)
+
+**Deep Research Request:**
+- **Method:** POST
+- **URL:** `http://local-deep-research:2024/api/research`
+- **Send Headers:** ON
+  - `Content-Type`: `application/json`
+```json
+  {
+    "query": "{{ $json.query }}",
+    "iterations": 5,
+    "search_tool": "auto",
+    "fetch_full_page": false
+  }
+```
+
+#### Example: Combined Research Workflow
+```
+1. Webhook Trigger → Receive research topic
+   
+2. GPT Researcher → Quick Overview (2-3 minutes)
+   URL: http://gpt-researcher:8000/api/research
+   Body: {
+     "query": "{{ $json.topic }}",
+     "report_type": "outline_report",
+     "max_iterations": 3
+   }
+   
+3. Parse Report → Extract key subtopics
+   JavaScript Node:
+   const report = $input.first().json.report;
+   const subtopics = report.match(/## (.*)/g) || [];
+   return subtopics.map(topic => ({
+     json: { subtopic: topic.replace('## ', '') }
+   }));
+   
+4. Loop Over Subtopics → Deep dive each
+   
+5. Local Deep Research → Detailed Analysis (per subtopic)
+   URL: http://local-deep-research:2024/api/research
+   Body: {
+     "query": "{{ $json.subtopic }}",
+     "iterations": 5,
+     "context": "{{ $node['GPT Researcher'].json.report }}"
+   }
+   
+6. Combine Results → Final comprehensive report
+   
+7. Save to File → Store in shared folder
+   Path: /data/shared/research/{{ $now.format('yyyy-MM-dd') }}_report.md
+```
+
+#### Advanced Research Patterns
+
+**Fact-Checking Workflow:**
+```javascript
+// Use Local Deep Research for high-accuracy verification
+const claim = "Your claim to verify";
+const response = await $http.request({
+  method: 'POST',
+  url: 'http://local-deep-research:2024/api/verify',
+  body: {
+    statement: claim,
+    confidence_threshold: 0.9,
+    sources_required: 3
+  }
+});
+return response;
+```
+
+**Multi-Language Research:**
+```
+1. Detect Language (LibreTranslate)
+2. Translate to English if needed
+3. Research with GPT Researcher
+4. Translate report back to original language
+5. Local Deep Research for culture-specific verification
+```
+
+#### Research Configuration Options
+
+**GPT Researcher Parameters:**
+| Parameter | Description | Default | Options |
+|-----------|-------------|---------|---------|
+| `query` | Research topic | Required | Any text |
+| `report_type` | Type of report | `research_report` | See types above |
+| `max_iterations` | Search depth | `5` | 1-10 |
+| `report_format` | Citation style | `APA` | APA, MLA, Chicago |
+| `total_words` | Target length | `2000` | 500-5000 |
+| `language` | Report language | `english` | Any language |
+
+**Local Deep Research Parameters:**
+| Parameter | Description | Default | Options |
+|-----------|-------------|---------|---------|
+| `query` | Research question | Required | Any text |
+| `iterations` | Research loops | `5` | 1-10 |
+| `search_tool` | Search method | `auto` | auto, searxng, tavily |
+| `fetch_full_page` | Get full content | `false` | true/false |
+| `context` | Prior knowledge | `""` | Previous research |
+
+#### Monitoring Research Progress
+
+**Check GPT Researcher Status:**
+```javascript
+// Function node to poll research status
+const taskId = $json.task_id;
+const checkStatus = async () => {
+  const response = await $http.request({
+    method: 'GET',
+    url: `http://gpt-researcher:8000/api/status/${taskId}`
+  });
+  return response;
+};
+return await checkStatus();
+```
+
+**Stream Local Deep Research Updates:**
+```javascript
+// WebSocket connection for real-time updates
+const WebSocket = require('ws');
+const ws = new WebSocket('ws://local-deep-research:2024/ws');
+
+ws.on('message', (data) => {
+  const update = JSON.parse(data);
+  console.log(`Research step: ${update.step}`);
+  console.log(`Progress: ${update.progress}%`);
+});
+```
+
+#### Integration Tips
+
+**Performance Optimization:**
+- GPT Researcher: Best for overview reports (2-5 minutes)
+- Local Deep Research: Best for accuracy (10-20 minutes)
+- Use caching for repeated queries
+- Implement timeout handling for long research
+
+**Error Handling:**
+```javascript
+try {
+  const research = await $http.request({
+    method: 'POST',
+    url: 'http://gpt-researcher:8000/api/research',
+    body: { query: topic },
+    timeout: 300000 // 5 minutes
+  });
+  return research;
+} catch (error) {
+  if (error.code === 'ETIMEDOUT') {
+    // Handle timeout - maybe switch to quick mode
+    return { error: "Research taking too long, trying quick mode..." };
+  }
+  throw error;
+}
+```
+
+**Combining with Other AI LaunchKit Services:**
+- Use Qdrant to store research embeddings
+- Process with Ollama for summarization
+- Translate with LibreTranslate for multi-language
+- Store documents in Supabase
+- Create visualizations with ComfyUI
+- Schedule recurring research with n8n crons
+
+**External Access:**
+- GPT Researcher: `https://research.yourdomain.com` (Basic Auth)
+- Local Deep Research: `https://deepresearch.yourdomain.com` (Basic Auth)
+- Both require authentication configured during setup
 
 ### 🌐 Browser Automation Suite - Web Scraping & Automation
 

@@ -368,6 +368,33 @@ EOF
             "Open-source Perplexity AI alternative. Protected with Basic Auth."
     fi
 
+    # GPT Researcher
+    if is_profile_active "research" || is_profile_active "gpt-researcher"; then
+        add_login_item \
+            "GPT Researcher - Autonomous Research Agent" \
+            "${GPTR_USERNAME}" \
+            "${GPTR_PASSWORD}" \
+            "https://${GPTR_HOSTNAME}" \
+            "Autonomous research agent that generates comprehensive 2000+ word reports with citations. Uses local Ollama and SearXNG. Protected with Basic Auth. Internal Backend: http://gpt-researcher:8000, Frontend: http://gpt-researcher-ui:3000"
+    fi
+
+    # Local Deep Research
+    if is_profile_active "research" || is_profile_active "local-deep-research"; then
+        add_login_item \
+            "Local Deep Research - LangChain Iterative Research" \
+            "${LDR_USERNAME}" \
+            "${LDR_PASSWORD}" \
+            "https://${LDR_HOSTNAME}" \
+            "LangChain's iterative research system with ~95% SimpleQA accuracy. Uses LangGraph for visual research process. Protected with Basic Auth. Internal API: http://local-deep-research:2024. LangGraph Studio: https://smith.langchain.com/studio/thread?baseUrl=https://${LDR_HOSTNAME}"
+    fi
+
+    # Research Tools Configuration
+    if (is_profile_active "research" || is_profile_active "gpt-researcher") || (is_profile_active "research" || is_profile_active "local-deep-research"); then
+        add_secure_note \
+            "Research Tools Configuration" \
+            "GPT Researcher:\\n- Search: ${GPTR_RETRIEVER:-searx} via SearXNG\\n- LLM: ${GPTR_LLM_PROVIDER:-ollama}\\n- Model: ${OLLAMA_MODEL:-qwen2.5:7b-instruct-q4_K_M}\\n- Report Length: ${GPTR_TOTAL_WORDS:-2000} words\\n- Format: ${GPTR_REPORT_FORMAT:-APA}\\n\\nLocal Deep Research:\\n- Search: ${LDR_SEARCH_API:-searxng}\\n- LLM: ${LDR_LLM_PROVIDER:-ollama}\\n- Model: ${LDR_LOCAL_MODEL:-qwen2.5:7b-instruct-q4_K_M}\\n- Research Loops: ${LDR_MAX_LOOPS:-5}\\n\\nn8n Integration:\\nGPT Researcher: POST http://gpt-researcher:8000/api/research\\nLocal Deep Research: POST http://local-deep-research:2024/api/research\\n\\nBoth tools use your existing Ollama (http://ollama:11434) and SearXNG installations!"
+    fi
+
     # LiveKit
     if is_profile_active "livekit"; then
         add_secure_note \

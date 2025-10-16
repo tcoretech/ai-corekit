@@ -76,6 +76,8 @@ volumes:
   skyvern_postgres_data:
   browser-use-cache:
   n8n-mcp-data:
+  gpt_researcher_data:
+  ldr_data:
 
 x-n8n: &service-n8n
   build:
@@ -379,6 +381,12 @@ services:
       - CHATTERBOX_FRONTEND_HOSTNAME=${CHATTERBOX_FRONTEND_HOSTNAME}
       - LIVEKIT_HOSTNAME=${LIVEKIT_HOSTNAME}
       - N8N_MCP_HOSTNAME=${N8N_MCP_HOSTNAME}
+      - GPTR_HOSTNAME=${GPTR_HOSTNAME}
+      - GPTR_USERNAME=${GPTR_USERNAME}
+      - GPTR_PASSWORD_HASH=${GPTR_PASSWORD_HASH}
+      - LDR_HOSTNAME=${LDR_HOSTNAME}
+      - LDR_USERNAME=${LDR_USERNAME}
+      - LDR_PASSWORD_HASH=${LDR_PASSWORD_HASH}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}
@@ -2575,3 +2583,106 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # ============================================================================
+  # AI RESEARCH TOOLS - GPT Researcher & Local Deep Research
+  # ============================================================================
+  
+  # GPT Researcher - Autonomous Research Agent (2000+ word reports)
+  gpt-researcher:
+    image: gptresearcher/gpt-researcher:latest
+    container_name: gpt-researcher
+    profiles: ["research"]
+    restart: unless-stopped
+    volumes:
+      - gpt_researcher_data:/usr/src/app/outputs
+      - ./shared/research:/usr/src/app/my-docs
+    environment:
+      # Search Configuration (using existing SearXNG!)
+      - RETRIEVER=${GPTR_RETRIEVER:-searx}
+      - SEARX_URL=http://searxng:8080
+      - SEARCH_RETRIEVER=searx
+      
+      # LLM Configuration (using existing Ollama!) - KORRIGIERT!
+      - LLM_PROVIDER=${GPTR_LLM_PROVIDER:-ollama}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OPENAI_API_BASE=http://ollama:11434/v1
+      - FAST_LLM=ollama:qwen2.5:7b-instruct-q4_K_M
+      - SMART_LLM=ollama:qwen2.5:7b-instruct-q4_K_M
+      - STRATEGIC_LLM=ollama:qwen2.5:7b-instruct-q4_K_M
+      
+      # Optional API Keys (if using cloud models)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      
+      # Research Configuration
+      - REPORT_FORMAT=${GPTR_REPORT_FORMAT:-APA}
+      - MAX_ITERATIONS=${GPTR_MAX_ITERATIONS:-5}
+      - TOTAL_WORDS=${GPTR_TOTAL_WORDS:-2000}
+      - LANGUAGE=${GPTR_LANGUAGE:-english}
+      - DOC_PATH=/usr/src/app/my-docs
+      
+      # Server Configuration
+      - HOST=0.0.0.0
+      - PORT=8000
+      - WORKERS=1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/health || wget -q --spider http://localhost:8000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    depends_on:
+      - searxng
+
+  # GPT Researcher Frontend (NextJS UI)
+  gpt-researcher-ui:
+    image: gptresearcher/gptr-nextjs:latest
+    container_name: gpt-researcher-ui
+    profiles: ["research"]
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_GPTR_API_URL=http://gpt-researcher:8000
+      - CHOKIDAR_USEPOLLING=true
+      - LOGGING_LEVEL=INFO
+    depends_on:
+      - gpt-researcher
+
+  # Local Deep Research - LangChain's Iterative Research System
+  local-deep-research:
+    build:
+      context: https://github.com/langchain-ai/local-deep-researcher.git
+      dockerfile: Dockerfile
+    container_name: local-deep-research
+    profiles: ["research"]
+    restart: unless-stopped
+    volumes:
+      - ldr_data:/data
+      - ./shared/research:/data/shared
+    environment:
+      # LLM Configuration (using existing Ollama!) - KORRIGIERT!
+      - LLM_PROVIDER=${LDR_LLM_PROVIDER:-ollama}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LOCAL_LLM=${LDR_LOCAL_MODEL:-qwen2.5:7b-instruct-q4_K_M}
+      
+      # Search Configuration (using existing SearXNG!)
+      - SEARCH_API=${LDR_SEARCH_API:-searxng}
+      - SEARXNG_URL=http://searxng:8080
+      - MAX_WEB_RESEARCH_LOOPS=${LDR_MAX_LOOPS:-5}
+      - FETCH_FULL_PAGE=${LDR_FETCH_FULL:-false}
+      
+      # Optional API Keys
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
+      
+      # Data Directory
+      - LDR_DATA_DIR=/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:2024/health || wget -q --spider http://localhost:2024 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      - searxng

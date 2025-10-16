@@ -176,6 +176,78 @@ if is_profile_active "perplexica"; then
   echo "Note: First start takes ~5-10 minutes to build the containers"
 fi
 
+if is_profile_active "research" || is_profile_active "gpt-researcher"; then
+  echo
+  echo "================================= GPT Researcher ======================="
+  echo
+  echo "Host: ${GPTR_HOSTNAME:-<hostname_not_set>}"
+  echo "User: ${GPTR_USERNAME:-<not_set_in_env>}"
+  echo "Password: ${GPTR_PASSWORD:-<not_set_in_env>}"
+  echo
+  echo "Access:"
+  echo "  External (HTTPS): https://${GPTR_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal Backend: http://gpt-researcher:8000"
+  echo "  Internal Frontend: http://gpt-researcher-ui:3000"
+  echo
+  echo "Configuration:"
+  echo "  Search: ${GPTR_RETRIEVER:-searx} (using SearXNG)"
+  echo "  LLM: ${GPTR_LLM_PROVIDER:-ollama}"
+  echo "  Report Length: ${GPTR_TOTAL_WORDS:-2000} words"
+  echo "  Format: ${GPTR_REPORT_FORMAT:-APA}"
+  echo
+  echo "n8n Integration:"
+  echo "  HTTP Request node: http://gpt-researcher:8000/api/research"
+  echo "  Method: POST"
+  echo "  Body: {\"query\": \"your research topic\", \"report_type\": \"research_report\"}"
+  echo
+  echo "Documentation: https://docs.gptr.dev"
+  echo "GitHub: https://github.com/assafelovic/gpt-researcher"
+fi
+
+if is_profile_active "research" || is_profile_active "local-deep-research"; then
+  echo
+  echo "======================= Local Deep Research =========================="
+  echo
+  echo "Host: ${LDR_HOSTNAME:-<hostname_not_set>}"
+  echo "User: ${LDR_USERNAME:-<not_set_in_env>}"
+  echo "Password: ${LDR_PASSWORD:-<not_set_in_env>}"
+  echo
+  echo "Access:"
+  echo "  External (HTTPS): https://${LDR_HOSTNAME:-<hostname_not_set>}"
+  echo "  LangGraph Studio: https://smith.langchain.com/studio/thread?baseUrl=https://${LDR_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal (Docker): http://local-deep-research:2024"
+  echo
+  echo "Configuration:"
+  echo "  Search: ${LDR_SEARCH_API:-searxng}"
+  echo "  LLM: ${LDR_LLM_PROVIDER:-ollama} (${LDR_LOCAL_MODEL:-qwen2.5:7b-instruct-q4_K_M})"
+  echo "  Research Loops: ${LDR_MAX_LOOPS:-5}"
+  echo
+  echo "n8n Integration:"
+  echo "  HTTP Request: http://local-deep-research:2024/api/research"
+  echo "  Method: POST"
+  echo "  Body: {\"query\": \"your topic\", \"iterations\": 5}"
+  echo
+  echo "Documentation: https://github.com/langchain-ai/local-deep-researcher"
+fi
+
+# Combined research tips (if both active)
+if (is_profile_active "research" || is_profile_active "gpt-researcher") && (is_profile_active "research" || is_profile_active "local-deep-research"); then
+  echo
+  echo "======================== Research Tools Integration ==================="
+  echo
+  echo "You have both research tools active! Use them for:"
+  echo
+  echo "• GPT Researcher: Quick comprehensive reports (2-5 minutes)"
+  echo "• Local Deep Research: Detailed iterative analysis (10-20 minutes)"
+  echo
+  echo "n8n Workflow Ideas:"
+  echo "  1. Use GPT Researcher for initial overview"
+  echo "  2. Feed results to Local Deep Research for deep dive"
+  echo "  3. Combine outputs for comprehensive analysis"
+  echo
+  echo "Both tools use your existing Ollama and SearXNG installations!"
+fi
+
 if is_profile_active "portainer"; then
   echo
   echo "================================= Portainer ==========================="

@@ -549,4 +549,34 @@ https://{$NEO4J_HOSTNAME}:7687 {
     reverse_proxy n8n-mcp:3000
 }
 
+# ============================================================================
+# AI RESEARCH TOOLS
+# ============================================================================
+
+# GPT Researcher - Autonomous Research Agent (Protected with Basic Auth)
+{$GPTR_HOSTNAME} {
+    basic_auth {
+        {$GPTR_USERNAME} {$GPTR_PASSWORD_HASH}
+    }
+    reverse_proxy gpt-researcher-ui:3000 {
+        # For streaming responses
+        flush_interval -1
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
+
+# Local Deep Research - LangGraph Research System (Protected with Basic Auth)
+{$LDR_HOSTNAME} {
+    basic_auth {
+        {$LDR_USERNAME} {$LDR_PASSWORD_HASH}
+    }
+    reverse_proxy local-deep-research:2024 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
+
 import /etc/caddy/addons/*.conf

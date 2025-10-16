@@ -2592,31 +2592,32 @@ services:
   gpt-researcher:
     image: gptresearcher/gpt-researcher:latest
     container_name: gpt-researcher
-    profiles: ["research"]
+    profiles: ["gpt-researcher"]
     restart: unless-stopped
     volumes:
       - gpt_researcher_data:/usr/src/app/outputs
       - ./shared/research:/usr/src/app/my-docs
     environment:
-      # Search Configuration (using existing SearXNG!)
+      # OpenAI Configuration (Default)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LLM_PROVIDER=openai
+      - FAST_LLM=openai:gpt-4o-mini
+      - SMART_LLM=openai:gpt-4o-mini  
+      - STRATEGIC_LLM=openai:gpt-4o-mini
+      - SUMMARY_LLM=openai:gpt-4o-mini
+
+      # ==== Ollama Configuration (Alternative) ====
+      # Uncomment these and comment out OpenAI above to use Ollama:
+      # - LLM_PROVIDER=ollama
+      # - OLLAMA_BASE_URL=http://ollama:11434
+      # - FAST_LLM=ollama/qwen2.5:7b-instruct-q4_K_M
+      # - SMART_LLM=ollama/qwen2.5:7b-instruct-q4_K_M
+      # - STRATEGIC_LLM=ollama/qwen2.5:7b-instruct-q4_K_M
+      # - SUMMARY_LLM=ollama/qwen2.5:7b-instruct-q4_K_M
+
+      # Search & Report Configuration  
       - RETRIEVER=${GPTR_RETRIEVER:-searx}
       - SEARX_URL=http://searxng:8080
-      - SEARCH_RETRIEVER=searx
-      
-      # LLM Configuration (using existing Ollama!) - KORRIGIERT!
-      - LLM_PROVIDER=${GPTR_LLM_PROVIDER:-ollama}
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OPENAI_API_BASE=http://ollama:11434/v1
-      - FAST_LLM=ollama:qwen2.5:7b-instruct-q4_K_M
-      - SMART_LLM=ollama:qwen2.5:7b-instruct-q4_K_M
-      - STRATEGIC_LLM=ollama:qwen2.5:7b-instruct-q4_K_M
-      
-      # Optional API Keys (if using cloud models)
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
-      
-      # Research Configuration
       - REPORT_FORMAT=${GPTR_REPORT_FORMAT:-APA}
       - MAX_ITERATIONS=${GPTR_MAX_ITERATIONS:-5}
       - TOTAL_WORDS=${GPTR_TOTAL_WORDS:-2000}
@@ -2626,9 +2627,12 @@ services:
       # Server Configuration
       - HOST=0.0.0.0
       - PORT=8000
-      - WORKERS=1
+      - BACKEND_WS_MODE=none
+    user: root
+    ports:
+      - "8555:8000"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/health || wget -q --spider http://localhost:8000 || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/health || curl -fsS http://localhost:8000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -2640,10 +2644,10 @@ services:
   gpt-researcher-ui:
     image: gptresearcher/gptr-nextjs:latest
     container_name: gpt-researcher-ui
-    profiles: ["research"]
+    profiles: ["gpt-researcher"]
     restart: unless-stopped
     environment:
-      - NEXT_PUBLIC_GPTR_API_URL=http://gpt-researcher:8000
+      - NEXT_PUBLIC_GPTR_API_URL=https://${GPTR_HOSTNAME}
       - CHOKIDAR_USEPOLLING=true
       - LOGGING_LEVEL=INFO
     depends_on:
@@ -2655,7 +2659,7 @@ services:
       context: https://github.com/langchain-ai/local-deep-researcher.git
       dockerfile: Dockerfile
     container_name: local-deep-research
-    profiles: ["research"]
+    profiles: ["local-deep-research"]
     restart: unless-stopped
     volumes:
       - ldr_data:/data
@@ -2679,7 +2683,7 @@ services:
       # Data Directory
       - LDR_DATA_DIR=/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:2024/health || wget -q --spider http://localhost:2024 || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:2024/health || curl -fsS http://localhost:2024 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

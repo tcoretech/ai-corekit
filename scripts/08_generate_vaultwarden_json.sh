@@ -378,16 +378,6 @@ EOF
             "Autonomous research agent that generates comprehensive 2000+ word reports with citations. Uses local Ollama and SearXNG. Protected with Basic Auth. Internal Backend: http://gpt-researcher:8000, Frontend: http://gpt-researcher-ui:3000"
     fi
 
-    # Local Deep Research
-    if is_profile_active "research" || is_profile_active "local-deep-research"; then
-        add_login_item \
-            "Local Deep Research - LangChain Iterative Research" \
-            "${LDR_USERNAME}" \
-            "${LDR_PASSWORD}" \
-            "https://${LDR_HOSTNAME}" \
-            "LangChain's iterative research system with ~95% SimpleQA accuracy. Uses LangGraph for visual research process. Protected with Basic Auth. Internal API: http://local-deep-research:2024. LangGraph Studio: https://smith.langchain.com/studio/thread?baseUrl=https://${LDR_HOSTNAME}"
-    fi
-
     # Research Tools Configuration
     if (is_profile_active "research" || is_profile_active "gpt-researcher") || (is_profile_active "research" || is_profile_active "local-deep-research"); then
         add_secure_note \

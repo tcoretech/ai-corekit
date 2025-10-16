@@ -553,29 +553,31 @@ https://{$NEO4J_HOSTNAME}:7687 {
 # AI RESEARCH TOOLS
 # ============================================================================
 
-# GPT Researcher - Autonomous Research Agent (Protected with Basic Auth)
+# GPT Researcher - Autonomous Research Agent (Smart Auth)
 {$GPTR_HOSTNAME} {
-    basic_auth {
-        {$GPTR_USERNAME} {$GPTR_PASSWORD_HASH}
+    # WebSocket directly without Auth
+    @websocket {
+        path /ws
+        header Connection *Upgrade*
+        header Upgrade websocket
     }
-    reverse_proxy gpt-researcher-ui:3000 {
-        # For streaming responses
-        flush_interval -1
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
+    handle @websocket {
+        reverse_proxy gpt-researcher:8000
     }
-}
-
-# Local Deep Research - LangGraph Research System (Protected with Basic Auth)
-{$LDR_HOSTNAME} {
-    basic_auth {
-        {$LDR_USERNAME} {$LDR_PASSWORD_HASH}
-    }
-    reverse_proxy local-deep-research:2024 {
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
+    
+    # UI with Auth
+    handle {
+        basic_auth {
+            {$GPTR_USERNAME} {$GPTR_PASSWORD_HASH}
+        }
+        
+        # API to Backend
+        handle /api/* {
+            reverse_proxy gpt-researcher:8000
+        }
+        
+        # Frontend
+        reverse_proxy gpt-researcher-ui:3000
     }
 }
 

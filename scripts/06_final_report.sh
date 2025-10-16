@@ -206,26 +206,18 @@ fi
 
 if is_profile_active "research" || is_profile_active "local-deep-research"; then
   echo
-  echo "======================= Local Deep Research =========================="
+  echo "======================= Local Deep Research API ========================"
   echo
-  echo "Host: ${LDR_HOSTNAME:-<hostname_not_set>}"
-  echo "User: ${LDR_USERNAME:-<not_set_in_env>}"
-  echo "Password: ${LDR_PASSWORD:-<not_set_in_env>}"
-  echo
-  echo "Access:"
-  echo "  External (HTTPS): https://${LDR_HOSTNAME:-<hostname_not_set>}"
-  echo "  LangGraph Studio: https://smith.langchain.com/studio/thread?baseUrl=https://${LDR_HOSTNAME:-<hostname_not_set>}"
-  echo "  Internal (Docker): http://local-deep-research:2024"
-  echo
-  echo "Configuration:"
-  echo "  Search: ${LDR_SEARCH_API:-searxng}"
-  echo "  LLM: ${LDR_LLM_PROVIDER:-ollama} (${LDR_LOCAL_MODEL:-qwen2.5:7b-instruct-q4_K_M})"
-  echo "  Research Loops: ${LDR_MAX_LOOPS:-5}"
+  echo "Internal API Only - No Web Interface!"
+  echo "Access: http://local-deep-research:2024 (from n8n/containers only)"
   echo
   echo "n8n Integration:"
-  echo "  HTTP Request: http://local-deep-research:2024/api/research"
+  echo "  HTTP Request: http://local-deep-research:2024/assistants/search"
   echo "  Method: POST"
-  echo "  Body: {\"query\": \"your topic\", \"iterations\": 5}"
+  echo "  Body: {\"query\": \"your research topic\"}"
+  echo
+  echo "LangGraph Studio (external):"
+  echo "  Use ngrok or port forwarding to expose port 2024"
   echo
   echo "Documentation: https://github.com/langchain-ai/local-deep-researcher"
 fi

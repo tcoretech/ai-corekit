@@ -721,16 +721,459 @@ sudo bash ./scripts/install.sh
 
 ## 🔄 Update
 
-<!-- TODO: Update guide will be added in Phase 2, Step 3 -->
+Keep your AI LaunchKit installation up-to-date with the latest features, security patches, and bug fixes.
 
-**Comprehensive update instructions will be added here.**
+### When to Update
 
-Topics to cover:
-- Running update.sh
-- Backup before update
-- Service-specific updates
-- PostgreSQL 17 vs 18 considerations
-- Rollback procedures
+**Recommended Update Schedule:**
+- **Security Updates:** Immediately when announced
+- **Regular Updates:** Monthly or quarterly
+- **Major Releases:** After reviewing changelog
+
+**Update for:**
+- New service versions
+- Security patches
+- Bug fixes
+- New features
+- Performance improvements
+
+**Check for Updates:**
+```bash
+# Check current version
+git log -1 --oneline
+
+# Check for updates
+cd ai-launchkit
+git fetch
+git status
+
+# View changelog
+git log --oneline origin/main..HEAD
+```
+
+### Pre-Update Checklist
+
+Before updating, ensure you have:
+
+✅ **Backups of Critical Data**
+✅ **Read the Changelog**
+✅ **Scheduled Maintenance Window**
+✅ **Verified Server Resources**
+✅ **Tested on Staging (if applicable)**
+
+### Backup Before Update
+
+**⚠️ CRITICAL: Always backup before updating!**
+
+#### Quick Backup
+
+```bash
+# 1. Backup .env file
+cp .env .env.backup
+
+# 2. Export Docker volumes
+sudo bash ./scripts/backup_volumes.sh
+
+# 3. Backup PostgreSQL database
+docker exec postgres pg_dumpall -U postgres > backup-$(date +%Y%m%d).sql
+
+# 4. Backup n8n workflows
+docker exec n8n n8n export:workflow --all --output=/data/shared/workflows-backup.json
+
+# 5. List all running services (for reference)
+docker compose ps > services-$(date +%Y%m%d).txt
+```
+
+#### Comprehensive Backup
+
+```bash
+# Stop services (optional, for consistent backup)
+docker compose down
+
+# Backup all Docker volumes
+docker run --rm \
+  -v $(pwd):/backup \
+  -v localai_n8n_data:/data/n8n \
+  -v localai_postgres_data:/data/postgres \
+  busybox tar czf /backup/volumes-backup-$(date +%Y%m%d).tar.gz /data
+
+# Restart services
+docker compose up -d
+```
+
+### Update Procedure
+
+#### Standard Update
+
+```bash
+# Navigate to AI LaunchKit directory
+cd ai-launchkit
+
+# Pull latest changes
+git pull
+
+# Run update script
+sudo bash ./scripts/update.sh
+```
+
+**The update script will:**
+1. ✓ Pull latest Docker images
+2. ✓ Update configurations
+3. ✓ Restart services with new versions
+4. ✓ Clean up old images
+5. ✓ Display update summary
+
+**Update Duration:** 5-15 minutes depending on services
+
+#### Manual Update Process
+
+If you prefer manual control:
+
+```bash
+# 1. Pull latest code
+git pull
+
+# 2. Pull new Docker images
+docker compose pull
+
+# 3. Restart services with new images
+docker compose up -d
+
+# 4. Clean up old images (optional)
+docker image prune -af
+```
+
+### PostgreSQL Version Handling
+
+**Important: PostgreSQL 17 vs 18**
+
+AI LaunchKit now pins PostgreSQL to version 17 to prevent compatibility issues. The PostgreSQL 18 data format is incompatible with version 17.
+
+#### Check Your PostgreSQL Version
+
+```bash
+docker exec postgres postgres --version
+```
+
+#### If You Have PostgreSQL 17 (Most Users)
+
+No action needed. Simply run the update script:
+
+```bash
+sudo bash ./scripts/update.sh
+```
+
+#### If You Have PostgreSQL 18
+
+Pin your version before updating:
+
+```bash
+# Pin to PostgreSQL 18
+echo "POSTGRES_VERSION=18" >> .env
+
+# Now update safely
+sudo bash ./scripts/update.sh
+```
+
+**Your data stays on PostgreSQL 18 and continues working normally.**
+
+#### If You Experience Database Errors
+
+If you see "database files are incompatible" errors:
+
+<details>
+<summary><b>Emergency Recovery Steps</b></summary>
+
+```bash
+# 1. BACKUP YOUR DATA (CRITICAL!)
+docker exec postgres pg_dumpall -U postgres > emergency-backup.sql
+
+# 2. Stop all services
+docker compose down
+
+# 3. Remove incompatible volume
+docker volume rm localai_postgres_data
+
+# 4. Pull latest fixes
+git pull
+
+# 5. Start PostgreSQL (now pinned to v17)
+docker compose up -d postgres
+sleep 10
+
+# 6. Restore your data
+docker exec -i postgres psql -U postgres < emergency-backup.sql
+
+# 7. Start all services
+docker compose up -d
+```
+
+</details>
+
+#### Version Verification
+
+After update, verify versions:
+
+```bash
+docker exec postgres postgres --version
+# Should show: PostgreSQL 17.x or 18.x (if pinned)
+```
+
+### Post-Update Verification
+
+#### Check Service Status
+
+```bash
+# View all services
+docker compose ps
+
+# All should show: STATUS = Up
+# If any show "Restarting" wait 2-3 minutes, then check logs:
+docker compose logs [service-name] --tail 50
+```
+
+#### Test Key Services
+
+**n8n:**
+```bash
+curl -I https://n8n.yourdomain.com
+# Should return: HTTP/2 200
+```
+
+**Database:**
+```bash
+docker exec postgres pg_isready -U postgres
+# Should return: accepting connections
+```
+
+**Redis:**
+```bash
+docker exec redis redis-cli ping
+# Should return: PONG
+```
+
+#### Monitor Resource Usage
+
+```bash
+# Check memory and CPU
+docker stats --no-stream
+
+# Check disk space
+df -h
+```
+
+#### Verify Workflows Still Run
+
+1. Open n8n: `https://n8n.yourdomain.com`
+2. Open a test workflow
+3. Click "Execute Workflow"
+4. Verify it completes successfully
+
+### Rollback Procedure
+
+If the update causes issues, rollback to the previous version:
+
+#### Quick Rollback
+
+```bash
+# 1. Navigate to AI LaunchKit
+cd ai-launchkit
+
+# 2. View commit history
+git log --oneline -10
+
+# 3. Rollback to previous commit
+git reset --hard [previous-commit-hash]
+
+# 4. Restore .env if needed
+cp .env.backup .env
+
+# 5. Restart with old version
+docker compose down
+docker compose up -d
+```
+
+#### Full Rollback with Data Restore
+
+```bash
+# 1. Stop services
+docker compose down
+
+# 2. Restore volumes from backup
+tar xzf volumes-backup-YYYYMMDD.tar.gz
+
+# 3. Restore PostgreSQL
+docker compose up -d postgres
+sleep 10
+docker exec -i postgres psql -U postgres < backup-YYYYMMDD.sql
+
+# 4. Start all services
+docker compose up -d
+```
+
+### Service-Specific Updates
+
+Some services may require additional steps:
+
+#### ComfyUI Models
+
+```bash
+# Models are not automatically updated
+# To update models, manually download new versions to:
+/var/lib/docker/volumes/localai_comfyui_data/_data/models/
+```
+
+#### Ollama Models
+
+```bash
+# Update installed models
+docker exec ollama ollama pull llama3.2
+docker exec ollama ollama pull mistral
+```
+
+#### n8n Community Nodes
+
+```bash
+# Update community nodes
+docker exec n8n npm update -g n8n
+
+# Restart n8n
+docker compose restart n8n
+```
+
+#### Supabase
+
+```bash
+# Supabase has multiple components
+# All update together with docker compose pull
+docker compose pull supabase-kong supabase-auth supabase-rest supabase-storage
+docker compose up -d supabase-kong supabase-auth supabase-rest supabase-storage
+```
+
+### Update Troubleshooting
+
+#### Services Won't Start After Update
+
+```bash
+# Check logs for specific error
+docker compose logs [service-name] --tail 100
+
+# Common fixes:
+# 1. Recreate service
+docker compose up -d --force-recreate [service-name]
+
+# 2. Clear cache and restart
+docker compose down
+docker system prune -f
+docker compose up -d
+
+# 3. Check .env file is intact
+diff .env .env.backup
+```
+
+#### Database Connection Errors
+
+```bash
+# PostgreSQL not starting
+docker compose logs postgres --tail 100
+
+# Common causes:
+# - Incompatible data format (see PostgreSQL section)
+# - Corrupted data (restore from backup)
+# - Insufficient disk space (check with df -h)
+```
+
+#### Port Conflicts After Update
+
+```bash
+# Check what's using the port
+sudo lsof -i :80
+sudo lsof -i :443
+
+# Stop conflicting service
+sudo systemctl stop [service-name]
+
+# Or change port in .env
+nano .env
+# Change PORT_VARIABLE to different port
+```
+
+#### Missing Environment Variables
+
+```bash
+# Compare with .env.example
+diff .env .env.example
+
+# Add any missing variables
+nano .env
+
+# Restart services
+docker compose restart
+```
+
+### Maintenance Updates
+
+#### Regular Maintenance
+
+```bash
+# Clean up old Docker resources (monthly)
+docker system prune -af --volumes
+
+# Update system packages (monthly)
+sudo apt update && sudo apt upgrade -y
+
+# Check disk space (weekly)
+df -h
+docker system df
+```
+
+#### Security Updates
+
+```bash
+# Update OS security patches
+sudo apt update
+sudo apt upgrade -y
+
+# Update Docker
+sudo apt install docker-ce docker-ce-cli containerd.io
+
+# Restart Docker daemon
+sudo systemctl restart docker
+
+# Restart all services
+docker compose restart
+```
+
+### Update Best Practices
+
+1. **Always Backup First** - Cannot stress this enough
+2. **Test in Staging** - If you have a test environment
+3. **Read Changelogs** - Know what's changing
+4. **Update Off-Peak** - Minimize user impact
+5. **Monitor After Update** - Watch logs for 24 hours
+6. **Keep Backups** - Retain last 3-5 backups
+7. **Document Changes** - Note what was updated and when
+
+### Update Notifications
+
+Stay informed about updates:
+
+- **Watch GitHub Repository**: Get notifications for new releases
+- **Join Community Forum**: [oTTomator Think Tank](https://thinktank.ottomator.ai/c/local-ai/18)
+- **Discord** *(coming soon)*: Real-time update announcements
+
+### Getting Help with Updates
+
+If you encounter issues:
+
+1. **Check Logs**: `docker compose logs [service]`
+2. **Search Issues**: [GitHub Issues](https://github.com/freddy-schuetz/ai-launchkit/issues)
+3. **Community Forum**: Ask for help
+4. **Rollback**: Use the procedure above if needed
+
+---
+
+**Next Steps:** After updating, explore the [Services section](#-services) for new features in each tool.
 
 ---
 

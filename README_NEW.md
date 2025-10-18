@@ -293,33 +293,429 @@ docker compose restart
 
 ## 📦 Installation
 
-<!-- TODO: Detailed installation guide will be added in Phase 2, Step 2 -->
-
 ### Prerequisites
 
-1. **Server Requirements:**
-   - Ubuntu 24.04 LTS (64-bit)
-   - Minimum: 4 GB RAM, 2 CPU cores, 30GB disk (basic setup)
-   - Recommended: 16+ GB RAM, 8+ CPU cores, 120GB disk (full setup)
+Before installing AI LaunchKit, ensure your environment meets these requirements:
 
-2. **Domain Configuration:**
-   - A registered domain with wildcard DNS
-   - Configure DNS: `A *.yourdomain.com -> YOUR_SERVER_IP`
+#### 1. Server Requirements
 
-3. **Server Access:**
-   - SSH access to your server
-   - Root or sudo privileges
+**Operating System:**
+- Ubuntu 24.04 LTS (64-bit) - **Required**
+- Fresh installation recommended
+- Root or sudo access required
 
-### Installation Steps
+**Hardware Requirements:**
 
-**Detailed installation guide with step-by-step instructions will be added here.**
+| Setup Type | RAM | CPU Cores | Disk Space | Use Case |
+|------------|-----|-----------|------------|----------|
+| **Minimal** | 4 GB | 2 | 30 GB | n8n + basic services |
+| **Standard** | 8 GB | 4 | 60 GB | 10-15 services |
+| **Recommended** | 16 GB | 8 | 120 GB | Full setup with AI tools |
+| **Enterprise** | 32+ GB | 16+ | 250+ GB | All services + ComfyUI/Ollama |
 
-Topics to cover:
-- Domain setup
-- API key configuration
-- Service selection via wizard
-- Post-installation verification
-- First login credentials
+**Network Requirements:**
+- Open ports: 80 (HTTP), 443 (HTTPS), 22 (SSH)
+- Optional: UDP 10000 (Jitsi), UDP 50000-50100 (LiveKit)
+- Stable internet connection
+
+#### 2. Domain Configuration
+
+**You need a registered domain with wildcard DNS configured:**
+
+```
+Type: A
+Name: *
+Value: YOUR_SERVER_IP
+TTL: 300 (or your preferred value)
+```
+
+**Example Configuration:**
+```
+Domain: example.com
+A Record: *.example.com → 203.0.113.45
+```
+
+**This creates:**
+- n8n.example.com
+- bolt.example.com
+- webui.example.com
+- ... and all other subdomains
+
+**DNS Propagation:**
+- Wait 5-15 minutes after DNS configuration
+- Verify with: `nslookup n8n.yourdomain.com`
+
+#### 3. SSH Access
+
+**Connect to your server:**
+```bash
+ssh root@YOUR_SERVER_IP
+# or
+ssh your-user@YOUR_SERVER_IP
+```
+
+**If using a non-root user, ensure sudo access:**
+```bash
+sudo -v
+```
+
+### Step-by-Step Installation
+
+#### Step 1: Prepare Your Server
+
+```bash
+# Update system packages
+sudo apt update && sudo apt upgrade -y
+
+# Install required tools
+sudo apt install -y git curl
+
+# Verify Ubuntu version
+lsb_release -a
+# Should show: Ubuntu 24.04 LTS
+```
+
+#### Step 2: Clone the Repository
+
+```bash
+# Clone AI LaunchKit
+git clone https://github.com/freddy-schuetz/ai-launchkit
+cd ai-launchkit
+
+# Verify you're in the correct directory
+ls -la
+# Should show: scripts/, docker-compose.yml, etc.
+```
+
+#### Step 3: Run the Installer
+
+```bash
+# Start the installation wizard
+sudo bash ./scripts/install.sh
+```
+
+**The installer will:**
+1. Check system requirements
+2. Install Docker & Docker Compose
+3. Configure firewall (UFW) and security (Fail2ban)
+4. Generate secure passwords
+5. Launch interactive service selection
+6. Deploy selected services
+7. Display access URLs and credentials
+
+#### Step 4: Interactive Configuration
+
+**The wizard will ask for:**
+
+1. **Domain Name**
+   ```
+   Enter your domain: example.com
+   (without www or subdomain)
+   ```
+
+2. **Email Address**
+   ```
+   Enter your email: admin@example.com
+   (used for: SSL certificates, service logins, notifications)
+   ```
+
+3. **API Keys (Optional)**
+   ```
+   OpenAI API Key: sk-... (or leave empty)
+   Anthropic API Key: sk-ant-... (or leave empty)
+   Groq API Key: gsk_... (or leave empty)
+   ```
+   *You can add these later in the `.env` file*
+
+4. **Import n8n Workflows?**
+   ```
+   Import 300+ pre-built workflows? (yes/no)
+   Warning: Adds 20-30 minutes to installation
+   ```
+   *Recommended for first-time users*
+
+5. **n8n Worker Count**
+   ```
+   Number of parallel workers: 1-4
+   Recommendation:
+   - 1 worker: 4-8 GB RAM
+   - 2 workers: 8-12 GB RAM  
+   - 4 workers: 16+ GB RAM
+   ```
+
+6. **Service Selection**
+   
+   A checklist menu appears. Use:
+   - **Space** to select/deselect
+   - **Arrow keys** to navigate
+   - **Enter** to confirm
+
+   **Service Categories:**
+   - Core: n8n, Caddy, PostgreSQL (auto-selected)
+   - AI Development: bolt.diy, OpenUI, ComfyUI
+   - Automation: Flowise, n8n-MCP
+   - Databases: Supabase, Qdrant, Neo4j
+   - Business: Cal.com, Kimai, Invoice Ninja
+   - Monitoring: Grafana, Prometheus, Langfuse
+   - Communication: Jitsi, Mailserver, SnappyMail
+   - And many more...
+
+   **Selection Tips:**
+   - Start minimal for testing (just n8n)
+   - Add services gradually
+   - Consider your RAM when selecting
+
+#### Step 5: Installation Progress
+
+The installer will now:
+
+```bash
+[1/6] ✓ System preparation complete
+[2/6] ✓ Docker installed
+[3/6] ✓ Secrets generated
+[4/6] ✓ Services selected
+[5/6] ⏳ Deploying containers... (5-10 minutes)
+[6/6] ✓ Installation complete!
+```
+
+**This process takes:**
+- Without workflows: 10-15 minutes
+- With workflows: 30-45 minutes
+
+#### Step 6: Installation Report
+
+At the end, you'll see:
+
+```
+═══════════════════════════════════════════
+    AI LAUNCHKIT INSTALLATION COMPLETE
+═══════════════════════════════════════════
+
+🌐 Access Your Services:
+
+Core Services:
+  n8n:        https://n8n.example.com
+  Vaultwarden: https://vault.example.com
+  Mailpit:    https://mail.example.com
+
+AI Tools:
+  bolt.diy:   https://bolt.example.com
+  Open WebUI: https://webui.example.com
+
+📝 Credentials saved to:
+  ./installation_report.txt
+  .env (on server)
+
+🔑 Download all passwords:
+  sudo bash ./scripts/download_credentials.sh
+
+⚠️ IMPORTANT:
+  - Save your credentials securely
+  - Configure API keys in .env if needed
+  - First user to register becomes admin
+
+═══════════════════════════════════════════
+```
+
+**Save this information!** The report contains all access URLs and credentials.
+
+### Post-Installation
+
+#### Verify Installation
+
+```bash
+# Check all services are running
+docker compose ps
+
+# Should show: STATUS = Up
+# If any service shows "Restarting" or "Exit", check logs:
+docker compose logs [service-name]
+
+# Check resource usage
+docker stats --no-stream
+```
+
+#### First Logins
+
+**n8n (Workflow Automation):**
+1. Open `https://n8n.example.com`
+2. First visitor creates owner account
+3. Choose strong password (min 8 characters)
+4. Setup complete!
+
+**Vaultwarden (Password Manager):**
+1. Open `https://vault.example.com`
+2. Click "Create Account"
+3. Set master password (very strong!)
+4. Import AI LaunchKit credentials:
+   ```bash
+   sudo bash ./scripts/download_credentials.sh
+   ```
+5. Download JSON file and import in Vaultwarden
+
+**Other Services:**
+- Most services: First user = admin
+- Some require credentials from `.env` file
+- Check `installation_report.txt` for details
+
+#### Configure API Keys (Optional)
+
+If you skipped API keys during installation:
+
+```bash
+# Edit environment file
+nano .env
+
+# Add your keys:
+OPENAI_API_KEY=sk-your-key-here
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+GROQ_API_KEY=gsk_your-key-here
+
+# Save and exit (Ctrl+X, Y, Enter)
+
+# Apply changes
+docker compose restart
+```
+
+#### DNS Verification
+
+Ensure your domains are resolving correctly:
+
+```bash
+# Test DNS resolution
+nslookup n8n.example.com
+nslookup bolt.example.com
+
+# Test HTTPS access
+curl -I https://n8n.example.com
+# Should return: HTTP/2 200
+```
+
+#### Firewall Check
+
+Verify firewall rules are correct:
+
+```bash
+sudo ufw status
+
+# Should show:
+# 22/tcp                     ALLOW       Anywhere
+# 80/tcp                     ALLOW       Anywhere
+# 443/tcp                    ALLOW       Anywhere
+```
+
+### Optional: Docker-Mailserver Setup
+
+If you selected Docker-Mailserver for production email:
+
+#### Add Email Accounts
+
+```bash
+# Create first email account
+docker exec -it mailserver setup email add admin@example.com
+
+# Create additional accounts
+docker exec -it mailserver setup email add noreply@example.com
+docker exec -it mailserver setup email add support@example.com
+
+# List all accounts
+docker exec mailserver setup email list
+```
+
+#### Configure DNS for Email
+
+**Required DNS Records:**
+
+```
+# MX Record
+Type: MX
+Name: @
+Value: mail.example.com
+Priority: 10
+
+# A Record for mail
+Type: A  
+Name: mail
+Value: YOUR_SERVER_IP
+
+# SPF Record
+Type: TXT
+Name: @
+Value: v=spf1 mx ~all
+
+# DMARC Record
+Type: TXT
+Name: _dmarc
+Value: v=DMARC1; p=none; rua=mailto:postmaster@example.com
+```
+
+#### Generate DKIM Keys
+
+```bash
+# Generate DKIM signature
+docker exec mailserver setup config dkim
+
+# Get public key for DNS
+docker exec mailserver cat /tmp/docker-mailserver/opendkim/keys/example.com/mail.txt
+
+# Add as TXT record:
+# Name: mail._domainkey
+# Value: (paste the key from above)
+```
+
+### Troubleshooting Installation
+
+#### Services Won't Start
+
+```bash
+# Check Docker is running
+sudo systemctl status docker
+
+# Check specific service logs
+docker compose logs [service-name] --tail 50
+
+# Common issues:
+# - Not enough RAM: Reduce services or upgrade server
+# - Port conflicts: Check if ports 80/443 are free
+# - DNS not ready: Wait 15 minutes for propagation
+```
+
+#### SSL Certificate Errors
+
+```bash
+# Caddy might take a few minutes to get certificates
+# Check Caddy logs:
+docker compose logs caddy --tail 50
+
+# If problems persist:
+# 1. Verify DNS is correct: nslookup n8n.example.com
+# 2. Ensure ports 80/443 are open
+# 3. Check domain is valid and publicly accessible
+```
+
+#### Installation Fails
+
+```bash
+# Re-run specific installation step:
+sudo bash ./scripts/01_system_preparation.sh
+sudo bash ./scripts/02_install_docker.sh
+# etc.
+
+# Or start completely fresh:
+sudo bash ./scripts/cleanup.sh
+git pull
+sudo bash ./scripts/install.sh
+```
+
+#### Need Help?
+
+- **Documentation:** Check [Services section](#-services) for detailed guides
+- **Community:** [oTTomator Think Tank Forum](https://thinktank.ottomator.ai/c/local-ai/18)
+- **Issues:** [GitHub Issues](https://github.com/freddy-schuetz/ai-launchkit/issues)
+
+---
+
+**Next Steps:** Explore the [Services section](#-services) for detailed setup guides for each tool.
 
 ---
 

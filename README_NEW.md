@@ -21980,32 +21980,2768 @@ return {
 </details>
 
 <details>
-<summary><b>📝 Scriberr - Audio Transcription</b></summary>
+<summary><b>📝 Scriberr - Audio Transcription with Speaker Diarization</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Scriberr?
+
+Scriberr is an advanced AI-powered audio transcription service built on WhisperX that provides high-accuracy transcription with speaker diarization (identifying who said what). Perfect for meetings, interviews, podcasts, and call recordings, Scriberr goes beyond basic transcription by automatically identifying and labeling different speakers, making it ideal for multi-speaker content analysis.
+
+### Features
+
+- **WhisperX-Powered Transcription** - High accuracy with precise timestamp alignment
+- **Speaker Diarization** - Automatically identifies and labels different speakers (Speaker 1, Speaker 2, etc.)
+- **AI Summaries** - Generate meeting summaries using OpenAI or Anthropic models
+- **YouTube Support** - Transcribe directly from YouTube URLs without downloading
+- **REST API** - Full automation support for n8n and other tools
+- **Multiple Model Options** - Choose from tiny to large models based on accuracy needs
+- **Multi-Language Support** - Supports 99 languages with auto-detection
+
+### Initial Setup
+
+**First Login to Scriberr:**
+
+1. Navigate to `https://scriberr.yourdomain.com`
+2. No authentication required by default (internal network only)
+3. Upload a test audio file or paste a YouTube URL
+4. Configure speaker detection settings:
+   - **Min Speakers**: Minimum number of expected speakers (default: 2)
+   - **Max Speakers**: Maximum number of speakers to identify (default: 4)
+5. Click "Transcribe" and wait for processing
+6. First transcription downloads the model (2-5 minutes initial setup)
+7. View results with speaker labels and timestamps
+
+**Model Selection:**
+- **tiny** (~1GB RAM): Fast processing, draft quality
+- **base** (~1.5GB RAM): Good balance, recommended default
+- **small** (~3GB RAM): Better accuracy for accents
+- **medium** (~5GB RAM): Professional-grade transcription
+- **large** (~10GB RAM): Maximum accuracy, slower processing
+
+### n8n Integration Setup
+
+**Access Scriberr API from n8n:**
+
+Scriberr provides a REST API for complete automation. Use n8n's HTTP Request node to interact with all features.
+
+**Internal URL:** `http://scriberr:8080`
+
+**Available Endpoints:**
+- `POST /api/upload` - Upload and transcribe audio file
+- `GET /api/transcripts/{id}` - Get transcript by ID
+- `POST /api/youtube` - Transcribe from YouTube URL
+- `POST /api/summary` - Generate AI summary of transcript
+- `GET /api/models` - List available Whisper models
+
+### Example Workflows
+
+#### Example 1: Meeting Recording to Transcript with Speakers
+
+```javascript
+// Complete workflow: Upload → Transcribe → Identify Speakers → Email Results
+
+// 1. HTTP Request Node - Upload Audio File
+Method: POST
+URL: http://scriberr:8080/api/upload
+Send Body: Form Data Multipart
+Body Parameters:
+  - file: {{ $binary.data }}  // n8n Binary File
+  - speaker_detection: true
+  - min_speakers: 2
+  - max_speakers: 4
+  - model: base  // or: tiny, small, medium, large
+
+// Response includes transcript_id for next steps
+
+// 2. Wait Node - Processing Time
+Time: 30 seconds
+// Adjust based on audio length (1:1 ratio typical)
+
+// 3. HTTP Request Node - Get Transcript Results
+Method: GET
+URL: http://scriberr:8080/api/transcripts/{{$json.transcript_id}}
+
+// Response format:
+{
+  "transcript_id": "abc123",
+  "status": "completed",
+  "text": "Full transcript text...",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 3.5,
+      "text": "Hello everyone, welcome to the meeting.",
+      "speaker": "SPEAKER_00"
+    },
+    {
+      "start": 3.5,
+      "end": 7.2,
+      "text": "Thanks for having me.",
+      "speaker": "SPEAKER_01"
+    }
+  ],
+  "speakers": {
+    "SPEAKER_00": "Speaker 1",
+    "SPEAKER_01": "Speaker 2"
+  }
+}
+
+// 4. Code Node - Format Transcript with Speaker Labels
+const segments = $input.item.json.segments;
+const speakers = $input.item.json.speakers;
+
+const formatted = segments.map(seg => {
+  const speakerLabel = speakers[seg.speaker] || seg.speaker;
+  const timestamp = new Date(seg.start * 1000).toISOString().substr(11, 8);
+  return `[${timestamp}] ${speakerLabel}: ${seg.text}`;
+}).join('\n\n');
+
+return {
+  formatted_transcript: formatted,
+  full_text: $input.item.json.text
+};
+
+// 5. Email Node - Send Transcript to Participants
+To: meeting@company.com
+Subject: Meeting Transcript - {{ $now.format('YYYY-MM-DD') }}
+Body: |
+  Meeting Transcript (with speaker identification):
+  
+  {{ $json.formatted_transcript }}
+  
+  ---
+  Full transcript attached.
+```
+
+#### Example 2: YouTube Video to Meeting Minutes
+
+```javascript
+// Transcribe YouTube video and generate AI summary
+
+// 1. Webhook Trigger - Receive YouTube URL
+// Input: { "youtube_url": "https://youtube.com/watch?v=..." }
+
+// 2. HTTP Request Node - Transcribe YouTube Video
+Method: POST
+URL: http://scriberr:8080/api/youtube
+Send Body: JSON
+{
+  "url": "{{ $json.youtube_url }}",
+  "speaker_detection": true,
+  "min_speakers": 1,
+  "max_speakers": 5,
+  "model": "small"  // Better for online videos
+}
+
+// Response: { "transcript_id": "xyz789", "status": "processing" }
+
+// 3. Wait Node - YouTube Processing
+Time: 2 minutes
+// YouTube downloads take longer
+
+// 4. HTTP Request Node - Check Transcript Status
+Method: GET
+URL: http://scriberr:8080/api/transcripts/{{$json.transcript_id}}
+
+// 5. HTTP Request Node - Generate AI Summary
+Method: POST
+URL: http://scriberr:8080/api/summary
+Send Body: JSON
+{
+  "transcript_id": "{{$json.transcript_id}}",
+  "prompt": "Create detailed meeting minutes with:\n- Main discussion points\n- Key decisions\n- Action items with assigned owners\n- Follow-up items",
+  "model": "gpt-4o-mini"  // or: gpt-4, claude-3-5-sonnet
+}
+
+// Response:
+{
+  "summary": "# Meeting Minutes\n\n## Main Points...",
+  "action_items": ["Task 1", "Task 2"]
+}
+
+// 6. Google Docs Node - Create Document
+Title: Meeting Minutes - {{ $now.format('YYYY-MM-DD') }}
+Content: |
+  # Video Meeting Minutes
+  
+  **Video:** {{ $json.youtube_url }}
+  **Date:** {{ $now.format('YYYY-MM-DD HH:mm') }}
+  
+  ## AI-Generated Summary
+  {{ $json.summary }}
+  
+  ## Full Transcript with Speakers
+  {{ $json.transcript_text }}
+  
+  ## Action Items
+  {{ $json.action_items.map(item => `- [ ] ${item}`).join('\n') }}
+
+// 7. Slack Node - Notify Team
+Channel: #meetings
+Message: |
+  📝 New meeting minutes available:
+  {{ $json.document_url }}
+  
+  Key action items:
+  {{ $json.action_items[0] }}
+  {{ $json.action_items[1] }}
+```
+
+#### Example 3: Podcast Processing with Speaker Identification
+
+```javascript
+// Automated podcast transcription workflow
+
+// 1. Google Drive Trigger - New file in /Podcasts folder
+// Monitors for new audio uploads
+
+// 2. Google Drive Node - Download audio file
+File ID: {{ $json.id }}
+Output: Binary
+
+// 3. HTTP Request Node - Upload to Scriberr
+Method: POST
+URL: http://scriberr:8080/api/upload
+Body: Form Data Multipart
+  - file: {{ $binary.data }}
+  - speaker_detection: true
+  - min_speakers: 2  // Host + Guest
+  - max_speakers: 3  // In case of multiple guests
+  - model: medium  // Better for production quality
+
+// 4. Wait Node - Processing
+Time: {{ Math.ceil($json.duration / 60) }} minutes
+// Process time ≈ audio length
+
+// 5. Loop Node - Poll for Completion
+// Check every 30 seconds until status = "completed"
+
+// 6. HTTP Request Node - Get Results
+Method: GET
+URL: http://scriberr:8080/api/transcripts/{{$json.transcript_id}}
+
+// 7. Code Node - Create Podcast Show Notes
+const segments = $input.item.json.segments;
+const speakers = $input.item.json.speakers;
+
+// Group by speaker
+const speakerSegments = {};
+segments.forEach(seg => {
+  if (!speakerSegments[seg.speaker]) {
+    speakerSegments[seg.speaker] = [];
+  }
+  speakerSegments[seg.speaker].push(seg);
+});
+
+// Generate timestamps for notable moments
+const timestamps = [];
+segments.forEach((seg, i) => {
+  const words = seg.text.split(' ');
+  if (words.some(w => ['question', 'important', 'key', 'summary'].includes(w.toLowerCase()))) {
+    timestamps.push({
+      time: Math.floor(seg.start),
+      text: seg.text.substring(0, 100)
+    });
+  }
+});
+
+return {
+  full_transcript: $input.item.json.text,
+  speaker_count: Object.keys(speakerSegments).length,
+  timestamps: timestamps.slice(0, 10),  // Top 10 moments
+  duration: segments[segments.length - 1].end
+};
+
+// 8. WordPress Node - Publish Show Notes
+Title: {{ $json.podcast_title }}
+Content: |
+  ## Podcast Episode Notes
+  
+  **Duration:** {{ Math.floor($json.duration / 60) }} minutes
+  **Speakers:** {{ $json.speaker_count }}
+  
+  ### Key Moments
+  {{ $json.timestamps.map(t => `[${Math.floor(t.time / 60)}:${t.time % 60}] ${t.text}`).join('\n') }}
+  
+  ### Full Transcript
+  {{ $json.full_transcript }}
+  
+  ---
+  *Transcript generated automatically with Scriberr*
+
+// 9. Social Media Nodes - Promote Episode
+// Twitter, LinkedIn, etc. with key quotes
+```
+
+#### Example 4: Customer Support Call Analysis
+
+```javascript
+// Analyze support calls for quality and insights
+
+// 1. FTP Trigger - New call recordings uploaded
+// Or webhook from phone system
+
+// 2. HTTP Request - Transcribe Call
+Method: POST
+URL: http://scriberr:8080/api/upload
+Body:
+  - file: {{ $binary.data }}
+  - speaker_detection: true
+  - min_speakers: 2  // Agent + Customer
+  - max_speakers: 2
+
+// 3. Wait + Get Transcript (see Example 1)
+
+// 4. Code Node - Analyze Call Quality
+const segments = $input.item.json.segments;
+
+// Identify agent vs customer
+const agentSpeaker = segments[0].speaker;  // First speaker = agent
+const customerSpeaker = segments.find(s => s.speaker !== agentSpeaker)?.speaker;
+
+// Calculate metrics
+const agentWords = segments
+  .filter(s => s.speaker === agentSpeaker)
+  .reduce((sum, s) => sum + s.text.split(' ').length, 0);
+  
+const customerWords = segments
+  .filter(s => s.speaker === customerSpeaker)
+  .reduce((sum, s) => sum + s.text.split(' ').length, 0);
+
+const talkRatio = agentWords / customerWords;
+const callDuration = segments[segments.length - 1].end;
+const avgPause = segments.reduce((sum, s, i, arr) => {
+  if (i === 0) return 0;
+  return sum + (s.start - arr[i-1].end);
+}, 0) / segments.length;
+
+return {
+  transcript: $input.item.json.text,
+  agent_speaker: agentSpeaker,
+  customer_speaker: customerSpeaker,
+  talk_ratio: talkRatio.toFixed(2),
+  call_duration_seconds: callDuration,
+  avg_pause_seconds: avgPause.toFixed(2),
+  total_segments: segments.length
+};
+
+// 5. HTTP Request - Sentiment Analysis (OpenAI)
+Method: POST
+URL: http://open-webui:8080/api/chat/completions
+Body: {
+  "model": "gpt-4o-mini",
+  "messages": [{
+    "role": "system",
+    "content": "Analyze this customer support call and rate: Customer Satisfaction (1-10), Issue Resolution (yes/no), Agent Performance (1-10), Key Issues, Recommendations"
+  }, {
+    "role": "user",
+    "content": "{{ $json.transcript }}"
+  }]
+}
+
+// 6. IF Node - Check if Escalation Needed
+If: {{ $json.customer_satisfaction < 5 }} OR {{ $json.issue_resolved === false }}
+
+// 7a. Slack Node - Alert Manager
+Channel: #support-escalations
+Message: |
+  ⚠️ Call Requires Review
+  
+  **Call Duration:** {{ $json.call_duration_seconds }}s
+  **Customer Satisfaction:** {{ $json.customer_satisfaction }}/10
+  **Issue Resolved:** {{ $json.issue_resolved }}
+  **Key Issues:** {{ $json.key_issues }}
+  
+  **Recommendations:** {{ $json.recommendations }}
+
+// 7b. Database - Store Call Analytics
+// Insert metrics for reporting dashboard
+```
+
+### Troubleshooting
+
+**Issue 1: First Transcription Takes Forever**
+
+```bash
+# Model downloads on first use - this is normal
+docker logs scriberr --tail 100
+
+# You'll see model download progress:
+# Downloading WhisperX model: base
+# Progress: [████████████] 100%
+
+# Check disk space
+df -h
+
+# Models require:
+# tiny: ~40MB
+# base: ~145MB
+# small: ~466MB
+# medium: ~1.5GB
+# large: ~6GB
+```
+
+**Solution:**
+- First transcription with a new model takes 2-30 minutes (model download)
+- Subsequent transcriptions are fast (model cached)
+- Pre-download models by running test transcription after install
+- Ensure sufficient disk space for models
+
+**Issue 2: Speaker Diarization Not Working**
+
+```bash
+# Check speaker detection settings in API request
+# Verify min_speakers and max_speakers are set correctly
+
+# Check Scriberr logs
+docker logs scriberr | grep -i "speaker\|diarization"
+
+# Common issues:
+# - Audio too short (< 30 seconds)
+# - Only one speaker in audio
+# - Poor audio quality (background noise)
+# - min_speakers > actual speakers
+```
+
+**Solution:**
+- Audio must be at least 30 seconds for diarization
+- Set realistic min/max speaker ranges (2-4 typical)
+- Provide clear audio with distinct speakers
+- Use mono audio (stereo can confuse diarization)
+- Speaker labels are generic (SPEAKER_00, SPEAKER_01) - rename manually if needed
+
+**Issue 3: YouTube Transcription Fails**
+
+```bash
+# Check Scriberr logs
+docker logs scriberr --tail 50
+
+# Common errors:
+# - "Video unavailable" → Private/restricted video
+# - "Network timeout" → Video too long
+# - "Format not supported" → Age-restricted content
+```
+
+**Solution:**
+- Use public, non-restricted YouTube videos only
+- For long videos (>2 hours), download separately and upload
+- Check YouTube URL is correct format: `https://youtube.com/watch?v=...`
+- Some corporate networks block YouTube downloads - test on different network
+
+**Issue 4: Out of Memory Error**
+
+```bash
+# Check container memory usage
+docker stats scriberr --no-stream
+
+# Check server RAM
+free -h
+
+# Scriberr memory requirements:
+# tiny model: ~1GB RAM
+# base model: ~1.5GB RAM
+# small model: ~3GB RAM
+# medium model: ~5GB RAM
+# large model: ~10GB RAM
+
+# Check Docker container limits
+docker inspect scriberr | grep -i memory
+```
+
+**Solution:**
+- Use smaller model (base instead of large)
+- Process shorter audio files (<30 minutes)
+- Split long files before upload
+- Increase Docker memory limits in docker-compose.yml
+- Ensure no other heavy services running simultaneously
+
+**Issue 5: AI Summary Generation Fails**
+
+```bash
+# Check if OpenAI/Anthropic API key is configured
+docker exec scriberr env | grep -i "api_key\|openai\|anthropic"
+
+# Check Scriberr summary endpoint
+docker logs scriberr | grep -i "summary\|openai\|anthropic"
+```
+
+**Solution:**
+- Configure OpenAI or Anthropic API key in Scriberr settings
+- Or use local LLM via Open WebUI for summaries
+- Summary endpoint requires transcript_id from completed transcription
+- Ensure sufficient API credits available
+- For privacy, use local LLM instead of external APIs
+
+### Tips for Best Results
+
+**Audio Quality Matters:**
+1. **Use high-quality recordings:** WAV or FLAC format preferred
+2. **Minimum 16kHz sample rate:** Higher is better (44.1kHz ideal)
+3. **Clear, front-facing mics:** Lapel mics or good USB microphones
+4. **Minimize background noise:** Quiet room, close doors, turn off fans
+5. **Avoid compression:** Upload uncompressed audio when possible
+
+**Speaker Diarization Tips:**
+1. **Set realistic speaker count:** Most meetings have 2-6 speakers
+2. **Distinct speakers:** Physical separation helps identification
+3. **Avoid overlapping speech:** Wait for pauses between speakers
+4. **Longer audio = better accuracy:** 5+ minutes recommended
+5. **Label speakers manually:** SPEAKER_00 → "John Smith" in post-processing
+
+**Processing Time Optimization:**
+1. **Choose right model for task:**
+   - Development/testing: tiny or base
+   - Production: small or medium
+   - Accuracy-critical: large
+2. **Pre-process audio:** Remove silence, normalize volume
+3. **Split long files:** <30 minutes per file for faster processing
+4. **Batch processing:** Queue multiple files during off-hours
+
+**Integration Best Practices:**
+1. **Use polling for long transcriptions:** Check status every 30-60 seconds
+2. **Handle errors gracefully:** Retry on network failures
+3. **Cache results:** Store transcripts in database to avoid re-processing
+4. **Webhook support:** Configure callbacks for async processing
+5. **Rate limiting:** Don't overwhelm with simultaneous requests
+
+### Resources
+
+- **GitHub:** https://github.com/rishikanthc/Scriberr
+- **WhisperX Paper:** https://arxiv.org/abs/2303.00747
+- **API Documentation:** Available at `http://scriberr:8080/docs` (when running)
+- **Speaker Diarization Guide:** https://github.com/pyannote/pyannote-audio
+- **Model Comparison:** https://github.com/openai/whisper#available-models-and-languages
+- **Language Support:** 99 languages supported by Whisper
+
+### When to Use Scriberr
+
+**✅ Perfect For:**
+- Meeting recordings with multiple speakers
+- Podcast episode transcription
+- Interview analysis
+- Customer support call quality assurance
+- Legal depositions and court recordings
+- Focus group analysis
+- Medical consultations (with proper consent)
+- Academic research interviews
+- Conference talk transcription
+
+**❌ Not Ideal For:**
+- Real-time live transcription (use Vexa instead)
+- Single speaker with real-time needs (use Faster-Whisper)
+- Very short audio clips (<10 seconds)
+- Heavily overlapping speech
+- Extremely noisy environments
+- Music transcription (not designed for this)
+
+**Scriberr vs Faster-Whisper vs Vexa:**
+- **Scriberr:** Best for speaker diarization, async processing, detailed transcripts
+- **Faster-Whisper:** Best for speed, real-time apps, single speaker
+- **Vexa:** Best for live meeting transcription (Google Meet, Teams)
 
 </details>
 
 <details>
-<summary><b>📞 Vexa - Meeting Transcription</b></summary>
+<summary><b>📞 Vexa - Real-Time Meeting Transcription Bot</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Vexa?
+
+Vexa is a real-time meeting transcription service that drops AI bots into online meetings (Google Meet & Microsoft Teams) to capture live conversations with speaker identification. Unlike post-meeting transcription, Vexa bots join meetings as participants and provide real-time transcripts with sub-second latency via WebSocket streaming. Perfect for automated meeting notes, sales call analysis, and compliance recording.
+
+⚠️ **Important:** If you experience installation or update issues with Vexa, see the [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md)
+
+### Features
+
+- **Real-Time Transcription** - Sub-second latency via WebSocket streaming
+- **Google Meet & Teams Bots** - Automated bot joins meetings as participant
+- **Speaker Identification** - Track who said what in real-time
+- **99 Languages** - Multilingual transcription with auto-detection
+- **REST & WebSocket APIs** - Choose between polling or streaming
+- **Privacy-First** - All data stays on your server, zero external dependencies
+
+### Initial Setup
+
+**Vexa runs on a separate Docker network** and requires special configuration.
+
+**Access URLs:**
+- **User API:** `http://localhost:8056` (from n8n)
+- **Admin API:** `http://localhost:8057` (requires admin token)
+- **Not publicly accessible** (internal API only)
+
+**API Authentication:**
+
+During installation, Vexa generates:
+1. **User API Key** - Shown in installation report, used for bot control
+2. **Admin Token** - For user management (check `.env` file)
+
+**Get Your API Key:**
+
+```bash
+# View your Vexa API key from installation logs
+cd ~/ai-launchkit
+grep "VEXA_API_KEY" .env
+
+# Or check installation report
+cat installation-report-*.txt | grep -A5 "Vexa"
+```
+
+**Configure Whisper Model:**
+
+Before installation, edit `.env` to choose the Whisper model:
+
+```bash
+# Default is 'base' - good balance
+VEXA_WHISPER_MODEL=base
+
+# Options: tiny, base, small, medium, large
+# See Model Selection Guide below
+```
+
+### n8n Integration Setup
+
+**⚠️ Critical:** Vexa uses a separate Docker network. From n8n, always use:
+- **API URL:** `http://localhost:8056`
+- **NOT** `http://vexa:8056` (won't work!)
+
+**Internal URL:** `http://localhost:8056`
+
+**Available Endpoints:**
+- `POST /bots` - Start transcription bot in meeting
+- `GET /transcripts/{platform}/{meeting_id}` - Get transcript
+- `DELETE /bots/{meeting_id}` - Stop bot (auto-stops when meeting ends)
+- `GET /` - Health check
+
+### Example Workflows
+
+#### Example 1: Auto-Transcribe Google Meet Meetings
+
+```javascript
+// Complete workflow: Calendar → Bot Join → Transcript → Summary → Email
+
+// 1. Google Calendar Trigger Node
+Event: Event Starting
+Time Before: 2 minutes
+
+// 2. IF Node - Check if Google Meet link exists
+Condition: {{$json.hangoutLink}} exists
+
+// 3. Code Node - Extract Meeting ID
+// Google Meet URL: https://meet.google.com/abc-defg-hij
+// Meeting ID is: abc-defg-hij
+
+const meetUrl = $input.item.json.hangoutLink;
+const meetingId = meetUrl.split('/').pop();
+
+return {
+  meeting_id: meetingId,
+  meeting_title: $input.item.json.summary,
+  attendees: $input.item.json.attendees.map(a => a.email)
+};
+
+// 4. HTTP Request Node - Start Vexa Bot
+Method: POST
+URL: http://localhost:8056/bots
+Send Headers: ON
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+Send Body: JSON
+Body: {
+  "platform": "google_meet",
+  "native_meeting_id": "{{$json.meeting_id}}"
+}
+
+// Response:
+{
+  "id": 1,
+  "status": "requested",
+  "bot_container_id": "vexa_bot_abc123",
+  "platform": "google_meet",
+  "native_meeting_id": "abc-defg-hij"
+}
+
+// 5. Wait Node - Meeting Duration
+Wait: {{$('Calendar Trigger').json.duration}} minutes
+// Or add buffer: + 10 minutes
+
+// 6. HTTP Request Node - Get Transcript
+Method: GET
+URL: http://localhost:8056/transcripts/google_meet/{{$('Code Node').json.meeting_id}}
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+
+// Response:
+{
+  "transcript": [
+    {
+      "start": 0.5,
+      "end": 3.2,
+      "text": "Good morning everyone, thanks for joining.",
+      "speaker": "Speaker 1"
+    },
+    {
+      "start": 3.5,
+      "end": 6.8,
+      "text": "Happy to be here.",
+      "speaker": "Speaker 2"
+    }
+  ],
+  "full_text": "Good morning everyone...",
+  "speakers": ["Speaker 1", "Speaker 2"],
+  "language": "en"
+}
+
+// 7. Code Node - Format Transcript
+const transcript = $input.item.json.transcript;
+
+const formatted = transcript.map(seg => {
+  const time = new Date(seg.start * 1000).toISOString().substr(14, 5);
+  return `[${time}] ${seg.speaker}: ${seg.text}`;
+}).join('\n\n');
+
+return {
+  formatted_transcript: formatted,
+  full_text: $input.item.json.full_text,
+  speaker_count: $input.item.json.speakers.length
+};
+
+// 8. OpenAI Node - Generate Meeting Summary
+Model: gpt-4o-mini
+Prompt: |
+  Create detailed meeting notes from this transcript:
+  
+  {{$json.full_text}}
+  
+  Include:
+  - Key discussion points
+  - Decisions made
+  - Action items with owners
+  - Follow-up questions
+
+// 9. Google Docs Node - Create Meeting Notes
+Title: Meeting Notes - {{$('Calendar Trigger').json.summary}} - {{$now.format('YYYY-MM-DD')}}
+Content: |
+  # Meeting: {{$('Calendar Trigger').json.summary}}
+  **Date:** {{$now.format('YYYY-MM-DD HH:mm')}}
+  **Attendees:** {{$('Code Node').json.attendees.join(', ')}}
+  **Duration:** {{$('Calendar Trigger').json.duration}} minutes
+  **Speakers Identified:** {{$('Code Node').json.speaker_count}}
+  
+  ---
+  
+  ## AI Summary
+  {{$('OpenAI').json.summary}}
+  
+  ---
+  
+  ## Full Transcript with Timestamps
+  {{$('Code Node').json.formatted_transcript}}
+
+// 10. Gmail Node - Email Notes to Attendees
+To: {{$('Code Node').json.attendees.join(',')}}
+Subject: Meeting Notes - {{$('Calendar Trigger').json.summary}}
+Body: |
+  Hi team,
+  
+  Meeting notes are ready!
+  
+  View document: {{$('Google Docs').json.document_url}}
+  
+  Key takeaways:
+  {{$('OpenAI').json.key_points}}
+  
+  Best regards
+```
+
+#### Example 2: Microsoft Teams Meeting Transcription
+
+```javascript
+// Transcribe Teams meetings with passcode support
+
+// 1. Webhook Trigger - Receive Teams meeting info
+// Input: {
+//   "meeting_id": "12345678",
+//   "passcode": "ABC123",
+//   "title": "Client Call",
+//   "duration": 30
+// }
+
+// 2. HTTP Request - Start Vexa Bot in Teams
+Method: POST
+URL: http://localhost:8056/bots
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+Body: {
+  "platform": "teams",
+  "native_meeting_id": "{{$json.meeting_id}}",
+  "passcode": "{{$json.passcode}}"  // Required for Teams
+}
+
+// Response includes bot_container_id
+
+// 3. Wait Node - Meeting duration + buffer
+Wait: {{$json.duration + 5}} minutes
+
+// 4. HTTP Request - Get Transcript
+Method: GET
+URL: http://localhost:8056/transcripts/teams/{{$json.meeting_id}}
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+
+// 5. Process transcript (same as Example 1)
+```
+
+#### Example 3: Sales Call Analysis Pipeline
+
+```javascript
+// Automated sales call intelligence
+
+// 1. Schedule Trigger - Check for scheduled sales calls
+Cron: Every 5 minutes
+// Or: CRM webhook when call is scheduled
+
+// 2. Salesforce Node - Get upcoming calls
+Query: SELECT Id, Meeting_Link__c, Account_Name__c 
+       FROM Event 
+       WHERE StartDateTime = NEXT_HOUR 
+       AND Type = 'Sales Call'
+
+// 3. Loop Node - Process each call
+Items: {{$json}}
+
+// 4. Code Node - Extract Google Meet ID
+const meetUrl = $item.Meeting_Link__c;
+const meetingId = meetUrl.split('/').pop();
+return { meeting_id: meetingId, account: $item.Account_Name__c };
+
+// 5. HTTP Request - Start Vexa Bot
+Method: POST
+URL: http://localhost:8056/bots
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+Body: {
+  "platform": "google_meet",
+  "native_meeting_id": "{{$json.meeting_id}}"
+}
+
+// 6. Wait - 35 minutes (typical call duration)
+Wait: 35 minutes
+
+// 7. HTTP Request - Get Transcript
+Method: GET
+URL: http://localhost:8056/transcripts/google_meet/{{$json.meeting_id}}
+
+// 8. OpenAI Node - Extract Sales Intelligence
+Model: gpt-4o
+Prompt: |
+  Analyze this sales call transcript:
+  
+  {{$json.full_text}}
+  
+  Extract and return JSON:
+  {
+    "pain_points": ["list of customer pain points"],
+    "objections": ["list of objections raised"],
+    "budget_mentioned": true/false,
+    "decision_timeline": "timeframe mentioned",
+    "competitors_mentioned": ["competitor names"],
+    "next_steps": ["agreed action items"],
+    "sentiment": "positive/neutral/negative",
+    "deal_probability": "high/medium/low",
+    "key_quotes": ["important statements"]
+  }
+
+// 9. Code Node - Calculate Talk Ratio
+const transcript = $input.item.json.transcript;
+
+// Assume first speaker is sales rep
+const repSpeaker = transcript[0].speaker;
+const repTime = transcript
+  .filter(s => s.speaker === repSpeaker)
+  .reduce((sum, s) => sum + (s.end - s.start), 0);
+
+const totalTime = transcript[transcript.length - 1].end;
+const repTalkRatio = (repTime / totalTime * 100).toFixed(1);
+
+return {
+  rep_talk_ratio: repTalkRatio,
+  customer_talk_ratio: (100 - repTalkRatio).toFixed(1),
+  // Good: 30-40% rep, 60-70% customer
+  quality_score: repTalkRatio < 45 ? 'Good' : 'Needs Improvement'
+};
+
+// 10. Salesforce Node - Update Opportunity
+Update Record:
+  Object: Opportunity
+  Record ID: {{$('Salesforce').json.OpportunityId}}
+  Fields:
+    Pain_Points__c: {{$('OpenAI').json.pain_points.join(', ')}}
+    Objections__c: {{$('OpenAI').json.objections.join(', ')}}
+    Deal_Probability__c: {{$('OpenAI').json.deal_probability}}
+    Rep_Talk_Ratio__c: {{$('Code Node').json.rep_talk_ratio}}
+    Call_Sentiment__c: {{$('OpenAI').json.sentiment}}
+    Next_Steps__c: {{$('OpenAI').json.next_steps.join('\n')}}
+
+// 11. Slack Node - Alert Sales Manager if Issues
+IF: {{$('Code Node').json.rep_talk_ratio > 60}} OR {{$('OpenAI').json.sentiment === 'negative'}}
+
+Channel: #sales-management
+Message: |
+  ⚠️ Sales Call Requires Review
+  
+  **Account:** {{$('Loop').json.account}}
+  **Issue:** Rep talked {{$('Code Node').json.rep_talk_ratio}}% (should be <45%)
+  **Sentiment:** {{$('OpenAI').json.sentiment}}
+  
+  **Key Objections:**
+  {{$('OpenAI').json.objections.join('\n- ')}}
+  
+  **Recommended Actions:**
+  - Coach on listening skills
+  - Review objection handling
+  - Consider manager follow-up call
+
+// 12. Gmail - Send Summary to Sales Rep
+To: sales.rep@company.com
+Subject: Call Summary - {{$('Loop').json.account}}
+Body: |
+  Your call has been analyzed:
+  
+  **Performance:**
+  - Talk Ratio: {{$('Code Node').json.rep_talk_ratio}}% ✅/⚠️
+  - Sentiment: {{$('OpenAI').json.sentiment}}
+  
+  **Customer Pain Points:**
+  {{$('OpenAI').json.pain_points.join('\n- ')}}
+  
+  **Next Steps:**
+  {{$('OpenAI').json.next_steps.join('\n- ')}}
+  
+  **Key Quotes:**
+  {{$('OpenAI').json.key_quotes.join('\n- ')}}
+```
+
+#### Example 4: Compliance Recording System
+
+```javascript
+// Automatic compliance recording with alerting
+
+// 1. Webhook - Meeting scheduled with compliance flag
+// Input: { "meeting_id": "abc-def-ghi", "requires_compliance": true }
+
+// 2. IF Node - Check compliance requirement
+If: {{$json.requires_compliance}} === true
+
+// 3. HTTP Request - Start Vexa Bot
+Method: POST
+URL: http://localhost:8056/bots
+Body: {
+  "platform": "google_meet",
+  "native_meeting_id": "{{$json.meeting_id}}"
+}
+
+// 4. Email - Notify participants of recording
+To: {{$json.participants}}
+Subject: Meeting Recording Notice
+Body: |
+  This meeting will be recorded for compliance purposes.
+  
+  A transcription bot will join automatically.
+  By remaining in the meeting, you consent to recording.
+
+// 5. Wait - Meeting duration
+// 6. Get Transcript
+// 7. Store in secure database
+
+// 8. Code Node - Scan for compliance keywords
+const transcript = $input.item.json.full_text.toLowerCase();
+const flags = [];
+
+const keywords = {
+  'legal': ['lawsuit', 'attorney', 'legal action', 'court'],
+  'financial': ['insider', 'confidential', 'material information'],
+  'hr': ['harassment', 'discrimination', 'hostile environment']
+};
+
+for (const [category, words] of Object.entries(keywords)) {
+  for (const word of words) {
+    if (transcript.includes(word)) {
+      flags.push({ category, keyword: word });
+    }
+  }
+}
+
+return { compliance_flags: flags, flag_count: flags.length };
+
+// 9. IF Node - Alert if flags found
+If: {{$json.flag_count > 0}}
+
+// 10. Email - Compliance team alert
+To: compliance@company.com
+Priority: High
+Subject: Compliance Review Required
+Body: |
+  Meeting transcript flagged for review:
+  
+  **Flags:** {{$json.flag_count}}
+  **Categories:** {{$json.compliance_flags.map(f => f.category).join(', ')}}
+  
+  Review transcript immediately.
+
+// 11. Database - Store with metadata
+Table: compliance_transcripts
+Fields:
+  - meeting_id
+  - transcript
+  - flags
+  - review_status: 'pending'
+  - recorded_at: timestamp
+```
+
+### Model Selection Guide
+
+Choose Whisper model based on your needs:
+
+| Model | RAM | Speed | Quality | Best For |
+|-------|-----|-------|---------|----------|
+| **tiny** | ~1GB | Fastest | Good | Testing, development |
+| **base** | ~1.5GB | Fast | Better | **Recommended default** |
+| **small** | ~3GB | Medium | Good | Accents, multiple languages |
+| **medium** | ~5GB | Slow | Great | High accuracy needs |
+| **large** | ~10GB | Slowest | Best | Maximum quality (overkill for most) |
+
+**Real-Time Performance:**
+- **tiny/base:** Best for live transcription (<1s latency)
+- **small/medium:** Slight delay but better accuracy
+- **large:** Not recommended for real-time (too slow)
+
+**Configure before installation:**
+```bash
+# Edit .env file
+VEXA_WHISPER_MODEL=base  # Change here
+VEXA_WHISPER_DEVICE=cpu   # Or 'cuda' for GPU
+```
+
+### Troubleshooting
+
+**Issue 1: Bot Not Joining Meeting**
+
+```bash
+# Check Vexa service status
+docker ps | grep vexa
+
+# Should show containers:
+# - vexa-api
+# - vexa-bot-manager
+
+# Check bot logs
+docker logs vexa-api --tail 100
+
+# Common errors:
+# - "Meeting not found" → Check meeting ID format
+# - "Meeting not started" → Meeting must be active
+# - "Access denied" → Check Google Meet lobby settings
+```
+
+**Solution:**
+- **Google Meet:** Enable "Let people join before host" in Google Workspace settings
+- **Meeting must be active:** Bot cannot join meetings that haven't started yet
+- **Check meeting ID:** For `meet.google.com/abc-defg-hij`, use only `abc-defg-hij`
+- **Lobby settings:** Disable lobby mode or start meeting before bot joins
+- **Teams passcode:** Always required for Teams meetings with lobby
+
+**Issue 2: "Separate Docker Network" Connection Error**
+
+```bash
+# Vexa runs in separate network - use localhost, not service name
+# ❌ WRONG: http://vexa:8056
+# ✅ CORRECT: http://localhost:8056
+
+# Test connectivity from n8n
+docker exec n8n curl http://localhost:8056/
+
+# Should return: {"message": "Vexa API"}
+
+# If connection fails, check port mapping
+docker port vexa-api 8056
+```
+
+**Solution:**
+- Always use `http://localhost:8056` from n8n
+- Do NOT use `http://vexa:8056` (different network)
+- Vexa is not in the main Docker Compose network
+- This is by design for security isolation
+
+**Issue 3: Transcript Empty or Incomplete**
+
+```bash
+# Check if bot successfully joined
+docker logs vexa-bot-manager | grep "Joined meeting"
+
+# Check Whisper processing
+docker logs vexa-api | grep -i "whisper\|transcription"
+
+# Check meeting duration
+# Bot needs at least 30 seconds of audio to generate transcript
+```
+
+**Solution:**
+- Wait at least 30 seconds after meeting starts
+- Ensure participants are speaking (silence = no transcript)
+- Check if bot was removed from meeting by host
+- Verify Whisper model is downloaded (first run takes time)
+- For very short meetings, transcript may be minimal
+
+**Issue 4: API Key Authentication Failed**
+
+```bash
+# Find your Vexa API key
+cd ~/ai-launchkit
+grep "VEXA_API_KEY" .env
+
+# Or check admin API for users
+curl -H "Authorization: Bearer $(grep VEXA_ADMIN_TOKEN .env | cut -d= -f2)" \
+  http://localhost:8057/admin/users
+
+# Regenerate API key if needed
+docker exec vexa-api python3 manage.py create-user
+```
+
+**Solution:**
+- Check API key in `.env` file: `VEXA_API_KEY=...`
+- Include header: `X-API-Key: YOUR_KEY` in all requests
+- Case-sensitive: ensure exact key match
+- If lost, regenerate via admin API or reinstall
+
+**Issue 5: High Memory Usage**
+
+```bash
+# Check container memory
+docker stats vexa-api vexa-bot-manager --no-stream
+
+# Whisper models use RAM:
+# tiny: ~1GB
+# base: ~1.5GB
+# small: ~3GB
+# medium: ~5GB
+# large: ~10GB
+
+# Check current model
+grep VEXA_WHISPER_MODEL .env
+```
+
+**Solution:**
+- Use smaller Whisper model (base instead of large)
+- Bot containers are created per meeting (cleanup happens automatically)
+- Monitor server RAM: `free -h`
+- Each active bot uses 1.5-5GB depending on model
+- Limit concurrent meetings if RAM constrained
+- Bots auto-cleanup when meetings end
+
+**Issue 6: Vexa Installation Failed**
+
+```bash
+# If you experienced installation issues, see the workaround guide:
+# https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md
+
+# Common issues during install:
+# - Docker network conflicts
+# - Port 8056/8057 already in use
+# - Whisper model download timeout
+
+# Check Vexa logs during installation
+tail -f /var/log/ai-launchkit-install.log | grep -i vexa
+```
+
+**Solution:**
+- Follow [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md)
+- Most issues resolve with the documented workarounds
+- If problems persist, Vexa is optional and can be skipped
+
+### Meeting Platform Support
+
+| Platform | Status | Meeting ID Format | Requirements |
+|----------|--------|-------------------|--------------|
+| **Google Meet** | ✅ Ready | `abc-defg-hij` | Extract from meet.google.com URL |
+| **Microsoft Teams** | ✅ Ready | Numeric + passcode | Requires meeting passcode |
+| **Zoom** | ⏳ Coming Soon | - | Planned for future release |
+
+**Google Meet Setup:**
+1. Extract meeting ID from URL: `https://meet.google.com/abc-defg-hij` → Use `abc-defg-hij`
+2. Enable "Let people join before host" in Google Workspace settings
+3. Disable lobby mode or start meeting before bot joins
+4. Bot appears as "Vexa Transcription Bot" participant
+
+**Microsoft Teams Setup:**
+1. Get meeting ID (numeric) and passcode from Teams
+2. Include both in API request: `{"native_meeting_id": "12345", "passcode": "ABC123"}`
+3. Ensure lobby is disabled or meeting is started
+4. Bot appears as participant in Teams
+
+### API Reference
+
+**Start Transcription Bot:**
+```bash
+POST http://localhost:8056/bots
+Headers: X-API-Key: YOUR_KEY
+Body: {
+  "platform": "google_meet",  # or "teams"
+  "native_meeting_id": "abc-defg-hij",
+  "passcode": "ABC123"  # Teams only
+}
+
+Response: {
+  "id": 1,
+  "status": "requested",
+  "bot_container_id": "vexa_bot_abc123",
+  "platform": "google_meet",
+  "native_meeting_id": "abc-defg-hij"
+}
+```
+
+**Get Transcript (Polling):**
+```bash
+GET http://localhost:8056/transcripts/{platform}/{meeting_id}
+Headers: X-API-Key: YOUR_KEY
+
+Response: {
+  "transcript": [
+    {
+      "start": 0.5,
+      "end": 3.2,
+      "text": "Hello everyone",
+      "speaker": "Speaker 1"
+    }
+  ],
+  "full_text": "Complete transcript...",
+  "speakers": ["Speaker 1", "Speaker 2"],
+  "language": "en"
+}
+```
+
+**Stop Bot (Optional):**
+```bash
+DELETE http://localhost:8056/bots/{meeting_id}
+Headers: X-API-Key: YOUR_KEY
+
+# Note: Bots automatically leave when meeting ends
+```
+
+**Health Check:**
+```bash
+GET http://localhost:8056/
+# Returns: {"message": "Vexa API"}
+```
+
+**Admin API (User Management):**
+```bash
+GET http://localhost:8057/admin/users
+Headers: Authorization: Bearer YOUR_ADMIN_TOKEN
+
+# Create new API key
+POST http://localhost:8057/admin/users/{user_id}/tokens
+```
+
+### Resources
+
+- **GitHub:** https://github.com/Vexa-ai/vexa
+- **Troubleshooting Guide:** https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md
+- **Whisper Model Info:** https://github.com/openai/whisper#available-models-and-languages
+- **Language Support:** 99 languages supported
+
+### Best Practices
+
+**When to Use Vexa:**
+
+✅ **Perfect For:**
+- Automated meeting notes (Google Meet, Teams)
+- Sales call recording and analysis
+- Compliance recording requirements
+- Real-time transcription needs
+- Multi-speaker meeting capture
+- CRM integration workflows
+- Quality assurance monitoring
+- Remote team collaboration
+
+❌ **Not Ideal For:**
+- Pre-recorded audio files (use Scriberr instead)
+- Zoom meetings (not yet supported)
+- Meetings you didn't organize (privacy/consent issues)
+- Very short meetings (<1 minute)
+- Meetings where bot participant is not allowed
+
+**Privacy & Consent:**
+
+⚠️ **Legal Requirements:**
+- Always inform participants that meeting is being recorded
+- Check local laws (some require all-party consent)
+- Bot appears as visible participant in meeting
+- Consider adding recording notice to calendar invites
+- Store transcripts securely and comply with GDPR/privacy laws
+
+**Optimal Configuration:**
+
+1. **Model Selection:**
+   - Development/Testing: `tiny` or `base`
+   - Production: `base` (best balance)
+   - High Accuracy: `small` or `medium`
+   - Avoid: `large` (overkill, too slow for real-time)
+
+2. **Meeting Setup:**
+   - Disable lobby mode when possible
+   - Start meeting before bot joins (especially Teams)
+   - Enable "join before host" for Google Meet
+   - Test bot with sample meeting before production
+
+3. **Resource Planning:**
+   - 1.5-3GB RAM per active bot (base/small model)
+   - Plan for concurrent meetings
+   - Monitor server resources during peak times
+   - Consider auto-scaling for large deployments
+
+4. **Integration Strategy:**
+   - Use calendar webhooks to auto-start bots
+   - Implement retry logic for failed bot joins
+   - Poll transcript endpoint every 30-60 seconds
+   - Store transcripts in database for backup
+   - Cache transcripts to avoid re-processing
+
+**Vexa vs Scriberr vs Faster-Whisper:**
+
+| Feature | Vexa | Scriberr | Faster-Whisper |
+|---------|------|----------|----------------|
+| **Use Case** | Live meeting bots | Post-recording diarization | Single speaker transcription |
+| **Platforms** | Google Meet, Teams | Pre-recorded files, YouTube | Any audio file |
+| **Speaker ID** | Real-time | Post-processing | No |
+| **Latency** | <1 second | Minutes (processing) | Seconds to minutes |
+| **Best For** | Automated meeting notes | Detailed analysis | Voice commands, simple transcription |
 
 </details>
 
 ### Search & Web Data
 
 <details>
-<summary><b>🔍 SearXNG - Privacy Search</b></summary>
+<summary><b>🔍 SearXNG - Privacy-Focused Metasearch Engine</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is SearXNG?
+
+SearXNG is an open-source, privacy-respecting metasearch engine that aggregates results from over 70 search engines (including Google, Bing, DuckDuckGo, Wikipedia, and more) while ensuring complete user anonymity. Unlike traditional search engines, SearXNG does not track searches, store IP addresses, create user profiles, or serve personalized ads. It acts as a privacy shield between you and search engines, making it perfect for AI agents, research workflows, and privacy-conscious organizations.
+
+### Features
+
+- **70+ Search Engines** - Aggregates results from Google, Bing, DuckDuckGo, Wikipedia, GitHub, arXiv, and many more
+- **Complete Privacy** - No tracking, no cookies, no search history, no user profiling
+- **Category-Based Search** - Filter by General, Images, Videos, News, Files, IT, Maps, Music, Science, Social Media
+- **Customizable** - Choose which engines to use, customize themes, configure safe search levels
+- **JSON API** - RESTful API for programmatic access and automation
+- **Self-Hosted** - Full control over your search infrastructure and data
+- **Multi-Language** - 58 translations and language-specific search capabilities
+
+### Initial Setup
+
+**First Access to SearXNG:**
+
+1. Navigate to `https://searxng.yourdomain.com`
+2. No login required - SearXNG is public by default (can be restricted via Caddy auth)
+3. Explore the interface:
+   - **Categories:** General, Images, Videos, News, Files, IT, Science, etc.
+   - **Preferences:** Configure default engines, themes, language, safe search
+   - **Settings:** Customize which search engines to use
+4. Test a search to verify it's working
+
+**Enable JSON API (Required for n8n):**
+
+The JSON API is **disabled by default** and must be enabled:
+
+```bash
+# Navigate to your SearXNG configuration
+cd ~/ai-launchkit
+
+# Edit the settings.yml file
+nano searxng/settings.yml
+
+# Find the 'search:' section and add 'json' to formats:
+search:
+  formats:
+    - html
+    - json    # Add this line to enable JSON API
+    - csv
+    - rss
+
+# Save and restart SearXNG
+docker compose restart searxng
+```
+
+**Test JSON API:**
+
+```bash
+# Test that JSON format is working
+curl "https://searxng.yourdomain.com/search?q=test&format=json"
+
+# Should return JSON with search results
+```
+
+### n8n Integration Setup
+
+SearXNG has **native n8n integration** with a built-in Tool node!
+
+**Method 1: SearXNG Tool Node (Recommended for AI Agents)**
+
+1. Add **SearXNG Tool** node to workflow
+2. Create SearXNG credentials:
+   - Click **Create New Credential**
+   - **API URL:** `http://searxng:8080` (internal) or `https://searxng.yourdomain.com` (external)
+   - Save credentials
+3. The node is now ready to use with AI Agent nodes!
+
+**Method 2: HTTP Request Node (More Control)**
+
+Use HTTP Request for custom queries and advanced parameters.
+
+**Internal URL:** `http://searxng:8080`
+
+**API Endpoint:** `GET /search` or `GET /`
+
+**Required Parameters:**
+- `q`: Search query (required)
+- `format`: Must be `json` for API usage
+
+### Example Workflows
+
+#### Example 1: AI Research Assistant with Web Search
+
+```javascript
+// Build an AI agent with real-time web search capabilities
+
+// 1. Chat Trigger Node
+// User asks a question
+
+// 2. AI Agent Node (OpenAI or Claude)
+Model: gpt-4o-mini
+System Prompt: You are a research assistant. Use web search when needed to provide accurate, up-to-date information.
+
+// 3. Add SearXNG Tool Node to Agent
+// The Tool node is automatically available to the agent
+Credential: SearXNG (http://searxng:8080)
+
+// 4. Agent automatically calls SearXNG when needed!
+// User: "What are the latest developments in quantum computing?"
+// Agent: *Searches SearXNG* → *Synthesizes results* → Provides answer
+
+// The agent will automatically:
+// - Determine when web search is needed
+// - Execute searches via SearXNG
+// - Integrate results into responses
+```
+
+#### Example 2: Competitive Intelligence Monitoring
+
+```javascript
+// Automated daily competitor research
+
+// 1. Schedule Trigger Node
+Cron: 0 9 * * *  // Every day at 9 AM
+
+// 2. HTTP Request Node - Search for Competitor News
+Method: GET
+URL: http://searxng:8080/search
+Query Parameters:
+  q: "competitor-name" AND ("funding" OR "product launch" OR "acquisition")
+  format: json
+  categories: news
+  time_range: day  // Only results from last 24 hours
+  engines: google,bing,duckduckgo
+  language: en
+
+// Response format:
+{
+  "results": [
+    {
+      "title": "Competitor raises $50M Series B",
+      "url": "https://techcrunch.com/...",
+      "content": "Brief description...",
+      "engine": "google",
+      "category": "news",
+      "publishedDate": "2024-01-15"
+    }
+  ],
+  "number_of_results": 15
+}
+
+// 3. IF Node - Check if results found
+Condition: {{ $json.number_of_results > 0 }}
+
+// 4. Loop Node - Process each result
+Items: {{ $json.results }}
+
+// 5. Code Node - Filter relevant news
+const result = $input.item.json;
+
+// Check if really relevant
+const relevantKeywords = ['funding', 'acquisition', 'product', 'launch', 'partnership'];
+const isRelevant = relevantKeywords.some(keyword => 
+  result.title.toLowerCase().includes(keyword) ||
+  result.content.toLowerCase().includes(keyword)
+);
+
+if (!isRelevant) return null;  // Skip this item
+
+return {
+  title: result.title,
+  url: result.url,
+  summary: result.content,
+  source: result.engine,
+  date: result.publishedDate
+};
+
+// 6. OpenAI Node - Generate Intelligence Summary
+Model: gpt-4o-mini
+Prompt: |
+  Analyze this competitor news and provide:
+  1. Strategic implications for our business
+  2. Potential threats or opportunities
+  3. Recommended actions
+  
+  News: {{ $json.title }}
+  Details: {{ $json.summary }}
+
+// 7. Notion Node - Add to Intelligence Database
+Database: Competitive Intelligence
+Properties:
+  Title: {{ $json.title }}
+  URL: {{ $json.url }}
+  Date: {{ $json.date }}
+  Source: {{ $json.source }}
+  Analysis: {{ $('OpenAI').json.analysis }}
+  Threat Level: {{ $('OpenAI').json.threat_level }}
+
+// 8. Slack Node - Daily Summary
+Channel: #competitive-intel
+Message: |
+  📊 Daily Competitor Intelligence Report
+  
+  **New Findings:** {{ $('Loop').itemCount }} articles
+  
+  🔴 High Priority:
+  {{ $('Loop').all().filter(x => x.json.threat_level === 'high').map(x => x.json.title).join('\n- ') }}
+  
+  View full report in Notion
+```
+
+#### Example 3: Academic Research Aggregator
+
+```javascript
+// Search multiple academic databases simultaneously
+
+// 1. Webhook Trigger - Research query
+// Input: { "topic": "machine learning fairness", "year": "2024" }
+
+// 2. HTTP Request - Search Academic Sources
+Method: GET
+URL: http://searxng:8080/search
+Query Parameters:
+  q: "{{ $json.topic }}" {{ $json.year }}
+  format: json
+  categories: science  // Scientific papers only
+  engines: arxiv,google scholar,semantic scholar,pubmed
+  pageno: 1
+
+// 3. Code Node - Parse and Deduplicate Results
+const results = $input.item.json.results;
+
+// Remove duplicates by DOI or URL
+const uniqueResults = [];
+const seenUrls = new Set();
+
+for (const result of results) {
+  const url = result.url;
+  if (!seenUrls.has(url)) {
+    seenUrls.add(url);
+    uniqueResults.push({
+      title: result.title,
+      url: result.url,
+      abstract: result.content,
+      source: result.engine,
+      published: result.publishedDate || 'Unknown'
+    });
+  }
+}
+
+return uniqueResults;
+
+// 4. Loop Node - Process each paper
+Items: {{ $json }}
+
+// 5. HTTP Request - Fetch full paper metadata
+// Use DOI or API to get more details
+
+// 6. Qdrant Node - Store paper embeddings
+// Create vector embeddings for semantic search
+
+// 7. Notion Node - Create research database
+Database: Research Papers
+Properties:
+  Title: {{ $json.title }}
+  URL: {{ $json.url }}
+  Abstract: {{ $json.abstract }}
+  Source: {{ $json.source }}
+  Published: {{ $json.published }}
+  Tags: [{{ $json.topic }}]
+
+// 8. Gmail Node - Send digest
+To: researcher@university.edu
+Subject: Research Digest - {{ $json.topic }}
+Body: |
+  Found {{ $('Code Node').itemCount }} papers on {{ $json.topic }}:
+  
+  {{ $('Loop').all().map(x => `- ${x.json.title}\n  ${x.json.url}`).join('\n\n') }}
+```
+
+#### Example 4: Multi-Engine Image Search
+
+```javascript
+// Search images across multiple engines
+
+// 1. Webhook Trigger
+// Input: { "query": "minimalist office design" }
+
+// 2. HTTP Request - Image Search
+Method: GET
+URL: http://searxng:8080/search
+Query Parameters:
+  q: {{ $json.query }}
+  format: json
+  categories: images  // Images only
+  engines: google images,bing images,flickr,unsplash
+  safesearch: 1  // Moderate safe search
+  pageno: 1
+
+// Response includes image results:
+{
+  "results": [
+    {
+      "title": "Minimalist Office Setup",
+      "url": "https://example.com/image.jpg",
+      "thumbnail_src": "https://example.com/thumb.jpg",
+      "img_src": "https://example.com/full.jpg",
+      "engine": "google images",
+      "resolution": "1920x1080"
+    }
+  ]
+}
+
+// 3. Code Node - Filter high-resolution images
+const images = $input.item.json.results;
+
+const highRes = images.filter(img => {
+  if (!img.resolution) return false;
+  const [width, height] = img.resolution.split('x').map(Number);
+  return width >= 1920 && height >= 1080;  // Full HD or higher
+});
+
+return highRes.slice(0, 20);  // Top 20 results
+
+// 4. Loop Node - Download images
+Items: {{ $json }}
+
+// 5. HTTP Request - Download image
+Method: GET
+URL: {{ $json.img_src }}
+Response Format: File
+
+// 6. Google Drive Node - Upload to folder
+Folder: /Design Inspiration/{{ $('Webhook').json.query }}
+File: {{ $binary.data }}
+```
+
+#### Example 5: News Aggregation with Sentiment Analysis
+
+```javascript
+// Multi-source news monitoring with AI analysis
+
+// 1. Schedule Trigger
+Cron: 0 */6 * * *  // Every 6 hours
+
+// 2. Set Node - Define topics
+[
+  "artificial intelligence regulation",
+  "climate change policy",
+  "cryptocurrency market"
+]
+
+// 3. Loop Node - Search each topic
+Items: {{ $json }}
+
+// 4. HTTP Request - Search news
+Method: GET
+URL: http://searxng:8080/search
+Query Parameters:
+  q: {{ $json.topic }}
+  format: json
+  categories: news
+  engines: google news,bing news,yahoo news
+  time_range: day  // Last 24 hours
+  language: en
+
+// 5. Code Node - Extract and clean results
+const articles = $input.item.json.results;
+
+return articles.map(article => ({
+  topic: $('Loop').item.json.topic,
+  title: article.title,
+  url: article.url,
+  snippet: article.content,
+  source: article.engine,
+  published: article.publishedDate
+}));
+
+// 6. OpenAI Node - Sentiment Analysis
+Model: gpt-4o-mini
+Prompt: |
+  Analyze sentiment of this news article:
+  Title: {{ $json.title }}
+  Snippet: {{ $json.snippet }}
+  
+  Return JSON:
+  {
+    "sentiment": "positive/neutral/negative",
+    "confidence": 0.0-1.0,
+    "key_points": ["point 1", "point 2"],
+    "impact": "low/medium/high"
+  }
+
+// 7. PostgreSQL Node - Store results
+Table: news_monitoring
+Fields:
+  topic: {{ $json.topic }}
+  title: {{ $json.title }}
+  url: {{ $json.url }}
+  sentiment: {{ $('OpenAI').json.sentiment }}
+  impact: {{ $('OpenAI').json.impact }}
+  key_points: {{ $('OpenAI').json.key_points }}
+  monitored_at: {{ $now }}
+
+// 8. IF Node - Alert on high-impact negative news
+If: {{ $('OpenAI').json.sentiment === 'negative' && $('OpenAI').json.impact === 'high' }}
+
+// 9. Slack Node - Send alert
+Channel: #alerts
+Message: |
+  ⚠️ High Impact Negative News Alert
+  
+  **Topic:** {{ $json.topic }}
+  **Headline:** {{ $json.title }}
+  **Sentiment:** {{ $('OpenAI').json.sentiment }} ({{ $('OpenAI').json.confidence * 100 }}% confident)
+  **Impact:** {{ $('OpenAI').json.impact }}
+  
+  **Key Points:**
+  {{ $('OpenAI').json.key_points.join('\n- ') }}
+  
+  Read more: {{ $json.url }}
+```
+
+### API Parameters Reference
+
+**Search Endpoint:** `GET /search` or `GET /`
+
+**Required Parameters:**
+- `q`: Search query string
+
+**Optional Parameters:**
+- `format`: Output format (`json`, `csv`, `rss`, `html`) - **Required for API: `json`**
+- `categories`: Comma-separated list (`general`, `images`, `videos`, `news`, `files`, `it`, `maps`, `music`, `science`, `social_media`)
+- `engines`: Comma-separated list (`google`, `bing`, `duckduckgo`, `wikipedia`, `github`, etc.)
+- `language`: Language code (`en`, `de`, `fr`, `es`, `it`, etc.)
+- `pageno`: Page number (default: 1)
+- `time_range`: Filter by time (`day`, `week`, `month`, `year`)
+- `safesearch`: Safe search level (`0`=off, `1`=moderate, `2`=strict)
+
+**Example Request:**
+```bash
+curl "http://searxng:8080/search?q=n8n+automation&format=json&categories=general&engines=google,bing&language=en&time_range=month"
+```
+
+**Response Format:**
+```json
+{
+  "query": "n8n automation",
+  "number_of_results": 42,
+  "results": [
+    {
+      "url": "https://example.com",
+      "title": "Result Title",
+      "content": "Description snippet...",
+      "engine": "google",
+      "category": "general",
+      "publishedDate": "2024-01-15"
+    }
+  ],
+  "infoboxes": [],
+  "suggestions": ["n8n workflow", "n8n tutorial"]
+}
+```
+
+### Troubleshooting
+
+**Issue 1: JSON API Returns HTML Instead of JSON**
+
+```bash
+# Check if JSON format is enabled
+docker exec searxng cat /etc/searxng/settings.yml | grep -A5 "formats:"
+
+# Should show:
+# formats:
+#   - html
+#   - json    # Must be present
+
+# If missing, add it to settings.yml
+nano ~/ai-launchkit/searxng/settings.yml
+
+# Add json to formats section, save, and restart
+docker compose restart searxng
+```
+
+**Solution:**
+- JSON format is disabled by default in SearXNG
+- Must manually enable in `settings.yml` file
+- Restart container after making changes
+- Test with `curl "http://searxng:8080/search?q=test&format=json"`
+
+**Issue 2: Empty or Few Search Results**
+
+```bash
+# Check which engines are enabled
+curl "http://searxng:8080/config" | jq '.engines[] | select(.enabled==true)'
+
+# Test specific engine
+curl "http://searxng:8080/search?q=test&format=json&engines=google"
+
+# Check SearXNG logs
+docker logs searxng --tail 100 | grep -i "error\|failed"
+```
+
+**Solution:**
+- Some engines may be rate-limited or blocked
+- Try different engines: `engines=google,bing,duckduckgo`
+- Increase timeout in settings.yml
+- Some engines require API keys (configure in settings.yml)
+- Use `categories=general` for broader results
+
+**Issue 3: Rate Limiting / CAPTCHA Challenges**
+
+```bash
+# Check for rate limit errors in logs
+docker logs searxng | grep -i "rate\|captcha\|429"
+
+# SearXNG may get rate-limited by search engines
+# Solution: Enable more engines to distribute load
+```
+
+**Solution:**
+- Use multiple engines simultaneously to avoid rate limits on any single engine
+- Configure request delays in settings.yml
+- Consider using Tor or proxy for additional anonymity (also helps with rate limits)
+- Reduce frequency of automated searches
+- Use public SearXNG instances for testing (searx.space)
+
+**Issue 4: Specific Engine Not Working**
+
+```bash
+# Test individual engine
+curl "http://searxng:8080/search?q=test&format=json&engines=google"
+
+# Check engine status in preferences
+# Visit: https://searxng.yourdomain.com/preferences
+
+# Some engines require configuration
+docker exec searxng cat /etc/searxng/settings.yml | grep -A10 "engines:"
+```
+
+**Solution:**
+- Not all 70+ engines work out of the box
+- Some require API keys (Google Custom Search, Bing API, etc.)
+- Configure required engines in settings.yml
+- Check official SearXNG docs for engine-specific setup
+- Use engines without API requirements: duckduckgo, wikipedia, github
+
+**Issue 5: Cannot Access from n8n**
+
+```bash
+# Test connectivity from n8n container
+docker exec n8n curl http://searxng:8080/
+
+# Should return HTML page
+
+# Test JSON API
+docker exec n8n curl "http://searxng:8080/search?q=test&format=json"
+
+# Check if both containers are in same network
+docker network inspect localai | grep -E "searxng|n8n"
+```
+
+**Solution:**
+- Use internal URL: `http://searxng:8080` (not localhost or external domain)
+- Ensure JSON format is enabled (see Issue 1)
+- Check Docker network connectivity
+- Verify searxng container is running: `docker ps | grep searxng`
+
+### Available Search Engines
+
+SearXNG supports **70+ search engines**. Here are the most useful ones:
+
+**General:**
+- Google, Bing, DuckDuckGo, Yahoo, Brave Search, Startpage, Qwant
+
+**Academic/Science:**
+- arXiv, Google Scholar, Semantic Scholar, PubMed, BASE, Springer
+
+**Code/Tech:**
+- GitHub, StackOverflow, npm, PyPI, Docker Hub, GitLab
+
+**Images:**
+- Google Images, Bing Images, Flickr, Unsplash, Pixabay, DeviantArt
+
+**Videos:**
+- YouTube, Vimeo, Dailymotion, PeerTube
+
+**News:**
+- Google News, Bing News, Yahoo News, Reddit, Hacker News
+
+**Files:**
+- The Pirate Bay, Archive.org, Torrentz, Anna's Archive
+
+**Maps:**
+- OpenStreetMap, Google Maps, Bing Maps
+
+**Social:**
+- Reddit, Mastodon, Lemmy, Twitter (via Nitter)
+
+Full list available at: https://docs.searxng.org/admin/engines/configured_engines.html
+
+### Resources
+
+- **Official Documentation:** https://docs.searxng.org/
+- **GitHub:** https://github.com/searxng/searxng
+- **Search API Docs:** https://docs.searxng.org/dev/search_api.html
+- **Public Instances:** https://searx.space
+- **Engine Configuration:** https://docs.searxng.org/admin/engines/index.html
+- **n8n Integration:** https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolsearxng/
+
+### Best Practices
+
+**For AI Agents:**
+- Use SearXNG Tool node - it's specifically designed for agent integration
+- Agent automatically decides when to search
+- Provide clear system prompts about when web search is needed
+- Combine with RAG for best results (SearXNG for fresh data, vector DB for historical)
+
+**For Research Workflows:**
+- Use category filters (`categories=science`) for focused results
+- Specify multiple engines for comprehensive coverage
+- Filter by time_range for recent information
+- Deduplicate results across engines
+
+**For Production:**
+- Enable only necessary engines to reduce latency
+- Configure rate limiting to avoid blocks
+- Use result caching (Redis) for frequently searched terms
+- Monitor engine availability and adjust workflow
+
+**Privacy Considerations:**
+- SearXNG hides your IP from search engines
+- No cookies or tracking
+- Results are not personalized (same query = same results for everyone)
+- For maximum anonymity, combine with Tor or VPN
+- Self-hosted instance = complete control over logs and data
+
+**Performance Optimization:**
+- Enable only engines you actually need (faster results)
+- Use specific categories instead of searching all
+- Implement caching for repeated queries
+- Limit number of results with `pageno` parameter
+- Consider disabling slow/unreliable engines
+
+### When to Use SearXNG
+
+**✅ Perfect For:**
+- AI agents needing web search capabilities
+- Privacy-conscious search applications
+- Research aggregation workflows
+- Competitive intelligence monitoring
+- News monitoring and aggregation
+- Academic paper search
+- Multi-engine result comparison
+- Internal company search portal
+- Alternative to paid search APIs (Google, Bing)
+
+**❌ Not Ideal For:**
+- Real-time stock prices (use dedicated financial APIs)
+- Highly personalized search (SearXNG is intentionally non-personalized)
+- Video streaming (SearXNG finds videos but doesn't stream them)
+- When you need Google-quality ranking (results are mixed from many engines)
+
+**SearXNG vs Google Custom Search API:**
+- ✅ Free (no API costs)
+- ✅ More privacy-focused
+- ✅ Combines multiple engines
+- ✅ No API rate limits (beyond what engines impose)
+- ❌ Slightly slower (queries multiple engines)
+- ❌ Less accurate ranking than Google alone
+- ❌ Requires self-hosting
 
 </details>
 
 <details>
-<summary><b>🔎 Perplexica - AI Search</b></summary>
+<summary><b>🔎 Perplexica - AI-Powered Search Engine</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Perplexica?
+
+Perplexica is an open-source AI-powered search engine that provides Perplexity AI-like functionality for deep research and intelligent information retrieval. Unlike traditional search engines, Perplexica uses AI to understand your query context, search multiple sources, and synthesize comprehensive answers with citations. It combines web search capabilities with large language models to provide contextual, well-researched responses - perfect for research automation, content generation, and knowledge discovery.
+
+### Features
+
+- **AI-Powered Search** - Uses LLMs to understand queries and synthesize comprehensive answers
+- **Multiple Focus Modes** - Web search, academic papers, YouTube, Reddit, writing assistant, WolframAlpha
+- **Source Citations** - All answers include clickable sources and references
+- **Chat Interface** - Conversational search with context retention across queries
+- **RESTful API** - Full API access for automation and n8n integration
+- **SearXNG Integration** - Uses your self-hosted SearXNG for privacy-respecting search
+- **Local LLM Support** - Works with Ollama for completely private, offline research
+
+### Initial Setup
+
+**First Access to Perplexica:**
+
+1. Navigate to `https://perplexica.yourdomain.com`
+2. No login required - start searching immediately
+3. Try different focus modes:
+   - **Web Search:** General internet search with AI synthesis
+   - **Academic Search:** Scientific papers and research
+   - **YouTube Search:** Video content discovery
+   - **Reddit Search:** Community discussions and opinions
+   - **Writing Assistant:** Help with content creation
+   - **WolframAlpha:** Mathematical and computational queries
+4. Chat history is saved in your browser (local storage)
+
+**Configure LLM Backend:**
+
+Perplexica is pre-configured to use Ollama (local) by default. You can also use OpenAI or other providers:
+
+```bash
+# Check current configuration
+cd ~/ai-launchkit
+cat perplexica-config.toml
+
+# Default uses Ollama with llama3.2
+# To use OpenAI, edit config and add API key
+nano perplexica-config.toml
+
+# Restart Perplexica
+docker compose restart perplexica
+```
+
+### n8n Integration Setup
+
+Perplexica provides a REST API for programmatic access from n8n.
+
+**Internal URL:** `http://perplexica:3000`
+
+**API Endpoints:**
+- `POST /api/search` - Perform AI-powered search
+- `GET /api/models` - List available LLM models
+- `GET /api/config` - Get current configuration
+
+### Example Workflows
+
+#### Example 1: AI Research Assistant
+
+```javascript
+// Build an AI-powered research assistant with deep web search
+
+// 1. Chat Trigger Node
+// User asks a research question
+
+// 2. HTTP Request Node - Perplexica Search
+Method: POST
+URL: http://perplexica:3000/api/search
+Headers:
+  Content-Type: application/json
+Send Body: JSON
+Body: {
+  "query": "{{ $json.chatInput }}",
+  "focusMode": "webSearch",
+  "chatHistory": []
+}
+
+// Response format:
+{
+  "message": "Comprehensive AI-generated answer...",
+  "sources": [
+    {
+      "title": "Source Title",
+      "url": "https://example.com",
+      "snippet": "Relevant excerpt..."
+    }
+  ]
+}
+
+// 3. Code Node - Format Response with Sources
+const answer = $input.item.json.message;
+const sources = $input.item.json.sources || [];
+
+const formattedResponse = `${answer}\n\n**Sources:**\n${sources.map((s, i) => 
+  `${i + 1}. [${s.title}](${s.url})`
+).join('\n')}`;
+
+return {
+  response: formattedResponse,
+  sourceCount: sources.length
+};
+
+// 4. Chat Response Node
+// Send formatted answer back to user with clickable sources
+```
+
+#### Example 2: Academic Research Aggregator
+
+```javascript
+// Automated academic paper search and summarization
+
+// 1. Schedule Trigger
+Cron: 0 9 * * MON  // Every Monday at 9 AM
+
+// 2. Set Node - Research topics
+[
+  "quantum computing error correction",
+  "CRISPR gene therapy clinical trials",
+  "carbon capture technologies 2025"
+]
+
+// 3. Loop Node - Research each topic
+Items: {{ $json }}
+
+// 4. HTTP Request - Perplexica Academic Search
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.topic }} latest research papers",
+  "focusMode": "academicSearch",  // Searches arXiv, Scholar, PubMed
+  "chatHistory": []
+}
+
+// 5. Code Node - Parse papers and extract metadata
+const response = $input.item.json;
+const sources = response.sources || [];
+
+// Filter for academic sources
+const papers = sources.filter(s => 
+  s.url.includes('arxiv.org') || 
+  s.url.includes('scholar.google') ||
+  s.url.includes('pubmed')
+).map(paper => ({
+  title: paper.title,
+  url: paper.url,
+  snippet: paper.snippet,
+  topic: $('Loop').item.json.topic,
+  discovered: new Date().toISOString()
+}));
+
+return papers;
+
+// 6. Loop Node - Process each paper
+Items: {{ $json }}
+
+// 7. HTTP Request - Fetch full abstract (if available)
+// Use paper URL or DOI to get more details
+
+// 8. Qdrant Node - Store paper embedding
+// Create vector embedding for semantic search later
+
+// 9. Notion Node - Add to research database
+Database: Academic Papers
+Properties:
+  Title: {{ $json.title }}
+  URL: {{ $json.url }}
+  Abstract: {{ $json.snippet }}
+  Topic: {{ $json.topic }}
+  Date Added: {{ $json.discovered }}
+  Status: "To Review"
+
+// 10. Gmail Node - Weekly digest
+To: research-team@company.com
+Subject: Weekly Academic Research Digest
+Body: |
+  This week's research findings across all topics:
+  
+  {{ $('Loop').itemCount }} new papers discovered
+  
+  By Topic:
+  {{ groupedByTopic }}
+  
+  View full database: [Notion Link]
+```
+
+#### Example 3: Content Research Pipeline
+
+```javascript
+// Research topics and generate content with AI
+
+// 1. Webhook Trigger
+// Input: { "topic": "sustainable packaging innovations", "contentType": "blog post" }
+
+// 2. HTTP Request - Initial research via Perplexica
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.topic }} comprehensive overview latest trends statistics",
+  "focusMode": "webSearch",
+  "chatHistory": []
+}
+
+// 3. Code Node - Extract key points and subtopics
+const research = $input.item.json.message;
+const sources = $input.item.json.sources || [];
+
+// Parse the AI response for headings/structure
+const sections = research.match(/###? (.+)/g) || [];
+const keyPoints = sections.map(s => s.replace(/###? /, ''));
+
+return {
+  mainResearch: research,
+  keyPoints: keyPoints.slice(0, 5),  // Top 5 points
+  sources: sources,
+  originalTopic: $('Webhook').json.topic
+};
+
+// 4. Loop Node - Deep dive into each key point
+Items: {{ $json.keyPoints }}
+
+// 5. HTTP Request - Research each subtopic
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.item }} detailed information examples case studies",
+  "focusMode": "webSearch",
+  "chatHistory": [
+    {
+      "role": "user",
+      "content": "{{ $('Code Node').json.originalTopic }}"
+    },
+    {
+      "role": "assistant", 
+      "content": "{{ $('Code Node').json.mainResearch }}"
+    }
+  ]  // Maintain context across searches!
+}
+
+// 6. Aggregate Node - Combine all research
+const mainResearch = $('Code Node').json;
+const deepDives = $input.all().map(x => x.json);
+
+const completeResearch = {
+  topic: mainResearch.originalTopic,
+  overview: mainResearch.mainResearch,
+  sections: mainResearch.keyPoints.map((point, i) => ({
+    heading: point,
+    content: deepDives[i]?.message || '',
+    sources: deepDives[i]?.sources || []
+  })),
+  allSources: [
+    ...mainResearch.sources,
+    ...deepDives.flatMap(d => d.sources || [])
+  ]
+};
+
+// Remove duplicate sources
+completeResearch.allSources = [...new Map(
+  completeResearch.allSources.map(s => [s.url, s])
+).values()];
+
+return completeResearch;
+
+// 7. OpenAI Node - Generate structured article
+Model: gpt-4o
+System: "You are an expert content writer. Create well-structured, engaging content."
+Prompt: |
+  Write a comprehensive {{ $('Webhook').json.contentType }} about:
+  {{ $json.topic }}
+  
+  Use this research:
+  Overview: {{ $json.overview }}
+  
+  Sections to cover:
+  {{ $json.sections.map(s => `- ${s.heading}: ${s.content.substring(0, 200)}...`).join('\n') }}
+  
+  Requirements:
+  - 1500-2000 words
+  - Use provided research accurately
+  - Include relevant statistics and examples
+  - Professional but engaging tone
+  - SEO-friendly structure with H2/H3 headings
+
+// 8. Code Node - Format with citations
+const article = $input.item.json.article;
+const sources = $('Aggregate Node').json.allSources;
+
+// Add references section
+const references = sources.map((s, i) => 
+  `${i + 1}. ${s.title} - ${s.url}`
+).join('\n');
+
+const completeArticle = `${article}\n\n---\n\n## References\n\n${references}`;
+
+return {
+  article: completeArticle,
+  wordCount: article.split(' ').length,
+  sourceCount: sources.length
+};
+
+// 9. WordPress/Ghost Node - Publish draft
+Title: {{ $('Webhook').json.topic }}
+Content: {{ $json.article }}
+Status: Draft
+Tags: [{{ $('Webhook').json.topic }}, Research-Based]
+
+// 10. Slack Node - Notify content team
+Channel: #content-team
+Message: |
+  📝 New article draft ready for review
+  
+  **Topic:** {{ $('Webhook').json.topic }}
+  **Word Count:** {{ $json.wordCount }}
+  **Sources:** {{ $json.sourceCount }} references
+  
+  Review at: [WordPress Link]
+```
+
+#### Example 4: Competitive Intelligence Monitor
+
+```javascript
+// Monitor competitors with AI-powered research
+
+// 1. Schedule Trigger
+Cron: 0 */6 * * *  // Every 6 hours
+
+// 2. Set Node - Competitor list
+[
+  "Competitor A",
+  "Competitor B",
+  "Competitor C"
+]
+
+// 3. Loop Node - Research each competitor
+Items: {{ $json }}
+
+// 4. HTTP Request - Recent news search
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.competitor }} latest news announcements funding product launches last 24 hours",
+  "focusMode": "webSearch",
+  "chatHistory": []
+}
+
+// 5. HTTP Request - Community sentiment
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.competitor }} reddit discussions reviews opinions sentiment",
+  "focusMode": "redditSearch",  // Reddit-specific search
+  "chatHistory": []
+}
+
+// 6. Code Node - Combine intelligence
+const competitor = $('Loop').item.json.competitor;
+const news = $input.all()[0].json;
+const sentiment = $input.all()[1].json;
+
+return {
+  competitor: competitor,
+  newsFindings: news.message,
+  newsSources: news.sources || [],
+  sentimentAnalysis: sentiment.message,
+  sentimentSources: sentiment.sources || [],
+  timestamp: new Date().toISO()
+};
+
+// 7. OpenAI Node - Analyze and summarize
+Model: gpt-4o-mini
+Prompt: |
+  Analyze this competitive intelligence:
+  
+  Competitor: {{ $json.competitor }}
+  
+  Recent News:
+  {{ $json.newsFindings }}
+  
+  Community Sentiment:
+  {{ $json.sentimentAnalysis }}
+  
+  Provide:
+  1. Key developments summary (2-3 sentences)
+  2. Sentiment score (-10 to +10)
+  3. Strategic implications for us
+  4. Threat level (Low/Medium/High)
+  5. Recommended actions
+
+// 8. PostgreSQL Node - Store intelligence
+Table: competitive_intel
+Fields:
+  competitor: {{ $('Code Node').json.competitor }}
+  news_summary: {{ $('OpenAI').json.summary }}
+  sentiment_score: {{ $('OpenAI').json.sentiment }}
+  threat_level: {{ $('OpenAI').json.threat }}
+  raw_data: {{ $('Code Node').json }}
+  analyzed_at: {{ $now }}
+
+// 9. IF Node - Alert on high-priority intel
+Condition: {{ $('OpenAI').json.threat === 'High' }}
+
+// 10. Slack Node - Send alert
+Channel: #competitive-intel
+Priority: High
+Message: |
+  🚨 High Priority Intel Alert
+  
+  **Competitor:** {{ $('Code Node').json.competitor }}
+  **Threat Level:** {{ $('OpenAI').json.threat }}
+  
+  **Key Developments:**
+  {{ $('OpenAI').json.summary }}
+  
+  **Recommended Actions:**
+  {{ $('OpenAI').json.actions }}
+  
+  **Sources:**
+  {{ $('Code Node').json.newsSources.slice(0, 3).map(s => s.url).join('\n') }}
+```
+
+#### Example 5: YouTube Content Curation
+
+```javascript
+// Discover and curate YouTube content on specific topics
+
+// 1. Webhook Trigger
+// Input: { "topic": "machine learning tutorials", "minViews": 10000 }
+
+// 2. HTTP Request - YouTube Search via Perplexica
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{ $json.topic }} tutorial beginner to advanced comprehensive",
+  "focusMode": "youtubeSearch",  // YouTube-specific search
+  "chatHistory": []
+}
+
+// Response includes YouTube video recommendations
+
+// 3. Code Node - Parse video results
+const response = $input.item.json;
+const sources = response.sources || [];
+
+// Extract YouTube videos
+const videos = sources.filter(s => s.url.includes('youtube.com')).map(video => ({
+  title: video.title,
+  url: video.url,
+  description: video.snippet,
+  videoId: video.url.match(/watch\?v=(.+)/)?.[1],
+  addedAt: new Date().toISO()
+}));
+
+return videos;
+
+// 4. Loop Node - Enrich each video
+Items: {{ $json }}
+
+// 5. HTTP Request - Get video metadata (YouTube API alternative)
+// Or scrape video page for view count, duration, etc.
+
+// 6. IF Node - Filter by criteria
+Condition: {{ $json.viewCount >= $('Webhook').json.minViews }}
+
+// 7. Notion Node - Add to content library
+Database: Video Library
+Properties:
+  Title: {{ $json.title }}
+  URL: {{ $json.url }}
+  Topic: {{ $('Webhook').json.topic }}
+  Views: {{ $json.viewCount }}
+  Duration: {{ $json.duration }}
+  Added: {{ $json.addedAt }}
+  Status: "To Review"
+
+// 8. Discord/Slack - Share with team
+Channel: #learning-resources
+Message: |
+  📺 New videos curated for: {{ $('Webhook').json.topic }}
+  
+  Found {{ $('Loop').itemCount }} quality videos:
+  {{ $('Loop').all().map(v => `- ${v.json.title}\n  ${v.json.url}`).join('\n\n') }}
+```
+
+### Focus Modes Reference
+
+Perplexica supports different focus modes for specialized searches:
+
+| Focus Mode | Description | Best For | Example Query |
+|------------|-------------|----------|---------------|
+| **webSearch** | General web search across all sources | Broad research, current events | "Latest AI developments 2025" |
+| **academicSearch** | Scientific papers (arXiv, Scholar, PubMed) | Research papers, academic work | "CRISPR gene editing clinical trials" |
+| **youtubeSearch** | Video content discovery | Tutorials, talks, visual learning | "React hooks tutorial explained" |
+| **redditSearch** | Community discussions | Opinions, experiences, reviews | "Best VPS provider recommendations" |
+| **writingAssistant** | Content creation help | Drafting, editing, ideation | "Write introduction about blockchain" |
+| **wolframAlphaSearch** | Math & computational queries | Calculations, data analysis | "Solve differential equation x^2 + 3x" |
+
+### API Request Format
+
+**Basic Search Request:**
+```json
+POST http://perplexica:3000/api/search
+Content-Type: application/json
+
+{
+  "query": "Your search query here",
+  "focusMode": "webSearch",
+  "chatHistory": []
+}
+```
+
+**With Chat History (Contextual Search):**
+```json
+{
+  "query": "Tell me more about the second point",
+  "focusMode": "webSearch",
+  "chatHistory": [
+    {
+      "role": "user",
+      "content": "What is quantum computing?"
+    },
+    {
+      "role": "assistant",
+      "content": "Quantum computing is..."
+    }
+  ]
+}
+```
+
+**Response Format:**
+```json
+{
+  "message": "AI-generated comprehensive answer with context...",
+  "sources": [
+    {
+      "title": "Article Title",
+      "url": "https://example.com/article",
+      "snippet": "Relevant excerpt from the source..."
+    }
+  ]
+}
+```
+
+### Troubleshooting
+
+**Issue 1: Perplexica Not Responding**
+
+```bash
+# Check if Perplexica is running
+docker ps | grep perplexica
+
+# Check logs for errors
+docker logs perplexica --tail 100
+
+# Restart Perplexica
+docker compose restart perplexica
+
+# Check if SearXNG is accessible (Perplexica depends on it)
+docker exec perplexica curl http://searxng:8080/
+```
+
+**Solution:**
+- Perplexica requires SearXNG to be running and JSON API enabled
+- Check SearXNG configuration (see SearXNG section above)
+- Verify Ollama is running if using local LLMs
+- Check Docker network connectivity
+
+**Issue 2: Slow Response Times**
+
+```bash
+# Check which LLM backend is configured
+docker exec perplexica cat /app/config.toml | grep -A5 "CHAT"
+
+# If using Ollama, check model is downloaded
+docker exec ollama ollama list
+
+# Pull smaller/faster model if needed
+docker exec ollama ollama pull llama3.2:3b  # Smaller, faster model
+```
+
+**Solution:**
+- Use faster LLM models (llama3.2:3b instead of llama3.2:70b)
+- Reduce search depth/sources in config
+- Use webSearch mode instead of academicSearch (faster)
+- Ensure Ollama has sufficient RAM allocated
+
+**Issue 3: No Sources in Response**
+
+```bash
+# Check SearXNG integration
+docker logs perplexica | grep -i "searxng\|search"
+
+# Test SearXNG directly
+curl "http://searxng:8080/search?q=test&format=json"
+
+# If SearXNG returns no results, check SearXNG logs
+docker logs searxng --tail 50
+```
+
+**Solution:**
+- Verify SearXNG JSON API is enabled (see SearXNG section)
+- Check if search engines in SearXNG are working
+- Try different search query
+- Verify network connectivity between Perplexica and SearXNG
+
+**Issue 4: "Out of Memory" Errors**
+
+```bash
+# Check Ollama memory usage
+docker stats ollama --no-stream
+
+# Check Perplexica memory usage
+docker stats perplexica --no-stream
+
+# Free up RAM by stopping unused services
+docker compose stop <unused-service>
+```
+
+**Solution:**
+- Use smaller LLM models (3B instead of 7B or 13B parameters)
+- Increase Docker memory limits in docker-compose.yml
+- Close other heavy services temporarily
+- Consider using OpenAI API instead of local Ollama for memory-constrained systems
+
+**Issue 5: Cannot Access from n8n**
+
+```bash
+# Test connectivity from n8n container
+docker exec n8n curl http://perplexica:3000/
+
+# Should return HTML page
+
+# Test API endpoint
+docker exec n8n curl -X POST http://perplexica:3000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query":"test","focusMode":"webSearch","chatHistory":[]}'
+
+# Check if both containers are in same network
+docker network inspect localai | grep -E "perplexica|n8n"
+```
+
+**Solution:**
+- Use internal URL: `http://perplexica:3000` (not localhost)
+- Verify both containers are running
+- Check Docker network configuration
+- Ensure API endpoint path is correct: `/api/search`
+
+### Configuration Options
+
+**Model Selection:**
+
+Edit `~/ai-launchkit/perplexica-config.toml`:
+
+```toml
+[CHAT]
+# Use Ollama (local, private)
+provider = "ollama"
+model = "llama3.2"  # or: llama3.2:3b, mistral, etc.
+
+# Or use OpenAI (faster, but external)
+# provider = "openai"
+# model = "gpt-4o-mini"
+# api_key = "your-api-key"
+```
+
+**Search Configuration:**
+
+```toml
+[SEARXNG]
+# SearXNG instance URL
+url = "http://searxng:8080"
+
+# Maximum number of search results
+max_results = 10
+
+# Search timeout (seconds)
+timeout = 30
+```
+
+### Resources
+
+- **GitHub:** https://github.com/ItzCrazyKns/Perplexica
+- **Web Interface:** `https://perplexica.yourdomain.com`
+- **API Endpoint:** `http://perplexica:3000/api/search`
+- **Perplexity AI (Inspiration):** https://www.perplexity.ai
+- **SearXNG Integration:** See SearXNG section above
+
+### Best Practices
+
+**For Research Workflows:**
+- Use `chatHistory` parameter to maintain context across multiple searches
+- Start with `webSearch`, then use `academicSearch` for deeper dive
+- Extract sources and store in vector database (Qdrant) for future reference
+- Combine with LightRAG or Neo4j to build knowledge graphs from research
+
+**For Content Generation:**
+- Research topic with Perplexica first
+- Use comprehensive answer as context for content generation (OpenAI, Claude)
+- Always include source citations in final content
+- Verify facts from multiple Perplexica searches
+
+**For Competitive Intelligence:**
+- Schedule regular searches (every 6-12 hours)
+- Use multiple focus modes (webSearch + redditSearch) for comprehensive view
+- Store results in database for trend analysis
+- Set up alerts for significant changes or new developments
+
+**Performance Tips:**
+- Cache common queries in Redis or PostgreSQL
+- Use smaller LLM models for faster responses
+- Implement request queuing for high-volume workflows
+- Consider rate limiting to avoid overwhelming SearXNG
+
+**Privacy Considerations:**
+- Perplexica uses your self-hosted SearXNG (privacy-respecting)
+- With Ollama backend: completely private, no external API calls
+- Chat history stored locally in browser, not on server
+- For maximum privacy: use local LLMs + self-hosted SearXNG
+
+### When to Use Perplexica
+
+**✅ Perfect For:**
+- Deep research requiring AI synthesis
+- Academic paper discovery and analysis
+- Content research and fact-checking
+- Competitive intelligence gathering
+- Multi-source information aggregation
+- YouTube content curation
+- Reddit sentiment analysis
+- Writing assistance with current information
+- Mathematical queries (WolframAlpha mode)
+
+**❌ Not Ideal For:**
+- Simple keyword searches (use SearXNG directly instead)
+- Real-time data updates (use dedicated APIs)
+- When you need raw search results without AI interpretation
+- Highly time-sensitive queries (Perplexica adds processing time)
+
+**Perplexica vs SearXNG:**
+- **Perplexica:** AI-synthesized answers with sources, slower, contextual
+- **SearXNG:** Raw search results, faster, no AI processing
+- **Use Both:** SearXNG for quick lookups, Perplexica for research
+
+**Perplexica vs ChatGPT/Claude:**
+- ✅ Always includes source citations
+- ✅ Uses real-time web search (not training data)
+- ✅ Completely self-hosted and private
+- ❌ Slower than pure LLM queries
+- ❌ Requires SearXNG dependency
 
 </details>
 

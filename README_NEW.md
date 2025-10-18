@@ -24746,39 +24746,2735 @@ timeout = 30
 </details>
 
 <details>
-<summary><b>🕷️ Crawl4Ai - Web Crawler</b></summary>
+<summary><b>🕷️ Crawl4AI - LLM-Friendly Web Crawler</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### Was ist Crawl4AI?
+
+Crawl4AI ist ein Open-Source Web Crawler und Scraper, der speziell für AI-Anwendungen, LLMs und RAG-Pipelines optimiert wurde. Es wandelt Webseiten in sauberes Markdown um, unterstützt strukturierte Datenextraktion und bietet erweiterte Browser-Kontrolle mit hoher Performance durch asynchrones Crawling. Im Gegensatz zu traditionellen Scrapern ist Crawl4AI für moderne AI-Workflows konzipiert und bietet adaptives Crawling, das automatisch stoppt, wenn ausreichend relevante Daten gesammelt wurden.
+
+### Features
+
+- **🤖 LLM-Optimiert**: Generiert sauberes Markdown perfekt für RAG-Pipelines und LLM-Training
+- **⚡ Blazing Fast**: Asynchrone Architektur mit parallelem Crawling - schneller als viele bezahlte Services
+- **🎯 Intelligente Extraktion**: CSS/XPath-basiert oder LLM-gestützt (mit Ollama, OpenAI, etc.)
+- **🌐 JavaScript-Unterstützung**: Headless Browser für dynamische SPAs und JS-heavy Sites
+- **📊 Strukturierte Daten**: JSON, Markdown, HTML - optimiert für AI-Agents und Workflows
+- **🔄 Adaptive Crawling**: Stoppt automatisch bei ausreichend Daten - weniger Rauschen, schneller
+- **🆓 Komplett Open Source**: Keine Rate Limits, keine API Keys, keine Paywalls
+
+### Initial Setup
+
+**First API Call to Crawl4AI:**
+
+1. **Basic Health Check:**
+```bash
+curl http://crawl4ai:11235/health
+# Should return: {"status": "healthy"}
+```
+
+2. **Simple Crawl Request:**
+```bash
+curl -X POST http://crawl4ai:11235/crawl \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urls": ["https://example.com"],
+    "priority": 10
+  }'
+```
+
+Response enthält `task_id` für Status-Abfrage.
+
+3. **Check Task Status:**
+```bash
+curl http://crawl4ai:11235/task/{task_id}
+```
+
+4. **View Playground UI:**
+Öffne `http://DEIN-SERVER-IP:11235/playground` für interaktive API-Tests
+
+**Wichtig:** Crawl4AI läuft intern ohne HTTPS-Subdomain (nur für n8n/interne Services).
+
+### n8n Integration Setup
+
+**Crawl4AI über HTTP Request Node:**
+
+Crawl4AI hat keine native n8n Node, wird aber über REST API angebunden.
+
+**Internal URL:** `http://crawl4ai:11235`
+
+**API Endpoints:**
+- `POST /crawl` - Start crawl task
+- `GET /task/{task_id}` - Check status
+- `GET /health` - Health check
+
+### Example Workflows
+
+#### Example 1: Simple Web Scraping to Markdown
+
+```javascript
+// 1. HTTP Request Node - Start Crawl
+Method: POST
+URL: http://crawl4ai:11235/crawl
+Headers: {
+  "Content-Type": "application/json"
+}
+Body: {
+  "urls": ["{{ $json.url }}"],  // From webhook/trigger
+  "priority": 10,
+  "crawler_params": {
+    "word_count_threshold": 10,
+    "only_text": false,
+    "remove_overlay_elements": true
+  }
+}
+
+// 2. Wait Node
+Duration: 5 seconds  // Give time for crawl to complete
+
+// 3. HTTP Request Node - Get Results
+Method: GET
+URL: http://crawl4ai:11235/task/{{ $('HTTP Request').item.json.task_id }}
+
+// 4. Code Node - Extract Markdown
+const result = $input.item.json;
+
+if (result.status !== 'completed') {
+  throw new Error('Crawl not completed yet');
+}
+
+return {
+  url: result.result.url,
+  markdown: result.result.markdown,
+  html: result.result.html,
+  success: result.result.success,
+  metadata: {
+    title: result.result.metadata?.title,
+    description: result.result.metadata?.description
+  }
+};
+
+// 5. Save to File / Database / Send to LLM
+// Use markdown output for RAG pipeline or further processing
+```
+
+#### Example 2: Multi-URL Crawling for Research
+
+```javascript
+// Use Case: Crawl multiple sources for comprehensive research
+
+// 1. Webhook/Manual Trigger
+Input: {
+  "topic": "AI LaunchKit setup guides",
+  "urls": [
+    "https://github.com/freddy-schuetz/ai-launchkit",
+    "https://docs.example.com/ai-setup",
+    "https://blog.example.com/best-ai-tools"
+  ]
+}
+
+// 2. HTTP Request Node - Batch Crawl
+Method: POST
+URL: http://crawl4ai:11235/crawl
+Body: {
+  "urls": {{ $json.urls }},
+  "priority": 8,
+  "crawler_params": {
+    "word_count_threshold": 50,
+    "excluded_tags": ["nav", "footer", "aside"],
+    "remove_overlay_elements": true
+  }
+}
+
+// 3. Wait Node: 10 seconds
+
+// 4. Loop Node over URLs
+// For each URL, get task status
+
+// 5. HTTP Request Node (inside loop)
+Method: GET
+URL: http://crawl4ai:11235/task/{{ $('HTTP Request').item.json.task_id }}
+
+// 6. Aggregate Node - Combine all results
+const allResults = $input.all();
+const markdownContents = allResults
+  .filter(r => r.json.status === 'completed')
+  .map(r => ({
+    url: r.json.result.url,
+    title: r.json.result.metadata?.title || 'Untitled',
+    markdown: r.json.result.markdown,
+    links: r.json.result.links?.internal || []
+  }));
+
+return {
+  topic: $('Webhook').item.json.topic,
+  sources: markdownContents.length,
+  content: markdownContents
+};
+
+// 7. OpenAI Node - Synthesize Research
+Model: gpt-4o
+System: "You are a research assistant. Synthesize information from multiple sources."
+Prompt: |
+  Topic: {{ $json.topic }}
+  
+  Sources crawled: {{ $json.sources }}
+  
+  Content:
+  {{ $json.content.map(c => `## ${c.title}\n${c.markdown.substring(0, 1000)}...`).join('\n\n') }}
+  
+  Create a comprehensive summary with citations.
+```
+
+#### Example 3: LLM-Powered Structured Extraction
+
+```javascript
+// Advanced: Use LLM to extract structured data from crawled pages
+
+// 1. HTTP Request - Start Crawl with LLM Extraction
+Method: POST
+URL: http://crawl4ai:11235/crawl
+Body: {
+  "urls": ["https://news.ycombinator.com"],
+  "priority": 10,
+  "crawler_params": {
+    "word_count_threshold": 10
+  },
+  "extraction_config": {
+    "type": "llm",
+    "params": {
+      "provider": "ollama/llama3.3",  // Uses local Ollama
+      "schema": {
+        "type": "object",
+        "properties": {
+          "articles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {"type": "string"},
+                "url": {"type": "string"},
+                "points": {"type": "number"},
+                "comments": {"type": "number"}
+              }
+            }
+          }
+        }
+      },
+      "instruction": "Extract all articles with their titles, URLs, points, and comment counts."
+    }
+  }
+}
+
+// 2. Wait & Fetch like previous examples
+// Result will contain structured JSON matching the schema
+```
+
+#### Example 4: Dynamic Page Interaction
+
+```javascript
+// For JavaScript-heavy sites that need scrolling/clicking
+
+// 1. HTTP Request Node
+Method: POST
+URL: http://crawl4ai:11235/crawl
+Body: {
+  "urls": ["https://twitter.com/search?q=AI"],
+  "priority": 10,
+  "crawler_params": {
+    "headless": true,
+    "page_timeout": 30000,
+    "js_code": [
+      "window.scrollTo(0, document.body.scrollHeight);",
+      "await new Promise(resolve => setTimeout(resolve, 2000));"
+    ],
+    "wait_for": "css:.timeline-item",
+    "screenshot": true  // Optional: capture screenshot
+  }
+}
+
+// Rest of workflow same as before
+// Use js_code array to simulate user interactions
+```
+
+### Troubleshooting
+
+**Issue 1: Crawl Task Times Out**
+
+```bash
+# Check Crawl4AI logs
+docker logs crawl4ai
+
+# Common causes:
+# - Target site blocks bots
+# - JavaScript takes too long to load
+# - Network timeout
+
+# Solution 1: Increase timeout
+curl -X POST http://crawl4ai:11235/crawl \
+  -d '{
+    "urls": ["..."],
+    "crawler_params": {
+      "page_timeout": 60000,
+      "request_timeout": 30
+    }
+  }'
+
+# Solution 2: Use stealth mode (if available)
+# Add user agent and disable headless detection
+```
+
+**Issue 2: Empty or Incomplete Markdown Output**
+
+```bash
+# Diagnosis: Page uses heavy JavaScript
+# Check raw HTML vs markdown length
+
+# Solution: Enable JavaScript rendering
+curl -X POST http://crawl4ai:11235/crawl \
+  -d '{
+    "urls": ["..."],
+    "crawler_params": {
+      "js_only": false,
+      "wait_for": "css:#main-content",
+      "wait_for_timeout": 5000
+    }
+  }'
+
+# Or use js_code to trigger specific actions:
+"js_code": [
+  "document.querySelector('.load-more-btn').click();",
+  "await new Promise(r => setTimeout(r, 2000));"
+]
+```
+
+**Issue 3: LLM Extraction Fails**
+
+```bash
+# Check if Ollama is running
+docker ps | grep ollama
+
+# Test Ollama directly
+curl http://ollama:11434/api/generate -d '{
+  "model": "llama3.3",
+  "prompt": "test"
+}'
+
+# In n8n: Use extraction_config correctly
+{
+  "extraction_config": {
+    "type": "llm",
+    "params": {
+      "provider": "ollama/llama3.3",
+      "api_base": "http://ollama:11434",  // Specify base URL
+      "schema": {...},
+      "instruction": "..."
+    }
+  }
+}
+```
+
+**Issue 4: Rate Limiting / Blocked by Target Site**
+
+```bash
+# Add delays between requests
+"crawler_params": {
+  "delay_before_return_html": 2.0,  // Wait 2 seconds before return
+  "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+}
+
+# Use session management for cookies
+"session_id": "unique-session-id"
+
+# For production: Consider using proxy rotation
+# (Requires additional proxy setup in docker-compose)
+```
+
+**Issue 5: Container Not Starting**
+
+```bash
+# Check container status
+docker ps -a | grep crawl4ai
+
+# View logs
+docker logs crawl4ai
+
+# Restart container
+docker restart crawl4ai
+
+# Common issues:
+# - Port 11235 already in use
+# - Insufficient memory for browser
+# - Missing Playwright dependencies
+
+# Solution: Ensure 2GB+ RAM available
+free -h
+
+# Rebuild if needed
+cd /root/ai-launchkit
+docker-compose up -d --force-recreate crawl4ai
+```
+
+### Best Practices
+
+**Markdown Quality:**
+- Use `word_count_threshold` to filter noise (default: 10)
+- Exclude unnecessary tags: `["nav", "footer", "aside", "ads"]`
+- Enable `remove_overlay_elements` for popups/modals
+- Set `only_text: true` for pure text extraction
+
+**Performance:**
+- Use `priority` parameter (1-10) for task queuing
+- Enable caching for repeated URLs
+- Batch multiple URLs in single request
+- Use `session_id` for related crawls to reuse browser context
+
+**For AI/RAG Pipelines:**
+- Always get markdown output (cleaner than HTML)
+- Use `extraction_config` with schema for structured data
+- Combine with embeddings (via OpenAI/Ollama) for vector storage
+- Filter by `word_count_threshold` to ensure meaningful content
+
+**Error Handling:**
+- Always check `task.status` before processing results
+- Implement retry logic for failed crawls
+- Use `crawler_params.screenshot: true` for debugging
+- Log failed URLs for manual review
+
+### Resources
+
+- **Documentation:** https://docs.crawl4ai.com/
+- **GitHub:** https://github.com/unclecode/crawl4ai
+- **API Reference:** https://docs.crawl4ai.com/api/parameters/
+- **Playground:** `http://YOUR-SERVER-IP:11235/playground`
+- **LiteLLM Providers:** https://docs.litellm.ai/docs/providers (for LLM extraction)
 
 </details>
 
 <details>
-<summary><b>📊 GPT Researcher - Research Agent</b></summary>
+<summary><b>📊 GPT Researcher - Autonomous Research Agent</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### Was ist GPT Researcher?
+
+GPT Researcher ist ein autonomer Research-Agent, der umfassende 2000+ Wort-Reports zu jedem Thema erstellt. Er durchsucht automatisch das Web über mehrere Suchmaschinen, analysiert Quellen, extrahiert relevante Informationen und erstellt strukturierte Reports mit Zitationen in wissenschaftlichen Formaten (APA, MLA, Chicago). Im Gegensatz zu einfachen Web-Scraping-Tools führt GPT Researcher eine intelligente Multi-Source-Analyse durch und generiert kohärente, zitierte Berichte in wenigen Minuten.
+
+### Features
+
+- **🔬 Autonome Recherche**: Automatische Web-Suche über mehrere Quellen mit intelligenter Quellenauswahl
+- **📄 Umfassende Reports**: Generiert 2000-5000 Wort-Reports mit vollständiger Struktur
+- **📚 Multiple Report-Typen**: Research Reports, Outlines, Resource Lists, Subtopic Analysis
+- **🎓 Wissenschaftliche Zitationen**: Unterstützt APA, MLA, Chicago Zitationsformate
+- **⚡ Schnell & Effizient**: Komplette Reports in 2-5 Minuten statt Stunden manueller Recherche
+- **🌐 Multi-Source**: Aggregiert Informationen aus 20+ verschiedenen Webquellen
+- **🔄 Iterative Verbesserung**: Verfeinert Recherche basierend auf initialen Findings
+
+### Initial Setup
+
+**First Access to GPT Researcher:**
+
+1. **Test API Endpoint:**
+```bash
+curl http://gpt-researcher:8000/health
+# Should return: {"status": "healthy"}
+```
+
+2. **Start Simple Research:**
+```bash
+curl -X POST http://gpt-researcher:8000/api/research \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Latest trends in AI automation 2025",
+    "report_type": "research_report"
+  }'
+```
+
+Response contains `task_id` für Status-Tracking.
+
+3. **Check Research Status:**
+```bash
+curl http://gpt-researcher:8000/api/status/{task_id}
+```
+
+4. **Web Interface (optional):**
+Zugriff via `https://research.yourdomain.com` (Basic Auth required)
+- Username/Password: Configured during installation
+
+### n8n Integration Setup
+
+**GPT Researcher über HTTP Request Node:**
+
+GPT Researcher hat keine native n8n Node, wird aber über REST API eingebunden.
+
+**Internal URL:** `http://gpt-researcher:8000`
+
+**Key API Endpoints:**
+- `POST /api/research` - Start research task
+- `GET /api/status/{task_id}` - Check progress
+- `GET /api/result/{task_id}` - Get final report
+- `GET /health` - Health check
+
+### Example Workflows
+
+#### Example 1: Automated Research Report Generation
+
+```javascript
+// 1. Webhook/Schedule Trigger
+Input: {
+  "topic": "Impact of AI on healthcare 2025",
+  "report_format": "APA"
+}
+
+// 2. HTTP Request Node - Start Research
+Method: POST
+URL: http://gpt-researcher:8000/api/research
+Headers: {
+  "Content-Type": "application/json"
+}
+Body: {
+  "query": "{{ $json.topic }}",
+  "report_type": "research_report",
+  "max_iterations": 5,
+  "report_format": "{{ $json.report_format }}",
+  "total_words": 2000
+}
+
+// Response: { "task_id": "abc-123-xyz" }
+
+// 3. Wait Node
+Duration: 180 seconds  // Give time for research (2-5 min typical)
+
+// 4. HTTP Request Node - Check Status (in loop if needed)
+Method: GET
+URL: http://gpt-researcher:8000/api/status/{{ $('HTTP Request').item.json.task_id }}
+
+// Response includes: { "status": "completed", "progress": 100 }
+
+// 5. Code Node - Poll Until Complete
+const taskId = $('HTTP Request').item.json.task_id;
+const maxAttempts = 10;
+let attempts = 0;
+
+while (attempts < maxAttempts) {
+  const status = await $http.request({
+    method: 'GET',
+    url: `http://gpt-researcher:8000/api/status/${taskId}`
+  });
+  
+  if (status.status === 'completed') {
+    return { taskId, ready: true };
+  }
+  
+  await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30s
+  attempts++;
+}
+
+throw new Error('Research timeout after 5 minutes');
+
+// 6. HTTP Request Node - Get Final Report
+Method: GET
+URL: http://gpt-researcher:8000/api/result/{{ $json.taskId }}
+
+// 7. Code Node - Parse Report
+const result = $input.item.json;
+
+return {
+  topic: $('Webhook').item.json.topic,
+  report: result.report,           // Full markdown report
+  sources: result.sources,          // Array of source URLs with metadata
+  wordCount: result.word_count,
+  completedAt: result.completed_at,
+  metadata: {
+    iterations: result.iterations_used,
+    sources_analyzed: result.sources.length
+  }
+};
+
+// 8. Save to File
+Path: /data/shared/reports/{{ $json.topic }}_{{ $now.format('yyyy-MM-dd') }}.md
+Content: {{ $json.report }}
+
+// 9. Email Node - Send Report
+To: research-team@company.com
+Subject: Research Complete: {{ $json.topic }}
+Attachments: [Report file]
+Body: |
+  Research completed successfully!
+  
+  Topic: {{ $json.topic }}
+  Word Count: {{ $json.wordCount }}
+  Sources Analyzed: {{ $json.metadata.sources_analyzed }}
+  
+  Report attached.
+```
+
+#### Example 2: Multi-Topic Batch Research
+
+```javascript
+// Automated daily research on multiple topics
+
+// 1. Schedule Trigger
+Cron: 0 9 * * *  // Daily at 9 AM
+
+// 2. Code Node - Define Research Topics
+return [
+  { topic: "AI automation trends 2025" },
+  { topic: "LLM cost optimization strategies" },
+  { topic: "Enterprise RAG implementations" },
+  { topic: "Open-source AI tools comparison" }
+];
+
+// 3. Loop Node - Process Each Topic
+Items: {{ $json }}
+
+// 4. HTTP Request Node (inside loop) - Start Research
+Method: POST
+URL: http://gpt-researcher:8000/api/research
+Body: {
+  "query": "{{ $json.item.topic }}",
+  "report_type": "outline_report",  // Faster for batch processing
+  "max_iterations": 3,
+  "total_words": 1000
+}
+
+// 5. Wait Node: 120 seconds per topic
+
+// 6. HTTP Request Node - Fetch Results
+Method: GET
+URL: http://gpt-researcher:8000/api/result/{{ $json.task_id }}
+
+// 7. Aggregate Node - Combine All Reports
+const allReports = $input.all();
+const completedReports = allReports
+  .filter(r => r.json.status === 'completed')
+  .map(r => ({
+    topic: r.json.query,
+    summary: r.json.report.substring(0, 500) + '...',
+    fullReport: r.json.report,
+    sourceCount: r.json.sources.length,
+    url: `https://research.yourdomain.com/reports/${r.json.task_id}`
+  }));
+
+return {
+  date: $now.format('yyyy-MM-dd'),
+  reportsGenerated: completedReports.length,
+  reports: completedReports
+};
+
+// 8. Slack/Email - Send Summary
+Message: |
+  📊 Daily Research Digest - {{ $json.date }}
+  
+  Generated {{ $json.reportsGenerated }} reports:
+  
+  {{ $json.reports.map(r => `• ${r.topic} (${r.sourceCount} sources)`).join('\n') }}
+  
+  Full reports available in shared folder.
+```
+
+#### Example 3: Competitive Analysis Workflow
+
+```javascript
+// Research competitors and generate comparison report
+
+// 1. Manual Trigger / Webhook
+Input: {
+  "competitors": [
+    "OpenAI GPT-4",
+    "Anthropic Claude",
+    "Google Gemini",
+    "Meta Llama"
+  ],
+  "focus_area": "pricing and features"
+}
+
+// 2. Loop Over Competitors
+Items: {{ $json.competitors }}
+
+// 3. HTTP Request - Research Each Competitor
+Method: POST
+URL: http://gpt-researcher:8000/api/research
+Body: {
+  "query": "{{ $json.item }} {{ $('Manual Trigger').item.json.focus_area }} 2025",
+  "report_type": "resource_report",  // Get factual data
+  "max_iterations": 4
+}
+
+// 4. Wait & Collect Results (like previous examples)
+
+// 5. Aggregate All Competitor Data
+const competitorReports = $input.all().map(r => r.json);
+
+return {
+  competitors: competitorReports,
+  comparisonDate: $now.toISO()
+};
+
+// 6. OpenAI Node - Generate Comparison Matrix
+Model: gpt-4o
+System: "You are a business analyst. Create a comparison table."
+Prompt: |
+  Based on these research reports about AI models:
+  
+  {{ $json.competitors.map(c => c.report).join('\n\n---\n\n') }}
+  
+  Create a detailed comparison table covering:
+  - Pricing tiers
+  - Key features
+  - API capabilities
+  - Limitations
+  - Best use cases
+  
+  Format as Markdown table.
+
+// 7. Create Notion Page / Send Email with comparison
+```
+
+#### Example 4: Combined with Local Deep Research
+
+```javascript
+// Use GPT Researcher for overview, then Local Deep Research for accuracy
+
+// 1. Webhook Trigger
+Input: { "topic": "Quantum computing applications in cryptography" }
+
+// 2. GPT Researcher - Quick Overview (3 min)
+URL: http://gpt-researcher:8000/api/research
+Body: {
+  "query": "{{ $json.topic }}",
+  "report_type": "outline_report",
+  "max_iterations": 3
+}
+
+// 3. Code Node - Extract Key Subtopics
+const report = $input.item.json.report;
+const subtopics = report.match(/## (.*)/g) || [];
+return subtopics.slice(0, 3).map(topic => ({  // Top 3 subtopics
+  subtopic: topic.replace('## ', '')
+}));
+
+// 4. Loop Over Subtopics
+
+// 5. HTTP Request - Local Deep Research (high accuracy)
+Method: POST
+URL: http://local-deep-research:2024/api/research
+Body: {
+  "query": "{{ $json.item.subtopic }}",
+  "iterations": 5,
+  "context": "{{ $('HTTP Request').item.json.report }}"  // Provide context
+}
+
+// 6. Aggregate - Combine Overview + Deep Dives
+const overview = $('HTTP Request').first().json.report;
+const deepDives = $input.all().map(r => r.json);
+
+return {
+  topic: $('Webhook').item.json.topic,
+  quickOverview: overview,
+  detailedSections: deepDives,
+  totalSources: overview.sources.length + deepDives.reduce((sum, d) => sum + d.sources.length, 0)
+};
+
+// 7. Generate Final Comprehensive Report
+```
+
+### Report Types & Use Cases
+
+**Available Report Types:**
+
+| Type | Description | Use Case | Duration |
+|------|-------------|----------|----------|
+| `research_report` | Comprehensive 2000+ word report | Full topic analysis | 3-5 min |
+| `outline_report` | Structured outline with key points | Quick overviews | 2-3 min |
+| `resource_report` | Curated list of sources | Finding resources | 1-2 min |
+| `subtopic_report` | Focused analysis of specific aspect | Deep dives | 2-4 min |
+
+**Report Format Options:**
+
+- **APA**: Academic/scientific papers
+- **MLA**: Humanities research
+- **Chicago**: Historical/cultural research
+- **Plain**: No specific format
+
+### Troubleshooting
+
+**Issue 1: Research Task Times Out**
+
+```bash
+# Check GPT Researcher logs
+docker logs gpt-researcher --tail 100
+
+# Common causes:
+# - API rate limits (OpenAI/Search APIs)
+# - Network connectivity issues
+# - Complex query requiring more time
+
+# Solution 1: Increase max_iterations gradually
+{
+  "max_iterations": 3  // Start smaller for testing
+}
+
+# Solution 2: Use simpler report type
+{
+  "report_type": "outline_report"  // Faster than full research_report
+}
+
+# Solution 3: Check API keys in .env
+grep OPENAI_API_KEY /root/ai-launchkit/.env
+```
+
+**Issue 2: Poor Quality or Short Reports**
+
+```bash
+# Diagnosis: Not enough sources found
+
+# Solution 1: Increase iterations
+{
+  "max_iterations": 7,  // Default is 5
+  "total_words": 3000
+}
+
+# Solution 2: Make query more specific
+# ❌ "AI"
+# ✅ "AI automation tools for business workflows 2025"
+
+# Solution 3: Check search engine config
+# Verify TAVILY_API_KEY or SEARXNG_ENDPOINT in .env
+```
+
+**Issue 3: "No Sources Found" Error**
+
+```bash
+# Check search engine connectivity
+docker exec gpt-researcher curl http://searxng:8080
+
+# Verify environment variables
+docker exec gpt-researcher printenv | grep -E "TAVILY|SEARXNG"
+
+# Solution: Use alternative search engine
+# In .env, configure:
+SEARCH_ENGINE=searxng  # or tavily, duckduckgo
+SEARXNG_ENDPOINT=http://searxng:8080
+```
+
+**Issue 4: API Quota Exceeded**
+
+```bash
+# OpenAI API quota issues
+
+# Check usage:
+# Visit https://platform.openai.com/usage
+
+# Solution 1: Use Ollama instead (local, free)
+# In .env:
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://ollama:11434
+
+# Solution 2: Reduce iterations
+{
+  "max_iterations": 2,
+  "total_words": 1000
+}
+
+# Solution 3: Rate limit requests in n8n
+# Add Wait nodes between batch research calls
+```
+
+**Issue 5: Container Not Starting**
+
+```bash
+# Check container status
+docker ps -a | grep gpt-researcher
+
+# View logs
+docker logs gpt-researcher
+
+# Common issues:
+# - Missing API keys
+# - Port conflicts
+# - Memory issues
+
+# Solution: Restart with proper config
+cd /root/ai-launchkit
+docker-compose restart gpt-researcher
+
+# Check .env file has required variables:
+grep -E "OPENAI|TAVILY" .env
+```
+
+### Best Practices
+
+**Query Optimization:**
+- **Be Specific**: "AI automation in healthcare 2025" > "AI"
+- **Include Context**: Add year, industry, or scope
+- **Use Questions**: "How does X impact Y?" guides research better
+- **Avoid Ambiguity**: Clarify acronyms and technical terms
+
+**Performance Tuning:**
+- Start with `outline_report` for quick results
+- Use 3-5 `max_iterations` for balance
+- Set realistic `total_words` targets (1000-3000)
+- Batch multiple topics with delays between requests
+
+**Integration Patterns:**
+- **Quick + Deep**: GPT Researcher overview → Local Deep Research details
+- **Multi-Source**: Combine with Perplexica, SearXNG for validation
+- **Automated Pipelines**: Schedule recurring research on key topics
+- **Post-Processing**: Use OpenAI to summarize or restructure reports
+
+**Error Handling:**
+- Always implement timeout logic (5-10 min max)
+- Store `task_id` for later retrieval
+- Check status before fetching results
+- Log failed queries for manual review
+
+### Configuration Parameters
+
+**Complete Request Structure:**
+
+```json
+{
+  "query": "Your research topic",
+  "report_type": "research_report",
+  "max_iterations": 5,
+  "report_format": "APA",
+  "total_words": 2000,
+  "language": "english",
+  "tone": "objective",
+  "sources_min": 10,
+  "sources_max": 20
+}
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `query` | string | Required | Research topic or question |
+| `report_type` | string | `research_report` | Type of report to generate |
+| `max_iterations` | integer | `5` | Search depth (1-10) |
+| `report_format` | string | `APA` | Citation style |
+| `total_words` | integer | `2000` | Target word count |
+| `language` | string | `english` | Report language |
+| `tone` | string | `objective` | Writing tone |
+
+### Resources
+
+- **Documentation:** https://docs.gptr.dev/
+- **GitHub:** https://github.com/assafelovic/gpt-researcher
+- **Web Interface:** `https://research.yourdomain.com` (Basic Auth)
+- **API Docs:** https://docs.gptr.dev/api
+- **Examples:** https://docs.gptr.dev/examples
 
 </details>
 
 <details>
-<summary><b>🔬 Local Deep Research - Iterative Research</b></summary>
+<summary><b>🔬 Local Deep Research - Iterative Research with Reflection</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### Was ist Local Deep Research?
+
+Local Deep Research ist LangChain's iterative Deep Research Tool, das durch Research Loops mit Reflection und Selbst-Kritik eine Genauigkeit von ~95% erreicht. Im Gegensatz zu einfachen Web-Recherchen führt Local Deep Research mehrere Iterationen durch, validiert Informationen gegenüber mehreren Quellen, identifiziert Widersprüche und verfeinert die Ergebnisse kontinuierlich. Perfekt für Fact-Checking, detaillierte Analysen und Situationen, in denen höchste Genauigkeit erforderlich ist.
+
+### Features
+
+- **🎯 Höchste Genauigkeit**: ~95% Accuracy durch iterative Validierung und Reflection
+- **🔄 Research Loops**: Mehrere Recherche-Durchläufe mit kontinuierlicher Verfeinerung
+- **🧠 Self-Reflection**: Identifiziert Lücken, Widersprüche und unzureichende Informationen
+- **✅ Fact-Checking**: Multi-Source-Validierung für maximale Zuverlässigkeit
+- **📊 Confidence Scoring**: Jede Aussage mit Confidence-Score und Quellenangaben
+- **🌐 Multi-Search Backend**: Unterstützt SearXNG, Tavily, und andere Suchmaschinen
+- **⏱️ Tiefgreifende Analyse**: 10-20 Minuten für comprehensive Research (vs. 2-5 Min bei GPT Researcher)
+
+### Initial Setup
+
+**First Access to Local Deep Research:**
+
+1. **Test API Health:**
+```bash
+curl http://local-deep-research:2024/health
+# Should return: {"status": "healthy", "version": "1.0"}
+```
+
+2. **Start Simple Research:**
+```bash
+curl -X POST http://local-deep-research:2024/api/research \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Is quantum computing viable for commercial use in 2025?",
+    "iterations": 3
+  }'
+```
+
+Response contains `task_id` und `websocket_url` für Echtzeit-Updates.
+
+3. **Check Research Progress:**
+```bash
+curl http://local-deep-research:2024/api/status/{task_id}
+```
+
+4. **WebSocket für Live Updates (optional):**
+```bash
+wscat -c ws://local-deep-research:2024/ws/{task_id}
+# Receive real-time progress updates
+```
+
+**Wichtig:** Local Deep Research läuft nur intern (kein HTTPS-Subdomain) für n8n/interne Services.
+
+### n8n Integration Setup
+
+**Local Deep Research über HTTP Request Node:**
+
+Keine native n8n Node, wird über REST API eingebunden.
+
+**Internal URL:** `http://local-deep-research:2024`
+
+**Key API Endpoints:**
+- `POST /api/research` - Start iterative research
+- `POST /api/verify` - Fact-check specific claim
+- `GET /api/status/{task_id}` - Check progress
+- `GET /api/result/{task_id}` - Get final analysis
+- `GET /health` - Health check
+
+### Example Workflows
+
+#### Example 1: High-Accuracy Fact-Checking
+
+```javascript
+// Verify claims with multi-source validation
+
+// 1. Webhook/Manual Trigger
+Input: {
+  "claim": "Quantum computers can break RSA-2048 encryption today",
+  "confidence_required": 0.9
+}
+
+// 2. HTTP Request Node - Fact-Check with Local Deep Research
+Method: POST
+URL: http://local-deep-research:2024/api/verify
+Headers: {
+  "Content-Type": "application/json"
+}
+Body: {
+  "statement": "{{ $json.claim }}",
+  "confidence_threshold": {{ $json.confidence_required }},
+  "sources_required": 3,
+  "iterations": 5
+}
+
+// 3. Wait Node
+Duration: 300 seconds  // 5 minutes for deep analysis
+
+// 4. Code Node - Poll for Completion
+const taskId = $('HTTP Request').item.json.task_id;
+const maxAttempts = 20;
+let attempts = 0;
+
+while (attempts < maxAttempts) {
+  const status = await $http.request({
+    method: 'GET',
+    url: `http://local-deep-research:2024/api/status/${taskId}`
+  });
+  
+  if (status.status === 'completed') {
+    return { taskId, ready: true };
+  }
+  
+  if (status.status === 'failed') {
+    throw new Error('Research failed: ' + status.error);
+  }
+  
+  await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30s
+  attempts++;
+}
+
+throw new Error('Research timeout after 10 minutes');
+
+// 5. HTTP Request Node - Get Verification Result
+Method: GET
+URL: http://local-deep-research:2024/api/result/{{ $json.taskId }}
+
+// 6. Code Node - Parse Verification
+const result = $input.item.json;
+
+return {
+  claim: $('Webhook').item.json.claim,
+  verdict: result.verified ? 'TRUE' : 'FALSE',
+  confidence: result.confidence_score,
+  reasoning: result.reasoning,
+  sources: result.sources,
+  contradictions: result.contradictions_found || [],
+  iterations_used: result.iterations_completed,
+  warnings: result.warnings || []
+};
+
+// 7. IF Node - Check Confidence
+If: {{ $json.confidence }} >= {{ $('Webhook').item.json.confidence_required }}
+
+// 8a. High Confidence Path - Accept Result
+// Save to database / Notify team
+
+// 8b. Low Confidence Path - Escalate
+// Send to human review with all sources
+```
+
+#### Example 2: Combined Quick + Deep Research Strategy
+
+```javascript
+// Use GPT Researcher for overview, Local Deep Research for accuracy
+
+// 1. Webhook Trigger
+Input: { 
+  "topic": "Impact of AI regulation on European startups",
+  "depth": "comprehensive"
+}
+
+// 2. GPT Researcher - Quick Overview (3 minutes)
+Method: POST
+URL: http://gpt-researcher:8000/api/research
+Body: {
+  "query": "{{ $json.topic }}",
+  "report_type": "outline_report",
+  "max_iterations": 3
+}
+
+// 3. Wait Node: 180 seconds
+
+// 4. HTTP Request - Get GPT Researcher Results
+Method: GET
+URL: http://gpt-researcher:8000/api/result/{{ $json.task_id }}
+
+// 5. Code Node - Extract Key Claims to Verify
+const report = $input.item.json.report;
+
+// Parse report for factual claims
+const claims = [];
+const factPattern = /(\d+%|\$[\d,]+|in \d{4}|by \d{4})/g;
+const sentences = report.split(/[.!?]+/);
+
+sentences.forEach(sentence => {
+  if (factPattern.test(sentence)) {
+    claims.push(sentence.trim());
+  }
+});
+
+return claims.slice(0, 5).map(claim => ({ claim }));  // Top 5 claims
+
+// 6. Loop Node - Verify Each Claim
+Items: {{ $json }}
+
+// 7. HTTP Request - Local Deep Research Verification
+Method: POST
+URL: http://local-deep-research:2024/api/verify
+Body: {
+  "statement": "{{ $json.item.claim }}",
+  "confidence_threshold": 0.85,
+  "sources_required": 3,
+  "iterations": 4,
+  "context": "{{ $('HTTP Request 1').item.json.report }}"  // Provide context
+}
+
+// 8. Wait & Poll (like previous example)
+
+// 9. Aggregate Node - Combine Verifications
+const overview = $('HTTP Request 1').first().json.report;
+const verifications = $input.all().map(v => v.json);
+
+const verifiedClaims = verifications.filter(v => v.verified && v.confidence > 0.85);
+const disputedClaims = verifications.filter(v => !v.verified || v.confidence < 0.85);
+
+return {
+  topic: $('Webhook').item.json.topic,
+  quickOverview: overview,
+  totalClaims: verifications.length,
+  verifiedClaims: verifiedClaims.length,
+  disputedClaims: disputedClaims.length,
+  verifications: verifications,
+  confidence: {
+    average: verifications.reduce((sum, v) => sum + v.confidence, 0) / verifications.length,
+    min: Math.min(...verifications.map(v => v.confidence)),
+    max: Math.max(...verifications.map(v => v.confidence))
+  }
+};
+
+// 10. OpenAI Node - Generate Final Report
+Model: gpt-4o
+System: "You are a fact-checker. Create a comprehensive report with verified and disputed claims."
+Prompt: |
+  Topic: {{ $json.topic }}
+  
+  Quick Overview (from GPT Researcher):
+  {{ $json.quickOverview }}
+  
+  Deep Verification Results:
+  - Total claims checked: {{ $json.totalClaims }}
+  - Verified (high confidence): {{ $json.verifiedClaims }}
+  - Disputed/Uncertain: {{ $json.disputedClaims }}
+  
+  Detailed verifications:
+  {{ $json.verifications.map(v => `
+  Claim: ${v.statement}
+  Verdict: ${v.verified ? 'VERIFIED' : 'DISPUTED'}
+  Confidence: ${(v.confidence * 100).toFixed(1)}%
+  Reasoning: ${v.reasoning}
+  Sources: ${v.sources.join(', ')}
+  `).join('\n\n') }}
+  
+  Create a final report that:
+  1. Summarizes the topic
+  2. Lists verified facts with confidence scores
+  3. Highlights disputed/uncertain claims
+  4. Provides recommendations for further research
+
+// 11. Save Report & Notify
+```
+
+#### Example 3: Automated Daily Fact-Check Pipeline
+
+```javascript
+// Monitor news/social media for claims and verify accuracy
+
+// 1. Schedule Trigger
+Cron: 0 */6 * * *  // Every 6 hours
+
+// 2. HTTP Request - Get trending topics from RSS/API
+// (Example: HackerNews, Reddit, Twitter API)
+
+// 3. Code Node - Extract Claims
+const articles = $input.all().map(item => item.json);
+const claims = [];
+
+articles.forEach(article => {
+  // Extract statistical claims, dates, figures
+  const text = article.title + ' ' + article.content;
+  const patterns = [
+    /(\d+%) of .+/g,  // Percentages
+    /increased by (\d+)/g,  // Growth numbers
+    /\$[\d,]+ .+/g,  // Dollar amounts
+    /.+ in \d{4}/g  // Historical claims
+  ];
+  
+  patterns.forEach(pattern => {
+    const matches = text.match(pattern) || [];
+    claims.push(...matches);
+  });
+});
+
+return [...new Set(claims)].slice(0, 10).map(c => ({ claim: c }));
+
+// 4. Loop Node - Verify Each Claim
+
+// 5. HTTP Request - Local Deep Research
+Method: POST
+URL: http://local-deep-research:2024/api/verify
+Body: {
+  "statement": "{{ $json.item.claim }}",
+  "confidence_threshold": 0.8,
+  "sources_required": 2,
+  "iterations": 3
+}
+
+// 6-8. Wait, Poll, Collect Results (like Example 1)
+
+// 9. Aggregate - Create Fact-Check Report
+const allVerifications = $input.all().map(v => v.json);
+const falsehoods = allVerifications.filter(v => !v.verified);
+const uncertain = allVerifications.filter(v => v.confidence < 0.7);
+
+return {
+  timestamp: $now.toISO(),
+  totalClaims: allVerifications.length,
+  verified: allVerifications.filter(v => v.verified && v.confidence >= 0.8).length,
+  falsehoods: falsehoods.length,
+  uncertain: uncertain.length,
+  report: allVerifications,
+  alerts: falsehoods.concat(uncertain)
+};
+
+// 10. Slack/Email - Send Alert if Falsehoods Found
+If: {{ $json.falsehoods }} > 0 OR {{ $json.uncertain }} > 2
+Message: |
+  🚨 Fact-Check Alert - {{ $json.timestamp }}
+  
+  Found {{ $json.falsehoods }} false claims and {{ $json.uncertain }} uncertain claims
+  
+  Details: [link to full report]
+```
+
+#### Example 4: Research Subtopic Deep Dive
+
+```javascript
+// Take a broad topic and research specific subtopics with high accuracy
+
+// 1. Manual Trigger
+Input: {
+  "mainTopic": "Carbon capture technologies",
+  "subtopics": [
+    "Direct air capture efficiency rates",
+    "Cost per ton CO2 captured",
+    "Commercial viability timeline",
+    "Energy requirements"
+  ]
+}
+
+// 2. Loop Over Subtopics
+Items: {{ $json.subtopics }}
+
+// 3. HTTP Request - Deep Research Each Subtopic
+Method: POST
+URL: http://local-deep-research:2024/api/research
+Body: {
+  "query": "{{ $json.item }} in context of {{ $('Manual Trigger').item.json.mainTopic }}",
+  "iterations": 5,
+  "search_tool": "auto",
+  "fetch_full_page": true,  // Get complete articles
+  "context": "Main topic: {{ $('Manual Trigger').item.json.mainTopic }}"
+}
+
+// 4. Wait Node: 600 seconds (10 min per subtopic)
+
+// 5. HTTP Request - Get Deep Research Results
+Method: GET
+URL: http://local-deep-research:2024/api/result/{{ $json.task_id }}
+
+// 6. Aggregate - Combine All Subtopic Research
+const mainTopic = $('Manual Trigger').item.json.mainTopic;
+const subtopicResearch = $input.all().map(r => r.json);
+
+return {
+  mainTopic: mainTopic,
+  completedAt: $now.toISO(),
+  subtopics: subtopicResearch.map(r => ({
+    topic: r.query,
+    findings: r.analysis,
+    confidence: r.confidence_score,
+    sources: r.sources,
+    keyInsights: r.key_insights || [],
+    limitations: r.limitations || []
+  })),
+  totalSources: subtopicResearch.reduce((sum, r) => sum + r.sources.length, 0),
+  averageConfidence: subtopicResearch.reduce((sum, r) => sum + r.confidence_score, 0) / subtopicResearch.length
+};
+
+// 7. OpenAI Node - Synthesize Complete Report
+Model: gpt-4o
+System: "You are a research analyst. Create a comprehensive synthesis."
+Prompt: |
+  Main Topic: {{ $json.mainTopic }}
+  
+  Subtopic Research Results:
+  {{ $json.subtopics.map(s => `
+  ## ${s.topic}
+  Confidence: ${(s.confidence * 100).toFixed(1)}%
+  
+  ${s.findings}
+  
+  Key Insights:
+  ${s.keyInsights.join('\n')}
+  
+  Limitations:
+  ${s.limitations.join('\n')}
+  
+  Sources: ${s.sources.length}
+  `).join('\n\n---\n\n') }}
+  
+  Create a comprehensive report that:
+  1. Executive summary
+  2. Synthesizes findings across subtopics
+  3. Identifies patterns and connections
+  4. Highlights confidence levels
+  5. Lists all sources
+  6. Recommendations for decision-makers
+
+// 8. Create PDF / Save to Drive / Send Email
+```
+
+### Research Configuration
+
+**Complete Request Structure:**
+
+```json
+{
+  "query": "Your research question",
+  "iterations": 5,
+  "search_tool": "auto",
+  "fetch_full_page": false,
+  "context": "Optional prior knowledge or context",
+  "confidence_threshold": 0.85,
+  "sources_required": 3,
+  "timeout": 1200
+}
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `query` | string | Required | Research question or claim to verify |
+| `iterations` | integer | `5` | Number of research loops (1-10) |
+| `search_tool` | string | `auto` | Search backend: auto, searxng, tavily |
+| `fetch_full_page` | boolean | `false` | Get complete article content (slower) |
+| `context` | string | `""` | Prior research or background info |
+| `confidence_threshold` | float | `0.85` | Minimum confidence for acceptance (0-1) |
+| `sources_required` | integer | `3` | Minimum sources for verification |
+| `timeout` | integer | `1200` | Max time in seconds (20 min default) |
+
+### Troubleshooting
+
+**Issue 1: Research Taking Too Long**
+
+```bash
+# Check current research progress
+curl http://local-deep-research:2024/api/status/{task_id}
+
+# Common causes:
+# - High iteration count
+# - Full page fetch enabled
+# - Complex query requiring many sources
+
+# Solution 1: Reduce iterations
+{
+  "iterations": 3  // Start with fewer loops
+}
+
+# Solution 2: Disable full page fetch
+{
+  "fetch_full_page": false  // Use snippets only
+}
+
+# Solution 3: Set lower timeout
+{
+  "timeout": 600  // 10 minutes instead of 20
+}
+```
+
+**Issue 2: Low Confidence Scores**
+
+```bash
+# Diagnosis: Not enough quality sources found
+
+# Solution 1: Increase sources required
+{
+  "sources_required": 5,  // More sources = better validation
+  "iterations": 6
+}
+
+# Solution 2: Improve query specificity
+# ❌ "AI is useful"
+# ✅ "What percentage of Fortune 500 companies use AI for customer service as of 2025?"
+
+# Solution 3: Check search engine connectivity
+docker logs local-deep-research --tail 50
+# Verify SearXNG or other search backend is working
+```
+
+**Issue 3: Conflicting Information Found**
+
+```bash
+# This is actually a GOOD sign - shows thorough research
+
+# The result will include:
+{
+  "contradictions_found": [
+    {
+      "claim": "...",
+      "source1": "...",
+      "source2": "...",
+      "contradiction": "..."
+    }
+  ],
+  "confidence_score": 0.65,  // Lower due to conflicts
+  "warnings": ["Multiple contradictory sources found"]
+}
+
+# Next steps:
+# 1. Review contradictions manually
+# 2. Increase iterations to resolve conflicts
+# 3. Add context to guide research
+```
+
+**Issue 4: API Timeout**
+
+```bash
+# Check container status
+docker logs local-deep-research
+
+# Common causes:
+# - LLM provider rate limits
+# - Search API quota exceeded
+# - Network issues
+
+# Solution 1: Check environment variables
+docker exec local-deep-research printenv | grep -E "OPENAI|OLLAMA|SEARXNG"
+
+# Solution 2: Use Ollama (local, no rate limits)
+# In .env:
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://ollama:11434
+
+# Solution 3: Stagger requests in n8n
+# Add Wait nodes between multiple research calls
+```
+
+**Issue 5: Container Not Starting**
+
+```bash
+# Check container status
+docker ps -a | grep local-deep-research
+
+# View logs
+docker logs local-deep-research
+
+# Common issues:
+# - Missing LLM configuration
+# - Search backend not available
+# - Port 2024 conflict
+
+# Solution: Restart with proper config
+cd /root/ai-launchkit
+docker-compose restart local-deep-research
+
+# Verify dependencies
+docker ps | grep -E "ollama|searxng"
+```
+
+### Best Practices
+
+**When to Use Local Deep Research:**
+
+✅ **Perfect For:**
+- Fact-checking critical business decisions
+- Verifying statistics and financial data
+- Academic research requiring high accuracy
+- Regulatory compliance research
+- Medical/scientific claim verification
+- Legal research and due diligence
+
+❌ **Not Ideal For:**
+- Quick overviews (use GPT Researcher instead)
+- Opinion-based questions
+- Creative content generation
+- Real-time data (use direct APIs)
+- Simple information lookups
+
+**Research Strategy:**
+
+**Quick Research (2-5 min):**
+```
+GPT Researcher (outline_report, 3 iterations)
+↓
+Use for: Overviews, brainstorming, initial exploration
+```
+
+**Deep Research (10-20 min):**
+```
+Local Deep Research (5 iterations, high confidence)
+↓
+Use for: Fact-checking, detailed analysis, decision support
+```
+
+**Comprehensive Research (30+ min):**
+```
+GPT Researcher (outline) → Extract claims
+↓
+Local Deep Research (verify each claim)
+↓
+Synthesize final report
+↓
+Use for: Critical decisions, publications, compliance
+```
+
+**Optimization Tips:**
+
+- **Context is Key**: Always provide prior research as context
+- **Specific Queries**: "What is the ROI of X?" > "Tell me about X"
+- **Iterate Gradually**: Start with 3 iterations, increase if needed
+- **Parallel Processing**: Verify multiple claims concurrently in n8n
+- **Cache Results**: Store verified facts in database to avoid re-research
+
+**Integration Patterns:**
+
+```javascript
+// Pattern 1: Quick + Deep
+GPT Researcher (overview) → Local Deep Research (verify key claims)
+
+// Pattern 2: Multi-Source Validation
+SearXNG (raw results) → Local Deep Research (synthesize + verify)
+
+// Pattern 3: Continuous Monitoring
+Schedule → Collect claims → Local Deep Research → Alert if false
+
+// Pattern 4: Human-in-the-Loop
+Local Deep Research → If confidence < 0.8 → Human review
+```
+
+### Resources
+
+- **Documentation:** https://github.com/langchain-ai/local-deep-researcher
+- **GitHub:** https://github.com/langchain-ai/local-deep-researcher
+- **LangChain Docs:** https://python.langchain.com/docs/
+- **Internal API:** `http://local-deep-research:2024`
+- **WebSocket Updates:** `ws://local-deep-research:2024/ws/{task_id}`
 
 </details>
 
 ### Knowledge Graphs
 
 <details>
-<summary><b>🕸️ Neo4j - Graph Database</b></summary>
+<summary><b>🕸️ Neo4j - Graph Database Platform</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### Was ist Neo4j?
+
+Neo4j ist die weltweit führende native Graph-Datenbank, die Daten als Nodes (Knoten), Relationships (Beziehungen) und Properties (Eigenschaften) speichert statt in Tabellen oder Dokumenten. Im Gegensatz zu relationalen Datenbanken mit JOINs sind Relationships in Neo4j First-Class Citizens und nativ gespeichert, was Millionen von Verbindungen pro Sekunde ermöglicht. Mit der deklarativen Cypher Query Language können komplexe Beziehungs-Queries intuitiv geschrieben werden. Perfekt für Knowledge Graphs, Fraud Detection, Recommendation Engines, Social Networks und AI-Anwendungen.
+
+### Features
+
+- **🔗 Native Graph Storage**: Relationships als First-Class Citizens - keine JOINs nötig
+- **⚡ Extrem Schnell**: Millionen Traversierungen pro Sekunde durch optimierte Graph-Algorithmen
+- **📝 Cypher Query Language**: Intuitive, ASCII-art basierte Abfragesprache
+- **🎯 Schema-Optional**: Flexible Datenmodellierung ohne feste Schemas
+- **🔄 ACID-Compliant**: Volle Transaktionssicherheit und Datenintegrität
+- **📊 Built-in Browser UI**: Web-basiertes Interface für Query-Development und Visualisierung
+- **🌐 Horizontal Scalable**: Clustering und Sharding für Enterprise-Workloads
+
+### Initial Setup
+
+**First Login to Neo4j:**
+
+1. **Access Neo4j Browser:**
+```
+https://neo4j.yourdomain.com
+```
+
+2. **Initial Login:**
+- **Connect URL:** `neo4j://neo4j:7687` (Bolt protocol)
+- **Username:** `neo4j`
+- **Password:** Get from `.env` file: `NEO4J_AUTH` (format: `neo4j/password`)
+
+```bash
+# Check password
+grep NEO4J_AUTH /root/ai-launchkit/.env
+# Example output: NEO4J_AUTH=neo4j/your-password-here
+```
+
+3. **First Query - Test Connection:**
+```cypher
+// Create a test node
+CREATE (n:Person {name: 'Alice', age: 30})
+RETURN n;
+
+// View all nodes
+MATCH (n) RETURN n LIMIT 25;
+
+// Delete test node
+MATCH (n:Person {name: 'Alice'}) DELETE n;
+```
+
+4. **Change Default Password (Recommended):**
+```cypher
+ALTER CURRENT USER SET PASSWORD FROM 'old-password' TO 'new-strong-password';
+```
+
+### Neo4j Cypher Basics
+
+**Creating Nodes:**
+```cypher
+// Single node with label and properties
+CREATE (p:Person {name: 'Bob', born: 1990, city: 'Berlin'});
+
+// Multiple nodes
+CREATE 
+  (p1:Person {name: 'Alice'}),
+  (p2:Person {name: 'Charlie'}),
+  (c:Company {name: 'TechCorp'});
+```
+
+**Creating Relationships:**
+```cypher
+// Create nodes and relationships in one query
+CREATE (a:Person {name: 'Alice'})-[:WORKS_AT {since: 2020}]->(c:Company {name: 'Acme Inc'})
+RETURN a, c;
+
+// Connect existing nodes
+MATCH (a:Person {name: 'Alice'}), (b:Person {name: 'Bob'})
+CREATE (a)-[:KNOWS {since: 2015}]->(b);
+```
+
+**Querying:**
+```cypher
+// Find all persons
+MATCH (p:Person) RETURN p;
+
+// Find specific relationships
+MATCH (p:Person)-[:WORKS_AT]->(c:Company)
+RETURN p.name, c.name;
+
+// Complex pattern matching
+MATCH (p1:Person)-[:KNOWS]->(p2:Person)-[:WORKS_AT]->(c:Company)
+WHERE c.name = 'Acme Inc'
+RETURN p1.name, p2.name, c.name;
+```
+
+### n8n Integration Setup
+
+**Method 1: Community Node (Recommended)**
+
+Neo4j hat eine Community Node für n8n:
+
+1. **Install Neo4j Community Node:**
+```bash
+# In n8n container
+docker exec -it n8n npm install n8n-nodes-neo4j
+docker restart n8n
+```
+
+2. **Create Neo4j Credentials in n8n:**
+- Go to Credentials → New → Neo4j
+- **Scheme:** `neo4j` (or `bolt`)
+- **Host:** `neo4j` (internal) or `neo4j.yourdomain.com`
+- **Port:** `7687` (Bolt protocol)
+- **Username:** `neo4j`
+- **Password:** From `.env` file
+
+3. **Add Neo4j Node to Workflow:**
+- Supports: Execute Cypher Query, Vector Operations, Graph Operations
+
+**Method 2: HTTP Request Node (Alternative)**
+
+Use Neo4j's HTTP API for queries:
+
+**Internal URL:** `http://neo4j:7474`
+
+```javascript
+// HTTP Request Node Configuration
+Method: POST
+URL: http://neo4j:7474/db/neo4j/tx/commit
+Authentication: Basic Auth
+  User: neo4j
+  Password: {{$env.NEO4J_PASSWORD}}
+Headers:
+  Content-Type: application/json
+  Accept: application/json
+Body: {
+  "statements": [
+    {
+      "statement": "MATCH (n:Person) RETURN n LIMIT 10",
+      "resultDataContents": ["row", "graph"]
+    }
+  ]
+}
+```
+
+### Example Workflows
+
+#### Example 1: Knowledge Graph from Documents
+
+```javascript
+// Build a knowledge graph from text documents
+
+// 1. Webhook/File Trigger
+Input: {
+  "document": "Alice works at TechCorp. Bob knows Alice. Charlie is CEO of TechCorp."
+}
+
+// 2. OpenAI Node - Extract Entities and Relationships
+Model: gpt-4o
+System: "Extract entities (people, companies) and relationships from text. Return JSON."
+Prompt: |
+  Extract all entities and their relationships from this text:
+  {{ $json.document }}
+  
+  Return format:
+  {
+    "entities": [
+      {"type": "Person", "name": "..."},
+      {"type": "Company", "name": "..."}
+    ],
+    "relationships": [
+      {"from": "...", "type": "WORKS_AT", "to": "..."}
+    ]
+  }
+
+// 3. Code Node - Transform to Cypher
+const data = $input.item.json;
+const entities = JSON.parse(data.entities || '[]');
+const relationships = JSON.parse(data.relationships || '[]');
+
+// Generate Cypher CREATE statements
+const entityStatements = entities.map(e => 
+  `MERGE (n:${e.type} {name: '${e.name}'})`
+);
+
+const relStatements = relationships.map(r => 
+  `MATCH (a {name: '${r.from}'}), (b {name: '${r.to}'})
+   MERGE (a)-[:${r.type}]->(b)`
+);
+
+return {
+  cypher: [...entityStatements, ...relStatements].join('\n')
+};
+
+// 4. Neo4j Node - Execute Cypher
+Operation: Execute Query
+Query: {{ $json.cypher }}
+
+// 5. HTTP Request - Visualize (Optional)
+// Query the created graph
+Method: POST
+URL: http://neo4j:7474/db/neo4j/tx/commit
+Body: {
+  "statements": [{
+    "statement": "MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 50"
+  }]
+}
+```
+
+#### Example 2: Customer Relationship Network
+
+```javascript
+// Track customer interactions and find connection patterns
+
+// 1. Webhook - New Customer Interaction
+Input: {
+  "customer_id": "C123",
+  "customer_name": "John Doe",
+  "product": "AI LaunchKit",
+  "interaction_type": "purchase",
+  "referrer_id": "C456"
+}
+
+// 2. Neo4j Node - Create/Update Customer
+Operation: Execute Query
+Query: |
+  MERGE (c:Customer {id: '{{ $json.customer_id }}'})
+  ON CREATE SET 
+    c.name = '{{ $json.customer_name }}',
+    c.first_seen = timestamp()
+  ON MATCH SET
+    c.last_seen = timestamp()
+  RETURN c
+
+// 3. Neo4j Node - Create Product Node
+Operation: Execute Query
+Query: |
+  MERGE (p:Product {name: '{{ $json.product }}'})
+  RETURN p
+
+// 4. Neo4j Node - Create Interaction Relationship
+Operation: Execute Query
+Query: |
+  MATCH (c:Customer {id: '{{ $json.customer_id }}'})
+  MATCH (p:Product {name: '{{ $json.product }}'})
+  CREATE (c)-[:PURCHASED {
+    date: timestamp(),
+    type: '{{ $json.interaction_type }}'
+  }]->(p)
+
+// 5. IF Node - Check if Referral
+If: {{ $json.referrer_id }} is not empty
+
+// 6. Neo4j Node - Create Referral Relationship
+Operation: Execute Query
+Query: |
+  MATCH (referrer:Customer {id: '{{ $json.referrer_id }}'})
+  MATCH (referred:Customer {id: '{{ $json.customer_id }}'})
+  MERGE (referrer)-[:REFERRED]->(referred)
+
+// 7. Neo4j Node - Find Similar Customers
+// Use graph algorithms to find customers with similar purchase patterns
+Operation: Execute Query
+Query: |
+  MATCH (c:Customer {id: '{{ $json.customer_id }}'})-[:PURCHASED]->(p:Product)
+  MATCH (similar:Customer)-[:PURCHASED]->(p)
+  WHERE similar.id <> c.id
+  WITH similar, COUNT(p) as common_products
+  ORDER BY common_products DESC
+  LIMIT 5
+  RETURN similar.id, similar.name, common_products
+
+// 8. Code Node - Prepare Recommendations
+const similarCustomers = $input.item.json.results;
+
+return {
+  customer_id: $('Webhook').item.json.customer_id,
+  recommendations: similarCustomers.map(s => ({
+    similar_customer: s[0],
+    common_products: s[2]
+  }))
+};
+
+// 9. Store Recommendations / Send Email
+```
+
+#### Example 3: Fraud Detection Network
+
+```javascript
+// Detect suspicious patterns in transaction networks
+
+// 1. Schedule Trigger
+Cron: 0 */6 * * *  // Every 6 hours
+
+// 2. Neo4j Node - Find Suspicious Patterns
+Operation: Execute Query
+Query: |
+  // Find accounts with unusual connection patterns
+  MATCH (a1:Account)-[:TRANSFERRED_TO]->(a2:Account)
+  MATCH (a2)-[:TRANSFERRED_TO]->(a3:Account)
+  WHERE a1 <> a3
+  WITH a1, a2, a3, COUNT(*) as path_count
+  WHERE path_count > 5  // More than 5 transfers through same intermediary
+  RETURN a1.id as source, a2.id as intermediary, a3.id as destination, path_count
+  ORDER BY path_count DESC
+
+// 3. Code Node - Analyze Patterns
+const suspiciousPatterns = $input.all().map(item => item.json);
+
+const alerts = suspiciousPatterns.filter(p => p.path_count > 10).map(p => ({
+  severity: p.path_count > 20 ? 'HIGH' : 'MEDIUM',
+  pattern: `${p.source} → ${p.intermediary} → ${p.destination}`,
+  transfers: p.path_count,
+  investigationUrl: `https://neo4j.yourdomain.com/browser?query=MATCH path = (a1:Account {id: '${p.source}'})-[:TRANSFERRED_TO*2]->() RETURN path`
+}));
+
+return { alerts, total: alerts.length };
+
+// 4. IF Node - Check for High-Severity Alerts
+If: {{ $json.alerts.filter(a => a.severity === 'HIGH').length }} > 0
+
+// 5. Slack/Email - Send Alert
+Channel: #fraud-detection
+Message: |
+  🚨 Fraud Detection Alert
+  
+  Found {{ $json.total }} suspicious patterns
+  High severity: {{ $json.alerts.filter(a => a.severity === 'HIGH').length }}
+  
+  Top patterns:
+  {{ $json.alerts.slice(0, 5).map(a => `${a.severity}: ${a.pattern} (${a.transfers} transfers)`).join('\n') }}
+
+// 6. Neo4j Node - Flag Suspicious Accounts
+Operation: Execute Query
+Query: |
+  MATCH (a:Account)
+  WHERE a.id IN [{{ $json.alerts.map(a => `'${a.pattern.split(' → ')[1]}'`).join(', ') }}]
+  SET a.flagged = true, a.flagged_date = timestamp()
+  RETURN COUNT(a) as flagged_count
+```
+
+#### Example 4: Social Network Analysis
+
+```javascript
+// Analyze influence and community detection
+
+// 1. Neo4j Node - Calculate PageRank
+// Find most influential users
+Operation: Execute Query
+Query: |
+  CALL gds.pageRank.stream({
+    nodeProjection: 'User',
+    relationshipProjection: 'FOLLOWS'
+  })
+  YIELD nodeId, score
+  RETURN gds.util.asNode(nodeId).username as username, score
+  ORDER BY score DESC
+  LIMIT 10
+
+// 2. Code Node - Format Top Influencers
+const influencers = $input.item.json.results.map(r => ({
+  username: r[0],
+  influence_score: Math.round(r[1] * 100) / 100
+}));
+
+return { influencers };
+
+// 3. Neo4j Node - Detect Communities
+// Find tightly connected groups
+Operation: Execute Query
+Query: |
+  CALL gds.louvain.stream({
+    nodeProjection: 'User',
+    relationshipProjection: 'FOLLOWS'
+  })
+  YIELD nodeId, communityId
+  WITH communityId, COLLECT(gds.util.asNode(nodeId).username) as members
+  WHERE SIZE(members) > 5
+  RETURN communityId, members, SIZE(members) as size
+  ORDER BY size DESC
+
+// 4. Code Node - Analyze Communities
+const communities = $input.item.json.results.map((r, i) => ({
+  community_id: r[0],
+  members: r[1],
+  size: r[2]
+}));
+
+return {
+  total_communities: communities.length,
+  largest_community_size: communities[0].size,
+  communities: communities.slice(0, 5)  // Top 5
+};
+
+// 5. Create Report / Visualize
+```
+
+### Graph Algorithms
+
+**Common Algorithms in Neo4j:**
+
+```cypher
+// 1. Shortest Path
+MATCH (start:Person {name: 'Alice'}), (end:Person {name: 'Charlie'})
+MATCH path = shortestPath((start)-[*]-(end))
+RETURN path, LENGTH(path) as hops;
+
+// 2. Degree Centrality - Find most connected nodes
+MATCH (n:Person)
+RETURN n.name, SIZE((n)--()) as connections
+ORDER BY connections DESC
+LIMIT 10;
+
+// 3. Community Detection (requires APOC)
+CALL gds.louvain.stream('myGraph')
+YIELD nodeId, communityId
+RETURN gds.util.asNode(nodeId).name, communityId;
+
+// 4. Similarity - Find similar nodes
+MATCH (p1:Person)-[:LIKES]->(item)<-[:LIKES]-(p2:Person)
+WHERE p1 <> p2
+WITH p1, p2, COUNT(item) as common_interests
+RETURN p1.name, p2.name, common_interests
+ORDER BY common_interests DESC;
+```
+
+### Troubleshooting
+
+**Issue 1: Cannot Connect to Neo4j**
+
+```bash
+# Check Neo4j is running
+docker ps | grep neo4j
+
+# Check logs
+docker logs neo4j --tail 50
+
+# Test Bolt connection
+docker exec -it neo4j cypher-shell -u neo4j -p YOUR_PASSWORD
+
+# Test HTTP API
+curl -u neo4j:YOUR_PASSWORD http://neo4j:7474/db/neo4j/tx/commit \
+  -H "Content-Type: application/json" \
+  -d '{"statements":[{"statement":"RETURN 1"}]}'
+
+# Restart Neo4j
+docker restart neo4j
+```
+
+**Issue 2: Memory Errors / Performance Issues**
+
+```bash
+# Check memory settings in .env
+grep NEO4J_server_memory /root/ai-launchkit/.env
+
+# Recommended settings:
+NEO4J_server_memory_heap_initial__size=512m
+NEO4J_server_memory_heap_max__size=2G
+NEO4J_server_memory_pagecache_size=1G
+
+# After changing, restart
+docker-compose restart neo4j
+
+# Monitor memory usage
+docker stats neo4j --no-stream
+```
+
+**Issue 3: Query Timeout**
+
+```cypher
+-- Optimize queries with indexes
+CREATE INDEX person_name FOR (p:Person) ON (p.name);
+CREATE INDEX company_name FOR (c:Company) ON (c.name);
+
+-- Use EXPLAIN to check query plan
+EXPLAIN MATCH (p:Person)-[:WORKS_AT]->(c:Company) RETURN p, c;
+
+-- Use PROFILE for execution stats
+PROFILE MATCH (p:Person)-[:WORKS_AT]->(c:Company) RETURN p, c;
+
+-- Add LIMIT to large queries
+MATCH (n) RETURN n LIMIT 100;
+```
+
+**Issue 4: Authentication Failed in n8n**
+
+```bash
+# Verify credentials
+docker exec neo4j cypher-shell -u neo4j -p YOUR_PASSWORD "RETURN 1;"
+
+# If password forgotten, reset via docker
+docker exec neo4j neo4j-admin set-initial-password NEW_PASSWORD
+docker restart neo4j
+
+# In n8n: Update credential
+# Make sure to use internal hostname: neo4j (not localhost)
+# Port: 7687 (Bolt), not 7474 (HTTP)
+```
+
+**Issue 5: Browser UI Shows "ServiceUnavailable"**
+
+```bash
+# Check if ports are exposed correctly
+docker port neo4j
+
+# Should show:
+# 7474/tcp -> 0.0.0.0:7474
+# 7687/tcp -> 0.0.0.0:7687
+
+# Check Caddy reverse proxy
+docker logs caddy | grep neo4j
+
+# Test direct access
+curl http://localhost:7474
+
+# If needed, restart Caddy
+docker restart caddy
+```
+
+### Best Practices
+
+**Data Modeling:**
+- Model relationships as first-class citizens, not as properties
+- Use descriptive labels: `:Person`, `:Company` (not `:Entity`)
+- Use meaningful relationship types: `:WORKS_AT`, `:KNOWS` (not `:RELATED_TO`)
+- Store metadata on relationships: `{since: 2020, role: 'Developer'}`
+- Use constraints for data integrity:
+```cypher
+CREATE CONSTRAINT person_email FOR (p:Person) REQUIRE p.email IS UNIQUE;
+```
+
+**Query Optimization:**
+- Always use indexes for frequently queried properties
+- Use `MERGE` instead of `CREATE` to avoid duplicates
+- Specify relationship direction when possible
+- Use parameters instead of string concatenation:
+```cypher
+// ❌ Bad (SQL injection risk)
+MATCH (p:Person {name: $userInput})
+
+// ✅ Good
+MATCH (p:Person {name: $name})
+// Pass $name as parameter
+```
+
+**Performance:**
+- Batch operations in transactions (in code/n8n)
+- Use `WITH` to filter early in query
+- Profile slow queries with `PROFILE`
+- Consider graph projections for algorithms
+- Monitor with `CALL dbms.listQueries()`
+
+**Integration with AI LaunchKit:**
+- **+ LightRAG**: Use Neo4j as backend for LightRAG knowledge graphs
+- **+ Qdrant**: Store embeddings in Qdrant, relationships in Neo4j
+- **+ OpenAI**: Extract entities with GPT-4, store in Neo4j
+- **+ n8n**: Automate graph updates from webhooks/APIs
+- **+ Ollama**: Use local LLMs for entity extraction
+
+### Resources
+
+- **Official Documentation:** https://neo4j.com/docs/
+- **Cypher Manual:** https://neo4j.com/docs/cypher-manual/
+- **Graph Algorithms:** https://neo4j.com/docs/graph-data-science/
+- **GraphAcademy (Free Courses):** https://graphacademy.neo4j.com/
+- **Browser UI:** `https://neo4j.yourdomain.com`
+- **Bolt Protocol:** `neo4j://neo4j:7687` (internal)
+- **HTTP API:** `http://neo4j:7474` (internal)
 
 </details>
 
 <details>
-<summary><b>🔗 LightRAG - Graph-Based RAG</b></summary>
+<summary><b>🔗 LightRAG - Graph-Based RAG with Entity Extraction</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### Was ist LightRAG?
+
+LightRAG ist ein Graph-basiertes RAG (Retrieval-Augmented Generation) System, das automatisch Entities (Entitäten) und Relationships (Beziehungen) aus Dokumenten extrahiert und in einem Knowledge Graph speichert. Im Gegensatz zu traditionellem Vektor-RAG, das nur nach semantischer Ähnlichkeit sucht, versteht LightRAG die **Beziehungen zwischen Konzepten** und kann komplexe Queries beantworten, die Kontext über mehrere Entities hinweg erfordern. Perfekt für Unternehmens-Dokumentation, Research Papers, und komplexe Wissensdatenbanken.
+
+### Features
+
+- **🕸️ Automatic Knowledge Graph Creation**: Extrahiert Entities und Relationships aus Text automatisch
+- **🎯 Multi-Mode Querying**: Local (spezifisch), Global (Überblick), Hybrid (kombiniert), Naive (einfach)
+- **🧠 Relationship-Aware Retrieval**: Findet Verbindungen zwischen Konzepten, nicht nur ähnliche Texte
+- **🔄 Incremental Updates**: Fügt neue Dokumente zum existierenden Graph hinzu
+- **⚡ Fast Graph Queries**: Optimiert für schnelle Traversierung großer Knowledge Graphs
+- **🎨 Visual Graph Exploration**: Optional mit Neo4j-Backend für Visualisierung
+- **🌐 Multiple LLM Support**: Ollama (lokal, default), OpenAI (schneller), oder andere
+
+### Initial Setup
+
+**First Access to LightRAG:**
+
+1. **Access via Web UI:**
+```
+https://lightrag.yourdomain.com
+```
+Simple UI for document upload and querying.
+
+2. **Test API Health:**
+```bash
+curl http://lightrag:9621/health
+# Should return: {"status": "healthy"}
+```
+
+3. **Insert First Document:**
+```bash
+curl -X POST http://lightrag:9621/api/insert \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Alice works at TechCorp as a software engineer. Bob is the CEO of TechCorp. Charlie knows Alice from university.",
+    "metadata": {"source": "test_document"}
+  }'
+```
+
+LightRAG extrahiert automatisch:
+- Entities: Alice (Person), Bob (Person), Charlie (Person), TechCorp (Company)
+- Relationships: Alice-WORKS_AT→TechCorp, Bob-CEO_OF→TechCorp, Charlie-KNOWS→Alice
+
+4. **Query the Knowledge Graph:**
+```bash
+curl -X POST http://lightrag:9621/api/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Who works at TechCorp?",
+    "mode": "local"
+  }'
+```
+
+### Query Modes Explained
+
+LightRAG bietet 4 verschiedene Query-Modi für unterschiedliche Use Cases:
+
+| Mode | Use Case | How It Works | Best For |
+|------|----------|--------------|----------|
+| **`local`** | Spezifische Entity-Information | Sucht nach direkten Entity-Relationships | "Was ist die Rolle von Alice?" |
+| **`global`** | High-Level Überblick | Analysiert gesamten Knowledge Graph | "Was sind die Hauptthemen?" |
+| **`hybrid`** | Kombinierte Analyse | Kombiniert local + global | "Wie implementiert TechCorp SDGs?" |
+| **`naive`** | Einfache Keyword-Suche | Traditionelle Vektor-Ähnlichkeit | "Finde 'Sustainability'" |
+
+**Mode Comparison:**
+
+```javascript
+// Local Mode - Specific entity information
+{
+  "query": "What is the role of Petra Hedorfer?",
+  "mode": "local",
+  "max_results": 5
+}
+// Returns: Direct information about Petra and her immediate relationships
+
+// Global Mode - High-level summaries
+{
+  "query": "What are the main sustainability initiatives?",
+  "mode": "global",
+  "max_results": 10
+}
+// Returns: Overall themes and patterns across all documents
+
+// Hybrid Mode - Combines both approaches
+{
+  "query": "How does DZT implement SDGs in tourism?",
+  "mode": "hybrid",
+  "stream": false
+}
+// Returns: Specific examples + overall context
+
+// Naive Mode - Simple keyword search
+{
+  "query": "sustainability reports",
+  "mode": "naive"
+}
+// Returns: Documents matching keywords (no graph reasoning)
+```
+
+### n8n Integration Setup
+
+**LightRAG über HTTP Request Node:**
+
+Keine native n8n Node, wird über REST API eingebunden.
+
+**Internal URL:** `http://lightrag:9621`
+
+**Key API Endpoints:**
+- `POST /api/insert` - Insert document and extract entities
+- `POST /api/query` - Query knowledge graph
+- `GET /api/health` - Health check
+- `DELETE /api/clear` - Clear knowledge graph
+
+### Example Workflows
+
+#### Example 1: Build Knowledge Graph from Documents
+
+```javascript
+// Automatically build knowledge graph from uploaded PDFs
+
+// 1. Google Drive Trigger - Watch folder for new PDFs
+Folder: /Documents/KnowledgeBase
+File Type: PDF
+
+// 2. Read Binary File
+// Get PDF content
+
+// 3. HTTP Request - Extract Text from PDF
+Method: POST
+URL: http://gotenberg:3000/forms/pdfengines/convert
+// (Use any PDF-to-text service or built-in tool)
+
+// 4. Code Node - Split into Chunks
+const text = $input.item.json.text;
+const chunkSize = 3000;  // Characters per chunk
+const chunks = [];
+
+for (let i = 0; i < text.length; i += chunkSize) {
+  chunks.push({
+    text: text.substring(i, i + chunkSize),
+    chunk_index: Math.floor(i / chunkSize)
+  });
+}
+
+return chunks.map(c => ({ json: c }));
+
+// 5. Loop Node - Process Each Chunk
+Items: {{ $json }}
+
+// 6. HTTP Request - Insert into LightRAG
+Method: POST
+URL: http://lightrag:9621/api/insert
+Headers:
+  Content-Type: application/json
+Body: {
+  "text": "{{ $json.text }}",
+  "metadata": {
+    "source": "{{ $('Google Drive Trigger').item.json.name }}",
+    "chunk_index": {{ $json.chunk_index }},
+    "timestamp": "{{ $now.toISO() }}"
+  }
+}
+
+// LightRAG automatically:
+// - Extracts entities (people, companies, concepts)
+// - Identifies relationships
+// - Builds knowledge graph
+// - Creates embeddings
+
+// 7. Wait Node
+Duration: 2 seconds  // Give time for processing
+
+// 8. Aggregate Results
+const processedChunks = $input.all().length;
+const document = $('Google Drive Trigger').item.json.name;
+
+return {
+  document: document,
+  chunks_processed: processedChunks,
+  knowledge_graph_updated: true
+};
+
+// 9. Slack Notification
+Message: |
+  📚 Knowledge Graph Updated
+  
+  Document: {{ $json.document }}
+  Chunks processed: {{ $json.chunks_processed }}
+  
+  Query your knowledge graph at https://lightrag.yourdomain.com
+```
+
+#### Example 2: Intelligent Document Q&A
+
+```javascript
+// Answer questions using graph-based understanding
+
+// 1. Webhook Trigger
+Input: {
+  "question": "What are TechCorp's main sustainability initiatives and who leads them?",
+  "query_mode": "hybrid"
+}
+
+// 2. HTTP Request - Query LightRAG
+Method: POST
+URL: http://lightrag:9621/api/query
+Headers:
+  Content-Type: application/json
+Body: {
+  "query": "{{ $json.question }}",
+  "mode": "{{ $json.query_mode }}",
+  "max_results": 5,
+  "stream": false
+}
+
+// Response includes:
+{
+  "answer": "Comprehensive answer based on graph reasoning...",
+  "entities": ["TechCorp", "Sustainability Initiative X", "Alice Smith"],
+  "relationships": [
+    {"from": "Alice Smith", "type": "LEADS", "to": "Sustainability Initiative X"},
+    {"from": "Sustainability Initiative X", "type": "PART_OF", "to": "TechCorp"}
+  ],
+  "sources": [
+    {"document": "Annual Report 2024", "relevance": 0.95}
+  ]
+}
+
+// 3. Code Node - Format Response with Graph Context
+const answer = $input.item.json.answer;
+const entities = $input.item.json.entities || [];
+const relationships = $input.item.json.relationships || [];
+const sources = $input.item.json.sources || [];
+
+const formattedResponse = `
+**Answer:**
+${answer}
+
+**Key Entities:**
+${entities.map(e => `- ${e}`).join('\n')}
+
+**Relationships Found:**
+${relationships.map(r => `- ${r.from} ${r.type} ${r.to}`).join('\n')}
+
+**Sources:**
+${sources.map((s, i) => `${i+1}. ${s.document} (relevance: ${(s.relevance * 100).toFixed(0)}%)`).join('\n')}
+`;
+
+return {
+  question: $('Webhook').item.json.question,
+  response: formattedResponse,
+  entities: entities,
+  sources: sources
+};
+
+// 4. Send Response (Email, Slack, etc.)
+```
+
+#### Example 3: Automated Research Assistant
+
+```javascript
+// Daily research digest using knowledge graph
+
+// 1. Schedule Trigger
+Cron: 0 9 * * *  // Daily at 9 AM
+
+// 2. Code Node - Define Research Topics
+return [
+  { topic: "What are the latest AI trends in the knowledge graph?" },
+  { topic: "Who are the key researchers in graph neural networks?" },
+  { topic: "What challenges are mentioned regarding LLM deployment?" }
+];
+
+// 3. Loop Node - Research Each Topic
+Items: {{ $json }}
+
+// 4. HTTP Request - Query LightRAG
+Method: POST
+URL: http://lightrag:9621/api/query
+Body: {
+  "query": "{{ $json.item.topic }}",
+  "mode": "hybrid",
+  "max_results": 10
+}
+
+// 5. Aggregate Results
+const research = $input.all().map(r => ({
+  topic: r.json.query,
+  findings: r.json.answer,
+  entities: r.json.entities,
+  confidence: r.json.confidence || 'N/A'
+}));
+
+return {
+  date: $now.format('yyyy-MM-dd'),
+  research_count: research.length,
+  research: research
+};
+
+// 6. OpenAI Node - Generate Executive Summary
+Model: gpt-4o
+System: "You are a research analyst. Create an executive summary."
+Prompt: |
+  Daily Research Digest - {{ $json.date }}
+  
+  Research Topics Analyzed: {{ $json.research_count }}
+  
+  {{ $json.research.map(r => `
+  Topic: ${r.topic}
+  
+  Findings: ${r.findings}
+  
+  Key Entities: ${r.entities.join(', ')}
+  `).join('\n---\n') }}
+  
+  Create a concise executive summary highlighting:
+  1. Key insights
+  2. Emerging patterns
+  3. Notable entities and relationships
+  4. Recommendations
+
+// 7. Email Node - Send Daily Digest
+To: research-team@company.com
+Subject: Knowledge Graph Insights - {{ $json.date }}
+Body: {{ $json.summary }}
+```
+
+#### Example 4: Compare Naive vs Graph-Based RAG
+
+```javascript
+// Demonstrate the power of graph-based reasoning
+
+// 1. Manual Trigger
+Input: {
+  "question": "What is the connection between Alice and the sustainability project?"
+}
+
+// 2. Split in Batches (parallel queries)
+
+// 3a. HTTP Request - Naive RAG (keyword-based)
+Method: POST
+URL: http://lightrag:9621/api/query
+Body: {
+  "query": "{{ $json.question }}",
+  "mode": "naive"
+}
+
+// 3b. HTTP Request - Graph-Based RAG (relationship-aware)
+Method: POST
+URL: http://lightrag:9621/api/query
+Body: {
+  "query": "{{ $json.question }}",
+  "mode": "hybrid"
+}
+
+// 4. Aggregate & Compare
+const naiveAnswer = $item(0).json.answer;
+const graphAnswer = $item(1).json.answer;
+
+return {
+  question: $('Manual Trigger').item.json.question,
+  naive_rag: {
+    answer: naiveAnswer,
+    method: "Simple keyword matching"
+  },
+  graph_rag: {
+    answer: graphAnswer,
+    method: "Relationship traversal + semantic understanding",
+    entities: $item(1).json.entities,
+    relationships: $item(1).json.relationships
+  },
+  winner: graphAnswer.length > naiveAnswer.length ? "Graph RAG" : "Naive RAG"
+};
+
+// Typical results:
+// Naive: "Alice is mentioned in sustainability documents."
+// Graph: "Alice leads the Green Initiative project, which is part of TechCorp's sustainability efforts. She reports to Bob, the CEO, and collaborates with the Environmental Team."
+```
+
+### Open WebUI Integration
+
+**Add LightRAG as a chat model in Open WebUI:**
+
+LightRAG kann direkt in Open WebUI als Ollama-kompatibles Modell eingebunden werden!
+
+1. **Open WebUI Settings → Connections**
+2. **Add new Ollama connection:**
+   - **URL:** `http://lightrag:9621`
+   - **Model name:** `lightrag:latest`
+3. **Select LightRAG from model dropdown in chat**
+
+**Now you can chat with your knowledge graph directly!**
+
+Die Integration ermöglicht:
+- Natürliche Konversation mit dem Knowledge Graph
+- Automatische Entity- und Relationship-Erkennung
+- Graph-basierte Antworten statt nur Vektor-Suche
+- Visualisierung von Entity-Beziehungen
+
+### Switch from Ollama to OpenAI (Optional)
+
+LightRAG verwendet standardmäßig lokale Ollama-Modelle. Für bessere Performance bei großen Dokumenten kannst du auf OpenAI umstellen:
+
+**Warum OpenAI?**
+- ⚡ **10-100x schneller** als CPU-basiertes Ollama
+- 📄 **Große Dokumente**: PDFs mit 50+ Seiten ohne Timeouts
+- 🎯 **Bessere Qualität**: Genauere Entity- und Relationship-Extraktion
+- 💰 **Cost-Efficient**: gpt-4o-mini ~$0.15 per Million Tokens
+
+**Configuration Steps:**
+
+1. **Add OpenAI API Key to .env:**
+```bash
+cd /root/ai-launchkit
+nano .env
+
+# Add or update:
+OPENAI_API_KEY=sk-proj-YOUR-API-KEY-HERE
+```
+
+2. **Update docker-compose.yml:**
+```yaml
+lightrag:
+  environment:
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - LLM_BINDING=openai                           # Changed from ollama
+    - LLM_BINDING_HOST=https://api.openai.com/v1   # OpenAI endpoint
+    - LLM_MODEL=gpt-4o-mini                        # Cost-efficient model
+    - EMBEDDING_BINDING=openai                     # Changed from ollama
+    - EMBEDDING_BINDING_HOST=https://api.openai.com/v1
+    - EMBEDDING_MODEL=text-embedding-3-small       # OpenAI embeddings
+    - EMBEDDING_DIM=1536                           # OpenAI dimension (not 768!)
+```
+
+3. **Restart LightRAG:**
+```bash
+docker-compose restart lightrag
+```
+
+**Performance Comparison:**
+
+| Metric | Ollama (CPU) | OpenAI API |
+|--------|--------------|------------|
+| Entity Extraction (10-page PDF) | 2-5 minutes | 10-30 seconds |
+| Query Response | 5-15 seconds | 1-3 seconds |
+| Cost (1M tokens) | Free (local) | ~$0.15-0.60 |
+| Quality | Good | Excellent |
+
+### Troubleshooting
+
+**Issue 1: Slow Entity Extraction**
+
+```bash
+# Check if using Ollama (slow) or OpenAI (fast)
+docker logs lightrag | grep -E "LLM_BINDING|EMBEDDING_BINDING"
+
+# If using Ollama on CPU:
+# Solution 1: Switch to OpenAI (see above)
+# Solution 2: Use smaller documents (< 5 pages at once)
+# Solution 3: Reduce chunk size in preprocessing
+
+# Check Ollama is running
+docker ps | grep ollama
+curl http://ollama:11434/api/tags
+```
+
+**Issue 2: Query Returns No Results**
+
+```bash
+# Check if documents were inserted
+curl http://lightrag:9621/api/health
+
+# Verify knowledge graph has data
+docker logs lightrag | grep "entities extracted"
+
+# Test with simple query
+curl -X POST http://lightrag:9621/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "test", "mode": "naive"}'
+
+# If empty: Re-insert documents
+# Knowledge graph might have been cleared
+```
+
+**Issue 3: Authentication Errors in Open WebUI**
+
+```bash
+# Check LightRAG port is accessible
+docker exec open-webui curl http://lightrag:9621/health
+
+# Verify Ollama-compatible API
+curl http://lightrag:9621/v1/models
+# Should return model list
+
+# Restart Open WebUI
+docker restart open-webui
+```
+
+**Issue 4: Out of Memory Errors**
+
+```bash
+# Check memory usage
+docker stats lightrag --no-stream
+
+# LightRAG can be memory-intensive with large graphs
+# Solution 1: Increase Docker memory limit
+# In docker-compose.yml:
+# mem_limit: 4g  # Increase from 2g
+
+# Solution 2: Clear old knowledge graph
+curl -X DELETE http://lightrag:9621/api/clear
+
+# Solution 3: Use OpenAI instead of Ollama (less RAM)
+```
+
+**Issue 5: Container Not Starting**
+
+```bash
+# Check container status
+docker ps -a | grep lightrag
+
+# View logs
+docker logs lightrag
+
+# Common issues:
+# - Missing LLM configuration
+# - Ollama not running
+# - Port 9621 already in use
+
+# Solution: Restart with proper config
+cd /root/ai-launchkit
+docker-compose restart lightrag
+
+# Verify dependencies
+docker ps | grep ollama
+```
+
+### Best Practices
+
+**Document Processing:**
+- **Chunk Size**: 2000-4000 characters for optimal entity extraction
+- **Overlap**: Not needed (LightRAG handles context internally)
+- **Metadata**: Always include source, timestamp, document type
+- **Incremental Updates**: Insert new documents continuously, no need to rebuild
+
+**Query Optimization:**
+- **Use `hybrid` mode** for most queries (best balance)
+- **Use `local` mode** for specific entity questions
+- **Use `global` mode** for overview/summary questions
+- **Use `naive` mode** only for simple keyword searches
+
+**Entity Extraction Quality:**
+- Use **OpenAI** for production (10x better than Ollama)
+- **Pre-process documents**: Remove headers/footers, clean formatting
+- **Domain-specific prompts**: Customize entity types if needed
+- **Validate extractions**: Review sample entities after first batch
+
+**Performance Tips:**
+- Process documents in **batches of 10-20** at a time
+- Use **parallel processing** in n8n for large document sets
+- **Cache frequent queries** in Redis or PostgreSQL
+- **Monitor graph size**: Large graphs (>100K entities) may need optimization
+
+**Integration Patterns:**
+
+```javascript
+// Pattern 1: RAG Pipeline
+Document Upload → LightRAG Insert → Query with context
+
+// Pattern 2: Hybrid Search
+LightRAG (graph-based) + Qdrant (vector-based) → Combine results
+
+// Pattern 3: Entity Enrichment
+Extract entities with LightRAG → Enrich with external APIs → Update graph
+
+// Pattern 4: Knowledge Graph Visualization
+LightRAG (storage) → Export to Neo4j (visualization)
+```
+
+### Resources
+
+- **Official Documentation:** https://github.com/HKUDS/LightRAG
+- **GitHub:** https://github.com/HKUDS/LightRAG
+- **Research Paper:** [LightRAG: Simple and Fast Retrieval-Augmented Generation](https://arxiv.org/abs/2410.05779)
+- **Web UI:** `https://lightrag.yourdomain.com`
+- **Internal API:** `http://lightrag:9621`
+- **OpenAPI Docs:** `http://lightrag:9621/docs`
 
 </details>
 

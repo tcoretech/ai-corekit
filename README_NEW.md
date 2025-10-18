@@ -225,28 +225,69 @@ Pre-installed in the n8n container for seamless media manipulation:
 
 ## 🚀 Quick Start
 
+### One-Line Installation
+
 ```bash
-# Clone the repository
-git clone https://github.com/freddy-schuetz/ai-launchkit
-cd ai-launchkit
-
-# Run the installer
-sudo bash ./scripts/install.sh
-
-# Follow the interactive wizard to:
-# 1. Set your domain
-# 2. Enter your email
-# 3. Select services
-# 4. Configure options
-
-# Done! Access your services at:
-# https://n8n.yourdomain.com
-# https://bolt.yourdomain.com
-# https://comfyui.yourdomain.com
-# ... and more!
+git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && sudo bash ./scripts/install.sh
 ```
 
-**Installation takes approximately 10-15 minutes** depending on selected services and server speed.
+### What the Installer Does
+
+The interactive wizard will guide you through:
+
+1. **Domain Configuration** - Your wildcard domain (e.g., `yourdomain.com`)
+2. **Email Address** - For SSL certificates and admin accounts
+3. **API Keys** (Optional) - OpenAI, Anthropic, Groq for AI features
+4. **Service Selection** - Choose from 50+ tools via checkbox menu
+5. **Worker Count** - n8n parallel processing (1-4 workers recommended)
+6. **Workflow Import** (Optional) - 300+ pre-built templates (adds 20-30 min)
+
+### After Installation
+
+**Access Your Services:**
+```bash
+# Core Services
+https://n8n.yourdomain.com          # Workflow automation
+https://bolt.yourdomain.com         # AI development
+https://webui.yourdomain.com        # ChatGPT interface
+https://vault.yourdomain.com        # Password manager
+
+# View all service URLs
+cat installation_report.txt
+```
+
+**Get Your Credentials:**
+```bash
+# Download all passwords as Bitwarden-compatible JSON
+sudo bash ./scripts/download_credentials.sh
+
+# Or view .env file
+cat .env | grep PASSWORD
+```
+
+**Add API Keys (Optional):**
+```bash
+# Edit configuration
+nano .env
+
+# Add your keys
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GROQ_API_KEY=gsk_...
+
+# Restart services to apply
+docker compose restart
+```
+
+### Installation Time
+
+- **Minimal Setup** (n8n only): ~5 minutes
+- **Standard Setup** (10-15 services): ~10-15 minutes  
+- **Full Setup** (all services + workflows): ~30-45 minutes
+
+---
+
+**Need help?** Check the [detailed installation guide](#-installation) or join our [community forum](https://thinktank.ottomator.ai/c/local-ai/18).
 
 ---
 

@@ -253,7 +253,7 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 
 ---
 
-## 📦 Installation - Detailliert
+## 📦 Installation - Detailed version
 
 ### Prerequisites
 
@@ -549,7 +549,7 @@ docker compose restart
 
 ---
 
-## 🔄 Update - Detailliert
+## 🔄 Update - Detailed version
 
 ### When to Update
 
@@ -609,57 +609,14 @@ ls -lh ~/ai-launchkit-backups/
 # 1. Navigate to AI LaunchKit
 cd ai-launchkit
 
-# 2. Stop all services gracefully
-docker compose down
+# 2. Run update script
+sudobash ./scripts/update.sh
 
-# 3. Backup (see section above)
-# ... (perform backups)
-
-# 4. Pull latest changes
-git pull
-
-# 5. Pull new Docker images
-docker compose pull
-
-# 6. Start services with new images
-docker compose up -d
-
-# 7. Check service status
+# 3. Check service status
 docker compose ps
 
-# 8. Monitor logs for issues
+# 4. Monitor logs for issues
 docker compose logs -f --tail 100
-```
-
-#### Update with Service Changes
-
-If the update adds new services or changes configuration:
-
-```bash
-# 1. Stop services
-docker compose down
-
-# 2. Backup everything
-# ... (perform backups)
-
-# 3. Pull latest code
-git pull
-
-# 4. Review .env.example for new variables
-diff .env .env.example
-
-# 5. Add new variables to .env
-nano .env
-# Add any new required variables
-
-# 6. Pull new images
-docker compose pull
-
-# 7. Recreate services with new config
-docker compose up -d --force-recreate
-
-# 8. Verify all services started
-docker compose ps
 ```
 
 ### PostgreSQL Version Handling
@@ -10091,21 +10048,2167 @@ docker exec postgres psql -U postgres -d odoo -c "VACUUM ANALYZE;"
 <details>
 <summary><b>💼 Twenty CRM - Modern CRM</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Twenty CRM?
+
+Twenty CRM is a modern, open-source customer relationship management platform with a Notion-like interface. It offers a lightweight, flexible solution perfect for startups and small teams that need powerful GraphQL and REST APIs without the complexity of traditional CRM systems.
+
+### Features
+
+- **Notion-like Interface** - Intuitive, modern UI with customizable views and fields
+- **Powerful APIs** - Both GraphQL and REST APIs for maximum flexibility
+- **Customer Pipelines** - Visual pipeline management for sales and opportunities
+- **Team Collaboration** - Real-time collaboration with shared workspaces
+- **Custom Fields** - Flexible data model with custom field types
+- **Lightweight & Fast** - Minimal resource usage compared to traditional CRMs
+- **Open Source** - Self-hosted, privacy-focused, no vendor lock-in
+
+### Initial Setup
+
+**First Login to Twenty CRM:**
+
+1. Navigate to `https://twenty.yourdomain.com`
+2. Create your first workspace during initial setup
+3. Configure workspace settings and customize fields
+4. Generate API key:
+   - Go to Settings → Developers → API Keys
+   - Click "Create New API Key"
+   - Name it "n8n Integration"
+   - Copy the token for use in n8n
+5. Set up your first pipeline and custom fields
+
+### n8n Integration Setup
+
+**Create Twenty CRM Credentials in n8n:**
+
+Twenty CRM does not have a native n8n node. Use HTTP Request nodes with Bearer token authentication.
+
+1. In n8n, create credentials:
+   - Type: Header Auth
+   - Name: Twenty CRM API
+   - Header Name: `Authorization`
+   - Header Value: `Bearer YOUR_API_KEY_HERE`
+
+**Internal URL for n8n:** `http://twenty-crm:3000`
+
+**Base API Endpoints:**
+- REST API: `http://twenty-crm:3000/rest/`
+- GraphQL API: `http://twenty-crm:3000/graphql`
+
+### Example Workflows
+
+#### Example 1: AI Lead Qualification Pipeline
+
+Automatically qualify and score leads using AI:
+
+```javascript
+// Automate lead scoring with AI analysis
+
+// 1. Webhook Trigger - Receive new lead from website form
+
+// 2. HTTP Request Node - Create lead in Twenty CRM
+Method: POST
+URL: http://twenty-crm:3000/rest/companies
+Authentication: Use Twenty CRM Credentials
+Headers:
+  Content-Type: application/json
+Body (JSON):
+{
+  "name": "{{$json.company_name}}",
+  "domainName": "{{$json.website}}",
+  "employees": "{{$json.company_size}}",
+  "address": "{{$json.location}}"
+}
+
+// 3. OpenAI Node - Analyze lead quality
+Operation: Message a Model
+Model: gpt-4o-mini
+Messages:
+  System: "You are a lead qualification expert. Analyze leads and provide a score (1-10) with reasoning."
+  User: |
+    Analyze this lead:
+    Company: {{$json.company_name}}
+    Industry: {{$json.industry}}
+    Size: {{$json.company_size}}
+    Budget: {{$json.budget_range}}
+    Website: {{$json.website}}
+    
+    Provide score and reasoning in JSON format:
+    {
+      "score": <number>,
+      "reasoning": "<why this score>",
+      "priority": "<High/Normal/Low>"
+    }
+
+// 4. Code Node - Parse AI response
+const aiResponse = JSON.parse($input.first().json.message.content);
+return {
+  json: {
+    companyId: $('Create Lead').item.json.id,
+    score: aiResponse.score,
+    reasoning: aiResponse.reasoning,
+    priority: aiResponse.priority
+  }
+};
+
+// 5. HTTP Request Node - Update lead with AI score
+Method: PATCH
+URL: http://twenty-crm:3000/rest/companies/{{$json.companyId}}
+Body (JSON):
+{
+  "customFields": {
+    "leadScore": {{$json.score}},
+    "aiAnalysis": "{{$json.reasoning}}",
+    "priority": "{{$json.priority}}"
+  }
+}
+
+// 6. IF Node - Check if high-value lead
+Condition: {{$json.score}} >= 8
+
+// Branch: High-value leads
+// 7a. Slack Node - Notify sales team
+Channel: #sales-alerts
+Message: |
+  🔥 **High-Value Lead Alert!**
+  
+  Company: {{$('Create Lead').json.name}}
+  Score: {{$json.score}}/10
+  Priority: {{$json.priority}}
+  
+  AI Analysis: {{$json.reasoning}}
+  
+  👉 Action required: Contact within 24 hours
+
+// 8a. Email Node - Send personalized email to sales rep
+To: sales@company.com
+Subject: High-Priority Lead: {{$('Create Lead').json.name}}
+Body: Detailed lead information with AI insights
+
+// Branch: Normal leads
+// 7b. HTTP Request - Add to nurture campaign
+// 8b. Email - Send automated welcome sequence
+```
+
+#### Example 2: Customer Onboarding Automation
+
+Streamline customer onboarding with automated tasks:
+
+```javascript
+// Complete onboarding automation workflow
+
+// 1. Twenty CRM Webhook - On opportunity won
+// Configure webhook in Twenty CRM to trigger when opportunity stage = "Won"
+
+// 2. HTTP Request Node - Get customer details
+Method: GET
+URL: http://twenty-crm:3000/rest/companies/{{$json.companyId}}
+Authentication: Use Twenty CRM Credentials
+
+// 3. Invoice Ninja Node - Create customer account
+Operation: Create Customer
+Name: {{$json.name}}
+Email: {{$json.email}}
+Address: {{$json.address}}
+Currency: USD
+
+// 4. Cal.com HTTP Request - Schedule onboarding call
+Method: POST
+URL: http://cal:3000/api/bookings
+Body (JSON):
+{
+  "eventTypeId": 123, // Your onboarding call event type ID
+  "start": "{{$now.plus(2, 'days').toISO()}}",
+  "responses": {
+    "name": "{{$json.name}}",
+    "email": "{{$json.email}}",
+    "notes": "Customer onboarding call - Opportunity won"
+  }
+}
+
+// 5. HTTP Request Node - Update Twenty CRM pipeline stage
+Method: PATCH
+URL: http://twenty-crm:3000/rest/opportunities/{{$json.opportunityId}}
+Body (JSON):
+{
+  "stage": "Onboarding",
+  "customFields": {
+    "onboardingStarted": "{{$now.toISO()}}",
+    "invoiceCreated": true,
+    "meetingScheduled": "{{$json.booking_time}}"
+  }
+}
+
+// 6. Vikunja Node - Create onboarding tasks
+Operation: Create Task
+Project: Customer Onboarding
+Title: "Onboarding: {{$json.name}}"
+Description: |
+  - Send welcome email
+  - Provide access credentials
+  - Schedule training session
+  - Assign account manager
+Due Date: {{$now.plus(7, 'days').toISO()}}
+
+// 7. Email Node - Send welcome package
+To: {{$json.email}}
+Subject: Welcome to {{$env.COMPANY_NAME}}! 🎉
+Body: |
+  Hi {{$json.name}},
+  
+  Welcome aboard! We're excited to have you as a customer.
+  
+  Your onboarding call is scheduled for {{$json.booking_time}}.
+  
+  In the meantime, here's what you can expect:
+  ✅ Account setup (completed)
+  ✅ Welcome package (attached)
+  📅 Onboarding call scheduled
+  📚 Training materials (coming soon)
+  
+  Your dedicated account manager will reach out shortly.
+  
+  Best regards,
+  The Team
+
+Attachments: Welcome package PDF, Getting started guide
+
+// 8. Slack Notification - Internal team
+Channel: #customer-success
+Message: |
+  🎉 New customer onboarded!
+  
+  Company: {{$json.name}}
+  Email: {{$json.email}}
+  Onboarding call: {{$json.booking_time}}
+  
+  ✅ Invoice created
+  ✅ Welcome email sent
+  ✅ Tasks created in Vikunja
+```
+
+#### Example 3: GraphQL Advanced Queries
+
+Leverage Twenty's powerful GraphQL API for complex operations:
+
+```javascript
+// Weekly sales pipeline report with metrics
+
+// 1. Schedule Trigger - Weekly on Monday at 9 AM
+
+// 2. HTTP Request Node - GraphQL query for pipeline metrics
+Method: POST
+URL: http://twenty-crm:3000/graphql
+Authentication: Use Twenty CRM Credentials
+Headers:
+  Content-Type: application/json
+Body (JSON):
+{
+  "query": "query GetPipelineMetrics { opportunities(where: { createdAt: { gte: \"{{$now.minus(7, 'days').toISO()}}\" } }) { edges { node { id name amount stage probability company { name domainName } } } } }"
+}
+
+// 3. Code Node - Calculate metrics
+const opportunities = $input.first().json.data.opportunities.edges;
+
+// Calculate key metrics
+const metrics = {
+  total_opportunities: opportunities.length,
+  total_value: opportunities.reduce((sum, opp) => sum + opp.node.amount, 0),
+  weighted_pipeline: opportunities.reduce((sum, opp) => 
+    sum + (opp.node.amount * opp.node.probability / 100), 0),
+  by_stage: {},
+  top_deals: []
+};
+
+// Group by stage
+opportunities.forEach(opp => {
+  const stage = opp.node.stage;
+  if (!metrics.by_stage[stage]) {
+    metrics.by_stage[stage] = { count: 0, value: 0 };
+  }
+  metrics.by_stage[stage].count++;
+  metrics.by_stage[stage].value += opp.node.amount;
+});
+
+// Get top 5 deals
+metrics.top_deals = opportunities
+  .map(opp => opp.node)
+  .sort((a, b) => b.amount - a.amount)
+  .slice(0, 5);
+
+return { json: metrics };
+
+// 4. Metabase HTTP Request - Update dashboard
+Method: POST
+URL: http://metabase:3000/api/card/{{$env.SALES_DASHBOARD_ID}}/query
+Body: Send calculated metrics
+
+// 5. Google Sheets Node - Export to spreadsheet
+Operation: Append
+Spreadsheet: Weekly Sales Reports
+Sheet: {{$now.format('YYYY-MM')}}
+Data: Pipeline metrics
+
+// 6. Email Node - Send report to stakeholders
+To: executives@company.com, sales-team@company.com
+Subject: Weekly Sales Pipeline Report - {{$now.format('MMMM D, YYYY')}}
+Body: |
+  📊 Weekly Sales Pipeline Report
+  
+  **Key Metrics (Last 7 Days):**
+  • Total Opportunities: {{$json.total_opportunities}}
+  • Total Pipeline Value: ${{$json.total_value.toLocaleString()}}
+  • Weighted Forecast: ${{$json.weighted_pipeline.toLocaleString()}}
+  
+  **By Stage:**
+  {{#each $json.by_stage}}
+  • {{@key}}: {{this.count}} deals (${{this.value.toLocaleString()}})
+  {{/each}}
+  
+  **Top 5 Deals:**
+  {{#each $json.top_deals}}
+  {{@index + 1}}. {{this.company.name}} - ${{this.amount.toLocaleString()}} ({{this.probability}}%)
+  {{/each}}
+  
+  View full dashboard: https://analytics.yourdomain.com
+
+Attachments: Generated PDF report
+```
+
+#### Example 4: Cross-CRM Data Sync
+
+Sync Twenty CRM with other CRM systems for unified data:
+
+```javascript
+// Sync contacts between Twenty CRM and EspoCRM
+
+// 1. Schedule Trigger - Every 15 minutes
+
+// 2. HTTP Request - Get recently updated contacts from Twenty
+Method: POST
+URL: http://twenty-crm:3000/graphql
+Body (JSON):
+{
+  "query": "query GetRecentContacts { people(where: { updatedAt: { gte: \"{{$now.minus(15, 'minutes').toISO()}}\" } }) { edges { node { id firstName lastName email phone company { id name } customFields } } } }"
+}
+
+// 3. Loop Over Items - Process each contact
+
+// 4. HTTP Request - Check if contact exists in EspoCRM
+Method: GET
+URL: http://espocrm:80/api/v1/Contact
+Query Parameters:
+  where: [{"type":"equals","attribute":"emailAddress","value":"{{$json.email}}"}]
+
+// 5. IF Node - Contact exists?
+
+// Branch: Yes - Update existing
+// 6a. HTTP Request - Update in EspoCRM
+Method: PUT
+URL: http://espocrm:80/api/v1/Contact/{{$json.espocrm_id}}
+Body: Updated contact data
+
+// Branch: No - Create new
+// 6b. HTTP Request - Create in EspoCRM
+Method: POST
+URL: http://espocrm:80/api/v1/Contact
+Body: New contact data
+
+// 7. HTTP Request - Update Twenty with sync status
+Method: PATCH
+URL: http://twenty-crm:3000/rest/people/{{$json.twenty_id}}
+Body:
+{
+  "customFields": {
+    "lastSyncedAt": "{{$now.toISO()}}",
+    "syncStatus": "success",
+    "espocrmId": "{{$json.espocrm_id}}"
+  }
+}
+```
+
+### Troubleshooting
+
+**Issue 1: API Authentication Fails**
+
+```bash
+# Check if Twenty CRM is running
+docker ps | grep twenty
+
+# View Twenty CRM logs
+docker logs twenty-crm
+
+# Verify API key in Twenty CRM settings
+# Go to Settings → Developers → API Keys
+
+# Test API connection
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  http://localhost:3000/rest/companies
+```
+
+**Solution:**
+- Regenerate API key in Twenty CRM settings
+- Ensure Bearer token format: `Bearer YOUR_KEY`
+- Check firewall rules allow internal Docker network access
+- Verify `TWENTY_API_KEY` in n8n credentials
+
+**Issue 2: GraphQL Query Errors**
+
+```bash
+# Test GraphQL endpoint
+curl -X POST http://localhost:3000/graphql \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ opportunities { edges { node { id name } } } }"}'
+
+# Check GraphQL schema
+curl -X POST http://localhost:3000/graphql \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ __schema { types { name } } }"}'
+```
+
+**Solution:**
+- Validate GraphQL syntax in GraphQL Playground
+- Check field names match Twenty CRM schema
+- Use introspection query to explore available fields
+- Ensure proper escaping of quotes in n8n JSON
+
+**Issue 3: Webhook Not Triggering**
+
+```bash
+# Check webhook configuration in Twenty CRM
+# Settings → Integrations → Webhooks
+
+# Test webhook manually
+curl -X POST https://your-n8n.com/webhook/twenty-crm \
+  -H "Content-Type: application/json" \
+  -d '{"companyId": "test123", "event": "opportunity.won"}'
+
+# Check n8n webhook logs
+docker logs n8n | grep webhook
+```
+
+**Solution:**
+- Verify webhook URL is accessible from Twenty CRM container
+- Use internal URL if both services are on same Docker network
+- Check webhook secret/authentication if configured
+- Enable webhook logging in Twenty CRM for debugging
+
+**Issue 4: Custom Fields Not Syncing**
+
+**Diagnosis:**
+```bash
+# Get field schema from Twenty
+curl -X POST http://localhost:3000/graphql \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{"query": "{ __type(name: \"Company\") { fields { name type { name } } } }"}'
+```
+
+**Solution:**
+- Custom fields must be created in Twenty CRM first
+- Use exact field names from Twenty CRM schema
+- Field types must match (string, number, date, etc.)
+- Check permissions for API key to modify custom fields
+
+### Resources
+
+- **Official Documentation:** https://twenty.com/developers
+- **GraphQL API Docs:** https://twenty.com/developers/graphql-api
+- **REST API Docs:** https://twenty.com/developers/rest-api
+- **GitHub:** https://github.com/twentyhq/twenty
+- **Community Forum:** https://twenty.com/community
+- **API Playground:** `https://twenty.yourdomain.com/graphql` (when logged in)
+
+### Best Practices
+
+**When to Use Twenty CRM:**
+- Startups and small teams needing flexibility
+- Projects requiring custom fields and views
+- GraphQL API integration requirements
+- Notion-style workspace organization
+- Lightweight resource usage is priority
+
+**Combining with Other CRMs:**
+- Use Twenty for daily operations and team collaboration
+- Use EspoCRM or Odoo for email campaigns and complex automation
+- Sync data between systems using n8n for unified view
+- Create unified dashboards in Metabase pulling from both systems
+
+**Data Model Tips:**
+- Start with basic fields, add custom fields as needed
+- Use relationships to connect companies, people, and opportunities
+- Create custom views for different team members
+- Use tags for flexible categorization
+- Regular backups via API exports
 
 </details>
 
 <details>
 <summary><b>📞 EspoCRM - CRM Platform</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is EspoCRM?
+
+EspoCRM is a comprehensive, full-featured open-source CRM platform designed for businesses of all sizes. It provides advanced email campaign management, workflow automation, detailed reporting, and role-based access control. Unlike lightweight CRMs, EspoCRM offers enterprise-grade features including marketing automation, service management, and extensive customization options.
+
+### Features
+
+- **Complete CRM Suite** - Leads, contacts, accounts, opportunities, cases, documents
+- **Email Marketing** - Campaign management, mass emails, tracking, templates
+- **Workflow Automation** - Advanced BPM (Business Process Management) with visual designer
+- **Advanced Reporting** - Custom reports, dashboards, charts, list views with filters
+- **Role-Based Access** - Granular permissions, team hierarchies, field-level security
+- **Email Integration** - IMAP/SMTP sync, group inboxes, email-to-case
+- **Calendar & Activities** - Meetings, calls, tasks with scheduling and reminders
+- **Custom Entities** - Create custom modules for any business process
+- **REST API** - Comprehensive API for integrations and automation
+- **Multi-Language** - 40+ languages supported out of the box
+- **Portal** - Customer self-service portal for cases and knowledge base
+- **Advanced Workflows** - Formulas, calculated fields, conditional logic
+
+### Initial Setup
+
+**First Login to EspoCRM:**
+
+1. Navigate to `https://espocrm.yourdomain.com`
+2. Login with admin credentials from installation report:
+   - **Username:** Check `.env` file for `ESPOCRM_ADMIN_USERNAME` (default: `admin`)
+   - **Password:** Check `.env` file for `ESPOCRM_ADMIN_PASSWORD`
+3. Complete initial configuration:
+   - Administration → System → Settings
+   - Configure company information
+   - Set timezone and date/time format
+   - Configure currency and language
+4. Set up email integration:
+   - Administration → Outbound Emails
+   - Configure Mailpit (pre-configured) or Docker-Mailserver
+5. Generate API key:
+   - Administration → API Users
+   - Create new API user
+   - Generate API key for n8n integration
+   - Save key securely
+
+**Important:** For production use, change the default admin password immediately!
+
+### n8n Integration Setup
+
+**Create EspoCRM Credentials in n8n:**
+
+EspoCRM does not have a native n8n node. Use HTTP Request nodes with API Key authentication.
+
+1. In n8n, create credentials:
+   - Type: Header Auth
+   - Name: EspoCRM API
+   - Header Name: `X-Api-Key`
+   - Header Value: Your generated API key from EspoCRM
+
+**Internal URL for n8n:** `http://espocrm:80`
+
+**API Base URL:** `http://espocrm:80/api/v1`
+
+**Common Endpoints:**
+- `/Lead` - Lead management
+- `/Contact` - Contact records
+- `/Account` - Account/Company records
+- `/Opportunity` - Sales opportunities
+- `/Case` - Support cases
+- `/Task` - Tasks and todos
+- `/Meeting` - Meetings and calls
+- `/Campaign` - Email campaigns
+
+### Example Workflows
+
+#### Example 1: AI-Powered Email Campaign Automation
+
+Automate lead research and email campaign enrollment:
+
+```javascript
+// Research new leads and add to nurture campaign
+
+// 1. Schedule Trigger - Daily at 10 AM
+
+// 2. HTTP Request Node - Get new leads from last 24 hours
+Method: GET
+URL: http://espocrm:80/api/v1/Lead
+Authentication: Use EspoCRM Credentials
+Query Parameters:
+  where[0][type]: after
+  where[0][attribute]: createdAt
+  where[0][value]: {{$now.minus(1, 'day').toISO()}}
+  select: id,name,emailAddress,companyName,website,status
+
+// 3. Loop Over Items - Process each lead
+
+// 4. Perplexica Node - Research lead company
+Method: POST
+URL: http://perplexica:3000/api/search
+Body (JSON):
+{
+  "query": "{{$json.companyName}} company latest news revenue funding",
+  "focusMode": "webSearch"
+}
+
+// 5. OpenAI Node - Score and analyze lead
+Operation: Message a Model
+Model: gpt-4o-mini
+Messages:
+  System: "You are a lead qualification expert. Analyze company research and provide a quality score (0-100)."
+  User: |
+    Company: {{$json.companyName}}
+    Website: {{$json.website}}
+    Research: {{$('Perplexica').json.answer}}
+    
+    Provide JSON response:
+    {
+      "score": <0-100>,
+      "reasoning": "<analysis>",
+      "industry": "<detected industry>",
+      "company_size": "<estimated size>",
+      "priority": "<High/Medium/Low>"
+    }
+
+// 6. Code Node - Parse AI response
+const aiResult = JSON.parse($input.first().json.message.content);
+return {
+  json: {
+    leadId: $('Loop Over Items').item.json.id,
+    score: aiResult.score,
+    reasoning: aiResult.reasoning,
+    industry: aiResult.industry,
+    companySize: aiResult.company_size,
+    priority: aiResult.priority
+  }
+};
+
+// 7. HTTP Request Node - Update lead with AI insights
+Method: PUT
+URL: http://espocrm:80/api/v1/Lead/{{$json.leadId}}
+Body (JSON):
+{
+  "description": "{{$json.reasoning}}",
+  "leadScore": {{$json.score}},
+  "industry": "{{$json.industry}}",
+  "status": "{{$json.score >= 70 ? 'Qualified' : 'New'}}"
+}
+
+// 8. IF Node - Check if qualified (score >= 70)
+
+// Branch: Qualified Leads
+// 9a. HTTP Request - Add to nurture email campaign
+Method: POST
+URL: http://espocrm:80/api/v1/CampaignLogRecord
+Body (JSON):
+{
+  "campaignId": "your-nurture-campaign-id",
+  "targetId": "{{$json.leadId}}",
+  "targetType": "Lead",
+  "action": "Sent"
+}
+
+// 10a. HTTP Request - Create follow-up task for sales rep
+Method: POST
+URL: http://espocrm:80/api/v1/Task
+Body (JSON):
+{
+  "name": "Follow up with {{$('Loop Over Items').item.json.name}}",
+  "status": "Not Started",
+  "priority": "{{$json.priority}}",
+  "parentType": "Lead",
+  "parentId": "{{$json.leadId}}",
+  "dateEnd": "{{$now.plus(2, 'days').toISO()}}"
+}
+
+// 11a. Slack Node - Notify sales team
+Channel: #sales-qualified-leads
+Message: |
+  🎯 **Qualified Lead Alert**
+  
+  Company: {{$('Loop Over Items').item.json.companyName}}
+  Score: {{$json.score}}/100
+  Priority: {{$json.priority}}
+  
+  AI Analysis: {{$json.reasoning}}
+  
+  👉 Follow up within 48 hours
+
+// Branch: Lower Priority Leads
+// 9b. HTTP Request - Add to general nurture campaign
+// 10b. Set follow-up reminder for 7 days
+```
+
+#### Example 2: Service Request Automation with SLA Management
+
+Manage support cases with automatic SLA tracking:
+
+```javascript
+// Automated case management with SLA calculations
+
+// 1. Webhook Trigger - New service request created
+// Configure webhook in EspoCRM: Administration → Webhooks
+
+// 2. HTTP Request Node - Get related account details
+Method: GET
+URL: http://espocrm:80/api/v1/Account/{{$json.accountId}}
+Authentication: Use EspoCRM Credentials
+Query Parameters:
+  select: name,website,industry,assignedUserId
+
+// 3. HTTP Request Node - Check service contract/SLA
+Method: GET
+URL: http://espocrm:80/api/v1/ServiceContract
+Query Parameters:
+  where[0][type]: equals
+  where[0][attribute]: accountId
+  where[0][value]: {{$json.accountId}}
+  select: id,name,type,slaHours
+
+// 4. Code Node - Calculate priority and SLA deadline
+const account = $('Get Account').item.json;
+const contract = $('Check SLA').item.json.list?.[0];
+
+// Determine priority based on contract type
+const priority = contract?.type === 'Premium' ? 'High' : 
+                 contract?.type === 'Standard' ? 'Normal' : 'Low';
+
+// Calculate SLA hours
+const slaHours = {
+  'Premium': 4,
+  'Standard': 24,
+  'Basic': 48
+}[contract?.type] || 72;
+
+// Calculate due date
+const dueDate = new Date();
+dueDate.setHours(dueDate.getHours() + slaHours);
+
+return {
+  json: {
+    caseId: $('Webhook').item.json.id,
+    priority,
+    slaHours,
+    dueDate: dueDate.toISOString(),
+    assignedUserId: account.assignedUserId,
+    accountName: account.name,
+    contractType: contract?.type || 'None'
+  }
+};
+
+// 5. HTTP Request Node - Update case with SLA info
+Method: PUT
+URL: http://espocrm:80/api/v1/Case/{{$json.caseId}}
+Body (JSON):
+{
+  "priority": "{{$json.priority}}",
+  "status": "Assigned",
+  "assignedUserId": "{{$json.assignedUserId}}",
+  "dateEnd": "{{$json.dueDate}}"
+}
+
+// 6. HTTP Request Node - Create task for assigned user
+Method: POST
+URL: http://espocrm:80/api/v1/Task
+Body (JSON):
+{
+  "name": "Service Request: {{$('Webhook').item.json.subject}}",
+  "description": "SLA: {{$json.slaHours}} hours | Due: {{$json.dueDate}}",
+  "status": "Not Started",
+  "priority": "{{$json.priority}}",
+  "dateEnd": "{{$json.dueDate}}",
+  "assignedUserId": "{{$json.assignedUserId}}",
+  "parentType": "Case",
+  "parentId": "{{$json.caseId}}"
+}
+
+// 7. Email Node - Send confirmation to customer
+To: {{$('Webhook').item.json.contactEmail}}
+Subject: Case #{{$json.caseId}} - {{$('Webhook').item.json.subject}}
+Body: |
+  Dear Customer,
+  
+  Your service request has been received and assigned.
+  
+  Case ID: #{{$json.caseId}}
+  Priority: {{$json.priority}}
+  Expected Response: Within {{$json.slaHours}} hours
+  Assigned To: {{$json.assignedUserId}}
+  
+  We will update you as soon as we have more information.
+  
+  Best regards,
+  Support Team
+
+// 8. Slack Node - Notify support team
+Channel: #support-cases
+Message: |
+  🆕 New Service Request
+  
+  Case: #{{$json.caseId}}
+  Account: {{$json.accountName}}
+  Priority: {{$json.priority}}
+  SLA: {{$json.slaHours}}h
+  Contract: {{$json.contractType}}
+  Due: {{$json.dueDate}}
+```
+
+#### Example 3: Sales Pipeline Automation
+
+Automate opportunity management with stage-based workflows:
+
+```javascript
+// Automated actions based on opportunity stage changes
+
+// 1. EspoCRM Webhook - Opportunity stage changed
+// Configure in EspoCRM: Administration → Webhooks → Create for Opportunity entity
+
+// 2. Switch Node - Route based on new stage
+Mode: Rules
+Output Key: {{$json.stage}}
+
+// Branch 1: "Proposal Sent"
+// 3a. HTTP Request - Generate proposal document
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/general/create-pdf
+Body (Multipart):
+  template: proposal_template.html
+  data: {{JSON.stringify($json)}}
+
+// 4a. HTTP Request - Attach proposal to opportunity
+Method: POST
+URL: http://espocrm:80/api/v1/Attachment
+Body (JSON):
+{
+  "name": "Proposal_{{$json.name}}_{{$now.format('YYYY-MM-DD')}}.pdf",
+  "type": "application/pdf",
+  "role": "Attachment",
+  "relatedType": "Opportunity",
+  "relatedId": "{{$json.id}}",
+  "contents": "{{$('Generate PDF').json.base64}}"
+}
+
+// 5a. Invoice Ninja Node - Create draft invoice
+Operation: Create Invoice
+Customer: {{$json.accountName}}
+Items: Parse from opportunity products
+Status: Draft
+
+// 6a. Email Node - Send proposal with tracking
+To: {{$json.contactEmail}}
+Subject: Proposal for {{$json.name}}
+Attachments: Generated proposal PDF
+Body: Professional proposal email template
+
+// Branch 2: "Negotiation"
+// 3b. Cal.com HTTP Request - Schedule negotiation meeting
+Method: POST
+URL: http://cal:3000/api/bookings
+Body (JSON):
+{
+  "eventTypeId": 456, // Negotiation meeting event type
+  "start": "{{$now.plus(3, 'days').toISO()}}",
+  "responses": {
+    "name": "{{$json.contactName}}",
+    "email": "{{$json.contactEmail}}",
+    "notes": "Negotiation meeting for opportunity: {{$json.name}}"
+  }
+}
+
+// 4b. HTTP Request - Update opportunity probability
+Method: PUT
+URL: http://espocrm:80/api/v1/Opportunity/{{$json.id}}
+Body (JSON):
+{
+  "probability": 60
+}
+
+// 5b. Slack Node - Alert sales manager
+Channel: #sales-pipeline
+Message: |
+  💼 Opportunity in Negotiation
+  
+  Deal: {{$json.name}}
+  Amount: ${{$json.amount}}
+  Meeting scheduled: {{$('Schedule Meeting').json.start}}
+
+// Branch 3: "Closed Won"
+// 3c. HTTP Request - Convert opportunity to account (if new customer)
+Method: POST
+URL: http://espocrm:80/api/v1/Account
+Body (JSON):
+{
+  "name": "{{$json.accountName}}",
+  "website": "{{$json.website}}",
+  "industry": "{{$json.industry}}",
+  "type": "Customer"
+}
+
+// 4c. Twenty CRM HTTP Request - Sync to secondary CRM
+Method: POST
+URL: http://twenty-crm:3000/rest/companies
+Body (JSON):
+{
+  "name": "{{$json.accountName}}",
+  "domainName": "{{$json.website}}",
+  "customFields": {
+    "espocrmId": "{{$json.id}}",
+    "dealValue": {{$json.amount}}
+  }
+}
+
+// 5c. Kimai HTTP Request - Create project for time tracking
+Method: POST
+URL: http://kimai:8001/api/projects
+Body (JSON):
+{
+  "name": "{{$json.accountName}} - Implementation",
+  "customer": "{{$json.accountName}}",
+  "visible": true,
+  "budget": {{$json.amount}}
+}
+
+// 6c. Vikunja HTTP Request - Create onboarding tasks
+Method: POST
+URL: http://vikunja:3456/api/v1/projects
+Body (JSON):
+{
+  "title": "Customer Onboarding: {{$json.accountName}}",
+  "description": "Onboarding tasks for new customer"
+}
+
+// 7c. Email Node - Welcome email to customer
+To: {{$json.contactEmail}}
+Subject: Welcome to {{$env.COMPANY_NAME}}!
+Body: Welcome email with next steps
+
+// Branch 4: "Closed Lost"
+// 3d. HTTP Request - Create follow-up task for 90 days
+Method: POST
+URL: http://espocrm:80/api/v1/Task
+Body (JSON):
+{
+  "name": "Follow up with {{$json.name}} - Lost Opportunity",
+  "status": "Not Started",
+  "dateEnd": "{{$now.plus(90, 'days').toISO()}}",
+  "parentType": "Opportunity",
+  "parentId": "{{$json.id}}"
+}
+
+// 4d. Formbricks HTTP Request - Send loss reason survey
+Method: POST
+URL: http://formbricks:3000/api/v1/client/displays
+Body: Survey to understand why deal was lost
+
+// 5d. Metabase HTTP Request - Update analytics dashboard
+// Log lost deal for reporting
+```
+
+#### Example 4: Monthly Report Generation and Distribution
+
+Automated executive reports with data from EspoCRM:
+
+```javascript
+// Generate comprehensive monthly CRM reports
+
+// 1. Schedule Trigger - First Monday of each month at 9 AM
+
+// 2. HTTP Request Node - Get monthly opportunity metrics
+Method: GET
+URL: http://espocrm:80/api/v1/Opportunity
+Authentication: Use EspoCRM Credentials
+Query Parameters:
+  select: id,name,amount,stage,closeDate,probability,assignedUserId
+  where[0][type]: currentMonth
+  where[0][attribute]: closeDate
+
+// 3. Code Node - Calculate KPIs
+const opportunities = $input.first().json.list;
+
+const kpis = {
+  total_opportunities: opportunities.length,
+  total_pipeline: opportunities.reduce((sum, opp) => sum + opp.amount, 0),
+  weighted_forecast: opportunities.reduce((sum, opp) => 
+    sum + (opp.amount * opp.probability / 100), 0),
+  average_deal_size: opportunities.length > 0 ? 
+    opportunities.reduce((sum, opp) => sum + opp.amount, 0) / opportunities.length : 0,
+  won_deals: opportunities.filter(o => o.stage === 'Closed Won').length,
+  lost_deals: opportunities.filter(o => o.stage === 'Closed Lost').length,
+  conversion_rate: opportunities.length > 0 ?
+    (opportunities.filter(o => o.stage === 'Closed Won').length / opportunities.length * 100).toFixed(2) : 0
+};
+
+// Group by stage
+kpis.by_stage = {};
+opportunities.forEach(opp => {
+  if (!kpis.by_stage[opp.stage]) {
+    kpis.by_stage[opp.stage] = { count: 0, value: 0 };
+  }
+  kpis.by_stage[opp.stage].count++;
+  kpis.by_stage[opp.stage].value += opp.amount;
+});
+
+// Top performers
+const performanceByUser = {};
+opportunities.forEach(opp => {
+  if (opp.stage === 'Closed Won') {
+    if (!performanceByUser[opp.assignedUserId]) {
+      performanceByUser[opp.assignedUserId] = { deals: 0, value: 0 };
+    }
+    performanceByUser[opp.assignedUserId].deals++;
+    performanceByUser[opp.assignedUserId].value += opp.amount;
+  }
+});
+
+kpis.top_performers = Object.entries(performanceByUser)
+  .sort((a, b) => b[1].value - a[1].value)
+  .slice(0, 5);
+
+return { json: kpis };
+
+// 4. HTTP Request Node - Get activity metrics
+Method: GET
+URL: http://espocrm:80/api/v1/Meeting
+Query Parameters:
+  where[0][type]: currentMonth
+  where[0][attribute]: dateStart
+  select: id,assignedUserId,status
+
+// 5. Code Node - Activity analysis
+const meetings = $input.first().json.list;
+const kpis = $('Calculate KPIs').item.json;
+
+kpis.total_meetings = meetings.length;
+kpis.completed_meetings = meetings.filter(m => m.status === 'Held').length;
+
+return { json: kpis };
+
+// 6. Metabase HTTP Request - Update executive dashboard
+Method: POST
+URL: http://metabase:3000/api/card/{{$env.SALES_DASHBOARD_ID}}/query
+Headers:
+  X-Metabase-Session: {{$env.METABASE_SESSION}}
+Body: Send calculated KPIs
+
+// 7. Google Sheets Node - Export to spreadsheet
+Operation: Append
+Spreadsheet: Monthly CRM Reports
+Sheet: {{$now.format('YYYY-MM')}}
+Data: All calculated KPIs and metrics
+
+// 8. HTTP Request - Generate PDF report
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/convert/html-to-pdf
+Body (Multipart):
+  html: Formatted HTML report with all metrics and charts
+
+// 9. Email Node - Send report to stakeholders
+To: executives@company.com, sales-team@company.com
+CC: finance@company.com
+Subject: Monthly CRM Report - {{$now.format('MMMM YYYY')}}
+Body: |
+  📊 **Monthly CRM Performance Report**
+  
+  **Key Metrics:**
+  • Total Opportunities: {{$json.total_opportunities}}
+  • Pipeline Value: ${{$json.total_pipeline.toLocaleString()}}
+  • Weighted Forecast: ${{$json.weighted_forecast.toLocaleString()}}
+  • Average Deal Size: ${{$json.average_deal_size.toLocaleString()}}
+  • Won Deals: {{$json.won_deals}}
+  • Lost Deals: {{$json.lost_deals}}
+  • Conversion Rate: {{$json.conversion_rate}}%
+  
+  **Activities:**
+  • Total Meetings: {{$json.total_meetings}}
+  • Completed: {{$json.completed_meetings}}
+  
+  **Pipeline by Stage:**
+  {{#each $json.by_stage}}
+  • {{@key}}: {{this.count}} deals (${{this.value.toLocaleString()}})
+  {{/each}}
+  
+  **Top Performers:**
+  {{#each $json.top_performers}}
+  {{@index + 1}}. User {{this[0]}}: {{this[1].deals}} deals (${{this[1].value.toLocaleString()}})
+  {{/each}}
+  
+  📎 Full report attached
+  📊 View live dashboard: https://analytics.yourdomain.com
+
+Attachments: 
+  - Generated PDF report
+  - Excel export from Google Sheets
+
+// 10. Slack Node - Post summary to team channel
+Channel: #sales-team
+Message: |
+  📊 **Monthly CRM Report Published**
+  
+  Key Highlights:
+  • ${{$json.total_pipeline.toLocaleString()}} in pipeline
+  • {{$json.conversion_rate}}% conversion rate
+  • {{$json.won_deals}} deals closed
+  
+  📧 Full report sent to executives
+  📊 Dashboard: https://analytics.yourdomain.com
+```
+
+### Troubleshooting
+
+**Issue 1: API Authentication Fails**
+
+```bash
+# Check if EspoCRM is running
+docker ps | grep espocrm
+
+# View EspoCRM logs
+docker logs espocrm
+
+# Test API connection
+curl -H "X-Api-Key: YOUR_API_KEY" \
+  http://localhost:80/api/v1/Lead
+
+# Verify API key in EspoCRM
+# Administration → API Users → Check your API user
+```
+
+**Solution:**
+- Regenerate API key in EspoCRM (Administration → API Users)
+- Ensure API user has appropriate permissions
+- Check that header name is exactly `X-Api-Key` (case-sensitive)
+- Verify firewall rules allow internal Docker network access
+- Check that EspoCRM is fully initialized (may take 2-3 minutes on first start)
+
+**Issue 2: Webhook Not Triggering**
+
+```bash
+# Test webhook manually
+curl -X POST https://your-n8n.com/webhook/espocrm \
+  -H "Content-Type: application/json" \
+  -d '{"id": "test123", "entityType": "Lead", "action": "create"}'
+
+# Check n8n webhook logs
+docker logs n8n | grep webhook
+
+# Verify webhook configuration in EspoCRM
+# Administration → Webhooks → Check URL and event types
+```
+
+**Solution:**
+- Webhook URL must be accessible from EspoCRM container
+- Use internal URL if both services on same Docker network: `http://n8n:5678/webhook/...`
+- Enable webhook in EspoCRM: Administration → Webhooks
+- Set correct entity type (Lead, Contact, Opportunity, etc.)
+- Choose correct event (create, update, delete)
+- Test webhook with "Test" button in EspoCRM
+
+**Issue 3: Email Integration Not Working**
+
+```bash
+# Check email account configuration
+docker exec espocrm cat data/.htaccess
+
+# View email sync logs
+docker logs espocrm | grep -i "email\|imap\|smtp"
+
+# Test SMTP connection
+docker exec espocrm php command.php app:test-email YOUR_EMAIL
+
+# Check Mailpit is receiving emails
+curl http://localhost:8025/api/v1/messages
+```
+
+**Solution:**
+- Mailpit SMTP settings: Host=`mailpit`, Port=`1025`, no auth
+- For Docker-Mailserver: Host=`mailserver`, Port=`587`, TLS enabled
+- Check email account in Administration → Email Accounts
+- Verify group inbox configuration
+- Enable Personal Email Accounts in user settings
+- Check spam folders if emails not arriving
+
+**Issue 4: Performance Issues with Large Datasets**
+
+```bash
+# Check database size
+docker exec espocrm-db mysql -u espocrm -p -e "SELECT table_name, ROUND(((data_length + index_length) / 1024 / 1024), 2) AS 'Size (MB)' FROM information_schema.TABLES WHERE table_schema = 'espocrm' ORDER BY (data_length + index_length) DESC;"
+
+# Optimize database tables
+docker exec espocrm-db mysql -u espocrm -p espocrm -e "OPTIMIZE TABLE lead, contact, account, opportunity;"
+
+# Check container resources
+docker stats espocrm --no-stream
+
+# Clear EspoCRM cache
+docker exec espocrm rm -rf data/cache/*
+docker compose restart espocrm
+```
+
+**Solution:**
+- Add database indexes for frequently queried fields
+- Use pagination in API requests (`offset` and `maxSize` parameters)
+- Archive old records (Administration → Jobs → scheduled cleanup)
+- Increase PHP memory limit in docker-compose.yml
+- Use filters instead of fetching all records
+- Enable query caching in Administration → System → Settings
+- Consider database optimization (run OPTIMIZE TABLE monthly)
+
+### Resources
+
+- **Official Documentation:** https://docs.espocrm.com/
+- **API Documentation:** https://docs.espocrm.com/development/api/
+- **REST API Client:** https://docs.espocrm.com/development/api-client-php/
+- **GitHub:** https://github.com/espocrm/espocrm
+- **Community Forum:** https://forum.espocrm.com/
+- **Extensions:** https://www.espocrm.com/extensions/
+- **Workflow Guide:** https://docs.espocrm.com/administration/workflows/
+- **Admin Guide:** https://docs.espocrm.com/administration/
+
+### Best Practices
+
+**When to Use EspoCRM:**
+- Established businesses needing full CRM features
+- Email marketing and campaign management requirements
+- Complex workflow automation with BPM
+- Advanced reporting and analytics needs
+- Service/case management with SLA tracking
+- Multi-user teams with role-based permissions
+- Organizations requiring extensive customization
+
+**When to Use Twenty CRM Instead:**
+- Startups needing lightweight, modern interface
+- Projects requiring GraphQL API
+- Simple sales pipeline management
+- Notion-style workspace organization
+- Minimal resource usage priority
+
+**Combining Multiple CRMs:**
+```javascript
+// Best practices for multi-CRM strategy
+
+// Use EspoCRM for:
+- Email campaigns and marketing automation
+- Complex sales processes with multiple stages
+- Service case management
+- Detailed reporting and analytics
+- Team collaboration with permissions
+
+// Use Twenty CRM for:
+- Daily operations and quick updates
+- Modern, fast interface for field teams
+- Custom field flexibility
+- GraphQL-based integrations
+
+// Sync data with n8n:
+- Bi-directional contact sync
+- Opportunity status updates
+- Activity logging in both systems
+- Unified reporting via Metabase
+```
+
+**API Best Practices:**
+1. **Use Pagination:** Always use `offset` and `maxSize` for large datasets
+2. **Field Selection:** Use `select` parameter to fetch only needed fields
+3. **Filters:** Apply `where` conditions to reduce data transfer
+4. **Batch Operations:** Process records in batches of 50-100
+5. **Error Handling:** Implement retry logic for API failures
+6. **Rate Limiting:** Respect API limits (usually 100 requests/minute)
+7. **Webhooks:** Use webhooks instead of polling for real-time updates
+8. **Caching:** Cache frequently accessed data (users, enums, settings)
+9. **Authentication:** Use API keys, not passwords, for integrations
+10. **Logging:** Log all API calls for debugging and audit trails
 
 </details>
 
 <details>
 <summary><b>📧 Mautic - Marketing Automation</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Mautic?
+
+Mautic is a powerful open-source marketing automation platform that enables sophisticated lead nurturing, email campaigns, landing pages, and multi-channel marketing. With comprehensive API support and native n8n community node, Mautic allows you to create advanced marketing workflows that connect seamlessly with your entire tech stack for data-driven marketing campaigns.
+
+### Features
+
+- **Email Marketing** - Campaign builder, templates, A/B testing, personalization, dynamic content
+- **Lead Management** - Lead scoring, segmentation, lifecycle stages, progressive profiling
+- **Campaign Workflows** - Visual campaign builder with triggers, actions, and conditions
+- **Landing Pages & Forms** - Drag-and-drop builder, custom fields, progressive profiling
+- **Multi-Channel Marketing** - Email, SMS, web notifications, social media integration
+- **Marketing Attribution** - Track customer journey, multi-touch attribution, ROI analytics
+- **Advanced Segmentation** - Dynamic segments based on behavior, demographics, engagement
+- **Webhooks & API** - RESTful API, OAuth 2.0, real-time webhooks for integrations
+- **Lead Nurturing** - Automated drip campaigns, behavioral triggers, lead scoring rules
+- **Analytics & Reporting** - Campaign performance, email metrics, conversion tracking
+- **GDPR Compliance** - Consent management, data privacy controls, opt-in/opt-out tracking
+- **Integration Ready** - 50+ native integrations plus n8n for unlimited connectivity
+
+### Initial Setup
+
+**First Login to Mautic:**
+
+1. Navigate to `https://mautic.yourdomain.com`
+2. Complete the installation wizard:
+   - Admin username and email
+   - Strong password (minimum 8 characters)
+   - Site URL (pre-configured)
+   - Complete setup wizard
+3. Configure email settings:
+   - Settings → Configuration → Email Settings
+   - Mailpit is pre-configured (SMTP: `mailpit:1025`)
+   - For production: Configure Docker-Mailserver or external SMTP
+4. Enable API access:
+   - Settings → Configuration → API Settings
+   - Enable API: Yes
+   - Enable HTTP basic auth: Yes (for simpler n8n integration)
+   - Enable OAuth 2: Yes (for advanced security)
+5. Generate API credentials:
+   - Settings → API Credentials
+   - Click "New" to create credentials
+   - Choose OAuth 2 or Basic Auth
+   - Save Client ID and Secret securely
+
+**Post-Setup Configuration:**
+
+```bash
+# Access Mautic container for advanced configuration
+docker exec -it mautic_web bash
+
+# Clear cache after configuration changes
+php bin/console cache:clear
+
+# Warm up cache for better performance
+php bin/console cache:warmup
+
+# Process scheduled campaigns (cron job)
+php bin/console mautic:campaigns:trigger
+```
+
+### n8n Integration Setup
+
+**Method 1: Community Mautic Node (Recommended)**
+
+1. In n8n, go to Settings → Community Nodes
+2. Install: `@digital-boss/n8n-nodes-mautic`
+3. Restart n8n (docker compose restart n8n)
+4. Create Mautic credentials:
+   - Type: Mautic OAuth2 API
+   - Authorization URL: `http://mautic_web/oauth/v2/authorize`
+   - Access Token URL: `http://mautic_web/oauth/v2/token`
+   - Client ID: From Mautic API Credentials
+   - Client Secret: From Mautic API Credentials
+   - Scope: Leave empty for full access
+
+**Method 2: HTTP Request with Basic Auth**
+
+For simpler workflows without community node:
+
+1. In n8n, create credentials:
+   - Type: Header Auth
+   - Header Name: `Authorization`
+   - Header Value: `Basic BASE64(username:password)`
+   
+Or use built-in Basic Auth:
+- Username: Your Mautic username
+- Password: Your Mautic password
+
+**Internal URL for n8n:** `http://mautic_web`
+
+**API Base URL:** `http://mautic_web/api`
+
+### Example Workflows
+
+#### Example 1: Advanced Lead Scoring & Nurturing
+
+Automatically score leads based on behavior and engagement:
+
+```javascript
+// AI-powered lead scoring with behavioral analysis
+
+// 1. Webhook Trigger - Form submission from website
+// Configure webhook URL in website: https://n8n.yourdomain.com/webhook/lead-capture
+
+// 2. Code Node - Enrich lead data
+const email = $json.email;
+const domain = email.split('@')[1];
+
+const leadData = {
+  email: email,
+  firstname: $json.firstname || '',
+  lastname: $json.lastname || '',
+  company: $json.company || domain,
+  website: $json.website || `https://${domain}`,
+  phone: $json.phone || '',
+  formSource: $json.form_id || 'unknown',
+  ipAddress: $json.ip_address || '',
+  tags: ['website-form', $json.form_id || 'general'],
+  customFields: {
+    lead_source: $json.utm_source || 'direct',
+    campaign: $json.utm_campaign || 'none',
+    medium: $json.utm_medium || 'organic'
+  }
+};
+
+return [{ json: leadData }];
+
+// 3. Mautic Node - Create/Update Contact
+Operation: Create or Update Contact
+Email: {{$json.email}}
+Fields:
+  firstname: {{$json.firstname}}
+  lastname: {{$json.lastname}}
+  company: {{$json.company}}
+  website: {{$json.website}}
+  phone: {{$json.phone}}
+  last_active: {{$now.toISO()}}
+Tags: {{$json.tags.join(',')}}
+
+// 4. HTTP Request - Check email deliverability (optional)
+Method: GET
+URL: https://api.zerobounce.net/v2/validate
+Query Parameters:
+  api_key: {{$env.ZEROBOUNCE_API_KEY}}
+  email: {{$json.email}}
+
+// 5. Code Node - Calculate lead score
+const baseScore = 10; // Starting score
+let score = baseScore;
+let scoreFactors = [];
+
+// Email quality scoring
+const emailQuality = $('Email Validation').item.json.status;
+if (emailQuality === 'valid') {
+  score += 20;
+  scoreFactors.push('Valid email: +20');
+} else if (emailQuality === 'catch-all') {
+  score += 10;
+  scoreFactors.push('Catch-all email: +10');
+} else if (emailQuality === 'unknown') {
+  score += 5;
+  scoreFactors.push('Unknown email: +5');
+} else {
+  score -= 10;
+  scoreFactors.push('Invalid email: -10');
+}
+
+// Form source scoring
+const formId = $('Enrich Data').item.json.formSource;
+if (formId === 'demo-request') {
+  score += 40;
+  scoreFactors.push('Demo request: +40');
+} else if (formId === 'contact-sales') {
+  score += 35;
+  scoreFactors.push('Contact sales: +35');
+} else if (formId === 'whitepaper-download') {
+  score += 20;
+  scoreFactors.push('Whitepaper download: +20');
+} else if (formId === 'newsletter') {
+  score += 10;
+  scoreFactors.push('Newsletter signup: +10');
+}
+
+// Company domain scoring
+const domain = $('Enrich Data').item.json.email.split('@')[1];
+const freeEmailDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
+if (!freeEmailDomains.includes(domain)) {
+  score += 15;
+  scoreFactors.push('Business email: +15');
+}
+
+// Calculate segment
+let segment = 'cold-leads';
+if (score >= 70) segment = 'hot-leads';
+else if (score >= 40) segment = 'warm-leads';
+
+return [{
+  json: {
+    contactId: $('Create Contact').item.json.contact.id,
+    email: $('Enrich Data').item.json.email,
+    score: score,
+    scoreFactors: scoreFactors,
+    segment: segment,
+    reasoning: scoreFactors.join(', ')
+  }
+}];
+
+// 6. Mautic Node - Update lead score
+Operation: Edit Contact Points
+Contact ID: {{$json.contactId}}
+Points: {{$json.score}}
+Operator: plus
+
+// 7. Mautic Node - Add to segment
+Operation: Add Contact to Segment
+Contact ID: {{$json.contactId}}
+Segment ID: Get segment ID based on {{$json.segment}}
+
+// 8. Mautic Node - Trigger campaign
+Operation: Add Contact to Campaign
+Contact ID: {{$json.contactId}}
+Campaign ID: {{$json.score >= 70 ? 'sales-outreach-campaign-id' : 'nurture-campaign-id'}}
+
+// 9. IF Node - High-value lead alert
+Condition: {{$json.score}} >= 80
+
+// Branch: High-Value Leads
+// 10a. Slack Node - Alert sales team
+Channel: #sales-hot-leads
+Message: |
+  🔥 **High-Value Lead Alert!**
+  
+  Name: {{$('Create Contact').item.json.contact.fields.all.firstname}} {{$('Create Contact').item.json.contact.fields.all.lastname}}
+  Email: {{$json.email}}
+  Company: {{$('Create Contact').item.json.contact.fields.all.company}}
+  Score: {{$json.score}}/100
+  
+  Scoring: {{$json.reasoning}}
+  
+  👉 Immediate follow-up recommended!
+
+// 11a. Twenty CRM HTTP Request - Create opportunity
+Method: POST
+URL: http://twenty-crm:3000/rest/opportunities
+Body (JSON):
+{
+  "name": "Hot Lead: {{$('Create Contact').item.json.contact.fields.all.company}}",
+  "amount": 0,
+  "stage": "New",
+  "companyId": "lookup-or-create-company",
+  "customFields": {
+    "leadScore": {{$json.score}},
+    "source": "mautic",
+    "mauticContactId": "{{$json.contactId}}"
+  }
+}
+
+// 12a. Cal.com HTTP Request - Offer priority booking
+Method: POST
+URL: http://cal:3000/api/booking-links
+Body (JSON):
+{
+  "eventTypeId": 123, // Sales demo event type
+  "name": "{{$('Create Contact').item.json.contact.fields.all.firstname}} {{$('Create Contact').item.json.contact.fields.all.lastname}}",
+  "email": "{{$json.email}}",
+  "customNote": "High-value lead (Score: {{$json.score}})"
+}
+
+// 13a. Email Node - Send priority booking link
+To: {{$json.email}}
+Subject: Quick question about {{$('Create Contact').item.json.contact.fields.all.company}}
+Body: |
+  Hi {{$('Create Contact').item.json.contact.fields.all.firstname}},
+  
+  Thank you for your interest! Based on your company profile,
+  I'd love to show you how we can help.
+  
+  Book a priority demo slot: {{$('Cal.com Booking').json.bookingLink}}
+  
+  Looking forward to speaking with you!
+  
+  Best regards,
+  Sales Team
+```
+
+#### Example 2: Multi-Channel Campaign Orchestration
+
+Coordinate campaigns across email, SMS, and social media:
+
+```javascript
+// Intelligent multi-channel marketing automation
+
+// 1. Schedule Trigger - Daily at 9 AM
+
+// 2. Mautic Node - Get campaign contacts
+Operation: Get Contacts
+Segment ID: active-campaign-recipients-segment-id
+Filters:
+  - isPublished: true
+  - dnc: 0  // Do Not Contact = false
+Limit: 100
+
+// 3. Loop Over Items - Process each contact
+
+// 4. Mautic Node - Get contact activity
+Operation: Get Contact Activity
+Contact ID: {{$json.id}}
+Date From: {{$now.minus(7, 'days').toISO()}}
+Include Events: true
+
+// 5. Code Node - Determine next best action
+const activity = $input.first().json.events || [];
+const contact = $('Loop Over Items').item.json;
+
+// Analyze engagement patterns
+const lastEmail = activity.filter(a => a.type === 'email.read').sort((a,b) => 
+  new Date(b.timestamp) - new Date(a.timestamp))[0];
+const lastClick = activity.filter(a => a.type === 'page.hit').sort((a,b) => 
+  new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+const daysSinceEmail = lastEmail ? 
+  Math.floor((new Date() - new Date(lastEmail.timestamp)) / (1000 * 60 * 60 * 24)) : 999;
+const daysSinceClick = lastClick ?
+  Math.floor((new Date() - new Date(lastClick.timestamp)) / (1000 * 60 * 60 * 24)) : 999;
+
+// Engagement scoring
+const engagementScore = activity.length;
+let nextAction = 'email';
+let content = 'standard';
+let channel = 'email';
+
+if (lastClick && daysSinceClick < 2) {
+  // High recent engagement - be aggressive
+  nextAction = 'sms';
+  content = 'urgent-offer';
+  channel = 'sms';
+} else if (lastEmail && !lastClick && daysSinceEmail < 7) {
+  // Email opened but no action - try different content
+  nextAction = 'email';
+  content = 'alternative-content';
+  channel = 'email';
+} else if (daysSinceEmail > 14) {
+  // Inactive - reactivation campaign
+  nextAction = 'reactivation';
+  content = 'win-back';
+  channel = 'email';
+} else if (engagementScore > 10 && daysSinceEmail < 3) {
+  // Very engaged - personal outreach
+  nextAction = 'personal-outreach';
+  content = 'direct-call';
+  channel = 'phone';
+}
+
+return [{
+  json: {
+    contactId: contact.id,
+    email: contact.fields.all.email,
+    firstname: contact.fields.all.firstname,
+    phone: contact.fields.all.phone,
+    nextAction,
+    content,
+    channel,
+    engagementScore,
+    daysSinceEmail
+  }
+}];
+
+// 6. Switch Node - Route by channel
+
+// Branch: Email
+// 7a. Mautic Node - Send email
+Operation: Send Email to Contact
+Email ID: {{$json.content === 'urgent-offer' ? 'email-15' : 
+           $json.content === 'alternative-content' ? 'email-12' :
+           $json.content === 'win-back' ? 'email-20' : 'email-10'}}
+Contact ID: {{$json.contactId}}
+
+// Branch: SMS
+// 7b. HTTP Request - Send SMS via Twilio
+Method: POST
+URL: https://api.twilio.com/2010-04-01/Accounts/{{$env.TWILIO_ACCOUNT_SID}}/Messages.json
+Authentication: Basic Auth
+Username: {{$env.TWILIO_ACCOUNT_SID}}
+Password: {{$env.TWILIO_AUTH_TOKEN}}
+Body (Form):
+  To: {{$json.phone}}
+  From: {{$env.TWILIO_PHONE_NUMBER}}
+  Body: "Exclusive offer ending soon! Check your email for details. - {{$env.COMPANY_NAME}}"
+
+// Branch: Personal Outreach
+// 7c. Create task for sales rep
+// HTTP Request - Create task in Vikunja
+Method: POST
+URL: http://vikunja:3456/api/v1/projects/1/tasks
+Body (JSON):
+{
+  "title": "Call {{$json.firstname}} - High Engagement",
+  "description": "Contact has {{$json.engagementScore}} recent interactions. Follow up personally.",
+  "priority": 3,
+  "dueDate": "{{$now.plus(1, 'day').toISO()}}",
+  "labels": ["hot-lead", "personal-outreach"]
+}
+
+// Branch: Reactivation
+// 7d. Mautic Node - Remove from current campaign
+Operation: Remove Contact from Campaign
+Contact ID: {{$json.contactId}}
+Campaign ID: current-campaign-id
+
+// 7e. Mautic Node - Add to win-back campaign
+Operation: Add Contact to Campaign
+Contact ID: {{$json.contactId}}
+Campaign ID: win-back-campaign-id
+
+// 8. Mautic Node - Log custom activity
+Operation: Add Contact Note
+Contact ID: {{$json.contactId}}
+Note: |
+  Multi-channel action triggered: {{$json.nextAction}}
+  Channel: {{$json.channel}}
+  Engagement score: {{$json.engagementScore}}
+  Last email: {{$json.daysSinceEmail}} days ago
+
+// 9. HTTP Request - Update analytics dashboard
+Method: POST
+URL: http://metabase:3000/api/card/campaign-performance/refresh
+Headers:
+  X-Metabase-Session: {{$env.METABASE_SESSION}}
+```
+
+#### Example 3: Dynamic Content Personalization with AI
+
+Create personalized content based on lead behavior and AI analysis:
+
+```javascript
+// AI-powered content personalization engine
+
+// 1. Mautic Webhook - Email opened
+// Configure in Mautic: Webhooks → Create webhook for "Email Opened" event
+
+// 2. HTTP Request - Get contact full profile
+Method: GET
+URL: http://mautic_web/api/contacts/{{$json.contact.id}}
+Authentication: Use Mautic credentials
+
+// 3. Code Node - Prepare personalization context
+const contact = $input.first().json.contact;
+const fields = contact.fields.all;
+
+const personalizationContext = {
+  firstname: fields.firstname || 'there',
+  company: fields.company || 'your company',
+  industry: fields.industry || 'your industry',
+  leadScore: contact.points || 0,
+  tags: contact.tags.map(t => t.tag).join(', '),
+  utmSource: fields.utm_source || 'direct',
+  lastActive: fields.last_active || 'recently',
+  customFields: {
+    jobTitle: fields.job_title || '',
+    companySize: fields.company_size || '',
+    interests: fields.interests || ''
+  }
+};
+
+return [{ json: personalizationContext }];
+
+// 4. OpenAI Node - Generate personalized content
+Operation: Message a Model
+Model: gpt-4o-mini
+Messages:
+  System: "You are a marketing content specialist creating personalized email content."
+  User: |
+    Create a personalized email follow-up for:
+    - Name: {{$json.firstname}}
+    - Company: {{$json.company}}
+    - Industry: {{$json.industry}}
+    - Job Title: {{$json.customFields.jobTitle}}
+    - Lead Score: {{$json.leadScore}}
+    - Interests: {{$json.customFields.interests}}
+    - Previous interactions: {{$json.tags}}
+    - Traffic source: {{$json.utmSource}}
+    
+    Focus on their pain points and our solution benefits.
+    Include a clear CTA appropriate for their lead score.
+    Keep it under 150 words.
+    Use a friendly, professional tone.
+
+// 5. Code Node - Build dynamic email template
+const aiContent = $input.first().json.message.content;
+const context = $('Prepare Context').item.json;
+
+const template = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Personalized for ${context.firstname}</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #007bff; color: white; padding: 20px; }
+    .content { padding: 20px; }
+    .cta { display: inline-block; padding: 12px 24px; background: #28a745; 
+           color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+    .footer { font-size: 12px; color: #666; padding: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Hi ${context.firstname}! 👋</h1>
+    </div>
+    <div class="content">
+      ${aiContent}
+      
+      <!-- Dynamic CTA based on lead score -->
+      ${context.leadScore > 70 ? 
+        '<a href="{trackinglink=demo-booking}" class="cta">Schedule Your Demo</a>' :
+        context.leadScore > 40 ?
+        '<a href="{trackinglink=learn-more}" class="cta">Learn More</a>' :
+        '<a href="{trackinglink=resources}" class="cta">View Resources</a>'
+      }
+      
+      <!-- Dynamic product recommendations based on industry -->
+      <h3>Recommended for ${context.industry}:</h3>
+      ${context.industry === 'SaaS' || context.industry === 'Technology' ? 
+        '{dynamiccontent="tech-features"}' :
+        context.industry === 'Healthcare' ?
+        '{dynamiccontent="healthcare-features"}' :
+        '{dynamiccontent="enterprise-features"}'
+      }
+    </div>
+    <div class="footer">
+      <p>You're receiving this because you showed interest in our solutions.</p>
+      <p><a href="{unsubscribe_url}">Unsubscribe</a> | <a href="{webview_url}">View in browser</a></p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+return [{
+  json: {
+    template,
+    contactId: $('Get Profile').item.json.contact.id,
+    subject: `${context.firstname}, quick question about ${context.company}`
+  }
+}];
+
+// 6. Mautic Node - Create dynamic email
+Operation: Create Email
+Name: "Personalized Follow-up - {{$now.format('YYYY-MM-DD HH:mm')}}"
+Subject: {{$json.subject}}
+Custom HTML: {{$json.template}}
+Email Type: template
+
+// 7. Mautic Node - Send to contact
+Operation: Send Email to Contact
+Email ID: {{$('Create Email').item.json.email.id}}
+Contact ID: {{$json.contactId}}
+
+// 8. Mautic Node - Log personalization
+Operation: Add Contact Note
+Contact ID: {{$json.contactId}}
+Note: |
+  AI-personalized email sent
+  Subject: {{$json.subject}}
+  Generated: {{$now.toISO()}}
+```
+
+#### Example 4: Lead Attribution & ROI Tracking
+
+Track complete customer journey and calculate marketing ROI:
+
+```javascript
+// Complete attribution tracking system
+
+// 1. Webhook Trigger - Conversion event (purchase/signup completed)
+// Sent from your application when conversion happens
+
+// 2. Mautic Node - Get contact journey
+Operation: Get Contact
+Contact ID: {{$json.contact_id}}
+Include Timeline: true
+
+// 3. Code Node - Analyze attribution path
+const contact = $input.first().json.contact;
+const timeline = contact.timeline || [];
+const touchpoints = [];
+
+// Extract all marketing touchpoints
+timeline.forEach(event => {
+  const marketingEvents = ['email.read', 'email.sent', 'page.hit', 
+                          'form.submitted', 'asset.download', 'campaign.event'];
+  
+  if (marketingEvents.includes(event.eventType)) {
+    touchpoints.push({
+      type: event.eventType,
+      timestamp: event.timestamp,
+      campaign: event.event.campaign?.name || null,
+      email: event.event.email?.name || null,
+      source: event.event.source || 'direct',
+      metadata: event.event
+    });
+  }
+});
+
+// Sort by timestamp
+touchpoints.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+// Calculate attribution weights (linear model)
+const attribution = {};
+const weight = touchpoints.length > 0 ? 1 / touchpoints.length : 0;
+
+touchpoints.forEach(tp => {
+  const key = tp.campaign || tp.email || tp.source || 'direct';
+  attribution[key] = (attribution[key] || 0) + weight;
+});
+
+// Identify first and last touch
+const firstTouch = touchpoints[0];
+const lastTouch = touchpoints[touchpoints.length - 1];
+
+// Calculate time to conversion
+const firstTouchDate = firstTouch ? new Date(firstTouch.timestamp) : new Date();
+const conversionDate = new Date();
+const daysToConversion = Math.floor((conversionDate - firstTouchDate) / (1000 * 60 * 60 * 24));
+
+return [{
+  json: {
+    contactId: contact.id,
+    email: contact.fields.all.email,
+    conversionValue: $('Webhook').item.json.order_value || 0,
+    touchpoints: touchpoints,
+    touchpointCount: touchpoints.length,
+    attribution: attribution,
+    firstTouch: firstTouch,
+    lastTouch: lastTouch,
+    daysToConversion: daysToConversion
+  }
+}];
+
+// 4. HTTP Request - Update campaign ROI in database
+Method: POST
+URL: http://nocodb:8080/api/v2/tables/CAMPAIGN_ATTRIBUTION/records
+Authentication: Use NocoDB credentials
+Body (JSON):
+{
+  "ContactId": "{{$json.contactId}}",
+  "Email": "{{$json.email}}",
+  "ConversionValue": {{$json.conversionValue}},
+  "TouchpointCount": {{$json.touchpointCount}},
+  "FirstTouchCampaign": "{{$json.firstTouch?.campaign || 'Unknown'}}",
+  "LastTouchCampaign": "{{$json.lastTouch?.campaign || 'Unknown'}}",
+  "DaysToConversion": {{$json.daysToConversion}},
+  "AttributionData": "{{JSON.stringify($json.attribution)}}",
+  "ConversionDate": "{{$now.toISO()}}"
+}
+
+// 5. Mautic Node - Update contact with conversion data
+Operation: Edit Contact
+Contact ID: {{$json.contactId}}
+Custom Fields:
+  lifetime_value: {{$json.conversionValue}}
+  conversion_date: {{$now.toISODate()}}
+  touchpoint_count: {{$json.touchpointCount}}
+  days_to_conversion: {{$json.daysToConversion}}
+
+// 6. Mautic Node - Add to customer segment
+Operation: Add Contact to Segment
+Contact ID: {{$json.contactId}}
+Segment ID: customers-segment-id
+
+// 7. Mautic Node - Remove from lead nurture campaigns
+Operation: Remove Contact from Campaign
+Contact ID: {{$json.contactId}}
+Campaign ID: nurture-campaign-id
+
+// 8. Invoice Ninja Node - Create invoice (if applicable)
+Operation: Create Invoice
+Client: {{$json.email}}
+Amount: {{$json.conversionValue}}
+Description: Product purchase - Mautic tracking
+
+// 9. Google Sheets Node - Log conversion
+Operation: Append
+Spreadsheet: Marketing Attribution Report
+Sheet: Conversions
+Data:
+  - Date: {{$now.toISODate()}}
+  - Contact: {{$json.email}}
+  - Value: {{$json.conversionValue}}
+  - First Touch: {{$json.firstTouch?.campaign}}
+  - Last Touch: {{$json.lastTouch?.campaign}}
+  - Days to Convert: {{$json.daysToConversion}}
+  - Touchpoints: {{$json.touchpointCount}}
+
+// 10. Slack Node - Notify team
+Channel: #conversions
+Message: |
+  🎉 **New Conversion!**
+  
+  Customer: {{$json.email}}
+  Value: ${{$json.conversionValue}}
+  
+  Journey:
+  • First Touch: {{$json.firstTouch?.campaign || 'Direct'}}
+  • Last Touch: {{$json.lastTouch?.campaign || 'Direct'}}
+  • Time to Convert: {{$json.daysToConversion}} days
+  • Total Touchpoints: {{$json.touchpointCount}}
+  
+  Attribution breakdown:
+  {{#each $json.attribution}}
+  • {{@key}}: {{(this * 100).toFixed(1)}}%
+  {{/each}}
+```
+
+### Troubleshooting
+
+**Issue 1: Webhook Not Receiving Data**
+
+```bash
+# Check Mautic webhook configuration
+docker exec mautic_web php bin/console mautic:webhooks:list
+
+# Process pending webhooks manually
+docker exec mautic_web php bin/console mautic:webhooks:process
+
+# Test webhook URL accessibility
+curl -X POST https://n8n.yourdomain.com/webhook/test \
+  -H "Content-Type: application/json" \
+  -d '{"test": "data"}'
+
+# Check Mautic logs for webhook errors
+docker logs mautic_web | grep -i webhook
+```
+
+**Solution:**
+- Verify webhook URL in Mautic (Settings → Webhooks)
+- Ensure webhook URL is accessible from Mautic container
+- Use internal URL if possible: `http://n8n:5678/webhook/...`
+- Check webhook triggers and events are correctly configured
+- Enable webhook debugging in Mautic configuration
+
+**Issue 2: API Authentication Failures**
+
+```bash
+# Regenerate OAuth2 credentials
+docker exec mautic_web php bin/console mautic:integration:synccontacts
+
+# Test API connection
+curl -u username:password \
+  http://localhost/api/contacts
+
+# Check API settings in Mautic
+# Settings → Configuration → API Settings → Enable API
+```
+
+**Solution:**
+- Regenerate API credentials in Mautic (Settings → API Credentials)
+- Verify OAuth2 callback URL matches n8n configuration
+- For Basic Auth: Ensure username and password are correct
+- Check API is enabled in Mautic Configuration
+- Use internal URL: `http://mautic_web/api` from n8n
+
+**Issue 3: Emails Not Sending**
+
+```bash
+# Check email queue
+docker exec mautic_web php bin/console mautic:emails:send
+
+# Process email queue
+docker exec mautic_worker php bin/console messenger:consume email
+
+# Check SMTP configuration
+docker logs mautic_web | grep -i smtp
+
+# Test email configuration
+docker exec mautic_web php bin/console mautic:email:test your@email.com
+```
+
+**Solution:**
+- Verify SMTP settings (Settings → Configuration → Email Settings)
+- For Mailpit: Host=`mailpit`, Port=`1025`, no authentication
+- For Docker-Mailserver: Host=`mailserver`, Port=`587`, TLS enabled
+- Check email queue: Settings → System Info → Email Queue
+- Process queue manually if stuck
+- Verify FROM email address is valid
+
+**Issue 4: Performance Issues / Slow Campaigns**
+
+```bash
+# Check campaign queue
+docker exec mautic_web php bin/console mautic:campaigns:update
+docker exec mautic_web php bin/console mautic:campaigns:trigger
+
+# Monitor Redis cache
+docker exec mautic_redis redis-cli INFO stats
+
+# Check segment processing
+docker exec mautic_web php bin/console mautic:segments:update
+
+# Optimize database
+docker exec mautic_db mysql -u root -p \
+  -e "OPTIMIZE TABLE mautic.leads, mautic.lead_event_log, mautic.campaign_lead_event_log;"
+
+# Check container resources
+docker stats mautic_web mautic_worker mautic_redis --no-stream
+```
+
+**Solution:**
+- Ensure mautic_worker container is running for background jobs
+- Increase Redis memory limit in docker-compose.yml
+- Optimize segments (reduce complexity, use static segments when possible)
+- Archive old campaigns and inactive contacts
+- Increase PHP memory limit: `memory_limit = 512M` in php.ini
+- Enable opcache for better PHP performance
+- Run cron jobs regularly for campaign processing
+
+### Resources
+
+- **Official Documentation:** https://docs.mautic.org/
+- **API Documentation:** https://developer.mautic.org/
+- **Community Mautic Node:** https://www.npmjs.com/package/@digital-boss/n8n-nodes-mautic
+- **GitHub:** https://github.com/mautic/mautic
+- **Community Forum:** https://forum.mautic.org/
+- **Best Practices Guide:** https://docs.mautic.org/en/best-practices
+- **Campaign Builder:** https://docs.mautic.org/en/campaigns
+- **Email Marketing:** https://docs.mautic.org/en/emails
+- **Lead Scoring:** https://docs.mautic.org/en/points
+
+### Best Practices
+
+**Campaign Optimization:**
+1. **Segment strategically** - Keep segments under 10,000 contacts for performance
+2. **Use dynamic content** - Personalize emails with tokens and dynamic content blocks
+3. **Test everything** - A/B test subject lines, content, send times
+4. **Monitor engagement** - Track opens, clicks, unsubscribes; adjust campaigns accordingly
+5. **Clean your list** - Regularly remove hard bounces and unengaged contacts
+
+**Data Management:**
+1. **Progressive profiling** - Gradually collect data through multiple form interactions
+2. **Archive old data** - Move inactive contacts (>1 year) to archive segments
+3. **Data hygiene** - Regular cleanup of duplicates, invalid emails, test contacts
+4. **Monitor API limits** - Implement rate limiting in n8n workflows
+5. **Backup regularly** - Database backups before major campaign launches
+
+**Security & Compliance:**
+```javascript
+// GDPR compliance workflow example
+
+// 1. Track consent in custom fields
+custom_field: gdpr_consent
+value: true/false
+consent_date: timestamp
+
+// 2. Check consent before sending
+IF Node: {{$json.gdpr_consent}} === true
+
+// 3. Provide easy unsubscribe
+All emails must include {unsubscribe_url}
+
+// 4. Implement data deletion workflow
+On request: Delete contact + anonymize activity logs
+```
+
+**Integration Patterns:**
+
+**Mautic + CRM (Twenty/EspoCRM):**
+- Use Mautic for marketing, CRM for sales
+- Bi-directional sync via n8n
+- Hand off qualified leads from Mautic to CRM when score > 70
+
+**Mautic + Cal.com:**
+- High-value leads get automatic booking links
+- Book meetings based on engagement scores
+- Sync meeting status back to Mautic
+
+**Mautic + E-commerce:**
+- Abandoned cart campaigns
+- Post-purchase nurturing
+- Win-back campaigns for inactive customers
+
+**API Best Practices:**
+1. **Use OAuth2** for production environments (more secure)
+2. **Batch operations** - Process contacts in batches of 50-100
+3. **Rate limiting** - Respect API limits (typically 100 req/min)
+4. **Error handling** - Implement retry logic for failed requests
+5. **Webhooks over polling** - Use webhooks for real-time updates instead of polling API
+6. **Cache data** - Cache frequently accessed data (segments, campaigns) in n8n
+7. **Logging** - Log all API calls for debugging and audit trails
 
 </details>
 
@@ -10114,7 +12217,726 @@ docker exec postgres psql -U postgres -d odoo -c "VACUUM ANALYZE;"
 <details>
 <summary><b>🎨 ComfyUI - Image Generation</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is ComfyUI?
+
+ComfyUI is a powerful node-based interface for Stable Diffusion and other AI image generation models. Unlike simple prompt-to-image tools, ComfyUI provides a visual workflow system where you connect nodes to create complex image generation pipelines. It's highly customizable, supports multiple models, and is perfect for both beginners and advanced users who want full control over their AI image generation process.
+
+### Features
+
+- **Node-Based Workflow** - Visual programming for image generation pipelines
+- **Multiple Model Support** - FLUX, SDXL, SD 1.5, ControlNet, LoRA, and more
+- **Custom Workflows** - Save and share complete generation pipelines
+- **Advanced Control** - ControlNet, IP-Adapter, inpainting, outpainting
+- **Batch Processing** - Generate multiple variations efficiently
+- **API Support** - Programmatic access for n8n integration
+- **Model Manager** - Easy model installation and management
+- **Community Workflows** - Thousands of pre-built workflows available
+- **Custom Nodes** - Extensible with community-created node packs
+- **High Performance** - Optimized for GPU acceleration
+
+### Initial Setup
+
+**First Login to ComfyUI:**
+
+1. Navigate to `https://comfyui.yourdomain.com`
+2. The interface loads immediately - no login required
+3. You'll see the default workflow (text-to-image)
+4. **Important:** No models are pre-installed - you must download them first
+
+**ComfyUI is ready to use, but needs models!**
+
+### Download Essential Models
+
+ComfyUI requires AI models to generate images. Here's how to get started:
+
+**Option 1: Download via Web UI (Easiest)**
+
+1. Click **Manager** button (bottom right)
+2. Select **Install Models**
+3. Choose model category:
+   - **Checkpoints:** Base models (FLUX, SDXL, SD 1.5)
+   - **LoRA:** Style modifiers
+   - **ControlNet:** Pose/edge control
+   - **VAE:** Image encoders/decoders
+4. Click **Install** next to desired model
+5. Wait for download to complete
+
+**Option 2: Manual Download**
+
+```bash
+# Access ComfyUI models directory
+cd /var/lib/docker/volumes/localai_comfyui_data/_data/models
+
+# Download FLUX.1-schnell (fast, recommended for beginners)
+cd checkpoints
+wget https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors
+
+# Download SDXL (versatile, good quality)
+wget https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors
+
+# Download VAE (required for SDXL)
+cd ../vae
+wget https://huggingface.co/stabilityai/sdxl-vae/resolve/main/sdxl_vae.safetensors
+
+# Restart ComfyUI to detect new models
+docker compose restart comfyui
+```
+
+**Recommended Models for Beginners:**
+
+| Model | Size | Best For | Download Priority |
+|-------|------|----------|-------------------|
+| **FLUX.1-schnell** | 23GB | Fast generation, great quality | ⭐ Essential |
+| **SDXL Base 1.0** | 6.5GB | Versatile, photorealistic | ⭐ Essential |
+| **SD 1.5** | 4GB | Fast, wide LoRA support | ⭐⭐ Recommended |
+| **SDXL Turbo** | 6.5GB | Ultra-fast, 1-step generation | ⭐⭐ Recommended |
+
+**Model Storage Locations:**
+
+```
+checkpoints/     - Base models (FLUX, SDXL, SD 1.5)
+loras/          - Style modifiers
+controlnet/     - Pose and edge control models
+vae/            - Image encoders/decoders
+upscale_models/ - AI upscalers
+embeddings/     - Textual inversion embeddings
+```
+
+### Basic Image Generation
+
+**Simple Text-to-Image:**
+
+1. Load the default workflow (or refresh page)
+2. Find the **Load Checkpoint** node
+3. Select your downloaded model from dropdown
+4. Find the **CLIP Text Encode (Prompt)** node
+5. Enter your positive prompt: `"a beautiful landscape with mountains and lake, golden hour, 8k, highly detailed"`
+6. Enter negative prompt: `"blurry, low quality, distorted"`
+7. Click **Queue Prompt** (right sidebar)
+8. Wait for generation (10-60 seconds depending on model)
+9. Image appears in **Save Image** node
+
+**Workflow Controls:**
+
+- **Queue Prompt:** Start generation
+- **Clear:** Remove all queued prompts
+- **Manager:** Install models and custom nodes
+- **Load:** Import saved workflows
+- **Save:** Export current workflow
+
+### n8n Integration Setup
+
+**ComfyUI API Configuration:**
+
+ComfyUI provides a REST API for programmatic image generation from n8n.
+
+**Internal URL for n8n:** `http://comfyui:8188`
+
+**API Endpoints:**
+- `/prompt` - Queue a generation job
+- `/history` - Get generation history
+- `/queue` - Check queue status
+- `/view` - Retrieve generated images
+
+### Example Workflows
+
+#### Example 1: AI Social Media Content Generator
+
+Automatically generate images for social media posts:
+
+```javascript
+// Generate branded social media images from text prompts
+
+// 1. Schedule Trigger - Daily at 9 AM
+// Or: Webhook for on-demand generation
+
+// 2. Code Node - Prepare prompts
+const topics = [
+  "modern minimalist workspace",
+  "healthy breakfast bowl",
+  "sunset at the beach",
+  "cozy coffee shop"
+];
+
+const selectedTopic = topics[Math.floor(Math.random() * topics.length)];
+
+const comfyWorkflow = {
+  "3": {
+    "inputs": {
+      "seed": Math.floor(Math.random() * 1000000),
+      "steps": 20,
+      "cfg": 8,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": ["4", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    },
+    "class_type": "KSampler"
+  },
+  "4": {
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "5": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage"
+  },
+  "6": {
+    "inputs": {
+      "text": `${selectedTopic}, professional photography, high quality, 8k, trending on artstation`,
+      "clip": ["4", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "7": {
+    "inputs": {
+      "text": "blurry, low quality, distorted, ugly, bad anatomy",
+      "clip": ["4", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "8": {
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["4", 2]
+    },
+    "class_type": "VAEDecode"
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "social_media",
+      "images": ["8", 0]
+    },
+    "class_type": "SaveImage"
+  }
+};
+
+return {
+  json: {
+    prompt: comfyWorkflow,
+    topic: selectedTopic
+  }
+};
+
+// 3. HTTP Request Node - Send to ComfyUI
+Method: POST
+URL: http://comfyui:8188/prompt
+Headers:
+  Content-Type: application/json
+Body (JSON):
+{
+  "prompt": {{$json.prompt}},
+  "client_id": "n8n-workflow"
+}
+
+// 4. Wait Node - Wait for generation
+Amount: 60
+Unit: seconds
+
+// 5. HTTP Request Node - Get generated image
+Method: GET
+URL: http://comfyui:8188/history/{{$('Queue Generation').json.prompt_id}}
+Response Format: JSON
+
+// 6. Code Node - Extract image data
+const history = $input.first().json;
+const promptId = Object.keys(history)[0];
+const outputs = history[promptId].outputs;
+
+// Find the image output
+let imageInfo;
+for (const nodeId in outputs) {
+  if (outputs[nodeId].images) {
+    imageInfo = outputs[nodeId].images[0];
+    break;
+  }
+}
+
+return {
+  json: {
+    filename: imageInfo.filename,
+    subfolder: imageInfo.subfolder,
+    type: imageInfo.type
+  }
+};
+
+// 7. HTTP Request Node - Download image
+Method: GET
+URL: http://comfyui:8188/view?filename={{$json.filename}}&subfolder={{$json.subfolder}}&type={{$json.type}}
+Response Format: File
+Output Property Name: data
+
+// 8. Move Binary - Rename file
+Mode: Move to new property
+From Property: data
+To Property: image
+New File Name: social_{{$now.format('YYYY-MM-DD')}}.png
+
+// 9. Google Drive Node - Upload to Drive
+Operation: Upload
+File: {{$binary.image}}
+Folder: Social Media Content
+Name: {{$('Code - Extract').json.filename}}
+
+// 10. Slack Node - Share with team
+Channel: #marketing
+Message: |
+  🎨 New social media image generated!
+  
+  Topic: {{$('Prepare Prompts').json.topic}}
+  
+  📁 Available in Google Drive: Social Media Content
+  
+Attachments: {{$binary.image}}
+```
+
+#### Example 2: Product Photography Automation
+
+Generate consistent product images for e-commerce:
+
+```javascript
+// Create professional product photos with consistent style
+
+// 1. Webhook Trigger - Receive product details
+// Payload: { "product_name": "Modern Chair", "color": "blue", "style": "minimalist" }
+
+// 2. Code Node - Build detailed prompt
+const product = $json.product_name;
+const color = $json.color;
+const style = $json.style || "modern";
+
+const positivePrompt = `professional product photography of ${product}, ${color} color, ${style} style, white background, studio lighting, high resolution, sharp focus, commercial photography, e-commerce photo`;
+
+const negativePrompt = "blurry, shadows, cluttered background, distorted, low quality, watermark";
+
+// Load workflow template
+const workflow = {
+  "4": {
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "6": {
+    "inputs": {
+      "text": positivePrompt,
+      "clip": ["4", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "7": {
+    "inputs": {
+      "text": negativePrompt,
+      "clip": ["4", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "3": {
+    "inputs": {
+      "seed": Math.floor(Math.random() * 999999),
+      "steps": 25,
+      "cfg": 7.5,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": ["4", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    },
+    "class_type": "KSampler"
+  },
+  "5": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 4  // Generate 4 variations
+    },
+    "class_type": "EmptyLatentImage"
+  },
+  "8": {
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["4", 2]
+    },
+    "class_type": "VAEDecode"
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": `product_${product.replace(/\s+/g, '_')}`,
+      "images": ["8", 0]
+    },
+    "class_type": "SaveImage"
+  }
+};
+
+return {
+  json: {
+    workflow,
+    product,
+    positivePrompt
+  }
+};
+
+// 3. HTTP Request - Queue generation
+Method: POST
+URL: http://comfyui:8188/prompt
+Body: { "prompt": {{$json.workflow}} }
+
+// 4. Wait - Allow generation time
+Amount: 90
+Unit: seconds
+
+// 5. HTTP Request - Retrieve results
+Method: GET
+URL: http://comfyui:8188/history/{{$('Queue Generation').json.prompt_id}}
+
+// 6. Code Node - Process all generated images
+const history = $input.first().json;
+const promptId = Object.keys(history)[0];
+const outputs = history[promptId].outputs;
+
+const images = [];
+for (const nodeId in outputs) {
+  if (outputs[nodeId].images) {
+    outputs[nodeId].images.forEach(img => {
+      images.push({
+        filename: img.filename,
+        subfolder: img.subfolder,
+        type: img.type
+      });
+    });
+  }
+}
+
+return images.map(img => ({ json: img }));
+
+// 7. Loop Over Items - Process each variation
+
+// 8. HTTP Request - Download image
+Method: GET
+URL: http://comfyui:8188/view?filename={{$json.filename}}&subfolder={{$json.subfolder}}&type={{$json.type}}
+Response Format: File
+
+// 9. Supabase Node - Store in database
+Operation: Insert
+Table: product_images
+Data:
+  product_id: {{$('Webhook').json.product_id}}
+  image_url: Generated URL
+  style: {{$('Webhook').json.style}}
+  color: {{$('Webhook').json.color}}
+  created_at: {{$now.toISO()}}
+
+// 10. S3/Cloudflare R2 - Upload to CDN (optional)
+// For production serving
+
+// 11. Email Node - Notify product team (after loop ends)
+To: product-team@company.com
+Subject: Product Images Generated: {{$('Build Prompt').json.product}}
+Body: |
+  ✅ Product photography completed!
+  
+  Product: {{$('Build Prompt').json.product}}
+  Variations: 4 images generated
+  Style: {{$('Webhook').json.style}}
+  
+  Images available in product database.
+  
+  Prompt used: {{$('Build Prompt').json.positivePrompt}}
+```
+
+#### Example 3: AI Art Pipeline with Style Transfer
+
+Create consistent branded artwork:
+
+```javascript
+// Generate artwork matching brand guidelines
+
+// 1. Schedule Trigger - Weekly content generation
+
+// 2. Read Binary Files - Load style reference image
+File Path: /data/shared/brand_style_reference.png
+
+// 3. Code Node - Prepare workflow with ControlNet
+const workflow = {
+  // Load models
+  "1": {
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  
+  // Load ControlNet for style transfer
+  "2": {
+    "inputs": {
+      "control_net_name": "control_v11p_sd15_canny.pth"
+    },
+    "class_type": "ControlNetLoader"
+  },
+  
+  // Prompts
+  "6": {
+    "inputs": {
+      "text": "abstract digital art, vibrant colors, geometric shapes, modern design, professional illustration",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "7": {
+    "inputs": {
+      "text": "ugly, blurry, low quality, distorted",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  
+  // Generation settings
+  "3": {
+    "inputs": {
+      "seed": Math.floor(Math.random() * 999999),
+      "steps": 30,
+      "cfg": 8.5,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 0.85,
+      "model": ["1", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    },
+    "class_type": "KSampler"
+  },
+  
+  // Latent image
+  "5": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage"
+  },
+  
+  // Decode and save
+  "8": {
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEDecode"
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "branded_art",
+      "images": ["8", 0]
+    },
+    "class_type": "SaveImage"
+  }
+};
+
+return { json: { workflow } };
+
+// 4. HTTP Request - Generate
+Method: POST
+URL: http://comfyui:8188/prompt
+Body: { "prompt": {{$json.workflow}} }
+
+// 5. Wait - Generation time
+Amount: 120 seconds
+
+// 6. HTTP Request - Retrieve image
+// ... (similar to previous examples)
+
+// 7. OpenAI Vision Node - Verify brand compliance
+Model: gpt-4o
+System: "You are a brand compliance checker. Analyze if the image matches brand guidelines."
+User: "Does this image match our brand style? Be specific."
+Image: {{$binary.image}}
+
+// 8. IF Node - Check AI approval
+Condition: {{$json.message.content}} contains "matches"
+
+// Branch: Approved
+// 9a. Move to production folder
+// 10a. Post to social media
+
+// Branch: Rejected
+// 9b. Queue for manual review
+// 10b. Notify design team
+```
+
+### Custom Workflows
+
+**Save Your Workflow:**
+
+1. Create your workflow in ComfyUI
+2. Click **Save** button
+3. Enter filename: `my_workflow.json`
+4. Workflow saved to `/output/workflows/`
+
+**Load Saved Workflow:**
+
+1. Click **Load** button
+2. Select your workflow from list
+3. Workflow loads automatically
+
+**Share Workflows:**
+
+- Export JSON from ComfyUI
+- Share via GitHub, Civitai, or ComfyUI forums
+- Import others' workflows with **Load**
+
+### Troubleshooting
+
+**Issue 1: "No model loaded" Error**
+
+```bash
+# Check installed models
+docker exec comfyui ls -la /app/models/checkpoints/
+
+# Verify model is .safetensors format
+# Models must be in correct subdirectory
+
+# Download missing model
+docker exec comfyui wget -P /app/models/checkpoints/ \
+  https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors
+
+# Restart ComfyUI
+docker compose restart comfyui
+```
+
+**Solution:**
+- Ensure models are in `/models/checkpoints/` directory
+- Use `.safetensors` format (not `.ckpt`)
+- Refresh ComfyUI page after adding models
+- Check model filename matches exactly in workflow
+
+**Issue 2: Out of Memory / CUDA Errors**
+
+```bash
+# Check GPU memory usage
+docker exec comfyui nvidia-smi
+
+# Reduce batch size in workflow
+# Change from batch_size: 4 to batch_size: 1
+
+# Use smaller models
+# SDXL Turbo (6GB) instead of FLUX (23GB)
+
+# Enable low VRAM mode in ComfyUI settings
+# Settings → Execution → Enable CPU fallback
+```
+
+**Solution:**
+- Use lower resolution (512x512 or 768x768)
+- Reduce batch size to 1
+- Use quantized models (fp16 instead of fp32)
+- Close other GPU applications
+- Upgrade GPU or use cloud GPU
+
+**Issue 3: Slow Generation Times**
+
+```bash
+# Check if GPU is being used
+docker exec comfyui nvidia-smi
+
+# Verify CUDA is working
+docker exec comfyui python -c "import torch; print(torch.cuda.is_available())"
+
+# Enable xFormers for faster generation
+# Add to docker-compose.yml:
+#   environment:
+#     - COMMANDLINE_ARGS=--use-xformers
+```
+
+**Solution:**
+- Use SDXL Turbo or LCM models for faster generation
+- Reduce step count (15-20 steps instead of 30-50)
+- Use efficient samplers: `euler_a`, `dpm++ 2m`
+- Enable TensorRT optimization
+- Use lower CFG scale (6-8 instead of 10-15)
+
+**Issue 4: API Connection Errors from n8n**
+
+```bash
+# Test API connectivity
+curl http://comfyui:8188/system_stats
+
+# Check ComfyUI logs
+docker logs comfyui --tail 50
+
+# Verify ComfyUI is running
+docker ps | grep comfyui
+
+# Restart if needed
+docker compose restart comfyui
+```
+
+**Solution:**
+- Use internal URL: `http://comfyui:8188` from n8n
+- Ensure ComfyUI container is running
+- Check prompt JSON is valid
+- Increase HTTP request timeout to 120 seconds
+- Monitor queue: `http://comfyui:8188/queue`
+
+### Resources
+
+- **Official GitHub:** https://github.com/comfyanonymous/ComfyUI
+- **Documentation:** https://docs.comfy.org/
+- **Model Downloads:** https://civitai.com/ (largest model library)
+- **Community Workflows:** https://comfyworkflows.com/
+- **Custom Nodes:** https://github.com/ltdrdata/ComfyUI-Manager
+- **API Documentation:** https://github.com/comfyanonymous/ComfyUI/wiki/API
+- **Discord Community:** https://discord.gg/comfyui
+- **Video Tutorials:** https://www.youtube.com/c/OlivioSarikas
+
+### Best Practices
+
+**Model Management:**
+1. **Start small** - Download SDXL first, add others as needed
+2. **Organize models** - Use subfolders for different model types
+3. **Regular cleanup** - Remove unused models to save space
+4. **Test models** - Always test new models with simple prompts first
+5. **Backup workflows** - Export important workflows regularly
+
+**Prompt Engineering:**
+- **Be specific** - "red sports car" vs "vintage red Ferrari 250 GTO"
+- **Use quality tags** - "8k, highly detailed, professional photography"
+- **Negative prompts** - Always include: "blurry, low quality, distorted"
+- **Style modifiers** - "in the style of [artist/movement]"
+- **Composition** - Specify: "close-up", "wide angle", "bird's eye view"
+
+**Performance Optimization:**
+1. **Resolution** - Start at 512x512, upscale later if needed
+2. **Steps** - 20-30 steps is usually sufficient
+3. **CFG Scale** - 7-8 for most cases, higher for more prompt adherence
+4. **Sampler** - `euler_a` or `dpmpp_2m` for speed
+5. **Batch generation** - Generate multiple variations in one run
+
+**n8n Integration Tips:**
+1. **Async processing** - Always include Wait node after queueing
+2. **Error handling** - Add Try/Catch around ComfyUI calls
+3. **Rate limiting** - Don't queue more than 3-5 prompts concurrently
+4. **Image storage** - Save to S3/Drive immediately after generation
+5. **Monitoring** - Log generation times and success rates
+
+**Security:**
+- ComfyUI has no authentication by default
+- Use Caddy reverse proxy for HTTPS and basic auth
+- Don't expose ComfyUI directly to internet
+- API access through n8n only (internal network)
+- Regular backups of models and workflows
 
 </details>
 

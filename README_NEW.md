@@ -4428,35 +4428,2474 @@ docker stats calcom
 <details>
 <summary><b>✅ Vikunja - Task Management</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Vikunja?
+
+Vikunja is a modern, open-source task management platform that provides powerful project organization with multiple view types (Kanban, Gantt, Calendar, Table). It's perfect for automating project workflows and task management in n8n, with full CalDAV support and mobile apps.
+
+### Features
+
+- **Multiple Views:** Kanban boards, Gantt charts, Calendar view, Table view
+- **Real-time Collaboration:** Team workspaces, task assignments, comments, file attachments (up to 20MB)
+- **Import/Export:** Import from Todoist, Trello, Microsoft To-Do; Export to CSV/JSON
+- **CalDAV Support:** Full calendar sync at `https://vikunja.yourdomain.com/dav`
+- **Mobile Apps:** Native iOS (App Store - "Vikunja Cloud") and Android (Play Store - "Vikunja") apps
+- **API-First:** Comprehensive REST API for automation and integration
+
+### Initial Setup
+
+**First Login to Vikunja:**
+
+1. Navigate to `https://vikunja.yourdomain.com`
+2. Click "Register" to create your first account
+   - The first registered user automatically becomes admin
+3. Create your first project and lists
+4. Configure your workspace settings
+5. Generate API token:
+   - Go to User Settings → API Tokens
+   - Click "Create New Token"
+   - Name it "n8n Integration"
+   - Copy the token for use in n8n
+
+### n8n Integration Setup
+
+**Option 1: Community Node (Recommended)**
+
+1. In n8n, go to Settings → Community Nodes
+2. Install `n8n-nodes-vikunja`
+3. Create Vikunja credentials:
+   - **URL:** `http://vikunja:3456` (internal) or `https://vikunja.yourdomain.com` (external)
+   - **API Token:** Your token from Vikunja settings
+
+**Option 2: HTTP Request Node**
+
+```javascript
+// HTTP Request Credentials
+Base URL: http://vikunja:3456/api/v1
+Authentication: Bearer Token
+Token: [Your API token from Vikunja]
+```
+
+**Internal URL for n8n:** `http://vikunja:3456`
+
+### Example Workflows
+
+#### Example 1: Create Task from Email
+
+```javascript
+// Automatically create tasks from incoming emails
+
+// 1. Email Trigger (IMAP) or Webhook
+// Monitors inbox for emails with [TASK] in subject
+
+// 2. Code Node - Parse email
+const subject = $json.subject.replace('[TASK]', '').trim();
+const description = $json.textPlain || $json.textHtml;
+
+return {
+  title: subject,
+  description: description,
+  projectId: 1 // Your default project ID
+};
+
+// 3. HTTP Request Node - Create task in Vikunja
+Method: POST
+URL: http://vikunja:3456/api/v1/projects/{{$json.projectId}}/tasks
+Headers:
+  Authorization: Bearer {{$credentials.vikunjaToken}}
+Body: {
+  "title": "{{$json.title}}",
+  "description": "{{$json.description}}"
+}
+
+// 4. Send Email Node - Confirmation
+To: {{$('Email Trigger').json.from}}
+Subject: Task Created: {{$('HTTP Request').json.title}}
+Message: |
+  Your task has been created in Vikunja:
+  
+  Title: {{$('HTTP Request').json.title}}
+  Link: https://vikunja.yourdomain.com/tasks/{{$('HTTP Request').json.id}}
+```
+
+#### Example 2: Daily Task Summary
+
+```javascript
+// Send daily summary of tasks due today
+
+// 1. Schedule Trigger - Every day at 8 AM
+
+// 2. HTTP Request - Get tasks due today
+Method: GET
+URL: http://vikunja:3456/api/v1/tasks/all
+Query Parameters:
+  filter_by: due_date
+  filter_value: {{$now.toISODate()}}
+
+// 3. Code Node - Format task list
+const tasks = $json;
+let message = `📋 Tasks Due Today (${tasks.length})\n\n`;
+
+tasks.forEach((task, index) => {
+  message += `${index + 1}. ${task.title}\n`;
+  message += `   Project: ${task.project.title}\n`;
+  message += `   Assignee: ${task.assignees[0]?.username || 'Unassigned'}\n\n`;
+});
+
+return { message };
+
+// 4. Slack/Email Node - Send summary
+Message: {{$json.message}}
+```
+
+#### Example 3: Task Automation Pipeline
+
+```javascript
+// Create tasks from webhooks (e.g., from forms, other tools)
+
+// 1. Webhook Trigger
+// Receives JSON data from external sources
+
+// 2. Switch Node - Route based on task type
+// Branch by task priority or category
+
+// Branch 1: High Priority
+// 3a. HTTP Request - Create urgent task
+Method: POST
+URL: http://vikunja:3456/api/v1/projects/1/tasks
+Body: {
+  "title": "URGENT: {{$json.title}}",
+  "priority": 5,
+  "due_date": "{{$now.plus(1, 'days').toISO()}}"
+}
+
+// 4a. Slack Node - Notify team immediately
+Channel: #urgent-tasks
+Message: 🚨 Urgent task created: {{$json.title}}
+
+// Branch 2: Normal Priority
+// 3b. HTTP Request - Create normal task
+Priority: 3
+Due Date: {{$now.plus(7, 'days').toISO()}}
+
+// 4b. Email Node - Daily digest (batched)
+```
+
+#### Example 4: Recurring Task Generator
+
+```javascript
+// Automatically create recurring tasks
+
+// 1. Schedule Trigger - Every Monday at 9 AM
+
+// 2. Code Node - Generate weekly tasks
+const weeklyTasks = [
+  { title: 'Weekly Team Meeting', day: 'monday', time: '10:00' },
+  { title: 'Client Report', day: 'friday', time: '16:00' },
+  { title: 'Backup Check', day: 'sunday', time: '22:00' }
+];
+
+return weeklyTasks.map(task => ({
+  title: task.title,
+  dueDate: getNextDayOfWeek(task.day, task.time)
+}));
+
+// 3. Loop Over Items
+
+// 4. HTTP Request - Create each task
+Method: POST
+URL: http://vikunja:3456/api/v1/projects/1/tasks
+Body: {
+  "title": "{{$json.title}}",
+  "due_date": "{{$json.dueDate}}",
+  "repeat_after": 604800 // 7 days in seconds
+}
+```
+
+#### Example 5: Task Import from Trello/Asana/CSV
+
+```javascript
+// Migrate tasks from other platforms
+
+// 1. HTTP Request - Fetch from source (Trello API, CSV file, etc.)
+
+// 2. Code Node - Transform data to Vikunja format
+const tasks = $json.cards || $json.tasks || [];
+
+return tasks.map(task => ({
+  title: task.name || task.title,
+  description: task.desc || task.description,
+  dueDate: task.due || task.dueDate,
+  labels: task.labels?.map(l => l.name).join(',')
+}));
+
+// 3. Loop Over Items
+
+// 4. HTTP Request - Create in Vikunja
+Method: POST
+URL: http://vikunja:3456/api/v1/projects/1/tasks
+Body: {
+  "title": "{{$json.title}}",
+  "description": "{{$json.description}}",
+  "due_date": "{{$json.dueDate}}"
+}
+
+// 5. Wait Node - 500ms between requests (rate limiting)
+
+// 6. Final notification when complete
+```
+
+### Troubleshooting
+
+**Tasks not appearing:**
+
+```bash
+# 1. Check Vikunja status
+docker ps | grep vikunja
+# Should show: STATUS = Up
+
+# 2. Check Vikunja logs
+docker logs vikunja --tail 100
+
+# 3. Verify API token
+# Generate new token in Vikunja settings if needed
+
+# 4. Test API connection from n8n
+docker exec n8n curl -H "Authorization: Bearer YOUR_TOKEN" \
+  http://vikunja:3456/api/v1/projects
+# Should return list of projects
+```
+
+**API authentication errors:**
+
+```bash
+# 1. Verify token format
+# Should be: Authorization: Bearer token_here
+
+# 2. Check internal URL is correct
+# From n8n: http://vikunja:3456
+# Not: https://vikunja.yourdomain.com
+
+# 3. Regenerate API token
+# User Settings → API Tokens → Create New Token
+
+# 4. Check Vikunja container network
+docker network inspect ai-launchkit_default | grep vikunja
+```
+
+**CalDAV sync not working:**
+
+```bash
+# 1. CalDAV URL format
+# https://vikunja.yourdomain.com/dav/projects/[project-id]
+
+# 2. Use Vikunja credentials (not API token)
+# Username: your@email.com
+# Password: your Vikunja password
+
+# 3. Test CalDAV connection
+curl -X PROPFIND https://vikunja.yourdomain.com/dav \
+  -u "your@email.com:password"
+```
+
+### Tips for Vikunja + n8n Integration
+
+**Best Practices:**
+
+1. **Use Internal URLs:** Always use `http://vikunja:3456` from n8n containers (faster, no SSL overhead)
+2. **Dedicated API Tokens:** Create separate tokens for each n8n workflow or integration
+3. **Rate Limiting:** Add Wait nodes (200-500ms) between bulk operations to avoid overloading
+4. **Error Handling:** Use Try/Catch nodes for resilient workflows
+5. **Webhook Setup:** Configure Vikunja webhooks for real-time task updates
+6. **Project IDs:** Store project IDs in n8n environment variables for easy reference
+7. **Label Management:** Use labels for workflow automation triggers
+
+**Project Organization:**
+
+- Create separate projects for different workflow types
+- Use lists within projects to organize by status/category
+- Apply consistent labeling for automation triggers
+- Set up templates for common task types
+
+**Mobile & Calendar Integration:**
+
+- iOS/Android apps work seamlessly with self-hosted instance
+- CalDAV integration syncs with Apple Calendar, Google Calendar, Thunderbird
+- Use CalDAV URL: `https://vikunja.yourdomain.com/dav`
+- Mobile notifications for task assignments and due dates
+
+### Resources
+
+- **Documentation:** https://vikunja.io/docs/
+- **API Reference:** https://try.vikunja.io/api/v1/docs
+- **GitHub:** https://github.com/go-vikunja/vikunja
+- **Community Forum:** https://community.vikunja.io/
+- **Mobile Apps:**
+  - iOS: https://apps.apple.com/app/vikunja-cloud/id1660089863
+  - Android: https://play.google.com/store/apps/details?id=io.vikunja.app
 
 </details>
 
 <details>
 <summary><b>🎯 Leantime - Project Management</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Leantime?
+
+Leantime is a goal-oriented project management suite designed specifically for ADHD and neurodiverse teams. It combines traditional PM tools (sprints, timesheets, Gantt charts) with strategic planning frameworks (Lean Canvas, SWOT, Goal Canvas) and ADHD-friendly features like focus mode, break reminders, and gamification elements.
+
+### Features
+
+- **Strategy Tools:** Goal Canvas (OKRs), Lean Canvas, SWOT Analysis, Opportunity Canvas
+- **Project Management:** Kanban boards, Gantt charts, milestones, sprints
+- **Time Tracking:** Built-in timer, timesheets, estimates vs actual hours
+- **ADHD-Friendly UI:** Dopamine-driven design, focus mode, Pomodoro technique support
+- **Team Collaboration:** Comments, file attachments, @mentions, real-time updates
+- **JSON-RPC API:** Complete automation support via JSON-RPC 2.0 protocol
+
+### Initial Setup
+
+**First Login to Leantime:**
+
+1. Navigate to `https://leantime.yourdomain.com`
+2. The installation wizard starts automatically
+3. Create your admin account (first user becomes admin)
+4. Complete company profile setup
+5. Generate API key:
+   - Go to User Settings → API Access
+   - Click "Create API Key"
+   - Name it "n8n Integration"
+   - Copy the key for use in n8n
+
+**MySQL 8.4 Auto-Installation:**
+- Leantime automatically installs MySQL 8.4 during setup
+- This MySQL instance can be reused for other services (WordPress, Ghost, etc.)
+- Root password available in `.env` file as `LEANTIME_MYSQL_ROOT_PASSWORD`
+
+### n8n Integration Setup
+
+**IMPORTANT:** Leantime uses JSON-RPC 2.0 API, not REST. All requests go to `/api/jsonrpc` endpoint.
+
+**Create Leantime Credentials in n8n:**
+
+1. Go to Credentials → New → Header Auth
+2. Configure:
+   - **Name:** `Leantime API`
+   - **Header Name:** `x-api-key`
+   - **Header Value:** `[Your API key from Leantime settings]`
+
+**HTTP Request Node Configuration:**
+
+```javascript
+Method: POST
+URL: http://leantime:8080/api/jsonrpc
+Authentication: Header Auth (select your Leantime API credential)
+Headers:
+  Content-Type: application/json
+  Accept: application/json
+Body Type: JSON
+```
+
+**Internal URL for n8n:** `http://leantime:8080`
+
+### JSON-RPC API Reference
+
+**Available Methods:**
+
+**Projects:**
+- `leantime.rpc.projects.getAll` - Get all projects
+- `leantime.rpc.projects.getProject` - Get specific project
+- `leantime.rpc.projects.addProject` - Create new project
+- `leantime.rpc.projects.updateProject` - Update project
+
+**Tasks/Tickets:**
+- `leantime.rpc.tickets.getAll` - Get all tickets
+- `leantime.rpc.tickets.getTicket` - Get specific ticket
+- `leantime.rpc.tickets.addTicket` - Create new ticket
+- `leantime.rpc.tickets.updateTicket` - Update ticket
+- `leantime.rpc.tickets.deleteTicket` - Delete ticket
+
+**Time Tracking:**
+- `leantime.rpc.timesheets.getAll` - Get timesheets
+- `leantime.rpc.timesheets.addTime` - Log time entry
+- `leantime.rpc.timesheets.updateTime` - Update time entry
+
+**Milestones:**
+- `leantime.rpc.tickets.getAllMilestones` - Get milestones
+- `leantime.rpc.tickets.addMilestone` - Create milestone
+
+### Status & Type Codes
+
+```javascript
+// Task Status Codes
+const STATUS = {
+  NEW: 3,           // Neu
+  IN_PROGRESS: 1,   // In Bearbeitung
+  DONE: 0,          // Fertig
+  BLOCKED: 4,       // Blockiert
+  REVIEW: 2         // Review
+};
+
+// Task Types
+const TYPES = {
+  TASK: "task",
+  BUG: "bug",
+  STORY: "story",
+  MILESTONE: "milestone"
+};
+
+// Priority Levels
+const PRIORITY = {
+  HIGH: "1",
+  MEDIUM: "2",
+  LOW: "3"
+};
+```
+
+### Example Workflows
+
+#### Example 1: Get All Projects
+
+```javascript
+// Simple query to list all projects
+
+// HTTP Request Node
+Method: POST
+URL: http://leantime:8080/api/jsonrpc
+Headers:
+  x-api-key: {{$credentials.leantimeApiKey}}
+  Content-Type: application/json
+Body: {
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.projects.getAll",
+  "id": 1,
+  "params": {}
+}
+
+// Response format:
+{
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "id": 1,
+      "name": "AI LaunchKit Development",
+      "clientId": 1,
+      "state": 0
+    }
+  ],
+  "id": 1
+}
+```
+
+#### Example 2: Create Task from Email
+
+```javascript
+// Automatically create Leantime tasks from emails
+
+// 1. Email Trigger (IMAP)
+// Monitors inbox for emails with [TASK] in subject
+
+// 2. Code Node - Parse email
+const subject = $json.subject.replace('[TASK]', '').trim();
+const description = $json.textPlain || $json.textHtml;
+
+return {
+  headline: subject,
+  description: description,
+  projectId: 1
+};
+
+// 3. HTTP Request - Create task in Leantime
+Method: POST
+URL: http://leantime:8080/api/jsonrpc
+Body: {
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.addTicket",
+  "id": 1,
+  "params": {
+    "values": {
+      "headline": "{{$json.headline}}",
+      "description": "{{$json.description}}",
+      "type": "task",
+      "projectId": {{$json.projectId}},
+      "status": 3,
+      "priority": "2"
+    }
+  }
+}
+
+// 4. Send Email Node - Confirmation
+To: {{$('Email Trigger').json.from}}
+Subject: Task Created in Leantime
+Message: |
+  Your task has been created:
+  
+  Title: {{$json.headline}}
+  Project: AI LaunchKit Development
+  Status: New
+  
+  View in Leantime: https://leantime.yourdomain.com
+```
+
+#### Example 3: Weekly Sprint Planning Automation
+
+```javascript
+// Automatically create sprint tasks every Monday
+
+// 1. Schedule Trigger - Every Monday at 9 AM
+
+// 2. Code Node - Generate weekly tasks
+const weekNumber = Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)) / 604800000);
+
+const weeklyTasks = [
+  {
+    headline: `Week ${weekNumber} - Sprint Planning`,
+    type: "task",
+    priority: "1"
+  },
+  {
+    headline: `Week ${weekNumber} - Daily Standups`,
+    type: "task",
+    priority: "2"
+  },
+  {
+    headline: `Week ${weekNumber} - Sprint Review`,
+    type: "task",
+    priority: "2"
+  },
+  {
+    headline: `Week ${weekNumber} - Sprint Retrospective`,
+    type: "task",
+    priority: "2"
+  }
+];
+
+return weeklyTasks;
+
+// 3. Loop Over Items
+
+// 4. HTTP Request - Create each task
+Method: POST
+URL: http://leantime:8080/api/jsonrpc
+Body: {
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.addTicket",
+  "id": 1,
+  "params": {
+    "values": {
+      "headline": "{{$json.headline}}",
+      "type": "{{$json.type}}",
+      "projectId": 1,
+      "status": 3,
+      "priority": "{{$json.priority}}",
+      "tags": "weekly,automated"
+    }
+  }
+}
+
+// 5. Slack Notification
+Channel: #project-updates
+Message: |
+  📋 Weekly sprint tasks created for Week {{$('Code Node').json.weekNumber}}
+  
+  ✅ Sprint Planning
+  ✅ Daily Standups
+  ✅ Sprint Review
+  ✅ Sprint Retrospective
+```
+
+#### Example 4: Time Tracking Report Automation
+
+```javascript
+// Generate weekly time reports
+
+// 1. Schedule Trigger - Every Friday at 5 PM
+
+// 2. HTTP Request - Get all tickets with time entries
+Method: POST
+URL: http://leantime:8080/api/jsonrpc
+Body: {
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.getAll",
+  "id": 1,
+  "params": {}
+}
+
+// 3. Code Node - Calculate time summaries
+const tickets = $json.result;
+
+const timeReport = tickets
+  .filter(t => t.bookedHours > 0)
+  .map(ticket => ({
+    task: ticket.headline,
+    project: ticket.projectName,
+    plannedHours: ticket.planHours || 0,
+    actualHours: ticket.bookedHours,
+    remaining: ticket.hourRemaining || 0,
+    status: ticket.statusLabel
+  }));
+
+const totalBooked = timeReport.reduce((sum, t) => sum + t.actualHours, 0);
+const totalPlanned = timeReport.reduce((sum, t) => sum + t.plannedHours, 0);
+const efficiency = totalPlanned > 0 ? (totalBooked / totalPlanned * 100).toFixed(2) : 0;
+
+return {
+  report: timeReport,
+  summary: {
+    totalBookedHours: totalBooked,
+    totalPlannedHours: totalPlanned,
+    efficiency: efficiency + '%',
+    weekEnding: new Date().toISOString()
+  }
+};
+
+// 4. Send Email - Weekly report
+To: team@company.com
+Subject: Weekly Time Report - Week Ending {{$json.summary.weekEnding}}
+Message: |
+  📊 Weekly Time Tracking Report
+  
+  Total Hours Booked: {{$json.summary.totalBookedHours}}h
+  Total Hours Planned: {{$json.summary.totalPlannedHours}}h
+  Efficiency: {{$json.summary.efficiency}}
+  
+  Detailed breakdown attached.
+```
+
+#### Example 5: AI Idea to Task Pipeline
+
+```javascript
+// Convert ideas into actionable tasks using AI
+
+// 1. Webhook Trigger
+// Receives idea submissions from forms/chat
+
+// 2. OpenAI Node - Analyze and break down idea
+Model: gpt-4o-mini
+Prompt: |
+  Break down this idea into 3-5 concrete, actionable tasks:
+  
+  "{{$json.idea}}"
+  
+  For each task, provide:
+  - Title (short, actionable)
+  - Description (2-3 sentences)
+  - Estimated hours (realistic)
+  
+  Return as JSON array.
+
+// 3. Code Node - Parse AI response
+const tasks = JSON.parse($json.choices[0].message.content);
+
+return tasks.map(task => ({
+  headline: task.title,
+  description: task.description,
+  storypoints: task.estimatedHours
+}));
+
+// 4. Loop Over Items
+
+// 5. HTTP Request - Create each task
+Method: POST
+URL: http://leantime:8080/api/jsonrpc
+Body: {
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.addTicket",
+  "id": 1,
+  "params": {
+    "values": {
+      "headline": "{{$json.headline}}",
+      "description": "{{$json.description}}",
+      "type": "task",
+      "projectId": 1,
+      "status": 3,
+      "storypoints": "{{$json.storypoints}}",
+      "tags": "idea-generated,ai-enhanced"
+    }
+  }
+}
+
+// 6. Final Notification
+Message: |
+  🤖 AI processed your idea and created {{$('Loop Over Items').itemsLength}} tasks!
+  
+  View in Leantime: https://leantime.yourdomain.com
+```
+
+#### Example 6: Update Task Status
+
+```javascript
+// Update task status when conditions are met
+
+// 1. Webhook or Schedule Trigger
+
+// 2. HTTP Request - Get specific task
+Method: POST
+URL: http://leantime:8080/api/jsonrpc
+Body: {
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.getTicket",
+  "id": 1,
+  "params": {
+    "id": 10
+  }
+}
+
+// 3. Code Node - Check conditions
+const task = $json.result;
+let newStatus = task.status;
+
+if (task.progress >= 100) {
+  newStatus = 0; // DONE
+} else if (task.progress > 0) {
+  newStatus = 1; // IN_PROGRESS
+}
+
+return { taskId: task.id, newStatus };
+
+// 4. HTTP Request - Update task
+Method: POST
+URL: http://leantime:8080/api/jsonrpc
+Body: {
+  "jsonrpc": "2.0",
+  "method": "leantime.rpc.tickets.updateTicket",
+  "id": 1,
+  "params": {
+    "id": {{$json.taskId}},
+    "values": {
+      "status": {{$json.newStatus}}
+    }
+  }
+}
+```
+
+### Troubleshooting
+
+**"Method not found" error:**
+
+```bash
+# 1. Check method name spelling and case
+# Format must be: leantime.rpc.resource.method
+
+# 2. Verify API access in Leantime
+# User Settings → API Access → Verify key is active
+
+# 3. Test API endpoint
+docker exec n8n curl -X POST http://leantime:8080/api/jsonrpc \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"leantime.rpc.projects.getAll","id":1,"params":{}}'
+```
+
+**Authentication failed:**
+
+```bash
+# 1. Check API key format
+# Header must be exactly: x-api-key (not X-API-KEY or x-api-token)
+
+# 2. Regenerate API key
+# Leantime → User Settings → API Access → Create New Key
+
+# 3. Verify header in n8n
+# Credentials → Header Auth → Header Name: x-api-key
+
+# 4. Test from n8n container
+docker exec n8n curl -H "x-api-key: YOUR_KEY" http://leantime:8080/api/jsonrpc
+```
+
+**Invalid parameters error:**
+
+```bash
+# 1. Parameters must be wrapped in "params" object
+# Correct:
+{
+  "jsonrpc": "2.0",
+  "method": "...",
+  "id": 1,
+  "params": {
+    "values": {...}
+  }
+}
+
+# 2. For updates, ID must be separate
+{
+  "params": {
+    "id": 10,
+    "values": {
+      "headline": "Updated"
+    }
+  }
+}
+```
+
+**Connection refused:**
+
+```bash
+# 1. Use internal Docker hostname
+# FROM n8n: http://leantime:8080
+# NOT: http://localhost:8080
+
+# 2. Check Leantime container status
+docker ps | grep leantime
+# Should show: STATUS = Up
+
+# 3. Check network connectivity
+docker exec n8n ping leantime
+# Should return: packets transmitted and received
+
+# 4. Verify port is 8080
+grep LEANTIME_PORT .env
+# Should show: LEANTIME_PORT=8080
+```
+
+### Tips for Leantime + n8n Integration
+
+**Best Practices:**
+
+1. **Always use JSON-RPC format:** All API calls must be POST to `/api/jsonrpc`
+2. **Internal URLs:** Use `http://leantime:8080` from n8n (faster, no SSL)
+3. **Error Handling:** Check for `error` field in JSON-RPC responses
+4. **Response Format:** Results are always in `result` field
+5. **Batch Operations:** Can send array of requests for efficiency
+6. **ID Parameter:** Most update/delete operations need ID in params
+7. **Time Format:** Use ISO 8601 for dates
+
+**ADHD-Friendly Automation:**
+
+- Automate recurring task creation to reduce mental load
+- Set up reminders for break times using Schedule Triggers
+- Create visual progress dashboards with n8n → Slack/Email
+- Generate daily focus lists based on priority and deadlines
+
+**Strategy Integration:**
+
+- Automate goal tracking from Goal Canvas
+- Generate insights from Lean Canvas data
+- Create feedback loops between execution (tasks) and strategy
+- Sync strategic objectives with team task assignments
+
+### Resources
+
+- **Documentation:** https://docs.leantime.io/
+- **API Reference:** https://docs.leantime.io/api/
+- **GitHub:** https://github.com/Leantime/leantime
+- **Community Forum:** https://community.leantime.io/
+- **Philosophy:** "Start with WHY" approach for ADHD-friendly project management
 
 </details>
 
 <details>
 <summary><b>⏱️ Kimai - Time Tracking</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Kimai?
+
+Kimai is a professional time tracking solution from Austria that's DSGVO/GDPR-compliant, perfect for freelancers and small teams. It provides comprehensive time tracking with invoicing, team management, 2FA support, and a complete REST API for automation.
+
+### Features
+
+- **DSGVO/GDPR Compliant:** Built with European data protection standards
+- **Professional Invoicing:** Export to Excel, CSV, PDF with customizable templates
+- **Team Management:** Role hierarchy (User → Teamlead → Admin → Super-Admin)
+- **Multi-Project Tracking:** Organize time by customers, projects, and activities
+- **Mobile Apps:** Native iOS and Android apps for on-the-go tracking
+- **REST API:** Complete API for automation and integration
+
+### Initial Setup
+
+**First Login to Kimai:**
+
+1. Navigate to `https://time.yourdomain.com`
+2. Login with admin credentials from installation report:
+   - **Email:** Your email address (set during installation)
+   - **Password:** Check `.env` file for `KIMAI_ADMIN_PASSWORD`
+3. Complete initial setup:
+   - Configure company details (Settings → System → Settings)
+   - Set default currency and timezone
+   - Create customers (Customers → Add Customer)
+   - Create projects (Projects → Add Project)
+   - Create activities (Activities → Add Activity)
+   - Add team members (Settings → Users → Add User)
+
+**Generate API Token for n8n:**
+
+1. Click on your profile icon (top right)
+2. Go to API Access
+3. Click "Create Token"
+4. Name it "n8n Integration"
+5. Select all permissions
+6. Copy the token immediately (shown only once!)
+
+### n8n Integration Setup
+
+**Create Kimai Credentials in n8n:**
+
+```javascript
+// HTTP Request Credentials - Header Auth
+Authentication: Header Auth
+
+Main Header:
+  Name: X-AUTH-USER
+  Value: admin@example.com (your Kimai email)
+
+Additional Header:
+  Name: X-AUTH-TOKEN
+  Value: [Your API token from Kimai]
+```
+
+**Base URL for internal access:** `http://kimai:8001/api`
+
+### API Endpoints Reference
+
+**Timesheets:**
+- `GET /api/timesheets` - List time entries
+- `POST /api/timesheets` - Create time entry
+- `PATCH /api/timesheets/{id}` - Update time entry
+- `DELETE /api/timesheets/{id}` - Delete time entry
+
+**Projects:**
+- `GET /api/projects` - List all projects
+- `POST /api/projects` - Create project
+- `GET /api/projects/{id}/rates` - Get project statistics
+
+**Customers:**
+- `GET /api/customers` - List customers
+- `POST /api/customers` - Create customer
+
+**Activities:**
+- `GET /api/activities` - List activities
+- `POST /api/activities` - Create activity
+
+### Example Workflows
+
+#### Example 1: Automated Time Tracking from Completed Tasks
+
+```javascript
+// Track time automatically when tasks are marked complete
+
+// 1. Vikunja/Leantime Trigger - Task marked as complete
+
+// 2. Code Node - Calculate duration
+const taskStarted = new Date($json.task_created);
+const taskCompleted = new Date($json.task_completed);
+const durationSeconds = Math.round((taskCompleted - taskStarted) / 1000);
+
+return {
+  projectId: $json.project_id,
+  activityId: 1, // Default activity
+  description: $json.task_name,
+  begin: taskStarted.toISOString(),
+  end: taskCompleted.toISOString()
+};
+
+// 3. HTTP Request - Create timesheet entry in Kimai
+Method: POST
+URL: http://kimai:8001/api/timesheets
+Headers:
+  X-AUTH-USER: admin@example.com
+  X-AUTH-TOKEN: {{$credentials.kimaiToken}}
+  Content-Type: application/json
+Body: {
+  "begin": "{{$json.begin}}",
+  "end": "{{$json.end}}",
+  "project": {{$json.projectId}},
+  "activity": {{$json.activityId}},
+  "description": "{{$json.description}}"
+}
+
+// 4. Notification Node - Confirm time tracked
+Slack/Email: |
+  ⏱️ Time tracked automatically
+  
+  Task: {{$json.description}}
+  Duration: {{Math.round(durationSeconds/3600, 2)}} hours
+  Project: {{$json.projectId}}
+```
+
+#### Example 2: Weekly Invoice Generation from Kimai
+
+```javascript
+// Automatically generate invoices from tracked time
+
+// 1. Schedule Trigger - Every Friday at 5 PM
+
+// 2. HTTP Request - Get week's timesheet entries
+Method: GET
+URL: http://kimai:8001/api/timesheets
+Headers:
+  X-AUTH-USER: admin@example.com
+  X-AUTH-TOKEN: {{$credentials.kimaiToken}}
+Query Parameters:
+  begin: {{$now.startOf('week').toISO()}}
+  end: {{$now.endOf('week').toISO()}}
+
+// 3. Code Node - Group by customer and calculate totals
+const timesheets = $json;
+const byCustomer = {};
+
+timesheets.forEach(ts => {
+  const customerName = ts.project.customer.name;
+  const customerId = ts.project.customer.id;
+  
+  if (!byCustomer[customerName]) {
+    byCustomer[customerName] = {
+      id: customerId,
+      name: customerName,
+      entries: [],
+      totalHours: 0,
+      totalAmount: 0
+    };
+  }
+  
+  const hours = ts.duration / 3600; // Convert seconds to hours
+  const amount = ts.rate || 0;
+  
+  byCustomer[customerName].entries.push({
+    date: new Date(ts.begin).toLocaleDateString(),
+    project: ts.project.name,
+    activity: ts.activity.name,
+    description: ts.description,
+    hours: hours.toFixed(2),
+    rate: (amount / hours).toFixed(2),
+    amount: amount.toFixed(2)
+  });
+  
+  byCustomer[customerName].totalHours += hours;
+  byCustomer[customerName].totalAmount += amount;
+});
+
+return Object.values(byCustomer);
+
+// 4. Loop Over Customers
+
+// 5. Generate Invoice PDF (using Gotenberg)
+Method: POST
+URL: http://gotenberg:3000/forms/chromium/convert/html
+Body (HTML template):
+<html>
+  <h1>Invoice for {{$json.name}}</h1>
+  <p>Week: {{$now.startOf('week').toFormat('MMM dd')}} - {{$now.endOf('week').toFormat('MMM dd, yyyy')}}</p>
+  
+  <table>
+    <tr>
+      <th>Date</th>
+      <th>Project</th>
+      <th>Description</th>
+      <th>Hours</th>
+      <th>Rate</th>
+      <th>Amount</th>
+    </tr>
+    {{#each $json.entries}}
+    <tr>
+      <td>{{this.date}}</td>
+      <td>{{this.project}}</td>
+      <td>{{this.description}}</td>
+      <td>{{this.hours}}</td>
+      <td>€{{this.rate}}/h</td>
+      <td>€{{this.amount}}</td>
+    </tr>
+    {{/each}}
+    <tr class="total">
+      <td colspan="3"><strong>Total</strong></td>
+      <td><strong>{{$json.totalHours.toFixed(2)}}h</strong></td>
+      <td></td>
+      <td><strong>€{{$json.totalAmount.toFixed(2)}}</strong></td>
+    </tr>
+  </table>
+</html>
+
+// 6. Send Email - Invoice to customer
+To: {{$json.name}}@example.com
+Subject: Invoice - Week {{$now.week()}}
+Attachments: invoice-{{$json.name}}.pdf
+Message: |
+  Dear {{$json.name}},
+  
+  Please find attached your invoice for this week.
+  
+  Total Hours: {{$json.totalHours.toFixed(2)}}
+  Total Amount: €{{$json.totalAmount.toFixed(2)}}
+  
+  Best regards
+```
+
+#### Example 3: Project Budget Monitoring
+
+```javascript
+// Alert when projects approach budget limits
+
+// 1. Schedule Trigger - Daily at 9 AM
+
+// 2. HTTP Request - Get all projects
+Method: GET
+URL: http://kimai:8001/api/projects
+Headers:
+  X-AUTH-USER: admin@example.com
+  X-AUTH-TOKEN: {{$credentials.kimaiToken}}
+
+// 3. Loop Over Projects
+
+// 4. HTTP Request - Get project statistics
+Method: GET
+URL: http://kimai:8001/api/projects/{{$json.id}}/rates
+Headers:
+  X-AUTH-USER: admin@example.com
+  X-AUTH-TOKEN: {{$credentials.kimaiToken}}
+
+// 5. Code Node - Calculate budget usage
+const budget = $json.budget || 0;
+const spent = $json.totalRate || 0;
+const percentage = budget > 0 ? (spent / budget * 100).toFixed(1) : 0;
+
+return {
+  projectName: $json.name,
+  budget: budget,
+  spent: spent,
+  remaining: budget - spent,
+  percentage: percentage,
+  alertNeeded: percentage >= 80
+};
+
+// 6. IF Node - Check if alert needed
+Condition: {{$json.alertNeeded}} is true
+
+// 7. Send Alert - Project Manager
+Channel: #project-alerts
+Message: |
+  ⚠️ Budget Alert: {{$json.projectName}}
+  
+  Budget: €{{$json.budget}}
+  Spent: €{{$json.spent}} ({{$json.percentage}}%)
+  Remaining: €{{$json.remaining}}
+  
+  Action needed: Review project scope or request budget increase.
+```
+
+#### Example 4: Cal.com Meeting Time Tracking
+
+```javascript
+// Automatically track time for completed meetings
+
+// 1. Cal.com Webhook Trigger - booking.completed
+
+// 2. HTTP Request - Find or create customer in Kimai
+Method: GET
+URL: http://kimai:8001/api/customers
+Headers:
+  X-AUTH-USER: admin@example.com
+  X-AUTH-TOKEN: {{$credentials.kimaiToken}}
+Query: name={{$json.attendees[0].email.split('@')[1]}}
+
+// 3. IF Node - Customer doesn't exist
+Branch: {{$json.length === 0}}
+
+// 4a. HTTP Request - Create new customer
+Method: POST
+URL: http://kimai:8001/api/customers
+Body: {
+  "name": "{{$json.attendees[0].email.split('@')[1]}}",
+  "contact": "{{$json.attendees[0].name}}",
+  "email": "{{$json.attendees[0].email}}"
+}
+
+// 5. Merge - Combine branches
+
+// 6. HTTP Request - Create timesheet for meeting
+Method: POST
+URL: http://kimai:8001/api/timesheets
+Body: {
+  "begin": "{{$('Cal.com Trigger').json.startTime}}",
+  "end": "{{$('Cal.com Trigger').json.endTime}}",
+  "project": 1, // Default meeting project ID
+  "activity": 2, // Meeting activity ID
+  "description": "Meeting: {{$('Cal.com Trigger').json.title}} with {{$('Cal.com Trigger').json.attendees[0].name}}",
+  "tags": "cal.com,meeting,{{$('Cal.com Trigger').json.eventType.slug}}"
+}
+
+// 7. Notification
+Message: |
+  ✅ Meeting time tracked:
+  {{$('Cal.com Trigger').json.title}}
+  Duration: {{Math.round(($('Cal.com Trigger').json.endTime - $('Cal.com Trigger').json.startTime) / 3600000, 2)}}h
+```
+
+#### Example 5: Daily Time Tracking Reminder
+
+```javascript
+// Send reminders to track time
+
+// 1. Schedule Trigger - Daily at 5 PM
+
+// 2. HTTP Request - Get today's timesheets per user
+Method: GET
+URL: http://kimai:8001/api/timesheets
+Query: begin={{$now.startOf('day').toISO()}}
+
+// 3. Code Node - Calculate who needs reminders
+const users = ['user1@example.com', 'user2@example.com'];
+const entries = $json;
+const tracked = new Set(entries.map(e => e.user.email));
+
+const needsReminder = users.filter(u => !tracked.has(u));
+
+return needsReminder.map(email => ({ email }));
+
+// 4. Loop Over Users
+
+// 5. Send Email - Reminder
+To: {{$json.email}}
+Subject: Don't forget to track your time!
+Message: |
+  Hi there,
+  
+  Just a friendly reminder to track your time for today.
+  
+  👉 https://time.yourdomain.com
+  
+  Thanks!
+```
+
+### Mobile Apps Integration
+
+Kimai has official mobile apps for on-the-go time tracking:
+
+**iOS:** [App Store - Kimai Mobile](https://apps.apple.com/app/kimai-mobile/id1463807227)  
+**Android:** [Play Store - Kimai Mobile](https://play.google.com/store/apps/details?id=de.cloudrizon.kimai)
+
+**Configure mobile app:**
+1. Server URL: `https://time.yourdomain.com`
+2. Use API token authentication
+3. Enable offline time tracking
+4. Sync automatically when online
+
+### Advanced Features
+
+**Team Management:**
+- First user is automatically Super Admin
+- Role hierarchy: User → Teamlead → Admin → Super-Admin
+- Teams can have restricted access to specific customers/projects
+- Approval workflow for timesheets (requires plugin)
+
+**Invoice Templates:**
+- Customizable invoice templates (Settings → Invoice Templates)
+- Supports multiple languages
+- Include company logo and custom fields
+- Export to PDF, Excel, CSV
+
+**Time Rounding:**
+- Configure rounding rules (Settings → Timesheet)
+- Options: 1, 5, 10, 15, 30 minutes
+- Can round up, down, or to nearest
+- Prevents time theft and ensures accurate billing
+
+**API Rate Limits:**
+- Default: 1000 requests per hour per user
+- Can be adjusted in `local.yaml` configuration
+- Monitor usage in Kimai admin panel
+
+### Troubleshooting
+
+**API returns 401 Unauthorized:**
+
+```bash
+# 1. Verify API token is active
+# Login to Kimai → Profile → API Access → Check token status
+
+# 2. Test authentication
+docker exec n8n curl -H "X-AUTH-USER: admin@example.com" \
+  -H "X-AUTH-TOKEN: YOUR_TOKEN" \
+  http://kimai:8001/api/version
+# Should return Kimai version number
+
+# 3. Check if user exists
+docker exec kimai bin/console kimai:user:list
+
+# 4. Regenerate token if needed
+# Kimai UI → Profile → API Access → Create New Token
+```
+
+**Timesheet entries not showing:**
+
+```bash
+# 1. Clear Kimai cache
+docker exec kimai bin/console cache:clear --env=prod
+docker exec kimai bin/console cache:warmup --env=prod
+
+# 2. Check database connection
+docker exec kimai_db mysql -u kimai -p${KIMAI_DB_PASSWORD} -e "SELECT COUNT(*) FROM kimai2_timesheet;"
+
+# 3. Verify project/activity IDs exist
+docker exec kimai_db mysql -u kimai -p${KIMAI_DB_PASSWORD} kimai \
+  -e "SELECT id, name FROM kimai2_projects;"
+```
+
+**Database connection issues:**
+
+```bash
+# 1. Check MySQL container status
+docker ps | grep kimai_db
+# Should show: STATUS = Up
+
+# 2. Test database connection
+docker exec kimai_db mysql -u kimai -p${KIMAI_DB_PASSWORD} -e "SHOW DATABASES;"
+
+# 3. Check environment variables
+docker exec kimai env | grep DATABASE
+
+# 4. Restart both containers
+docker compose restart kimai_db kimai
+```
+
+**Time entries have wrong timezone:**
+
+```bash
+# 1. Check Kimai timezone setting
+# Settings → System → Settings → Timezone
+
+# 2. Check server timezone
+docker exec kimai date
+docker exec kimai cat /etc/timezone
+
+# 3. Set correct timezone in docker-compose.yml
+environment:
+  - TZ=Europe/Berlin
+```
+
+### Tips for Kimai + n8n Integration
+
+**Best Practices:**
+
+1. **Use Internal URLs:** Always use `http://kimai:8001` from n8n (faster, no SSL overhead)
+2. **API Authentication:** Both `X-AUTH-USER` and `X-AUTH-TOKEN` headers are required
+3. **Time Format:** Use ISO 8601 format for all date/time fields
+4. **Rate Calculation:** Kimai automatically calculates rates based on project/customer settings
+5. **Bulk Operations:** Use `/api/timesheets` with loop for multiple entries
+6. **No Webhooks:** Kimai doesn't have webhooks - use Schedule Triggers for monitoring
+7. **Export Formats:** Kimai supports Excel, CSV, PDF exports via API
+
+**Time Tracking Automation Ideas:**
+
+- Auto-track time when starting/stopping tasks in project management tools
+- Create timesheets from calendar meetings
+- Send daily/weekly time reports to team
+- Generate invoices automatically from tracked time
+- Alert when team members forget to track time
+- Monitor project budgets and send alerts
+- Export time data to accounting software
+
+**DSGVO Compliance:**
+
+- All time data stored in EU (your server)
+- Built-in data export functionality
+- User consent for data processing
+- Audit logs for all changes
+- Right to be forgotten support
+
+### Resources
+
+- **Documentation:** https://www.kimai.org/documentation/
+- **API Reference:** https://www.kimai.org/documentation/rest-api.html
+- **Plugin Store:** https://www.kimai.org/store/
+- **GitHub:** https://github.com/kimai/kimai
+- **Support Forum:** https://github.com/kimai/kimai/discussions
+- **Demo:** https://demo.kimai.org (try before installing)
 
 </details>
 
 <details>
 <summary><b>💰 Invoice Ninja - Invoicing Platform</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Invoice Ninja?
+
+Invoice Ninja is a professional invoicing and payment platform supporting 40+ payment gateways, multi-currency billing, and client portal. It's perfect for freelancers, agencies, and small businesses needing comprehensive billing automation with GDPR compliance.
+
+### Features
+
+- **40+ Payment Gateways:** Stripe, PayPal, Braintree, Square, Authorize.net, and many more
+- **Multi-Currency Support:** Bill clients in any currency with automatic conversion
+- **Recurring Billing:** Automated subscription and retainer invoicing
+- **Client Portal:** Self-service portal for clients to view/pay invoices
+- **Expense Tracking:** Convert expenses into billable invoices
+- **Native n8n Node:** Seamless integration with n8n workflows
+
+### Initial Setup
+
+**First Login to Invoice Ninja:**
+
+1. Navigate to `https://invoices.yourdomain.com`
+2. Login with admin credentials from installation report:
+   - **Email:** Your email address (set during installation)
+   - **Password:** Check `.env` file for `INVOICENINJA_ADMIN_PASSWORD`
+3. Complete initial setup:
+   - Company details and logo (Settings → Company Details)
+   - Tax rates and invoice customization (Settings → Tax Settings)
+   - Payment gateway configuration (Settings → Payment Settings)
+   - Email templates (Settings → Email Settings)
+   - Invoice number format (Settings → Invoice Settings)
+
+**⚠️ IMPORTANT - APP_KEY:**
+
+- Invoice Ninja requires a Laravel APP_KEY for encryption
+- This is automatically generated during installation
+- If missing, generate manually:
+  ```bash
+  docker run --rm invoiceninja/invoiceninja:5 php artisan key:generate --show
+  # Add the complete output (including "base64:") to .env as INVOICENINJA_APP_KEY
+  ```
+
+**Post-Setup Security:**
+
+After first login, remove these from `.env` for security:
+- `IN_USER_EMAIL` environment variable
+- `IN_PASSWORD` environment variable
+
+These are only needed for initial account creation.
+
+### n8n Integration Setup
+
+Invoice Ninja has **native n8n node support** for seamless integration!
+
+**Create Invoice Ninja Credentials in n8n:**
+
+1. In n8n, go to Credentials → New → Invoice Ninja API
+2. Configure:
+   - **URL:** `http://invoiceninja:8000` (internal) or `https://invoices.yourdomain.com` (external)
+   - **API Token:** Generate in Invoice Ninja (Settings → Account Management → API Tokens)
+   - **Secret** (optional): For webhook validation
+
+**Generate API Token in Invoice Ninja:**
+
+1. Login to Invoice Ninja
+2. Settings → Account Management → API Tokens
+3. Click "New Token"
+4. Name: "n8n Integration"
+5. Select permissions (usually "All")
+6. Copy token immediately (shown only once!)
+
+**Internal URL for n8n:** `http://invoiceninja:8000`
+
+### Example Workflows
+
+#### Example 1: Automated Invoice Generation from Kimai
+
+```javascript
+// Create invoices automatically from tracked time
+
+// 1. Schedule Trigger - Weekly on Friday at 5 PM
+
+// 2. HTTP Request - Get week's time entries from Kimai
+Method: GET
+URL: http://kimai:8001/api/timesheets
+Headers:
+  X-AUTH-USER: admin@example.com
+  X-AUTH-TOKEN: {{$credentials.kimaiToken}}
+Query Parameters:
+  begin: {{$now.startOf('week').toISO()}}
+  end: {{$now.endOf('week').toISO()}}
+
+// 3. Code Node - Group by customer and format items
+const entries = $json;
+const byCustomer = {};
+
+entries.forEach(entry => {
+  const customerId = entry.project.customer.id;
+  const customerName = entry.project.customer.name;
+  
+  if (!byCustomer[customerId]) {
+    byCustomer[customerId] = {
+      client_id: customerId,
+      client_name: customerName,
+      items: [],
+      total: 0
+    };
+  }
+  
+  const hours = entry.duration / 3600; // Convert seconds to hours
+  const rate = entry.hourlyRate || 0;
+  const amount = hours * rate;
+  
+  byCustomer[customerId].items.push({
+    product_key: entry.project.name,
+    notes: entry.description,
+    quantity: hours.toFixed(2),
+    cost: rate,
+    tax_name1: "VAT",
+    tax_rate1: 19 // Adjust for your region
+  });
+  
+  byCustomer[customerId].total += amount;
+});
+
+return Object.values(byCustomer);
+
+// 4. Loop Over Customers
+
+// 5. Invoice Ninja Node - Create Invoice
+Operation: Create
+Resource: Invoice
+Fields:
+  client_id: {{$json.client_id}}
+  line_items: {{$json.items}}
+  due_date: {{$now.plus(30, 'days').toISO()}}
+  public_notes: "Invoice for week {{$now.week()}}"
+
+// 6. Invoice Ninja Node - Send Invoice
+Operation: Send
+Resource: Invoice
+Invoice ID: {{$('Create Invoice').json.id}}
+
+// 7. Slack Notification
+Channel: #invoicing
+Message: |
+  📄 Invoice created and sent
+  
+  Client: {{$json.client_name}}
+  Amount: €{{$json.total.toFixed(2)}}
+  Invoice: {{$('Create Invoice').json.number}}
+```
+
+#### Example 2: Payment Reminder Automation
+
+```javascript
+// Send automated reminders for overdue invoices
+
+// 1. Schedule Trigger - Daily at 9 AM
+
+// 2. Invoice Ninja Node - Get Overdue Invoices
+Operation: Get All
+Resource: Invoice
+Filters:
+  status_id: 2 // Sent
+  is_deleted: false
+
+// 3. Code Node - Filter overdue with balance
+const invoices = $json;
+const today = new Date();
+
+const overdue = invoices.filter(inv => {
+  const dueDate = new Date(inv.due_date);
+  const balance = parseFloat(inv.balance);
+  return dueDate < today && balance > 0;
+});
+
+return overdue.map(inv => ({
+  ...inv,
+  days_overdue: Math.floor((today - new Date(inv.due_date)) / (1000 * 60 * 60 * 24))
+}));
+
+// 4. Loop Over Invoices
+
+// 5. IF Node - Check days overdue
+Condition: {{$json.days_overdue >= 7}}
+
+// 6. Invoice Ninja Node - Send Reminder
+Operation: Send
+Resource: Invoice
+Invoice ID: {{$json.id}}
+Template: reminder1 // or reminder2, reminder3 based on days
+
+// 7. Slack Notification
+Channel: #collections
+Message: |
+  ⚠️ Reminder sent
+  
+  Invoice: {{$json.number}}
+  Client: {{$json.client.name}}
+  Amount: €{{$json.balance}}
+  Days Overdue: {{$json.days_overdue}}
+```
+
+#### Example 3: Stripe Payment Webhook Processing
+
+```javascript
+// Handle successful payments automatically
+
+// 1. Webhook Trigger - Stripe payment.succeeded
+
+// 2. Code Node - Extract invoice ID
+const invoiceId = $json.body.metadata.invoice_id;
+const amount = $json.body.amount / 100; // Convert from cents
+const stripeId = $json.body.id;
+
+return {
+  invoiceId: invoiceId,
+  amount: amount,
+  transactionReference: stripeId
+};
+
+// 3. Invoice Ninja Node - Get Invoice
+Operation: Get
+Resource: Invoice
+Invoice ID: {{$json.invoiceId}}
+
+// 4. Invoice Ninja Node - Create Payment
+Operation: Create
+Resource: Payment
+Fields:
+  invoice_id: {{$json.invoiceId}}
+  amount: {{$('Extract').json.amount}}
+  payment_date: {{$now.toISO()}}
+  transaction_reference: {{$('Extract').json.transactionReference}}
+  type_id: 1 // Credit Card
+
+// 5. Send Email - Payment confirmation
+To: {{$('Get Invoice').json.client.email}}
+Subject: Payment Received - Invoice {{$('Get Invoice').json.number}}
+Message: |
+  Dear {{$('Get Invoice').json.client.name}},
+  
+  We have received your payment of €{{$('Extract').json.amount}}.
+  
+  Invoice: {{$('Get Invoice').json.number}}
+  Transaction: {{$('Extract').json.transactionReference}}
+  
+  Thank you for your business!
+
+// 6. Slack Notification
+Channel: #payments
+Message: |
+  💰 Payment received!
+  
+  Client: {{$('Get Invoice').json.client.name}}
+  Amount: €{{$('Extract').json.amount}}
+  Invoice: {{$('Get Invoice').json.number}}
+```
+
+#### Example 4: Expense to Invoice Conversion
+
+```javascript
+// Convert approved expenses into client invoices
+
+// 1. Invoice Ninja Webhook Trigger - expense.approved
+// Or Schedule Trigger to check for new approved expenses
+
+// 2. Invoice Ninja Node - Get Expense
+Operation: Get
+Resource: Expense
+Expense ID: {{$json.id}}
+
+// 3. Invoice Ninja Node - Get Client
+Operation: Get
+Resource: Client
+Client ID: {{$json.client_id}}
+
+// 4. Invoice Ninja Node - Create Invoice from Expense
+Operation: Create
+Resource: Invoice
+Fields:
+  client_id: {{$json.client_id}}
+  line_items: [{
+    product_key: "EXPENSE",
+    notes: "{{$('Get Expense').json.public_notes}}",
+    quantity: 1,
+    cost: {{$('Get Expense').json.amount}},
+    tax_name1: "VAT",
+    tax_rate1: 19
+  }]
+  public_notes: "Reimbursable expense from {{$('Get Expense').json.date}}"
+
+// 5. Invoice Ninja Node - Mark Expense as Invoiced
+Operation: Update
+Resource: Expense
+Expense ID: {{$('Get Expense').json.id}}
+Fields:
+  invoice_id: {{$('Create Invoice').json.id}}
+  should_be_invoiced: false
+
+// 6. Invoice Ninja Node - Send Invoice
+Operation: Send
+Resource: Invoice
+Invoice ID: {{$('Create Invoice').json.id}}
+```
+
+#### Example 5: Recurring Invoice Monitoring
+
+```javascript
+// Monitor and alert on recurring invoice issues
+
+// 1. Schedule Trigger - Daily at 8 AM
+
+// 2. Invoice Ninja Node - Get Recurring Invoices
+Operation: Get All
+Resource: Recurring Invoice
+Filters:
+  status_id: 2 // Active
+
+// 3. Code Node - Check for issues
+const recurring = $json;
+const issues = [];
+
+recurring.forEach(inv => {
+  // Check if next send date is in past (failed to send)
+  const nextSend = new Date(inv.next_send_date);
+  const today = new Date();
+  
+  if (nextSend < today && inv.auto_bill === 'always') {
+    issues.push({
+      client: inv.client.name,
+      invoice: inv.number,
+      issue: 'Failed to auto-bill',
+      nextSend: inv.next_send_date
+    });
+  }
+  
+  // Check if payment method expired
+  if (inv.client.gateway_tokens?.length === 0) {
+    issues.push({
+      client: inv.client.name,
+      invoice: inv.number,
+      issue: 'No payment method on file'
+    });
+  }
+});
+
+return issues;
+
+// 4. IF Node - Check if issues exist
+Condition: {{$json.length > 0}}
+
+// 5. Slack Alert
+Channel: #billing-issues
+Message: |
+  ⚠️ Recurring Invoice Issues Detected
+  
+  {{#each $json}}
+  - {{this.client}}: {{this.issue}} (Invoice: {{this.invoice}})
+  {{/each}}
+```
+
+### Payment Gateway Configuration
+
+Invoice Ninja supports 40+ payment gateways. Most popular:
+
+**Stripe Setup:**
+
+1. Settings → Payment Settings → Configure Gateways
+2. Select Stripe → Configure
+3. Add API keys from Stripe Dashboard
+4. Enable payment methods (Cards, ACH, SEPA, etc.)
+5. Configure webhook: `https://invoices.yourdomain.com/stripe/webhook`
+6. In Stripe Dashboard, add webhook URL and select events
+
+**PayPal Setup:**
+
+1. Settings → Payment Settings → Configure Gateways
+2. Select PayPal → Configure
+3. Add Client ID and Secret from PayPal Developer
+4. Set return URL: `https://invoices.yourdomain.com/paypal/completed`
+5. Test in sandbox mode first
+
+**Webhook Security:**
+
+- Each gateway provides webhook endpoints
+- Use webhook secrets for validation in n8n
+- Test with Stripe CLI or PayPal sandbox first
+
+### Client Portal Features
+
+The client portal allows customers to:
+
+- View and pay invoices online
+- Download invoices and receipts as PDF
+- View payment history
+- Update contact information
+- Approve quotes
+- Access without separate registration (magic link)
+
+**Portal URL:** `https://invoices.yourdomain.com/client/login`
+
+**Customization:**
+
+1. Settings → Client Portal
+2. Enable/disable features
+3. Customize terms and privacy policy
+4. Set payment methods available to clients
+5. Upload custom logo and colors
+
+### Advanced API Usage
+
+For operations not in the native node, use HTTP Request:
+
+```javascript
+// Bulk invoice actions
+Method: POST
+URL: http://invoiceninja:8000/api/v1/invoices/bulk
+Headers:
+  X-API-TOKEN: {{$credentials.apiToken}}
+  Content-Type: application/json
+Body: {
+  "ids": [1, 2, 3],
+  "action": "send" // or "download", "archive", "delete"
+}
+
+// Custom reports
+Method: GET
+URL: http://invoiceninja:8000/api/v1/reports/clients
+Headers:
+  X-API-TOKEN: {{$credentials.apiToken}}
+Query: {
+  "date_range": "this_year",
+  "report_keys": ["name", "balance", "paid_to_date"]
+}
+
+// Recurring invoice management
+Method: POST
+URL: http://invoiceninja:8000/api/v1/recurring_invoices
+Headers:
+  X-API-TOKEN: {{$credentials.apiToken}}
+Body: {
+  "client_id": 1,
+  "frequency_id": 4, // Monthly
+  "auto_bill": "always",
+  "line_items": {{$json.items}}
+}
+```
+
+### Multi-Language & Localization
+
+Invoice Ninja supports 30+ languages:
+
+```javascript
+// Set invoice language per client
+Invoice Ninja Node: Update Client
+Fields: {
+  settings: {
+    language_id: "2", // German (de)
+    currency_id: "2", // EUR
+    country_id: "276" // Germany
+  }
+}
+```
+
+**Available Languages:** English, German, French, Spanish, Italian, Dutch, Portuguese, and 20+ more
+
+### Migration from Other Systems
+
+Invoice Ninja can import from:
+
+- QuickBooks
+- FreshBooks
+- Wave
+- Zoho Invoice
+- CSV files
+
+**Import Process:**
+
+1. Settings → Import
+2. Select source system
+3. Upload export file
+4. Map fields
+5. Review and confirm
+
+### Troubleshooting
+
+**500 Internal Server Error:**
+
+```bash
+# 1. Run database migrations
+docker exec invoiceninja php artisan migrate --force
+
+# 2. Clear cache
+docker exec invoiceninja php artisan optimize:clear
+docker exec invoiceninja php artisan optimize
+
+# 3. Check logs
+docker logs invoiceninja --tail 100
+
+# 4. Check .env file
+docker exec invoiceninja cat .env | grep APP_KEY
+# Should show: APP_KEY=base64:...
+```
+
+**PDFs not generating:**
+
+```bash
+# 1. Check PDF generator
+docker exec invoiceninja php artisan ninja:check-pdf
+
+# 2. Test Chromium (default PDF generator)
+docker exec invoiceninja which chromium-browser
+
+# 3. If issues persist, switch to PhantomJS
+# In .env: PDF_GENERATOR=phantom
+
+# 4. Restart container
+docker compose restart invoiceninja
+```
+
+**Email delivery issues:**
+
+```bash
+# 1. Test mail configuration
+docker exec invoiceninja php artisan tinker
+>>> Mail::raw('Test', function($m) { $m->to('test@example.com')->subject('Test'); });
+
+# 2. Check mail settings in .env
+docker exec invoiceninja env | grep MAIL
+
+# 3. Check Mailpit/Docker-Mailserver logs
+docker logs mailpit --tail 50
+# or
+docker logs mailserver --tail 50
+
+# 4. Verify SMTP credentials
+```
+
+**API returns 401 Unauthorized:**
+
+```bash
+# 1. Verify API token
+# Login to Invoice Ninja → Settings → API Tokens
+
+# 2. Check token permissions
+
+# 3. Test API connection
+curl -H "X-API-TOKEN: YOUR_TOKEN" \
+  http://invoiceninja:8000/api/v1/clients
+
+# 4. Regenerate token if needed
+```
+
+**Database connection errors:**
+
+```bash
+# 1. Check MySQL container
+docker ps | grep invoiceninja_db
+
+# 2. Test database connection
+docker exec invoiceninja_db mysql -u invoiceninja \
+  -p${INVOICENINJA_DB_PASSWORD} invoiceninja -e "SHOW TABLES;"
+
+# 3. Check .env database settings
+docker exec invoiceninja env | grep DB
+
+# 4. Restart both containers
+docker compose restart invoiceninja_db invoiceninja
+```
+
+### Tips for Invoice Ninja + n8n Integration
+
+**Best Practices:**
+
+1. **Use Internal URLs:** From n8n, use `http://invoiceninja:8000` (faster, no SSL overhead)
+2. **API Rate Limits:** Default 300 requests per minute - add delays for bulk operations
+3. **Webhook Events:** Enable in Settings → Account Management → Webhooks
+4. **PDF Generation:** Uses Chromium internally, may need 1-2 seconds per invoice
+5. **Currency Handling:** Always specify currency_id for multi-currency setups
+6. **Tax Calculations:** Configure tax rates before creating invoices
+7. **Backup:** Regular database backups recommended for financial data
+
+**Common Automation Patterns:**
+
+- Time tracking → Invoice generation
+- Payment received → Update accounting software
+- Overdue invoices → Escalating reminders
+- Expense approval → Client billing
+- Recurring invoices → Payment retry logic
+- Invoice created → Add to CRM pipeline
+
+**Data Security:**
+
+- APP_KEY encrypts sensitive data
+- Regular database backups essential
+- Use strong API tokens
+- Webhook signature validation
+- GDPR-compliant data handling
+
+### Performance Optimization
+
+For large-scale operations:
+
+```yaml
+# Increase PHP memory in docker-compose.yml
+environment:
+  - PHP_MEMORY_LIMIT=512M
+  
+# Enable Redis caching (already configured)
+  - CACHE_DRIVER=redis
+  - SESSION_DRIVER=redis
+  - QUEUE_CONNECTION=redis
+```
+
+**Queue Processing:**
+
+- Invoice Ninja uses queues for emails and PDFs
+- Monitor with: `docker exec invoiceninja php artisan queue:work --stop-when-empty`
+- For production: Set up queue worker as daemon
+
+### Resources
+
+- **Documentation:** https://invoiceninja.github.io/
+- **API Reference:** https://api-docs.invoicing.co/
+- **Forum:** https://forum.invoiceninja.com/
+- **GitHub:** https://github.com/invoiceninja/invoiceninja
+- **YouTube:** [Invoice Ninja Channel](https://www.youtube.com/channel/UCXjmYgQdCTpvHZSQ0x6VFRA)
+- **n8n Node Docs:** Search "Invoice Ninja" in n8n node library
 
 </details>
 
 <details>
 <summary><b>📊 Baserow - Airtable Alternative</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Baserow?
+
+Baserow is an open-source Airtable alternative with real-time collaboration, making it perfect for data management workflows in n8n. With its intuitive spreadsheet-like interface, REST API, and native n8n integration, it's ideal for building databases, CRM systems, project trackers, and more.
+
+### Features
+
+- **Real-time Collaboration:** Multiple users can edit simultaneously with instant updates
+- **Spreadsheet-Like Interface:** Familiar grid view with drag-and-drop functionality
+- **Multiple View Types:** Grid, Gallery, Form views for different data visualization needs
+- **Field Types:** Text, Number, Date, Select, File, URL, Formula, and more
+- **REST API:** Auto-generated API for every table with full CRUD operations
+- **Native n8n Node:** Seamless integration with n8n workflows
+- **Trash/Undo:** Built-in data safety with trash bin and undo functionality
+
+### Initial Setup
+
+**First Login to Baserow:**
+
+1. Navigate to `https://baserow.yourdomain.com`
+2. Click "Register" to create your account
+3. First registered user automatically becomes admin
+4. Create your first workspace
+5. Create your first database and table
+6. Generate API token:
+   - Click on your profile (top right)
+   - Go to Settings → API Tokens
+   - Click "Create New Token"
+   - Name it "n8n Integration"
+   - Copy the token for use in n8n
+
+### n8n Integration Setup
+
+**Native Baserow Node in n8n:**
+
+n8n provides a native Baserow node for seamless integration!
+
+**Create Baserow Credentials in n8n:**
+
+1. In n8n, go to Credentials → New → Baserow API
+2. Configure:
+   - **Host:** `http://baserow:80` (internal) or `https://baserow.yourdomain.com` (external)
+   - **Database ID:** Get from database URL (e.g., `/database/123` → ID is 123)
+   - **Token:** Your generated token from Baserow settings
+
+**Internal URL for n8n:** `http://baserow:80`
+
+### Example Workflows
+
+#### Example 1: Customer Data Management Pipeline
+
+```javascript
+// Automate customer data collection and enrichment
+
+// 1. Webhook Trigger - Receive new customer data
+
+// 2. Baserow Node - Create new customer record
+Operation: Create
+Database: Customers
+Table ID: 1 (get from table URL)
+Fields:
+  Name: {{$json.name}}
+  Email: {{$json.email}}
+  Company: {{$json.company}}
+  Status: New Lead
+  Created: {{$now.toISO()}}
+
+// 3. HTTP Request - Research company (optional)
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{$json.company}} company information",
+  "focusMode": "webSearch"
+}
+
+// 4. Baserow Node - Update customer with research
+Operation: Update
+Database: Customers
+Row ID: {{$('Create Customer').json.id}}
+Fields:
+  Company Info: {{$json.research_summary}}
+  Industry: {{$json.detected_industry}}
+  Status: Researched
+
+// 5. Slack Notification
+Channel: #new-customers
+Message: |
+  🎉 New customer added!
+  
+  Name: {{$('Create Customer').json.Name}}
+  Company: {{$('Create Customer').json.Company}}
+  Status: Researched
+```
+
+#### Example 2: Project Task Management
+
+```javascript
+// Sync project tasks and send reminders
+
+// 1. Schedule Trigger - Daily at 9 AM
+
+// 2. Baserow Node - Get pending tasks
+Operation: List
+Database: Projects
+Table ID: 2
+Filters:
+  Status__equal: Pending
+  Due Date__date_before: {{$now.plus(3, 'days').toISODate()}}
+
+// 3. Loop Over Items
+
+// 4. Slack Node - Send reminder to assignee
+Channel: {{$json['Assignee Slack ID']}}
+Message: |
+  ⏰ Task due in 3 days
+  
+  Task: {{$json['Task Name']}}
+  Project: {{$json['Project']}}
+  Due: {{$json['Due Date']}}
+
+// 5. Baserow Node - Update task status
+Operation: Update
+Row ID: {{$json.id}}
+Fields:
+  Reminder Sent: true
+  Last Notified: {{$now.toISO()}}
+```
+
+#### Example 3: Data Enrichment with AI
+
+```javascript
+// Enhance existing records with AI-generated content
+
+// 1. Baserow Node - Get records missing descriptions
+Operation: List
+Database: Products
+Table ID: 3
+Filters:
+  Description__empty: true
+Limit: 10
+
+// 2. Loop Over Items
+
+// 3. OpenAI Node - Generate product description
+Model: gpt-4o-mini
+System Message: "You are a product marketing copywriter."
+User Message: |
+  Create a compelling product description for:
+  
+  Product: {{$json['Product Name']}}
+  Features: {{$json['Features']}}
+  Target audience: {{$json['Target Market']}}
+  
+  Make it engaging and SEO-friendly (100-150 words).
+
+// 4. Baserow Node - Update with generated content
+Operation: Update
+Row ID: {{$json.id}}
+Fields:
+  Description: {{$('OpenAI').json.choices[0].message.content}}
+  SEO Keywords: {{$('OpenAI').json.suggested_keywords}}
+  Last Updated: {{$now.toISO()}}
+  Updated By: AI Assistant
+```
+
+#### Example 4: Real-time Collaboration Trigger
+
+```javascript
+// React to changes in Baserow using webhooks
+
+// 1. Webhook Trigger - Baserow webhook
+// Configure in Baserow: Table Settings → Webhooks → Add Webhook
+// URL: https://n8n.yourdomain.com/webhook/baserow-changes
+
+// 2. Code Node - Parse webhook data
+const action = $json.action; // created, updated, deleted
+const tableName = $json.table.name;
+const rowData = $json.items;
+
+return {
+  action: action,
+  table: tableName,
+  data: rowData
+};
+
+// 3. Switch Node - Route based on action type
+
+// Branch 1: Row Created
+// 4a. Send Email - Welcome email for new customers
+To: {{$json.data.Email}}
+Subject: Welcome to {{$json.data.Company}}!
+Message: Custom welcome email...
+
+// 4b. Create Tasks in project management system
+
+// Branch 2: Row Updated
+// 5a. Check for status changes
+// 5b. Notify team members of updates
+
+// Branch 3: Row Deleted
+// 6a. Archive related data
+// 6b. Send notification to admin
+
+// 7. Baserow Node - Log action history
+Operation: Create
+Database: Activity Log
+Fields:
+  Action: {{$json.action}}
+  Table: {{$json.table}}
+  User: {{$json.user_name}}
+  Timestamp: {{$now.toISO()}}
+```
+
+#### Example 5: Form to Database Automation
+
+```javascript
+// Public form submissions directly into database
+
+// 1. Baserow Form View - Create public form
+// In Baserow: Create Form View → Share publicly
+
+// 2. Webhook from Baserow - On form submission
+// Form submissions trigger webhook automatically
+
+// 3. Code Node - Process and validate data
+const formData = $json;
+
+// Validate email
+if (!formData.email || !formData.email.includes('@')) {
+  throw new Error('Invalid email address');
+}
+
+// Enrich data
+return {
+  ...formData,
+  source: 'baserow_form',
+  validated: true,
+  processed_at: new Date().toISOString(),
+  ip_address: $json.metadata?.ip_address
+};
+
+// 4. IF Node - Check if lead qualifies
+Condition: {{$json.score >= 70}}
+
+// 5. Cal.com Node - Schedule demo call (if qualified)
+Operation: Create Booking
+Event Type: Product Demo
+// Auto-schedule based on availability
+
+// 6. Send Email - Confirmation
+To: {{$json.email}}
+Subject: Thank you for your interest!
+Message: |
+  Hi {{$json.name}},
+  
+  Thank you for submitting your information!
+  {{#if $json.score >= 70}}
+  We've scheduled a demo call for you.
+  {{else}}
+  We'll review your submission and get back to you soon.
+  {{/if}}
+```
+
+### Advanced API Usage
+
+For operations not available in the native node, use HTTP Request:
+
+```javascript
+// Get database schema information
+Method: GET
+URL: http://baserow:80/api/database/tables/{{$json.table_id}}/fields/
+Headers:
+  Authorization: Token your-api-token
+
+// Batch operations
+Method: PATCH
+URL: http://baserow:80/api/database/rows/table/{{$json.table_id}}/batch/
+Headers:
+  Authorization: Token your-api-token
+  Content-Type: application/json
+Body: {
+  "items": [
+    {"id": 1, "field_123": "updated_value1"},
+    {"id": 2, "field_123": "updated_value2"}
+  ]
+}
+
+// File uploads
+Method: POST
+URL: http://baserow:80/api/database/rows/table/{{$json.table_id}}/{{$json.row_id}}/upload-file/{{$json.field_id}}/
+Headers:
+  Authorization: Token your-api-token
+Body: Binary file data
+```
+
+### Baserow Features Highlights
+
+**Real-time Collaboration:**
+- Multiple users can edit simultaneously
+- Changes appear instantly for all users
+- Built-in conflict resolution
+- Activity timeline showing who changed what
+
+**Data Safety:**
+- Undo/Redo functionality for all actions
+- Trash bin for deleted rows (30-day retention)
+- Row history tracking
+- Field-level permissions (enterprise)
+
+**Templates and Views:**
+- 50+ ready-made templates (CRM, Project Manager, etc.)
+- Multiple view types: Grid (spreadsheet), Gallery (cards), Form (public forms)
+- Custom filters and sorting per view
+- Public sharing with password protection
+
+**Field Types:**
+- Text (single line, long text)
+- Number (integer, decimal)
+- Date (date, datetime)
+- Boolean (checkbox)
+- Single/Multiple Select (dropdown)
+- File (attachments, images)
+- URL, Email, Phone
+- Formula (calculated fields)
+- Link to another record (relationships)
+
+### Troubleshooting
+
+**Can't connect to Baserow:**
+
+```bash
+# 1. Check Baserow container status
+docker ps | grep baserow
+# Should show: STATUS = Up
+
+# 2. Check Baserow logs
+docker logs baserow --tail 100
+
+# 3. Test internal connection from n8n
+docker exec n8n curl http://baserow:80/api/applications/
+# Should return JSON with applications
+
+# 4. Verify API token
+# Regenerate in Baserow if needed
+```
+
+**API authentication errors:**
+
+```bash
+# 1. Verify token format
+# Header should be: Authorization: Token YOUR_TOKEN
+# NOT: Bearer YOUR_TOKEN
+
+# 2. Check token permissions in Baserow
+# Settings → API Tokens → Check token is active
+
+# 3. Test token
+curl -H "Authorization: Token YOUR_TOKEN" \
+  http://baserow:80/api/applications/
+
+# 4. Regenerate token if expired
+```
+
+**Fields not updating:**
+
+```bash
+# 1. Check field names are exact (case-sensitive)
+# Field "Name" ≠ "name"
+
+# 2. Verify field IDs in table
+curl -H "Authorization: Token YOUR_TOKEN" \
+  http://baserow:80/api/database/tables/TABLE_ID/fields/
+
+# 3. Check field types match data
+# Number field cannot accept text values
+
+# 4. Check Baserow logs for errors
+docker logs baserow | grep ERROR
+```
+
+**Webhooks not triggering:**
+
+```bash
+# 1. Verify webhook is active in Baserow
+# Table Settings → Webhooks → Check status
+
+# 2. Check webhook URL is accessible
+# Must be publicly accessible HTTPS URL
+
+# 3. Test webhook manually
+# Baserow → Webhooks → Test Webhook
+
+# 4. Check n8n webhook logs
+# n8n UI → Executions → Look for webhook triggers
+```
+
+### Tips for Baserow + n8n Integration
+
+**Best Practices:**
+
+1. **Use Internal URLs:** Always use `http://baserow:80` from n8n (faster, no SSL overhead)
+2. **Token Authentication:** Use API tokens instead of username/password
+3. **Field Naming:** Use exact field names (case-sensitive), avoid special characters
+4. **Batch Operations:** Use HTTP Request node for bulk updates to avoid rate limits
+5. **Webhooks:** Set up Baserow webhooks for real-time triggers
+6. **Error Handling:** Add Try/Catch nodes for resilient workflows
+7. **Field Types:** Respect Baserow field types when creating/updating records
+8. **Database Structure:** Use multiple tables with relationships for complex data
+
+**Common Automation Patterns:**
+
+- Form submissions → Database + Email notification
+- Database changes → Sync with external CRM
+- Scheduled tasks → Data cleanup/enrichment
+- API data → Import to Baserow tables
+- Baserow → Generate reports/invoices
+- Customer data → Automated onboarding workflows
+
+**Data Organization:**
+
+- Use workspaces to separate projects/clients
+- Create templates for repeated database structures
+- Use views to filter and organize data
+- Apply consistent naming conventions
+- Document field purposes in descriptions
+
+### Baserow vs NocoDB Comparison
+
+| Feature | Baserow | NocoDB |
+|---------|---------|--------|
+| **API** | REST only | REST + GraphQL |
+| **Webhooks** | Via n8n | Built-in |
+| **Field Types** | 15+ types | 25+ types |
+| **Formula Support** | Basic | Advanced |
+| **Views** | 3 types (Grid, Gallery, Form) | 7 types (includes Calendar, Kanban, Gantt) |
+| **Relationships** | One-to-Many | Many-to-Many |
+| **Performance** | Excellent | Excellent |
+| **Resource Usage** | Moderate | Lightweight |
+| **Native n8n Node** | ✅ Yes | ❌ No (HTTP Request only) |
+| **Trash/Restore** | ✅ Yes | ❌ No |
+
+**Choose Baserow when you need:**
+- Native n8n node for easier workflows
+- Simpler, more intuitive interface
+- Real-time collaboration focus
+- Trash/restore functionality
+- Form views for public data collection
+
+**Choose NocoDB when you need:**
+- GraphQL API support
+- Advanced formula fields
+- More view types (Calendar, Gantt, Kanban)
+- Many-to-many relationships
+- Lower resource consumption
+
+### Resources
+
+- **Documentation:** https://baserow.io/docs
+- **API Reference:** https://baserow.io/docs/apis/rest-api
+- **GitHub:** https://github.com/bram2w/baserow
+- **Forum:** https://community.baserow.io/
+- **Templates:** https://baserow.io/templates
+- **n8n Node Docs:** Search "Baserow" in n8n node library
 
 </details>
 

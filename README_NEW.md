@@ -17462,21 +17462,1739 @@ curl http://localhost:3000/json/list
 <details>
 <summary><b>📚 RAGApp - RAG Assistant Builder</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### Was ist RAGApp?
+
+RAGApp is an enterprise-ready platform for building Agentic RAG (Retrieval-Augmented Generation) applications, built on LlamaIndex. It's as simple to configure as OpenAI's custom GPTs but deployable in your own cloud infrastructure using Docker. RAGApp provides a complete solution with Admin UI, Chat UI, and REST API, allowing you to build AI assistants that can intelligently reason over your documents and data.
+
+### Features
+
+- **Agentic RAG with LlamaIndex** - Autonomous agent that can reason about queries, break them down into smaller tasks, choose tools dynamically, and execute multi-step workflows
+- **Multiple AI Provider Support** - Works with OpenAI, Google Gemini, and local models via Ollama
+- **Admin UI** - Easy web interface for configuring your RAG assistant without code
+- **Chat UI & REST API** - Ready-to-use chat interface and API endpoints for integration
+- **Document Management** - Upload and process PDFs, Office documents, text files, and more
+- **Tool Integration** - Connect to external APIs and knowledge bases
+- **Docker-Based Deployment** - Simple container-based setup with docker-compose
+
+### Initial Setup
+
+**First Login to RAGApp:**
+
+1. Navigate to `https://ragapp.yourdomain.com/admin`
+2. **Configure AI Provider:**
+   - **Option A - OpenAI:** Add your OpenAI API key
+   - **Option B - Gemini:** Add your Google AI API key
+   - **Option C - Ollama:** Use `http://ollama:11434` (pre-configured)
+3. **Upload Documents:**
+   - Click "Documents" in Admin UI
+   - Upload your PDFs, DOCX, TXT, or other files
+   - Documents are automatically processed and indexed
+4. **Configure Assistant:**
+   - Set system prompt and instructions
+   - Choose which tools to enable
+   - Configure retrieval settings (top-k, similarity threshold)
+5. **Test in Chat UI:**
+   - Navigate to `https://ragapp.yourdomain.com`
+   - Ask questions about your documents
+   - Assistant uses agentic reasoning to find answers
+
+**Pre-configured Integration:**
+- **Internal Ollama URL:** `http://ollama:11434` (already set)
+- **Qdrant Vector Store:** `http://qdrant:6333` (used for embeddings)
+
+### n8n Integration Setup
+
+**Access RAGApp API from n8n:**
+
+- **Internal URL:** `http://ragapp:8000`
+- **API Docs:** `http://ragapp:8000/docs` (OpenAPI/Swagger)
+- **No authentication** by default (designed for internal use behind API gateway)
+
+#### Example 1: Simple Document Q&A Workflow
+
+Ask questions about uploaded documents via n8n:
+
+```javascript
+// 1. Webhook Trigger - Receive question from external system
+
+// 2. HTTP Request: Query RAGApp
+Method: POST
+URL: http://ragapp:8000/api/chat
+Headers:
+  Content-Type: application/json
+Body: {
+  "messages": [
+    {
+      "role": "user",
+      "content": "{{ $json.question }}"
+    }
+  ],
+  "stream": false
+}
+
+// 3. Code Node: Extract answer
+const response = $json.choices[0].message.content;
+const sources = $json.sources || [];
+return {
+  answer: response,
+  sources: sources.map(s => s.metadata.file_name),
+  confidence: $json.confidence_score
+};
+
+// 4. Send response back (Slack, Email, etc.)
+```
+
+#### Example 2: Document Upload & Processing Pipeline
+
+Automatically upload and process documents:
+
+```javascript
+// 1. Email Trigger: Receive PDF attachment
+
+// 2. HTTP Request: Upload document to RAGApp
+Method: POST
+URL: http://ragapp:8000/api/documents
+Headers:
+  Content-Type: multipart/form-data
+Body:
+  - file: {{ $binary.data }}
+  - metadata: {
+      "source": "email",
+      "processed_date": "{{ $now.format('YYYY-MM-DD') }}"
+    }
+
+// 3. Wait Node: Give time for processing (30 seconds)
+
+// 4. HTTP Request: Check document status
+Method: GET
+URL: http://ragapp:8000/api/documents/{{ $json.document_id }}
+
+// 5. Condition Node: If processing complete
+If: {{ $json.status === 'completed' }}
+Then: Send confirmation email
+Else: Log error and retry
+```
+
+#### Example 3: Agentic Research Workflow
+
+Use RAGApp's agentic capabilities to perform multi-step research across multiple documents:
+
+```javascript
+// 1. Schedule Trigger: Daily research task
+
+// 2. HTTP Request: Complex research query
+Method: POST
+URL: http://ragapp:8000/api/chat
+Body: {
+  "messages": [
+    {
+      "role": "user",
+      "content": "Analyze all quarterly reports from 2024 and summarize key financial trends. Compare revenue growth across Q1-Q4."
+    }
+  ],
+  "agent_config": {
+    "tools": ["document_search", "summarize", "compare"],
+    "max_steps": 10,
+    "reasoning": true
+  }
+}
+
+// Agent will:
+// - Break down query into sub-tasks
+// - Search relevant quarterly reports
+// - Extract financial data
+// - Compare across quarters
+// - Synthesize comprehensive summary
+
+// 3. Code Node: Format research report
+const report = {
+  title: "Q1-Q4 2024 Financial Analysis",
+  summary: $json.choices[0].message.content,
+  sources: $json.sources,
+  reasoning_steps: $json.agent_steps,
+  generated_at: new Date().toISOString()
+};
+
+// 4. HTTP Request: Save to Supabase
+// 5. Email: Send report to stakeholders
+```
+
+#### Example 4: Multi-Source Knowledge Integration
+
+Combine RAGApp with external APIs for comprehensive answers:
+
+```javascript
+// 1. Webhook: Receive customer support question
+
+// 2. HTTP Request: Search internal docs (RAGApp)
+URL: http://ragapp:8000/api/chat
+Body: {
+  "messages": [{"role": "user", "content": "{{ $json.question }}"}]
+}
+
+// 3. Condition: If RAGApp can't answer fully
+If: {{ $json.confidence_score < 0.7 }}
+
+// 4a. HTTP Request: Search web (SearXNG)
+URL: http://searxng:8080/search
+Query: {{ $json.question }}
+
+// 4b. HTTP Request: Query product database
+// Get latest product info
+
+// 5. Code Node: Merge results
+const answer = {
+  primary_answer: $('RAGApp').first().json.response,
+  confidence: $('RAGApp').first().json.confidence_score,
+  additional_context: $('SearXNG').first().json.results.slice(0, 3),
+  product_info: $('ProductDB').first().json
+};
+
+// 6. HTTP Request: Send back to RAGApp for final synthesis
+URL: http://ragapp:8000/api/chat
+Body: {
+  "messages": [
+    {
+      "role": "system",
+      "content": "Synthesize the following information into a comprehensive answer..."
+    },
+    {
+      "role": "user",
+      "content": JSON.stringify(answer)
+    }
+  ]
+}
+
+// 7. Send final answer to customer
+```
+
+### Advanced Configuration
+
+#### Optimizing RAG Performance
+
+**Chunking Strategy:**
+```yaml
+# In Admin UI > Settings > Retrieval
+chunk_size: 1024  # Smaller for precise retrieval
+chunk_overlap: 128  # 10-20% overlap recommended
+```
+
+**Retrieval Settings:**
+```yaml
+top_k: 5  # Number of chunks to retrieve
+similarity_threshold: 0.7  # Minimum similarity score (0-1)
+rerank: true  # Enable reranking for better results
+```
+
+**Embedding Models:**
+- **OpenAI:** `text-embedding-3-small` (fast, cost-effective)
+- **OpenAI:** `text-embedding-3-large` (best quality)
+- **Ollama:** `nomic-embed-text` (local, free)
+
+#### Using Custom System Prompts
+
+Configure your assistant's behavior in Admin UI:
+
+```
+You are a financial analyst assistant specialized in quarterly reports.
+
+When answering questions:
+1. Always cite specific sections and page numbers from documents
+2. Compare data across different time periods when relevant
+3. Highlight any significant trends or anomalies
+4. If data is missing or unclear, explicitly state this
+
+Format your responses with:
+- Executive Summary (2-3 sentences)
+- Detailed Analysis (with citations)
+- Key Takeaways (bullet points)
+```
+
+#### Tool Configuration
+
+Enable additional tools for agentic reasoning:
+
+- **Document Search:** Semantic search across uploaded documents
+- **Summarization:** Create summaries of long documents
+- **Comparison:** Compare multiple documents or data points
+- **External APIs:** Connect to external data sources
+- **Code Execution:** Run Python code for data analysis (enterprise feature)
+
+### Troubleshooting
+
+**Documents not being indexed:**
+
+```bash
+# 1. Check RAGApp logs
+docker logs ragapp --tail 50
+
+# 2. Verify Qdrant is running
+docker ps | grep qdrant
+curl http://localhost:6333/health
+
+# 3. Check document format
+# Supported: PDF, DOCX, TXT, MD, HTML, CSV
+# Unsupported or corrupted files will be skipped
+
+# 4. Check available disk space
+df -h
+# Documents and indexes require storage
+
+# 5. Re-upload document
+# Delete and re-upload if processing failed
+```
+
+**Low quality answers:**
+
+```bash
+# 1. Check similarity threshold
+# Lower threshold if no results found (try 0.5-0.6)
+
+# 2. Increase top_k value
+# Try retrieving more chunks (10-15 instead of 5)
+
+# 3. Verify embedding model
+# In Admin UI: Settings > Models > Embedding Model
+# Ensure model is loaded and working
+
+# 4. Test embeddings directly
+curl -X POST http://ragapp:8000/api/embed \
+  -H "Content-Type: application/json" \
+  -d '{"text": "test query"}'
+# Should return embedding vector
+
+# 5. Review document quality
+# Ensure documents have clear structure
+# Remove low-quality scanned PDFs
+# Use OCR for image-based documents
+```
+
+**API connection issues:**
+
+```bash
+# 1. Verify RAGApp is accessible from n8n
+docker exec n8n curl http://ragapp:8000/health
+# Should return: {"status": "healthy"}
+
+# 2. Check API endpoint
+# Admin UI: Settings > API > Base URL
+# Should be: http://ragapp:8000
+
+# 3. Test API directly
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "Hello"}
+    ]
+  }'
+
+# 4. Check Docker network
+docker network inspect ai-launchkit_default
+# Verify ragapp and n8n are on same network
+
+# 5. Restart RAGApp if needed
+docker compose restart ragapp
+```
+
+**Ollama model not found:**
+
+```bash
+# 1. Verify Ollama is running
+docker ps | grep ollama
+
+# 2. Check which models are available
+docker exec ollama ollama list
+
+# 3. Pull required model
+docker exec ollama ollama pull llama3.2
+
+# 4. Update RAGApp configuration
+# Admin UI > Settings > Models > LLM Model
+# Select: ollama/llama3.2
+
+# 5. Test connection
+curl http://localhost:11434/api/generate \
+  -d '{"model": "llama3.2", "prompt": "test"}'
+```
+
+### Best Practices
+
+**Document Preparation:**
+- Clean and structure documents before upload
+- Use consistent formatting (headers, sections)
+- Include metadata in filenames (date, author, version)
+- Remove unnecessary pages (cover, blank pages)
+- For scanned documents, use OCR first
+
+**Prompt Engineering:**
+- Be specific about what information you need
+- Reference document types or sections when possible
+- Ask follow-up questions to refine answers
+- Use examples in your system prompt
+
+**Performance Optimization:**
+- Start with fewer documents and scale up
+- Monitor embedding costs (if using OpenAI)
+- Use local Ollama for development/testing
+- Cache frequent queries where possible
+- Batch process documents during off-hours
+
+**Security:**
+- Deploy behind API gateway for authentication
+- Use environment variables for API keys
+- Enable HTTPS in production
+- Implement rate limiting
+- Audit document access logs
+
+### Integration with Other AI LaunchKit Services
+
+**RAGApp + Qdrant:**
+- Qdrant is pre-configured as vector store
+- All embeddings stored in `http://qdrant:6333`
+- Use Qdrant UI to browse collections and inspect vectors
+
+**RAGApp + Flowise:**
+- Use Flowise for complex multi-agent workflows
+- RAGApp handles document Q&A
+- Flowise orchestrates the overall agent logic
+- Example: Research agent that queries RAGApp → summarizes → decides next action
+
+**RAGApp + Open WebUI:**
+- Build custom OpenAI-compatible API wrapper around RAGApp
+- Users can access RAGApp knowledge through familiar ChatGPT interface
+- Combine both UIs: RAGApp for document-focused work, Open WebUI for general chat
+
+**RAGApp + n8n:**
+- Automate document ingestion pipelines
+- Schedule regular queries and reports
+- Integrate with business workflows (email, Slack, CRM)
+- Build self-service knowledge portals
+
+### Resources
+
+- **Official Website:** https://www.ragapp.dev/
+- **Documentation:** https://docs.ragapp.dev/
+- **GitHub:** https://github.com/ragapp/ragapp
+- **LlamaIndex Docs:** https://docs.llamaindex.ai/
+- **API Reference:** `http://ragapp.yourdomain.com/docs` (OpenAPI)
+- **Community:** LlamaIndex Discord
 
 </details>
 
 <details>
 <summary><b>🔍 Qdrant - Vector Database</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### Was ist Qdrant?
+
+Qdrant (pronounced "quadrant") is a high-performance, open-source vector database and similarity search engine written in Rust. It provides production-ready infrastructure for storing, searching, and managing high-dimensional vectors with additional JSON-like payloads. Qdrant is optimized for AI applications like RAG (Retrieval-Augmented Generation), semantic search, recommendation systems, and anomaly detection, offering both speed and scalability for billion-scale vector operations.
+
+### Features
+
+- **Fast Vector Search** - HNSW (Hierarchical Navigable Small World) indexing for efficient nearest neighbor search
+- **Multiple Distance Metrics** - Cosine similarity, Dot product, and Euclidean distance
+- **Payload Filtering** - Rich filtering on metadata while searching vectors (hybrid search)
+- **Distributed Mode** - Horizontal scaling with sharding and replication
+- **REST & gRPC API** - Flexible APIs with client libraries for Python, JavaScript, Rust, Go, and more
+- **Quantization Support** - Reduce memory usage with scalar, product, and binary quantization
+- **On-Disk Storage** - Store vectors on disk to save RAM for large datasets
+
+### Initial Setup
+
+**Access Qdrant:**
+
+Qdrant is pre-installed and running on your AI LaunchKit instance.
+
+1. **Web UI:** `https://qdrant.yourdomain.com`
+   - View collections, browse points, inspect vectors
+   - No authentication required (internal use only)
+2. **REST API:** `http://qdrant:6333` (internal) or `https://qdrant.yourdomain.com` (external)
+3. **gRPC API:** `qdrant:6334` (internal, faster for high-throughput)
+
+**First Steps:**
+
+```bash
+# Check if Qdrant is running
+curl http://localhost:6333/
+
+# Create your first collection
+curl -X PUT http://localhost:6333/collections/test_collection \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "vectors": {
+      "size": 384,
+      "distance": "Cosine"
+    }
+  }'
+
+# Verify collection was created
+curl http://localhost:6333/collections/test_collection
+```
+
+### n8n Integration Setup
+
+**Connect to Qdrant from n8n:**
+
+- **Internal URL:** `http://qdrant:6333` (use this for HTTP Request nodes)
+- **gRPC URL:** `qdrant:6334` (for high-performance operations)
+- **No authentication** required for internal access
+
+#### Example 1: Create Collection & Insert Vectors
+
+Set up a new vector collection for semantic search:
+
+```javascript
+// 1. HTTP Request: Create Collection
+Method: PUT
+URL: http://qdrant:6333/collections/documents
+Headers:
+  Content-Type: application/json
+Body: {
+  "vectors": {
+    "size": 1536,  // OpenAI text-embedding-3-small
+    "distance": "Cosine"
+  },
+  "optimizers_config": {
+    "indexing_threshold": 10000
+  }
+}
+
+// 2. HTTP Request: Generate Embeddings (OpenAI)
+Method: POST
+URL: https://api.openai.com/v1/embeddings
+Headers:
+  Authorization: Bearer {{ $env.OPENAI_API_KEY }}
+  Content-Type: application/json
+Body: {
+  "input": "{{ $json.text }}",
+  "model": "text-embedding-3-small"
+}
+
+// 3. Code Node: Prepare Point for Qdrant
+const embedding = $json.data[0].embedding;
+const point = {
+  id: $json.document_id,
+  vector: embedding,
+  payload: {
+    text: $json.text,
+    source: $json.source,
+    timestamp: new Date().toISOString(),
+    metadata: $json.metadata
+  }
+};
+return { points: [point] };
+
+// 4. HTTP Request: Upsert Vector to Qdrant
+Method: PUT
+URL: http://qdrant:6333/collections/documents/points
+Body: {
+  "points": {{ $json.points }}
+}
+```
+
+#### Example 2: Semantic Search Pipeline
+
+Search for similar documents using vector similarity:
+
+```javascript
+// 1. Webhook: Receive search query
+
+// 2. HTTP Request: Generate Query Embedding
+Method: POST
+URL: https://api.openai.com/v1/embeddings
+Body: {
+  "input": "{{ $json.query }}",
+  "model": "text-embedding-3-small"
+}
+
+// 3. Code Node: Extract Embedding
+const queryVector = $json.data[0].embedding;
+return { query_vector: queryVector };
+
+// 4. HTTP Request: Search Qdrant
+Method: POST
+URL: http://qdrant:6333/collections/documents/points/query
+Headers:
+  Content-Type: application/json
+Body: {
+  "query": {{ $json.query_vector }},
+  "limit": 5,
+  "with_payload": true,
+  "with_vector": false
+}
+
+// 5. Code Node: Format Results
+const results = $json.result.map(point => ({
+  id: point.id,
+  score: point.score,
+  text: point.payload.text,
+  source: point.payload.source
+}));
+return { results };
+
+// 6. Respond to webhook with results
+```
+
+#### Example 3: Filtered Vector Search
+
+Combine vector similarity with metadata filtering:
+
+```javascript
+// 1. Trigger: User query with filters
+
+// 2. HTTP Request: Search with Filters
+Method: POST
+URL: http://qdrant:6333/collections/documents/points/query
+Body: {
+  "query": [0.1, 0.2, ...],  // Your query vector
+  "filter": {
+    "must": [
+      {
+        "key": "source",
+        "match": { "value": "documentation" }
+      },
+      {
+        "key": "timestamp",
+        "range": {
+          "gte": "2024-01-01T00:00:00Z"
+        }
+      }
+    ]
+  },
+  "limit": 10,
+  "with_payload": ["text", "source", "timestamp"]
+}
+
+// Result: Only vectors matching BOTH:
+// - Semantic similarity to query
+// - source = "documentation"
+// - timestamp >= 2024-01-01
+```
+
+#### Example 4: Batch Upsert for Large Datasets
+
+Efficiently upload many vectors at once:
+
+```javascript
+// 1. Database Trigger: New records added
+
+// 2. Split in Batches Node: Create batches of 100
+
+// 3. Loop over Batches
+
+// 4. HTTP Request: Batch Generate Embeddings
+Method: POST
+URL: https://api.openai.com/v1/embeddings
+Body: {
+  "input": {{ $json.batch.map(item => item.text) }},
+  "model": "text-embedding-3-small"
+}
+
+// 5. Code Node: Prepare Batch Points
+const points = $json.data.map((emb, idx) => ({
+  id: $json.batch[idx].id,
+  vector: emb.embedding,
+  payload: {
+    text: $json.batch[idx].text,
+    category: $json.batch[idx].category,
+    created_at: $json.batch[idx].created_at
+  }
+}));
+return { points };
+
+// 6. HTTP Request: Batch Upsert to Qdrant
+Method: PUT
+URL: http://qdrant:6333/collections/documents/points
+Body: {
+  "points": {{ $json.points }}
+}
+
+// 7. Wait Node: 1 second (avoid rate limits)
+
+// 8. Loop continues until all batches processed
+```
+
+#### Example 5: Hybrid Search (Vector + Text)
+
+Combine dense vectors with sparse text search:
+
+```javascript
+// 1. Create collection with both dense and sparse vectors
+// HTTP Request: Create Collection
+Method: PUT
+URL: http://qdrant:6333/collections/hybrid_docs
+Body: {
+  "vectors": {
+    "dense": {
+      "size": 1536,
+      "distance": "Cosine"
+    }
+  },
+  "sparse_vectors": {
+    "sparse": {}
+  }
+}
+
+// 2. HTTP Request: Hybrid Search
+Method: POST
+URL: http://qdrant:6333/collections/hybrid_docs/points/query
+Body: {
+  "prefetch": [
+    {
+      "query": {
+        "indices": [1, 2, 5, 10],  // Sparse vector (BM25 keywords)
+        "values": [0.5, 0.8, 0.3, 0.9]
+      },
+      "using": "sparse",
+      "limit": 100
+    }
+  ],
+  "query": [0.1, 0.2, ...],  // Dense vector (semantic)
+  "using": "dense",
+  "limit": 10
+}
+
+// This performs:
+// 1. BM25 keyword search (sparse) -> 100 candidates
+// 2. Semantic reranking (dense) -> top 10 results
+```
+
+### Advanced Configuration
+
+#### Optimizing Collection Settings
+
+```bash
+# Create collection with custom HNSW parameters
+curl -X PUT http://localhost:6333/collections/optimized \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "vectors": {
+      "size": 384,
+      "distance": "Cosine"
+    },
+    "hnsw_config": {
+      "m": 32,  # Higher = better accuracy, more memory
+      "ef_construct": 256,  # Higher = better index quality
+      "full_scan_threshold": 20000
+    },
+    "optimizers_config": {
+      "indexing_threshold": 50000,
+      "memmap_threshold": 100000  # Store index on disk
+    }
+  }'
+```
+
+#### Creating Payload Indexes for Fast Filtering
+
+```bash
+# Index a field for faster filtering
+curl -X PUT http://localhost:6333/collections/documents/index \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "field_name": "category",
+    "field_schema": "keyword"
+  }'
+
+# Index a numeric field
+curl -X PUT http://localhost:6333/collections/documents/index \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "field_name": "price",
+    "field_schema": "float"
+  }'
+```
+
+#### Quantization for Memory Efficiency
+
+```bash
+# Enable scalar quantization
+curl -X PATCH http://localhost:6333/collections/documents \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "quantization_config": {
+      "scalar": {
+        "type": "int8",
+        "quantile": 0.99,
+        "always_ram": true
+      }
+    }
+  }'
+
+# Result: 4x memory reduction with minimal accuracy loss
+```
+
+### Troubleshooting
+
+**Collection creation fails:**
+
+```bash
+# 1. Check if Qdrant is running
+docker ps | grep qdrant
+
+# 2. Check logs for errors
+docker logs qdrant --tail 50
+
+# 3. Verify API is accessible
+curl http://localhost:6333/
+# Should return: {"title":"qdrant - vector search engine","version":"1.x.x"}
+
+# 4. Check available collections
+curl http://localhost:6333/collections
+
+# 5. Delete and recreate collection if corrupted
+curl -X DELETE http://localhost:6333/collections/broken_collection
+```
+
+**Search returns no results:**
+
+```bash
+# 1. Check collection has points
+curl http://localhost:6333/collections/documents
+
+# Should show: "points_count": > 0
+
+# 2. Verify vector dimensions match
+# Collection size: 384
+# Query vector size must also be: 384
+
+# 3. Test with scroll to see raw data
+curl -X POST http://localhost:6333/collections/documents/points/scroll \
+  -H 'Content-Type: application/json' \
+  -d '{"limit": 5, "with_payload": true, "with_vector": true}'
+
+# 4. Check distance metric
+# If using normalized vectors, use Dot product instead of Cosine
+
+# 5. Increase limit or adjust threshold
+# Try limit: 100 to see if results exist but scored low
+```
+
+**High memory usage:**
+
+```bash
+# 1. Check collection stats
+curl http://localhost:6333/collections/documents
+
+# 2. Enable quantization
+# Reduces memory by 4-16x (see Advanced Configuration)
+
+# 3. Store vectors on disk
+curl -X PATCH http://localhost:6333/collections/documents \
+  -d '{
+    "vectors": {
+      "on_disk": true
+    }
+  }'
+
+# 4. Reduce HNSW parameters
+# Lower m and ef_construct values
+
+# 5. Monitor memory
+docker stats qdrant
+```
+
+**Slow search performance:**
+
+```bash
+# 1. Create payload indexes for filtered fields
+# See Advanced Configuration section
+
+# 2. Optimize collection
+curl -X POST http://localhost:6333/collections/documents/segments
+
+# 3. Increase ef parameter for HNSW
+# In search query: "params": {"hnsw_ef": 128}
+
+# 4. Use smaller result limit
+# limit: 10 instead of 100
+
+# 5. Enable gRPC for faster throughput
+# Use port 6334 instead of 6333
+```
+
+**Points not being indexed:**
+
+```bash
+# 1. Check optimizer status
+curl http://localhost:6333/collections/documents
+
+# Look for: "optimizer_status": "ok" or "optimizing"
+
+# 2. Wait for indexing to complete
+# Collections turn "yellow" during optimization
+# Becomes "green" when done
+
+# 3. Force optimization
+curl -X POST http://localhost:6333/collections/documents/optimizer
+
+# 4. Check indexing threshold
+# Collection must have > indexing_threshold points
+# Default: 20,000 points
+
+# 5. Manually trigger indexing
+# Lower threshold or insert more points
+```
+
+### Best Practices
+
+**Vector Dimensions:**
+- **OpenAI text-embedding-3-small:** 1536 dimensions
+- **OpenAI text-embedding-3-large:** 3072 dimensions
+- **Ollama nomic-embed-text:** 768 dimensions
+- **Sentence-Transformers (all-MiniLM-L6-v2):** 384 dimensions
+
+Choose based on accuracy vs memory tradeoff.
+
+**Collection Design:**
+- Use **single collection** with payload-based filtering (multitenancy)
+- Only create multiple collections if you need hard isolation
+- Index frequently filtered payload fields
+- Use consistent naming: `{app}_{data_type}` (e.g., `myapp_documents`)
+
+**Payload Structure:**
+```json
+{
+  "id": "doc_123",
+  "vector": [...],
+  "payload": {
+    "text": "Original content",
+    "metadata": {
+      "source": "web",
+      "author": "John Doe",
+      "timestamp": "2025-01-01T00:00:00Z"
+    },
+    "tags": ["ai", "database"],
+    "category": "documentation"
+  }
+}
+```
+
+**Search Optimization:**
+- Index payload fields used in filters
+- Use `with_payload: ["field1", "field2"]` to retrieve only needed fields
+- Set `with_vector: false` if you don't need vectors in results
+- Batch operations when possible (upsert 100-1000 points at once)
+- Use gRPC API for high-throughput scenarios
+
+**Memory Management:**
+- Enable quantization for large collections (>1M vectors)
+- Store vectors on disk if memory is limited
+- Use `on_disk_payload: true` for large payloads
+- Monitor memory with `docker stats qdrant`
+
+**Backup & Recovery:**
+```bash
+# Create snapshot
+curl -X POST http://localhost:6333/collections/documents/snapshots
+
+# Download snapshot
+curl http://localhost:6333/collections/documents/snapshots/snapshot_name \
+  --output snapshot.snapshot
+
+# Restore from snapshot
+curl -X PUT http://localhost:6333/collections/documents/snapshots/upload \
+  --data-binary @snapshot.snapshot
+```
+
+### Integration with Other AI LaunchKit Services
+
+**Qdrant + RAGApp:**
+- RAGApp uses Qdrant as its default vector store
+- Pre-configured at `http://qdrant:6333`
+- All RAGApp document embeddings stored in Qdrant
+
+**Qdrant + Flowise:**
+- Use Qdrant Vector Store node in Flowise
+- URL: `http://qdrant:6333`
+- Collections auto-created by Flowise agents
+- Enables RAG workflows with visual builder
+
+**Qdrant + Ollama:**
+- Generate embeddings locally with Ollama
+- Model: `nomic-embed-text` (768 dimensions)
+- Free and fast for development
+- Example: Embed documents → Store in Qdrant → Search
+
+**Qdrant + Open WebUI:**
+- Open WebUI can use Qdrant for document RAG
+- Configure in Open WebUI settings
+- Upload docs → Auto-embedded → Stored in Qdrant
+
+**Qdrant + n8n:**
+- Build custom RAG pipelines
+- Automate document ingestion and search
+- Combine with SearXNG, Whisper, OCR, etc.
+- Create intelligent automation workflows
+
+### Distance Metrics Explained
+
+**Cosine Similarity:**
+- Best for: Text embeddings, semantic search
+- Range: -1 (opposite) to 1 (identical)
+- Normalized vectors: focus on direction, not magnitude
+
+**Dot Product:**
+- Best for: When magnitude matters
+- Range: -∞ to +∞
+- Faster than Cosine (no normalization needed)
+
+**Euclidean Distance:**
+- Best for: Spatial data, image embeddings
+- Range: 0 (identical) to +∞
+- Measures actual distance in vector space
+
+### Resources
+
+- **Official Website:** https://qdrant.tech/
+- **Documentation:** https://qdrant.tech/documentation/
+- **GitHub:** https://github.com/qdrant/qdrant
+- **Web UI:** `https://qdrant.yourdomain.com`
+- **REST API Docs:** https://api.qdrant.tech/api-reference
+- **Python Client:** https://github.com/qdrant/qdrant-client
+- **Community:** Discord (link on website)
+- **Benchmarks:** https://qdrant.tech/benchmarks/
 
 </details>
 
 <details>
 <summary><b>🗄️ Weaviate - AI Vector Database</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### Was ist Weaviate?
+
+Weaviate (pronounced "we-vee-eight") is an open-source, AI-native vector database written in Go. It stores both data objects and their vector embeddings, enabling advanced semantic search capabilities by comparing meaning encoded in vectors rather than relying solely on keyword matching. Weaviate combines the power of vector similarity search with structured filtering, multi-tenancy, and cloud-native scalability, making it ideal for RAG applications, recommendation systems, and agent-driven workflows.
+
+### Features
+
+- **Hybrid Search** - Combine vector similarity (semantic) with keyword search (BM25) for best-of-both-worlds results
+- **Multi-Modal Support** - Search across text, images, audio, and other data types with built-in vectorizers
+- **GraphQL & REST APIs** - Flexible querying with GraphQL for complex searches and REST for CRUD operations
+- **Built-in Vectorizers** - Automatic embedding generation via OpenAI, Cohere, HuggingFace, Google, and more
+- **Multi-Tenancy** - Isolated data namespaces for SaaS applications
+- **Distributed Architecture** - Horizontal scaling with sharding and replication
+- **Real-time RAG** - Native integration with generative models for retrieval-augmented generation
+
+### Initial Setup
+
+**Access Weaviate:**
+
+Weaviate is pre-installed and running on your AI LaunchKit instance.
+
+1. **GraphQL Playground:** `https://weaviate.yourdomain.com/v1/graphql`
+   - Interactive query builder and testing interface
+   - No authentication required (internal use only)
+2. **REST API:** `http://weaviate:8080` (internal) or `https://weaviate.yourdomain.com` (external)
+3. **gRPC API:** `weaviate:50051` (internal, high-performance queries)
+
+**First Steps:**
+
+```bash
+# Check if Weaviate is running
+curl http://localhost:8080/v1/.well-known/ready
+# Response: {"status": "ok"}
+
+# Check Weaviate version and modules
+curl http://localhost:8080/v1/meta
+
+# Create your first collection (called "class" in Weaviate)
+curl -X POST http://localhost:8080/v1/schema \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "class": "Article",
+    "vectorizer": "none",
+    "properties": [
+      {
+        "name": "title",
+        "dataType": ["text"]
+      },
+      {
+        "name": "content",
+        "dataType": ["text"]
+      }
+    ]
+  }'
+
+# Verify collection was created
+curl http://localhost:8080/v1/schema
+```
+
+### n8n Integration Setup
+
+**Connect to Weaviate from n8n:**
+
+- **Internal REST URL:** `http://weaviate:8080`
+- **Internal GraphQL URL:** `http://weaviate:8080/v1/graphql`
+- **No authentication** required for internal access
+
+#### Example 1: Create Collection & Insert Objects
+
+Set up a new collection for semantic search:
+
+```javascript
+// 1. HTTP Request: Create Collection (Schema)
+Method: POST
+URL: http://weaviate:8080/v1/schema
+Headers:
+  Content-Type: application/json
+Body: {
+  "class": "Document",
+  "vectorizer": "none",  // We'll provide our own vectors
+  "properties": [
+    {
+      "name": "title",
+      "dataType": ["text"],
+      "tokenization": "word"
+    },
+    {
+      "name": "content",
+      "dataType": ["text"],
+      "tokenization": "word"
+    },
+    {
+      "name": "category",
+      "dataType": ["text"],
+      "tokenization": "field"  // For exact matching
+    },
+    {
+      "name": "created_at",
+      "dataType": ["date"]
+    }
+  ]
+}
+
+// 2. HTTP Request: Generate Embedding (OpenAI)
+Method: POST
+URL: https://api.openai.com/v1/embeddings
+Headers:
+  Authorization: Bearer {{ $env.OPENAI_API_KEY }}
+Body: {
+  "input": "{{ $json.content }}",
+  "model": "text-embedding-3-small"
+}
+
+// 3. Code Node: Prepare Weaviate Object
+const embedding = $json.data[0].embedding;
+const weaviateObject = {
+  class: "Document",
+  properties: {
+    title: $json.title,
+    content: $json.content,
+    category: $json.category,
+    created_at: new Date().toISOString()
+  },
+  vector: embedding
+};
+return { object: weaviateObject };
+
+// 4. HTTP Request: Insert Object into Weaviate
+Method: POST
+URL: http://weaviate:8080/v1/objects
+Body: {{ $json.object }}
+```
+
+#### Example 2: Vector Search with GraphQL
+
+Perform semantic search using GraphQL:
+
+```javascript
+// 1. Webhook: Receive search query
+
+// 2. HTTP Request: Generate Query Embedding
+Method: POST
+URL: https://api.openai.com/v1/embeddings
+Body: {
+  "input": "{{ $json.query }}",
+  "model": "text-embedding-3-small"
+}
+
+// 3. Code Node: Prepare GraphQL Query
+const queryVector = $json.data[0].embedding;
+const graphqlQuery = {
+  query: `{
+    Get {
+      Document(
+        nearVector: {
+          vector: ${JSON.stringify(queryVector)}
+        }
+        limit: 5
+      ) {
+        title
+        content
+        category
+        _additional {
+          distance
+          id
+        }
+      }
+    }
+  }`
+};
+return graphqlQuery;
+
+// 4. HTTP Request: Search Weaviate
+Method: POST
+URL: http://weaviate:8080/v1/graphql
+Headers:
+  Content-Type: application/json
+Body: {{ $json }}
+
+// 5. Code Node: Extract Results
+const results = $json.data.Get.Document.map(doc => ({
+  id: doc._additional.id,
+  title: doc.title,
+  content: doc.content,
+  category: doc.category,
+  similarity: 1 - doc._additional.distance  // Convert distance to similarity
+}));
+return { results };
+
+// 6. Respond with results
+```
+
+#### Example 3: Hybrid Search (Vector + Keyword)
+
+Combine semantic and keyword search for best results:
+
+```javascript
+// 1. Trigger: User query
+
+// 2. HTTP Request: GraphQL Hybrid Search
+Method: POST
+URL: http://weaviate:8080/v1/graphql
+Headers:
+  Content-Type: application/json
+Body: {
+  "query": "{
+    Get {
+      Document(
+        hybrid: {
+          query: \"{{ $json.query }}\"
+          alpha: 0.5
+        }
+        limit: 10
+      ) {
+        title
+        content
+        category
+        _additional {
+          score
+          explainScore
+        }
+      }
+    }
+  }"
+}
+
+// alpha: 0.0 = pure keyword (BM25)
+// alpha: 0.5 = balanced hybrid
+// alpha: 1.0 = pure vector (semantic)
+
+// Result: Best of both worlds!
+// - Finds semantically similar content
+// - Boosts exact keyword matches
+```
+
+#### Example 4: Filtered Vector Search
+
+Combine vector similarity with metadata filtering:
+
+```javascript
+// 1. Trigger: User query with filters
+
+// 2. HTTP Request: Filtered Vector Search
+Method: POST
+URL: http://weaviate:8080/v1/graphql
+Body: {
+  "query": "{
+    Get {
+      Document(
+        nearText: {
+          concepts: [\"{{ $json.query }}\"]
+        }
+        where: {
+          operator: And
+          operands: [
+            {
+              path: [\"category\"]
+              operator: Equal
+              valueText: \"documentation\"
+            },
+            {
+              path: [\"created_at\"]
+              operator: GreaterThanEqual
+              valueDate: \"2024-01-01T00:00:00Z\"
+            }
+          ]
+        }
+        limit: 5
+      ) {
+        title
+        content
+        category
+        created_at
+        _additional {
+          distance
+        }
+      }
+    }
+  }"
+}
+
+// This search:
+// 1. Finds semantically similar documents
+// 2. Filters to category = "documentation"
+// 3. Only shows docs from 2024 onwards
+```
+
+#### Example 5: Batch Import with REST API
+
+Efficiently import many objects at once:
+
+```javascript
+// 1. Database Trigger: New records
+
+// 2. Split in Batches Node: Create batches of 100
+
+// 3. Loop over Batches
+
+// 4. HTTP Request: Batch Generate Embeddings
+Method: POST
+URL: https://api.openai.com/v1/embeddings
+Body: {
+  "input": {{ $json.batch.map(item => item.content) }},
+  "model": "text-embedding-3-small"
+}
+
+// 5. Code Node: Prepare Batch Objects
+const objects = $json.data.map((emb, idx) => ({
+  class: "Document",
+  properties: {
+    title: $json.batch[idx].title,
+    content: $json.batch[idx].content,
+    category: $json.batch[idx].category,
+    created_at: new Date().toISOString()
+  },
+  vector: emb.embedding
+}));
+return { objects };
+
+// 6. HTTP Request: Batch Insert
+Method: POST
+URL: http://weaviate:8080/v1/batch/objects
+Body: {
+  "objects": {{ $json.objects }}
+}
+
+// 7. Check response for errors
+// Weaviate returns per-object status
+
+// 8. Wait Node: 1 second (avoid rate limits)
+
+// 9. Loop continues
+```
+
+#### Example 6: Generative Search (RAG)
+
+Use Weaviate's built-in RAG capabilities:
+
+```javascript
+// 1. Webhook: Receive user question
+
+// 2. HTTP Request: Generative Search
+Method: POST
+URL: http://weaviate:8080/v1/graphql
+Body: {
+  "query": "{
+    Get {
+      Document(
+        nearText: {
+          concepts: [\"{{ $json.question }}\"]
+        }
+        limit: 3
+      ) {
+        title
+        content
+        _additional {
+          generate(
+            singleResult: {
+              prompt: \"Answer this question: {{ $json.question }}\\n\\nUsing this context: {content}\"
+            }
+          ) {
+            singleResult
+            error
+          }
+        }
+      }
+    }
+  }"
+}
+
+// Weaviate will:
+// 1. Find top 3 relevant documents
+// 2. Send them to configured LLM (OpenAI, Cohere, etc.)
+// 3. Return generated answer
+
+// 3. Code Node: Extract Answer
+const answer = $json.data.Get.Document[0]._additional.generate.singleResult;
+const sources = $json.data.Get.Document.map(doc => ({
+  title: doc.title,
+  content: doc.content.substring(0, 200) + "..."
+}));
+return { answer, sources };
+
+// 4. Send response
+```
+
+### Advanced Configuration
+
+#### Using Built-in Vectorizers
+
+Configure Weaviate to auto-generate embeddings:
+
+```bash
+# Create collection with OpenAI vectorizer
+curl -X POST http://localhost:8080/v1/schema \
+  -H 'Content-Type: application/json' \
+  -H 'X-OpenAI-Api-Key: YOUR_API_KEY' \
+  -d '{
+    "class": "Article",
+    "vectorizer": "text2vec-openai",
+    "moduleConfig": {
+      "text2vec-openai": {
+        "model": "text-embedding-3-small",
+        "dimensions": 1536,
+        "vectorizeClassName": false
+      }
+    },
+    "properties": [
+      {
+        "name": "title",
+        "dataType": ["text"]
+      },
+      {
+        "name": "content",
+        "dataType": ["text"]
+      }
+    ]
+  }'
+
+# Now objects are automatically vectorized on insert!
+curl -X POST http://localhost:8080/v1/objects \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "class": "Article",
+    "properties": {
+      "title": "Weaviate Tutorial",
+      "content": "This is an example article."
+    }
+  }'
+# No vector needed - Weaviate generates it automatically!
+```
+
+#### Multi-Tenancy Setup
+
+Isolate data for different users/clients:
+
+```bash
+# Enable multi-tenancy on collection
+curl -X POST http://localhost:8080/v1/schema \
+  -d '{
+    "class": "Document",
+    "multiTenancyConfig": {
+      "enabled": true
+    },
+    "properties": [...]
+  }'
+
+# Create tenant
+curl -X POST http://localhost:8080/v1/schema/Document/tenants \
+  -d '{
+    "tenants": [
+      {"name": "tenant_a"},
+      {"name": "tenant_b"}
+    ]
+  }'
+
+# Insert object for specific tenant
+curl -X POST http://localhost:8080/v1/objects \
+  -d '{
+    "class": "Document",
+    "tenant": "tenant_a",
+    "properties": {...}
+  }'
+
+# Query specific tenant only
+# GraphQL: Get { Document(tenant: "tenant_a") {...} }
+```
+
+#### Replication for High Availability
+
+```bash
+# Create collection with replication
+curl -X POST http://localhost:8080/v1/schema \
+  -d '{
+    "class": "Article",
+    "replicationConfig": {
+      "factor": 2  # 2 copies of each shard
+    },
+    "properties": [...]
+  }'
+```
+
+### Troubleshooting
+
+**Collection creation fails:**
+
+```bash
+# 1. Check if Weaviate is running
+docker ps | grep weaviate
+
+# 2. Check logs
+docker logs weaviate --tail 50
+
+# 3. Verify API is accessible
+curl http://localhost:8080/v1/.well-known/ready
+
+# 4. Check existing schema
+curl http://localhost:8080/v1/schema
+
+# 5. Delete collection if corrupted
+curl -X DELETE http://localhost:8080/v1/schema/BrokenCollection
+```
+
+**GraphQL queries fail:**
+
+```bash
+# 1. Validate GraphQL syntax
+# Use GraphQL formatter: https://graphql-formatter.com/
+
+# 2. Check for common issues:
+# - Missing quotes around strings
+# - Incorrect field names (case-sensitive!)
+# - Wrong data types in filters
+
+# 3. Test in GraphQL Playground
+# Navigate to: http://localhost:8080/v1/graphql
+
+# 4. Check query response for errors
+curl -X POST http://localhost:8080/v1/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "..."}'
+# Look for "errors" array in response
+
+# 5. Simplify query to isolate issue
+# Start with basic Get, then add filters gradually
+```
+
+**Objects not being found in search:**
+
+```bash
+# 1. Verify objects were inserted
+curl http://localhost:8080/v1/objects?class=Document&limit=5
+
+# 2. Check object count
+# GraphQL:
+# { Aggregate { Document { meta { count } } } }
+
+# 3. Verify vector dimensions match
+# Collection expects: 1536 dimensions
+# Your vectors must also be: 1536 dimensions
+
+# 4. Test with simple keyword search
+# Use BM25 to verify data exists:
+# { Get { Document(bm25: {query: "test"}) { title } } }
+
+# 5. Check distance threshold
+# Try higher limit or no distance filter
+```
+
+**High memory usage:**
+
+```bash
+# 1. Check Weaviate stats
+curl http://localhost:8080/v1/nodes
+
+# 2. Enable vector quantization
+# Product Quantization reduces memory by 4-10x
+curl -X PATCH http://localhost:8080/v1/schema/Document \
+  -d '{
+    "vectorIndexConfig": {
+      "pq": {
+        "enabled": true,
+        "segments": 96,
+        "centroids": 256
+      }
+    }
+  }'
+
+# 3. Adjust HNSW parameters
+# Lower ef and maxConnections
+curl -X PATCH http://localhost:8080/v1/schema/Document \
+  -d '{
+    "vectorIndexConfig": {
+      "ef": 64,  # Default: 128
+      "maxConnections": 32  # Default: 64
+    }
+  }'
+
+# 4. Monitor memory
+docker stats weaviate
+
+# 5. Consider sharding for large datasets
+# Distribute data across multiple nodes
+```
+
+**Slow query performance:**
+
+```bash
+# 1. Check query complexity
+# Avoid deep nested cross-references
+
+# 2. Use filters efficiently
+# Indexed properties: faster
+# Non-indexed properties: slower
+
+# 3. Optimize HNSW settings
+curl -X PATCH http://localhost:8080/v1/schema/Document \
+  -d '{
+    "vectorIndexConfig": {
+      "ef": 128,  # Higher = better accuracy, slower
+      "efConstruction": 256
+    }
+  }'
+
+# 4. Use limit parameter
+# Don't retrieve more results than needed
+
+# 5. Consider caching frequent queries
+# Implement query result caching in your application
+```
+
+### Best Practices
+
+**Collection Design:**
+- Use descriptive class names (PascalCase): `Article`, `UserProfile`
+- Define explicit property types
+- Enable vectorizer if you want auto-embedding
+- Use `tokenization: "field"` for exact-match properties (IDs, categories)
+- Use `tokenization: "word"` for full-text search properties
+
+**Property Data Types:**
+- `text` - For searchable text
+- `text[]` - For arrays of text
+- `int`, `number` - For numeric values
+- `boolean` - For true/false
+- `date` - For timestamps (ISO 8601 format)
+- `geoCoordinates` - For lat/lon locations
+- `phoneNumber` - For phone numbers
+- `blob` - For binary data
+
+**Search Strategy:**
+- **Pure semantic:** Use `nearText` or `nearVector` (alpha=1.0)
+- **Pure keyword:** Use `bm25` (alpha=0.0)
+- **Balanced hybrid:** Use `hybrid` with alpha=0.5
+- **Filtered semantic:** Combine `nearText` with `where` filters
+
+**Performance Tips:**
+- Batch insert objects (100-1000 at a time)
+- Use gRPC for high-throughput queries
+- Index properties used in filters
+- Limit result size (default 100, adjust as needed)
+- Use multi-tenancy for SaaS applications
+- Enable replication for high availability
+
+**Data Modeling:**
+- Avoid deep cross-references (slow at scale)
+- Embed related data in same object when possible
+- Use filters instead of cross-references for simple relationships
+- Example: Store author name in Book object, not reference
+
+### Integration with Other AI LaunchKit Services
+
+**Weaviate + RAGApp:**
+- Can configure RAGApp to use Weaviate as vector store
+- Alternative to Qdrant with different feature set
+- GraphQL interface provides flexibility
+
+**Weaviate + Flowise:**
+- Use Weaviate Vector Store node
+- URL: `http://weaviate:8080`
+- Built-in support in Flowise
+
+**Weaviate + LangChain/LlamaIndex:**
+- Native integrations available
+- Python: `pip install weaviate-client`
+- JavaScript: `npm install weaviate-client`
+
+**Weaviate + n8n:**
+- Build custom RAG workflows
+- Use HTTP Request or GraphQL nodes
+- Combine with other services (Whisper, OCR, etc.)
+
+**Weaviate + Ollama:**
+- Configure Ollama as vectorizer
+- Local embeddings with `nomic-embed-text`
+- Free and private alternative to OpenAI
+
+### Distance Metrics
+
+Weaviate supports multiple distance metrics:
+
+**Cosine Distance:**
+- Best for: Text embeddings
+- Range: 0 (identical) to 2 (opposite)
+- Normalized vectors recommended
+
+**Dot Product:**
+- Best for: When magnitude matters
+- Range: -∞ to +∞
+- Faster than Cosine
+
+**L2 Squared (Euclidean):**
+- Best for: Spatial data
+- Range: 0 (identical) to +∞
+- Actual distance in vector space
+
+**Manhattan (L1):**
+- Best for: High-dimensional data
+- Range: 0 (identical) to +∞
+
+**Hamming:**
+- Best for: Binary vectors
+- Counts different bits
+
+### GraphQL vs REST API
+
+**Use GraphQL for:**
+- ✅ Complex queries with filters
+- ✅ Retrieving specific properties
+- ✅ Nested cross-reference queries
+- ✅ Aggregations and analytics
+- ✅ Interactive development (Playground)
+
+**Use REST for:**
+- ✅ CRUD operations on objects
+- ✅ Schema management
+- ✅ Batch operations
+- ✅ Object-by-ID retrieval
+- ✅ Simpler integration
+
+**Use gRPC for:**
+- ✅ High-throughput queries
+- ✅ Low-latency requirements
+- ✅ Large data transfers
+- ✅ Production search endpoints
+
+### Resources
+
+- **Official Website:** https://weaviate.io/
+- **Documentation:** https://weaviate.io/developers/weaviate
+- **GitHub:** https://github.com/weaviate/weaviate
+- **GraphQL Playground:** `https://weaviate.yourdomain.com/v1/graphql`
+- **REST API Docs:** https://weaviate.io/developers/weaviate/api/rest
+- **Python Client:** https://github.com/weaviate/weaviate-python-client
+- **JS Client:** https://github.com/weaviate/typescript-client
+- **Community:** Slack & Forum (links on website)
+- **Weaviate Academy:** https://weaviate.io/developers/academy
 
 </details>
 

@@ -996,76 +996,76 @@ This section provides detailed information for each service, including setup, n8
 <details>
 <summary><b>📧 Mailpit - Development Mail Catcher</b></summary>
 
-### Was ist Mailpit?
+### What is Mailpit?
 
-Mailpit ist ein moderner Email-Testserver mit integrierter Web-UI. Er fängt alle ausgehenden E-Mails ab und zeigt sie in einer benutzerfreundlichen Oberfläche an - perfekt für Entwicklung und Testing.
+Mailpit is a modern email testing server with an integrated web UI. It captures all outgoing emails and displays them in a user-friendly interface - perfect for development and testing.
 
 ### Features
 
-- **Email Capture:** Fängt ALLE E-Mails aller Services ab
-- **Web UI:** Modern, schnell, responsive Interface
-- **Real-time Updates:** Neue E-Mails erscheinen sofort
-- **Search & Filter:** Durchsuche E-Mails nach Absender, Betreff, etc.
-- **API Access:** Programmgesteuerten Zugriff auf E-Mails
-- **Zero Configuration:** Funktioniert out-of-the-box
+- **Email Capture:** Catches ALL emails from all services
+- **Web UI:** Modern, fast, responsive interface
+- **Real-time Updates:** New emails appear instantly
+- **Search & Filter:** Search emails by sender, subject, etc.
+- **API Access:** Programmatic access to emails
+- **Zero Configuration:** Works out-of-the-box
 
 ### Initial Setup
 
-**Mailpit ist bereits vorkonfiguriert!** Kein Setup erforderlich.
+**Mailpit is already pre-configured!** No setup required.
 
-**Zugriff auf die Web-UI:**
+**Access the Web UI:**
 
-1. Öffne `https://mail.yourdomain.com`
-2. Keine Anmeldung erforderlich
-3. Alle von Services gesendeten E-Mails erscheinen automatisch hier
+1. Navigate to `https://mail.yourdomain.com`
+2. No authentication required
+3. All emails sent by services appear automatically here
 
-**Alle Services sind vorkonfiguriert:**
+**All services are pre-configured:**
 - SMTP Host: `mailpit`
 - SMTP Port: `1025`
-- Keine Authentifizierung erforderlich
-- Kein SSL/TLS
+- No authentication required
+- No SSL/TLS
 
 ### n8n Integration Setup
 
-Mailpit ist **bereits in n8n vorkonfiguriert**. Alle "Send Email"-Nodes verwenden Mailpit automatisch.
+Mailpit is **already pre-configured in n8n**. All "Send Email" nodes use Mailpit automatically.
 
-**Email von n8n senden (bereits konfiguriert):**
+**Send email from n8n (already configured):**
 
-1. Workflow erstellen
-2. "Send Email" Node hinzufügen
-3. Node ist bereits mit Mailpit konfiguriert
-4. Email wird automatisch in Mailpit erfasst
+1. Create workflow
+2. Add "Send Email" node
+3. Node is already configured with Mailpit
+4. Email is automatically captured in Mailpit
 
-**Internal URL für manuelle Konfiguration:** `http://mailpit:1025`
+**Internal URL for manual configuration:** `http://mailpit:1025`
 
 ### Example Workflows
 
-#### Example 1: Test Email senden
+#### Example 1: Send Test Email
 
 ```javascript
 // 1. Manual Trigger Node
 
-// 2. Send Email Node (bereits vorkonfiguriert)
+// 2. Send Email Node (already pre-configured)
 {
   "to": "test@example.com",
   "subject": "Test from AI LaunchKit",
-  "text": "Diese E-Mail wurde von Mailpit erfasst!"
+  "text": "This email was captured by Mailpit!"
 }
 
-// 3. Mailpit Web-UI öffnen
-// → E-Mail erscheint sofort bei mail.yourdomain.com
+// 3. Open Mailpit Web UI
+// → Email appears instantly at mail.yourdomain.com
 ```
 
-#### Example 2: Automatische Benachrichtigungen testen
+#### Example 2: Test Automated Notifications
 
 ```javascript
 // 1. Webhook Trigger Node
-// Empfängt POST von externem Service
+// Receives POST from external service
 
-// 2. Code Node - E-Mail formatieren
+// 2. Code Node - Format email
 const emailData = {
   to: "admin@example.com",
-  subject: `Neue Benachrichtigung: ${$json.event}`,
+  subject: `New Notification: ${$json.event}`,
   html: `
     <h2>Event Details</h2>
     <p><strong>Type:</strong> ${$json.event}</p>
@@ -1076,79 +1076,79 @@ const emailData = {
 return emailData;
 
 // 3. Send Email Node
-// → Sendet an Mailpit zur Überprüfung
+// → Sends to Mailpit for review
 
-// 4. In Mailpit Web-UI testen
-// → HTML-Formatierung und Daten validieren
+// 4. Test in Mailpit Web UI
+// → Validate HTML formatting and data
 ```
 
-#### Example 3: Service-Email-Konfiguration testen
+#### Example 3: Test Service Email Configuration
 
 ```javascript
-// Cal.com, Vikunja, Invoice Ninja etc. testen
-// Alle Services → Mailpit automatisch konfiguriert
+// Test Cal.com, Vikunja, Invoice Ninja, etc.
+// All services → Mailpit automatically configured
 
-// Test:
-// 1. In Service eine Aktion ausführen (z.B. Meeting in Cal.com buchen)
-// 2. Service sendet E-Mail
-// 3. E-Mail in Mailpit Web-UI überprüfen
-// 4. Format und Inhalt validieren
+// Test process:
+// 1. Perform action in service (e.g., book meeting in Cal.com)
+// 2. Service sends email
+// 3. Check email in Mailpit Web UI
+// 4. Validate format and content
 
-// Kein Code nötig - Services senden direkt an Mailpit!
+// No code needed - services send directly to Mailpit!
 ```
 
 ### Troubleshooting
 
-**E-Mails erscheinen nicht in Mailpit:**
+**Emails not appearing in Mailpit:**
 
 ```bash
-# 1. Mailpit Status prüfen
+# 1. Check Mailpit status
 docker ps | grep mailpit
 # Should show: STATUS = Up
 
-# 2. Mailpit Logs checken
+# 2. Check Mailpit logs
 docker logs mailpit --tail 50
 
-# 3. SMTP-Verbindung testen
+# 3. Test SMTP connection
 docker exec n8n nc -zv mailpit 1025
 # Should return: Connection successful
 
-# 4. Von anderem Container testen
+# 4. Test from another container
 docker exec -it [service-name] sh
 nc -zv mailpit 1025
 ```
 
-**Mailpit Web-UI nicht erreichbar:**
+**Mailpit Web UI not accessible:**
 
 ```bash
-# 1. Caddy Logs prüfen
+# 1. Check Caddy logs
 docker logs caddy | grep mailpit
 
-# 2. Mailpit Container neu starten
+# 2. Restart Mailpit container
 docker compose restart mailpit
 
-# 3. Browser-Cache leeren
-# STRG+F5 oder Inkognito-Modus
+# 3. Clear browser cache
+# CTRL+F5 or incognito mode
 
-# 4. DNS prüfen
+# 4. Check DNS
 nslookup mail.yourdomain.com
 # Should return your server IP
 ```
 
-**Service kann keine E-Mails senden:**
+**Service cannot send emails:**
 
 ```bash
-# 1. Service SMTP-Einstellungen prüfen
+# 1. Check service SMTP settings
 docker exec [service] env | grep SMTP
 # Should show: SMTP_HOST=mailpit, SMTP_PORT=1025
 
-# 2. Docker Network prüfen
+# 2. Check Docker network
 docker network inspect ai-launchkit_default | grep mailpit
 
-# 3. Service Logs checken
+# 3. Check service logs
 docker logs [service] | grep -i "mail\|smtp"
 
-# 4. Service neu starten
+# 4. Restart service
 docker compose restart [service]
 ```
 
@@ -1164,45 +1164,45 @@ docker compose restart [service]
 <details>
 <summary><b>📬 Docker-Mailserver - Production Email</b></summary>
 
-### Was ist Docker-Mailserver?
+### What is Docker-Mailserver?
 
-Docker-Mailserver ist ein vollwertiger, produktionsreifer Mail-Server (SMTP, IMAP) mit integriertem Spam-Schutz und Security-Features. Perfekt für echte Email-Zustellung in Produktion.
+Docker-Mailserver is a full-featured, production-ready mail server (SMTP, IMAP) with integrated spam protection and security features. Perfect for real email delivery in production.
 
 ### Features
 
-- **Full SMTP/IMAP Support:** Echte Email-Zustellung und -Empfang
-- **DKIM/SPF/DMARC:** Konfiguriert für beste Zustellbarkeit
-- **Rspamd Integration:** Automatischer Spam-Schutz
-- **User Management:** Einfache CLI-Tools für Account-Verwaltung
-- **Secure by Default:** TLS/STARTTLS, moderne Cipher Suites
+- **Full SMTP/IMAP Support:** Real email delivery and receiving
+- **DKIM/SPF/DMARC:** Configured for best deliverability
+- **Rspamd Integration:** Automatic spam protection
+- **User Management:** Easy CLI tools for account management
+- **Secure by Default:** TLS/STARTTLS, modern cipher suites
 
 ### Initial Setup
 
-**Voraussetzung:** Docker-Mailserver muss während der Installation ausgewählt worden sein.
+**Prerequisite:** Docker-Mailserver must have been selected during installation.
 
-#### 1. DNS Records konfigurieren
+#### 1. Configure DNS Records
 
-Diese DNS-Einträge sind **erforderlich** für die Email-Zustellung:
+These DNS entries are **required** for email delivery:
 
 **MX Record:**
 ```
 Type: MX
-Name: @ (oder yourdomain.com)
+Name: @ (or yourdomain.com)
 Value: mail.yourdomain.com
 Priority: 10
 ```
 
-**A Record für mail subdomain:**
+**A Record for mail subdomain:**
 ```
 Type: A
 Name: mail
-Value: DEINE_SERVER_IP
+Value: YOUR_SERVER_IP
 ```
 
 **SPF Record:**
 ```
 Type: TXT
-Name: @ (oder yourdomain.com)
+Name: @ (or yourdomain.com)
 Value: "v=spf1 mx ~all"
 ```
 
@@ -1213,183 +1213,183 @@ Name: _dmarc
 Value: "v=DMARC1; p=none; rua=mailto:postmaster@yourdomain.com"
 ```
 
-**DKIM Record (nach Installation):**
+**DKIM Record (after installation):**
 ```bash
-# DKIM Keys generieren
+# Generate DKIM keys
 docker exec mailserver setup config dkim
 
-# Public Key für DNS anzeigen
+# Display public key for DNS
 docker exec mailserver cat /tmp/docker-mailserver/opendkim/keys/yourdomain.com/mail.txt
 
-# Als TXT Record hinzufügen:
+# Add as TXT record:
 # Name: mail._domainkey
-# Value: (der angezeigte Key)
+# Value: (the displayed key)
 ```
 
-#### 2. Email-Accounts erstellen
+#### 2. Create Email Accounts
 
 ```bash
-# Ersten Account erstellen
+# Create first account
 docker exec -it mailserver setup email add admin@yourdomain.com
 
-# Weitere Accounts hinzufügen
+# Add more accounts
 docker exec mailserver setup email add user@yourdomain.com
 docker exec mailserver setup email add support@yourdomain.com
 
-# Alle Accounts auflisten
+# List all accounts
 docker exec mailserver setup email list
 ```
 
-#### 3. Automatische Konfiguration
+#### 3. Automatic Configuration
 
-**Alle Services verwenden Docker-Mailserver automatisch:**
+**All services automatically use Docker-Mailserver:**
 - SMTP Host: `mailserver`
 - SMTP Port: `587`
 - Security: STARTTLS
 - Authentication: noreply@yourdomain.com
-- Password: automatisch generiert (siehe `.env`)
+- Password: auto-generated (see `.env`)
 
 ### n8n Integration Setup
 
-**SMTP Credentials in n8n erstellen:**
+**Create SMTP Credentials in n8n:**
 
-1. In n8n öffnen: `https://n8n.yourdomain.com`
+1. Open n8n: `https://n8n.yourdomain.com`
 2. Settings → Credentials → Add New
 3. Credential Type: SMTP
-4. Konfiguration:
+4. Configuration:
 
 ```
 Host: mailserver
 Port: 587
 User: noreply@yourdomain.com
-Password: [siehe .env Datei - MAIL_NOREPLY_PASSWORD]
-SSL/TLS: STARTTLS aktivieren
+Password: [see .env file - MAIL_NOREPLY_PASSWORD]
+SSL/TLS: Enable STARTTLS
 Sender Email: noreply@yourdomain.com
 ```
 
-**Internal URL für HTTP Requests:** `http://mailserver:587`
+**Internal URL for HTTP Requests:** `http://mailserver:587`
 
 ### Example Workflows
 
-#### Example 1: Produktions-Email senden
+#### Example 1: Send Production Email
 
 ```javascript
 // 1. Manual Trigger Node
 
 // 2. Send Email Node
-// → SMTP Credential auswählen (siehe Setup oben)
+// → Select SMTP credential (see setup above)
 {
-  "to": "kunde@example.com",
-  "subject": "Bestellbestätigung #12345",
+  "to": "customer@example.com",
+  "subject": "Order Confirmation #12345",
   "html": `
-    <h1>Vielen Dank für Ihre Bestellung!</h1>
-    <p>Ihre Bestellung wurde erfolgreich bearbeitet.</p>
-    <p>Bestellnummer: #12345</p>
+    <h1>Thank you for your order!</h1>
+    <p>Your order has been successfully processed.</p>
+    <p>Order Number: #12345</p>
   `
 }
 
-// E-Mail wird über Docker-Mailserver versendet
-// Empfänger erhält echte E-Mail
+// Email sent via Docker-Mailserver
+// Recipient receives real email
 ```
 
 #### Example 2: Cal.com Booking Notifications
 
 ```javascript
-// Cal.com sendet automatisch E-Mails über Docker-Mailserver:
-// - Buchungsbestätigungen
-// - Kalender-Einladungen (.ics)
-// - Erinnerungen
-// - Absagen/Umplanungen
+// Cal.com automatically sends emails via Docker-Mailserver:
+// - Booking confirmations
+// - Calendar invitations (.ics)
+// - Reminders
+// - Cancellations/rescheduling
 
-// Keine Konfiguration nötig - automatisch!
-// Alle Cal.com E-Mails → Docker-Mailserver → Empfänger
+// No configuration needed - automatic!
+// All Cal.com emails → Docker-Mailserver → Recipients
 ```
 
 #### Example 3: Invoice Ninja Integration
 
 ```javascript
-// Invoice Ninja SMTP konfigurieren:
+// Configure SMTP in Invoice Ninja:
 // Settings → Email Settings → SMTP Configuration
 // Host: mailserver
 // Port: 587
 // Encryption: TLS
 // Username: noreply@yourdomain.com
-// Password: [aus .env]
+// Password: [from .env]
 
-// Workflow-Beispiel:
-// 1. Invoice Ninja erstellt Rechnung
-// 2. Invoice Ninja sendet Email via Docker-Mailserver
-// 3. Kunde erhält professionelle Rechnung per E-Mail
+// Workflow example:
+// 1. Invoice Ninja creates invoice
+// 2. Invoice Ninja sends email via Docker-Mailserver
+// 3. Customer receives professional invoice via email
 ```
 
 ### Troubleshooting
 
-**E-Mails werden nicht zugestellt:**
+**Emails not being delivered:**
 
 ```bash
-# 1. DNS Records prüfen
+# 1. Check DNS records
 nslookup -type=MX yourdomain.com
 nslookup -type=TXT yourdomain.com
 
-# 2. Docker-Mailserver Logs checken
+# 2. Check Docker-Mailserver logs
 docker logs mailserver --tail 100
 
-# 3. Mail Queue prüfen
+# 3. Check mail queue
 docker exec mailserver postqueue -p
 
-# 4. DKIM Status prüfen
+# 4. Check DKIM status
 docker exec mailserver setup config dkim status
 
-# 5. Test-Email senden
+# 5. Send test email
 docker exec mailserver setup email add test@yourdomain.com
-# Dann von extern an test@yourdomain.com senden
+# Then send from external to test@yourdomain.com
 ```
 
-**SMTP Authentication fehlschlägt:**
+**SMTP authentication fails:**
 
 ```bash
-# 1. Account-Existenz prüfen
+# 1. Check account exists
 docker exec mailserver setup email list
 
-# 2. Authentication testen
+# 2. Test authentication
 docker exec mailserver doveadm auth test noreply@yourdomain.com [password]
 
-# 3. Password aus .env überprüfen
+# 3. Verify password in .env
 grep MAIL_NOREPLY_PASSWORD .env
 
-# 4. Service neu starten
+# 4. Restart service
 docker compose restart mailserver
 ```
 
-**Spam-Probleme (E-Mails landen im Spam):**
+**Spam issues (emails landing in spam):**
 
 ```bash
-# 1. DKIM, SPF, DMARC überprüfen
-# Online-Tools nutzen: https://mxtoolbox.com/
+# 1. Check DKIM, SPF, DMARC
+# Use online tools: https://mxtoolbox.com/
 
-# 2. IP-Reputation prüfen
+# 2. Check IP reputation
 # https://multirbl.valli.org/
 
-# 3. Rspamd Logs prüfen
+# 3. Check Rspamd logs
 docker exec mailserver cat /var/log/rspamd/rspamd.log
 
-# 4. Port 25 für ausgehende Mails testen
+# 4. Test outgoing port 25
 telnet smtp.gmail.com 25
 ```
 
-**Docker-Mailserver startet nicht:**
+**Docker-Mailserver won't start:**
 
 ```bash
-# 1. Logs prüfen
+# 1. Check logs
 docker logs mailserver --tail 100
 
-# 2. Volumes prüfen
+# 2. Check volumes
 docker volume ls | grep mailserver
 
-# 3. Ports prüfen (25, 465, 587, 993)
+# 3. Check ports (25, 465, 587, 993)
 sudo netstat -tulpn | grep -E "25|465|587|993"
 
-# 4. Container neu erstellen
+# 4. Recreate container
 docker compose up -d --force-recreate mailserver
 ```
 
@@ -1405,40 +1405,40 @@ docker compose up -d --force-recreate mailserver
 <details>
 <summary><b>✉️ SnappyMail - Webmail Client</b></summary>
 
-### Was ist SnappyMail?
+### What is SnappyMail?
 
-SnappyMail ist ein moderner, ultra-schneller Webmail-Client mit nur 138KB Ladezeit. Er bietet eine vollständige E-Mail-Oberfläche für Docker-Mailserver mit professionellen Features wie PGP-Verschlüsselung und Multi-Account-Support.
+SnappyMail is a modern, ultra-fast webmail client with only 138KB load time. It provides a complete email interface for Docker-Mailserver with professional features like PGP encryption and multi-account support.
 
 ### Features
 
 - **Ultra-fast Performance:** 138KB initial load, 99% Lighthouse score
-- **Multiple Accounts:** Verwalte mehrere E-Mail-Accounts in einer Oberfläche
-- **Mobile Responsive:** Funktioniert perfekt auf allen Geräten
-- **PGP Encryption:** Integrierte Unterstützung für verschlüsselte E-Mails
-- **2-Factor Authentication:** Erhöhte Sicherheit für Webmail-Zugriff
-- **No Database Required:** Einfache dateibasierte Konfiguration
-- **Dark Mode:** Integrierte Theme-Unterstützung
+- **Multiple Accounts:** Manage multiple email accounts in one interface
+- **Mobile Responsive:** Works perfectly on all devices
+- **PGP Encryption:** Built-in support for encrypted emails
+- **2-Factor Authentication:** Enhanced security for webmail access
+- **No Database Required:** Simple file-based configuration
+- **Dark Mode:** Built-in theme support
 
 ### Initial Setup
 
-**Voraussetzung:** Docker-Mailserver muss installiert sein (SnappyMail benötigt IMAP/SMTP).
+**Prerequisite:** Docker-Mailserver must be installed (SnappyMail requires IMAP/SMTP).
 
-#### 1. Admin-Passwort abrufen
+#### 1. Get Admin Password
 
 ```bash
-# Admin-Passwort anzeigen
+# Display admin password
 docker exec snappymail cat /var/lib/snappymail/_data_/_default_/admin_password.txt
 ```
 
-#### 2. Admin Panel konfigurieren
+#### 2. Configure Admin Panel
 
-1. Öffne Admin Panel: `https://webmail.yourdomain.com/?admin`
+1. Open admin panel: `https://webmail.yourdomain.com/?admin`
 2. Username: `admin`
-3. Password: (aus Schritt 1)
+3. Password: (from step 1)
 
-#### 3. Domain hinzufügen
+#### 3. Add Domain
 
-Im Admin Panel:
+In the admin panel:
 
 **Domains → Add Domain:**
 ```
@@ -1453,80 +1453,80 @@ SMTP Security: STARTTLS
 
 #### 4. User Login
 
-Nach Domain-Konfiguration können User sich einloggen:
+After domain configuration, users can log in:
 
 1. URL: `https://webmail.yourdomain.com`
 2. Email: `user@yourdomain.com`
-3. Password: (Docker-Mailserver Passwort des Users)
+3. Password: (User's Docker-Mailserver password)
 
 ### n8n Integration Setup
 
-**SnappyMail ist ein Webmail-Client ohne direkte API.** Die Integration erfolgt über Docker-Mailserver:
+**SnappyMail is a webmail client without a direct API.** Integration happens via Docker-Mailserver:
 
-**Email-Workflow-Architektur:**
+**Email Workflow Architecture:**
 ```
-n8n Send Email Node → Docker-Mailserver → SnappyMail (E-Mails lesen)
+n8n Send Email Node → Docker-Mailserver → SnappyMail (read emails)
 ```
 
-**IMAP-Integration in n8n (E-Mails abrufen):**
+**IMAP Integration in n8n (retrieve emails):**
 
 1. Email (IMAP) Trigger Node in n8n
-2. Konfiguration:
+2. Configuration:
 
 ```
 Host: mailserver
 Port: 993
 User: user@yourdomain.com
 Password: [Docker-Mailserver Password]
-TLS: Aktiviert
+TLS: Enabled
 ```
 
 **Internal URLs:**
-- IMAP: `mailserver:993` (mit TLS) oder `mailserver:143` (STARTTLS)
+- IMAP: `mailserver:993` (with TLS) or `mailserver:143` (STARTTLS)
 - SMTP: `mailserver:587` (STARTTLS)
 
 ### Example Workflows
 
-#### Example 1: E-Mail Management Workflow
+#### Example 1: Email Management Workflow
 
 ```javascript
-// SnappyMail Use Case: E-Mails über Web-UI verwalten
+// SnappyMail Use Case: Manage emails via web UI
 
-// Workflow-Architektur:
-// 1. Service sendet E-Mail → Docker-Mailserver
-// 2. User öffnet SnappyMail → Liest E-Mail
-// 3. User antwortet → Über Docker-Mailserver versendet
+// Workflow Architecture:
+// 1. Service sends email → Docker-Mailserver
+// 2. User opens SnappyMail → Reads email
+// 3. User replies → Sent via Docker-Mailserver
 
-// n8n Parallel-Workflow:
+// n8n Parallel Workflow:
 // 1. IMAP Trigger Node (mailserver:993)
-//    → Neue E-Mails automatisch verarbeiten
-// 2. Code Node - E-Mail analysieren
-// 3. Conditional Node - Nach Kriterien filtern
-// 4. Action Nodes - Automatisierte Aktionen
+//    → Automatically process new emails
+// 2. Code Node - Analyze email
+// 3. Conditional Node - Filter by criteria
+// 4. Action Nodes - Automated actions
 ```
 
 #### Example 2: Multi-Account Management
 
 ```javascript
-// SnappyMail Feature: Mehrere Accounts verwalten
+// SnappyMail Feature: Manage multiple accounts
 
 // Setup in SnappyMail:
 // 1. User Login: user@yourdomain.com
 // 2. Settings → Accounts → Add Account
-// 3. Weitere Accounts hinzufügen (support@, sales@, etc.)
-// 4. Zwischen Accounts wechseln mit einem Klick
+// 3. Add more accounts (support@, sales@, etc.)
+// 4. Switch between accounts with one click
 
-// Alle E-Mails zentral verwalten!
+// Manage all emails centrally!
 ```
 
-#### Example 3: Ticket-System Integration
+#### Example 3: Ticket System Integration
 
 ```javascript
 // 1. IMAP Trigger Node (mailserver:993)
 //    Mailbox: support@yourdomain.com
-//    → Wartet auf neue Support-E-Mails
+//    → Waits for new support emails
 
-// 2. Code Node - Ticket-Daten extrahieren
+// 2. Code Node - Extract ticket data
 const ticketData = {
   from: $json.from.value[0].address,
   subject: $json.subject,
@@ -1536,8 +1536,8 @@ const ticketData = {
 };
 return ticketData;
 
-// 3. HTTP Request Node - Ticket erstellen
-// POST zu Ticketing-System API
+// 3. HTTP Request Node - Create ticket
+// POST to ticketing system API
 {
   "title": ticketData.subject,
   "description": ticketData.body,
@@ -1545,93 +1545,93 @@ return ticketData;
   "priority": ticketData.priority
 }
 
-// 4. Send Email Node - Bestätigung senden
-// → Kunde erhält Ticket-Nummer
-// → E-Mail in SnappyMail sichtbar
+// 4. Send Email Node - Send confirmation
+// → Customer receives ticket number
+// → Email visible in SnappyMail
 
-// Support-Team kann in SnappyMail antworten!
+// Support team can reply in SnappyMail!
 ```
 
 ### Troubleshooting
 
-**SnappyMail Web-UI nicht erreichbar:**
+**SnappyMail Web UI not accessible:**
 
 ```bash
-# 1. Container Status prüfen
+# 1. Check container status
 docker ps | grep snappymail
 # Should show: STATUS = Up
 
-# 2. Logs checken
+# 2. Check logs
 docker logs snappymail --tail 50
 
-# 3. Admin-Passwort erneut abrufen
+# 3. Get admin password again
 docker exec snappymail cat /var/lib/snappymail/_data_/_default_/admin_password.txt
 
-# 4. Caddy Logs prüfen
+# 4. Check Caddy logs
 docker logs caddy | grep snappymail
 
-# 5. Container neu starten
+# 5. Restart container
 docker compose restart snappymail
 ```
 
-**User können sich nicht einloggen:**
+**Users cannot log in:**
 
 ```bash
-# 1. Domain-Konfiguration prüfen
-# → Admin Panel öffnen: https://webmail.yourdomain.com/?admin
-# → Domains → Domain prüfen
-# → IMAP/SMTP Settings verifizieren
+# 1. Check domain configuration
+# → Open admin panel: https://webmail.yourdomain.com/?admin
+# → Domains → Check domain
+# → Verify IMAP/SMTP settings
 
-# 2. User-Account in Docker-Mailserver prüfen
+# 2. Check user account in Docker-Mailserver
 docker exec mailserver setup email list
 
-# 3. IMAP/SMTP Verbindung testen
+# 3. Test IMAP/SMTP connection
 docker exec snappymail nc -zv mailserver 143
 docker exec snappymail nc -zv mailserver 587
 
-# 4. Authentication testen
+# 4. Test authentication
 docker exec mailserver doveadm auth test user@yourdomain.com [password]
 
-# 5. User-spezifische Logs
+# 5. Check user-specific logs
 docker logs snappymail | grep -i "login\|auth\|imap"
 ```
 
-**E-Mails werden nicht angezeigt:**
+**Emails not showing:**
 
 ```bash
-# 1. IMAP-Connection prüfen
+# 1. Check IMAP connection
 docker exec snappymail nc -zv mailserver 143
 
-# 2. Mailbox in Docker-Mailserver prüfen
+# 2. Check mailbox in Docker-Mailserver
 docker exec mailserver doveadm mailbox list -u user@yourdomain.com
 
-# 3. E-Mail-Zustellung testen
-# Test-E-Mail an user@yourdomain.com senden
+# 3. Test email delivery
+# Send test email to user@yourdomain.com
 
-# 4. Docker-Mailserver Logs
+# 4. Check Docker-Mailserver logs
 docker logs mailserver | grep user@yourdomain.com
 
-# 5. SnappyMail Cache löschen
+# 5. Clear SnappyMail cache
 docker exec snappymail rm -rf /var/lib/snappymail/_data_/_default_/cache/*
 docker compose restart snappymail
 ```
 
-**Performance-Probleme:**
+**Performance issues:**
 
 ```bash
-# 1. Cache-Größe prüfen
+# 1. Check cache size
 docker exec snappymail du -sh /var/lib/snappymail/_data_/_default_/cache/
 
-# 2. Cache leeren (wenn zu groß)
+# 2. Clear cache (if too large)
 docker exec snappymail rm -rf /var/lib/snappymail/_data_/_default_/cache/*
 
-# 3. Container-Ressourcen prüfen
+# 3. Check container resources
 docker stats snappymail --no-stream
 
-# 4. Logs auf Fehler prüfen
+# 4. Check logs for errors
 docker logs snappymail | grep -i "error\|warning"
 
-# 5. Container neu starten
+# 5. Restart container
 docker compose restart snappymail
 ```
 

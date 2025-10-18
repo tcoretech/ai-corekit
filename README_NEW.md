@@ -2485,14 +2485,907 @@ docker exec n8nmcp npm run rebuild-cache
 <details>
 <summary><b>💬 Open WebUI - ChatGPT Interface</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Open WebUI?
+
+Open WebUI is a self-hosted ChatGPT-like interface that provides a beautiful, feature-rich chat experience for local and remote LLMs. It seamlessly integrates with Ollama for local models, OpenAI API, and other providers, offering conversation management, model switching, and advanced features like RAG (Retrieval-Augmented Generation).
+
+### Features
+
+- **ChatGPT-like Interface** - Familiar chat UI with markdown, code highlighting, and streaming
+- **Multiple Model Support** - Switch between Ollama (local), OpenAI, Anthropic, and other providers
+- **Conversation Management** - Save, search, and organize chat history
+- **RAG Integration** - Upload documents and chat with your data using vector search
+- **Multi-user Support** - User accounts, authentication, and role-based access
+- **Model Library** - Browse and download Ollama models directly from the UI
+
+### Initial Setup
+
+**First Login to Open WebUI:**
+
+1. Navigate to `https://webui.yourdomain.com`
+2. **First user becomes admin** - Create your account
+3. Set strong password
+4. Setup complete!
+
+**Ollama is pre-configured** - All local models from Ollama are automatically available.
+
+### Connect to Ollama Models
+
+**Ollama is already connected internally:**
+
+- **Internal URL:** `http://ollama:11434`
+- All models pulled in Ollama appear automatically in Open WebUI
+- No additional configuration needed!
+
+**Available default models:**
+- `llama3.2` - Fast, general-purpose (recommended)
+- `mistral` - Great for coding and reasoning
+- `llama3.2-vision` - Multimodal (text + images)
+- `qwen2.5-coder` - Specialized for code generation
+
+### Download Additional Models
+
+**Option 1: From Open WebUI (recommended)**
+
+1. Click Settings (gear icon)
+2. Go to **Models** tab
+3. Browse available models
+4. Click **Pull** to download
+
+**Option 2: From Command Line**
+
+```bash
+# Download a specific model
+docker exec ollama ollama pull llama3.2
+
+# List installed models
+docker exec ollama ollama list
+
+# Remove a model
+docker exec ollama ollama rm modelname
+```
+
+**Popular Model Recommendations:**
+
+| Model | Size | Best For | RAM Required |
+|-------|------|----------|--------------|
+| `llama3.2` | 2GB | General chat, fast | 4GB |
+| `llama3.2:70b` | 40GB | Best quality | 64GB+ |
+| `mistral` | 4GB | Coding, reasoning | 8GB |
+| `qwen2.5-coder:7b` | 4GB | Code generation | 8GB |
+| `llama3.2-vision` | 5GB | Image understanding | 8GB |
+| `deepseek-r1:7b` | 4GB | Reasoning, math | 8GB |
+
+### Add OpenAI API Models
+
+**Connect to OpenAI for faster responses:**
+
+1. Settings → **Connections**
+2. **OpenAI API** section
+3. Add API Key: `sk-your-key-here`
+4. Enable OpenAI models
+
+**Available models:**
+- `gpt-4o` - Most capable (recommended)
+- `gpt-4o-mini` - Fast and cost-effective
+- `o1` - Advanced reasoning
+
+### RAG (Chat with Your Documents)
+
+**Upload and chat with documents:**
+
+1. Click the **+** icon in chat
+2. Select **Upload Files**
+3. Choose PDF, DOCX, TXT, or other documents
+4. Open WebUI automatically:
+   - Extracts text
+   - Creates embeddings
+   - Stores in vector database
+5. Ask questions about your documents!
+
+**Example queries:**
+```
+"Summarize the key findings from the uploaded report"
+"What does the contract say about termination?"
+"Extract all action items from the meeting notes"
+```
+
+### n8n Integration
+
+**HTTP Request to Open WebUI API:**
+
+```javascript
+// HTTP Request Node Configuration
+Method: POST
+URL: http://open-webui:8080/api/chat/completions
+Authentication: Bearer Token
+  Token: [Your Open WebUI API Key]
+  
+Body (JSON):
+{
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant"
+    },
+    {
+      "role": "user",
+      "content": "{{$json.user_question}}"
+    }
+  ],
+  "stream": false
+}
+
+// Response:
+{
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "AI response here..."
+      }
+    }
+  ]
+}
+```
+
+**Generate API Key in Open WebUI:**
+1. Settings → **Account** → **API Keys**
+2. Click **Create new API Key**
+3. Copy and save securely
+
+### Example Workflows
+
+#### Example 1: Customer Support Automation
+
+```javascript
+// 1. Webhook Trigger - Receive support ticket
+// Input: { "customer": "John", "question": "How do I reset password?" }
+
+// 2. HTTP Request - Query Open WebUI
+Method: POST
+URL: http://open-webui:8080/api/chat/completions
+Headers:
+  Authorization: Bearer {{$env.OPENWEBUI_API_KEY}}
+Body: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer support assistant. Provide clear, helpful answers based on our knowledge base."
+    },
+    {
+      "role": "user",
+      "content": "{{$json.question}}"
+    }
+  ]
+}
+
+// 3. Code Node - Format response
+const response = $json.choices[0].message.content;
+return {
+  customer: $('Webhook').item.json.customer,
+  question: $('Webhook').item.json.question,
+  ai_response: response,
+  timestamp: new Date().toISOString()
+};
+
+// 4. Send Email - Reply to customer
+To: {{$json.customer}}@company.com
+Subject: Re: {{$json.question}}
+Message: |
+  Hi {{$json.customer}},
+  
+  {{$json.ai_response}}
+  
+  Best regards,
+  Support Team
+
+// 5. Baserow Node - Log interaction
+Table: support_tickets
+Fields: {
+  customer: {{$json.customer}},
+  question: {{$json.question}},
+  ai_response: {{$json.ai_response}},
+  resolved: true
+}
+```
+
+#### Example 2: Document Analysis Pipeline
+
+```javascript
+// 1. Schedule Trigger - Daily at 9 AM
+
+// 2. Google Drive - Get new PDFs
+Folder: /Documents/ToProcess
+File Type: PDF
+
+// 3. HTTP Request - Upload to Open WebUI with RAG
+Method: POST
+URL: http://open-webui:8080/api/documents/upload
+Headers:
+  Authorization: Bearer {{$env.OPENWEBUI_API_KEY}}
+Body (Form Data):
+  file: {{$binary.data}}
+
+// 4. HTTP Request - Query document
+Method: POST
+URL: http://open-webui:8080/api/chat/completions
+Body: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Analyze this document and extract: 1) Key topics, 2) Action items, 3) Deadlines"
+    }
+  ],
+  "files": ["{{$json.document_id}}"]
+}
+
+// 5. Code Node - Structure results
+const analysis = JSON.parse($json.choices[0].message.content);
+return {
+  document: $('Google Drive').item.json.name,
+  key_topics: analysis.key_topics,
+  action_items: analysis.action_items,
+  deadlines: analysis.deadlines
+};
+
+// 6. Notion - Create page with analysis
+Database: Project Docs
+Properties: {
+  title: {{$json.document}},
+  topics: {{$json.key_topics}},
+  actions: {{$json.action_items}},
+  due_dates: {{$json.deadlines}}
+}
+```
+
+#### Example 3: Multi-Model Comparison
+
+```javascript
+// Compare responses from different models
+
+// 1. Webhook Trigger - Receive question
+
+// 2. Split in Batches (parallel execution)
+
+// 3a. HTTP Request - Ollama (Llama)
+URL: http://open-webui:8080/api/chat/completions
+Body: {
+  "model": "llama3.2",
+  "messages": [{"role": "user", "content": "{{$json.question}}"}]
+}
+
+// 3b. HTTP Request - OpenAI (GPT-4)
+URL: http://open-webui:8080/api/chat/completions
+Body: {
+  "model": "gpt-4o",
+  "messages": [{"role": "user", "content": "{{$json.question}}"}]
+}
+
+// 3c. HTTP Request - Mistral
+URL: http://open-webui:8080/api/chat/completions
+Body: {
+  "model": "mistral",
+  "messages": [{"role": "user", "content": "{{$json.question}}"}]
+}
+
+// 4. Aggregate Results
+// Combine all responses
+
+// 5. Code Node - Compare and score
+const responses = [
+  { model: "llama3.2", answer: $item(0).json.choices[0].message.content },
+  { model: "gpt-4o", answer: $item(1).json.choices[0].message.content },
+  { model: "mistral", answer: $item(2).json.choices[0].message.content }
+];
+
+// Return best answer based on length, clarity, etc.
+return responses;
+```
+
+### LightRAG Integration
+
+**Add LightRAG as a model in Open WebUI:**
+
+1. Settings → **Connections**
+2. Add new Ollama connection:
+   - **URL:** `http://lightrag:9621`
+   - **Model name:** `lightrag:latest`
+3. Select LightRAG from model dropdown
+
+**Now you can chat with your knowledge graph directly!**
+
+### User Management
+
+**Admin Functions:**
+
+1. Settings → **Admin Panel**
+2. Manage users, roles, permissions
+3. Control model access per user
+4. View usage statistics
+
+**Create Additional Users:**
+
+1. Admin Panel → **Users** → **Add User**
+2. Set username, email, password
+3. Assign role: Admin, User, or Pending
+4. Users can also self-register if enabled
+
+### Troubleshooting
+
+**Models not appearing:**
+
+```bash
+# Check Ollama is running
+docker ps | grep ollama
+
+# Verify connectivity from Open WebUI
+docker exec open-webui curl http://ollama:11434/api/tags
+
+# Restart Open WebUI
+docker compose restart open-webui
+```
+
+**Slow responses:**
+
+```bash
+# Check server resources
+docker stats ollama
+
+# Model might be too large for RAM
+# Switch to smaller model:
+# llama3.2 (2GB) instead of llama3.2:70b (40GB)
+
+# Increase CPU allocation in docker-compose.yml
+```
+
+**RAG not working:**
+
+```bash
+# Check vector database
+docker logs open-webui | grep vector
+
+# Clear and rebuild embeddings
+# Settings → Admin → Reset Vector Database
+
+# Ensure enough disk space
+df -h
+```
+
+**API authentication failed:**
+
+```bash
+# Regenerate API key in Open WebUI
+# Settings → Account → API Keys → Create New
+
+# Update n8n credential
+# Replace old key with new one
+```
+
+### Resources
+
+- **Official Documentation:** https://docs.openwebui.com/
+- **GitHub:** https://github.com/open-webui/open-webui
+- **API Reference:** https://docs.openwebui.com/api/
+- **Model Library:** https://ollama.com/library
+- **Community Discord:** https://discord.gg/open-webui
+
+### Best Practices
+
+**Model Selection:**
+- Use `llama3.2` for general tasks (fast, 2GB)
+- Use `gpt-4o-mini` for better quality when speed matters
+- Use `qwen2.5-coder` for code-heavy tasks
+- Use vision models for image analysis
+
+**Performance:**
+- Keep 2-3 frequently used models downloaded
+- Remove unused models to save disk space
+- Use OpenAI API for production (faster, more reliable)
+- Use Ollama for privacy-sensitive data
+
+**Security:**
+- Change default admin password immediately
+- Disable self-registration in production
+- Use role-based access for team deployments
+- Regularly backup conversation history
+
+**RAG Optimization:**
+- Upload documents in supported formats (PDF, DOCX, TXT)
+- Keep documents under 10MB for best performance
+- Use clear, descriptive questions
+- Combine multiple related documents for better context
 
 </details>
 
 <details>
 <summary><b>📱 Postiz - Social Media Management</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Postiz?
+
+Postiz is a powerful, open-source social media management platform that centralizes content planning, scheduling, and analytics across 20+ platforms. It's a self-hosted alternative to Buffer, Hootsuite, and similar tools, offering AI-powered content creation, team collaboration, and comprehensive analytics—all while maintaining complete control over your data.
+
+### Features
+
+- **Multi-Platform Support** - Schedule to 20+ platforms: X, Facebook, Instagram, LinkedIn, YouTube, TikTok, Threads, Bluesky, Reddit, Mastodon, Pinterest, Dribbble, Slack, Discord
+- **AI Content Generation** - OpenAI-powered post creation with hashtags, emojis, and CTAs
+- **Visual Calendar** - Drag-and-drop scheduling with clear overview of all content
+- **Design Studio** - Canva-like interface for creating graphics, infographics, and videos
+- **Analytics & Insights** - Track engagement, reach, impressions, and audience demographics
+- **Team Collaboration** - Multi-user support with roles, permissions, and comment system
+
+### Initial Setup
+
+**First Login to Postiz:**
+
+1. Navigate to `https://postiz.yourdomain.com`
+2. **First user becomes admin** - Create your account
+3. Complete organization setup
+4. Connect your first social media account
+
+**Connect Social Media Accounts:**
+
+1. Click **Integrations** in sidebar
+2. Select platform (X, Facebook, LinkedIn, etc.)
+3. Authorize via OAuth
+4. Account appears in your channels list
+
+### Generate API Key
+
+**For n8n integration and automation:**
+
+1. Click **Settings** (gear icon, top right)
+2. Go to **Public API** section
+3. Click **Generate API Key**
+4. Copy and save securely
+
+**API Limits:**
+- 30 requests per hour
+- Applies to API calls, not post count
+- Plan ahead to maximize efficiency
+
+### n8n Integration Setup
+
+**Option 1: Custom Postiz Node (Recommended)**
+
+Postiz has a custom n8n community node:
+
+1. n8n → Settings → **Community Nodes**
+2. Search: `n8n-nodes-postiz`
+3. Click **Install**
+4. Restart n8n: `docker compose restart n8n`
+
+**Create Postiz Credentials in n8n:**
+```javascript
+// Postiz API Credentials
+API URL: https://postiz.yourdomain.com
+API Key: [Your API key from Postiz settings]
+```
+
+**Option 2: HTTP Request Node**
+
+```javascript
+// HTTP Request Node Configuration
+Method: POST
+URL: https://postiz.yourdomain.com/api/public/v1/posts
+Authentication: Header Auth
+  Header: Authorization
+  Value: {{$env.POSTIZ_API_KEY}}
+  
+Headers:
+  Content-Type: application/json
+```
+
+**Internal URL:** `http://postiz:3000`
+
+### Example Workflows
+
+#### Example 1: Auto-Post Blog to Social Media
+
+```javascript
+// 1. RSS Feed Trigger - Monitor blog for new posts
+URL: https://yourblog.com/feed.xml
+Check every: 1 hour
+
+// 2. Code Node - Extract post data
+const item = $json;
+return {
+  title: item.title,
+  url: item.link,
+  summary: item.contentSnippet,
+  published: item.pubDate
+};
+
+// 3. OpenAI Node - Generate social post
+Model: gpt-4o-mini
+Prompt: |
+  Create an engaging social media post for this blog article:
+  Title: {{$json.title}}
+  Summary: {{$json.summary}}
+  
+  Make it catchy with emojis and hashtags. Keep it under 280 characters.
+  Include a call-to-action to read the full article.
+
+// 4. Postiz Node (or HTTP Request) - Schedule post
+Operation: Create Post
+Channels: ["twitter", "linkedin", "facebook"]
+Content: {{$json.ai_generated_post}}
+Link: {{$('Extract Data').json.url}}
+Scheduled Time: Now + 30 minutes
+
+// 5. Slack Node - Notify team
+Channel: #marketing
+Message: |
+  📝 New blog post auto-scheduled to social media!
+  
+  Title: {{$('Extract Data').json.title}}
+  Platforms: Twitter, LinkedIn, Facebook
+  Goes live in 30 minutes
+```
+
+#### Example 2: AI-Powered Content Calendar
+
+```javascript
+// Generate a week of social media posts with AI
+
+// 1. Schedule Trigger - Monday at 9 AM
+
+// 2. OpenAI Node - Generate content ideas
+Model: gpt-4o
+Prompt: |
+  Generate 7 engaging social media post ideas for this week.
+  Topics: AI, automation, productivity, tech tips
+  
+  Return as JSON array:
+  [
+    {
+      "day": "Monday",
+      "topic": "...",
+      "content": "...",
+      "hashtags": "..."
+    }
+  ]
+
+// 3. Split in Batches - Process each day
+
+// 4. Code Node - Format for Postiz
+const post = $json;
+const dayOffset = {
+  "Monday": 0,
+  "Tuesday": 1,
+  "Wednesday": 2,
+  "Thursday": 3,
+  "Friday": 4,
+  "Saturday": 5,
+  "Sunday": 6
+};
+
+const scheduleDate = new Date();
+scheduleDate.setDate(scheduleDate.getDate() + dayOffset[post.day]);
+scheduleDate.setHours(10, 0, 0, 0); // 10 AM each day
+
+return {
+  content: `${post.content}\n\n${post.hashtags}`,
+  scheduledTime: scheduleDate.toISOString(),
+  platforms: ["twitter", "linkedin"]
+};
+
+// 5. Loop Over Posts
+// 6. HTTP Request - Create scheduled posts
+Method: POST
+URL: http://postiz:3000/api/public/v1/posts
+Headers:
+  Authorization: {{$env.POSTIZ_API_KEY}}
+Body: {
+  "content": "{{$json.content}}",
+  "scheduledTime": "{{$json.scheduledTime}}",
+  "integrations": ["twitter_id", "linkedin_id"]
+}
+
+// 7. Aggregate - Collect all created posts
+// 8. Email Node - Send confirmation
+To: marketing@company.com
+Subject: Week's social media scheduled!
+Message: |
+  ✅ Successfully scheduled 7 posts across Twitter & LinkedIn
+  
+  Posts go live at 10 AM daily starting Monday.
+```
+
+#### Example 3: Performance Analytics Report
+
+```javascript
+// Weekly social media analytics digest
+
+// 1. Schedule Trigger - Friday at 5 PM
+
+// 2. HTTP Request - Get posts from last 7 days
+Method: GET
+URL: http://postiz:3000/api/public/v1/posts
+Headers:
+  Authorization: {{$env.POSTIZ_API_KEY}}
+Query Parameters:
+  startDate: {{$now.minus(7, 'days').toISO()}}
+  endDate: {{$now.toISO()}}
+
+// 3. Code Node - Calculate metrics
+const posts = $json.posts;
+
+const stats = {
+  totalPosts: posts.length,
+  platforms: {},
+  topPerformer: null,
+  totalEngagement: 0
+};
+
+posts.forEach(post => {
+  // Group by platform
+  const platform = post.integration.name;
+  if (!stats.platforms[platform]) {
+    stats.platforms[platform] = {
+      count: 0,
+      engagement: 0
+    };
+  }
+  
+  stats.platforms[platform].count++;
+  stats.platforms[platform].engagement += post.engagement || 0;
+  stats.totalEngagement += post.engagement || 0;
+  
+  // Track top performer
+  if (!stats.topPerformer || post.engagement > stats.topPerformer.engagement) {
+    stats.topPerformer = post;
+  }
+});
+
+return stats;
+
+// 4. OpenAI Node - Generate insights
+Model: gpt-4o-mini
+Prompt: |
+  Analyze this week's social media performance and provide insights:
+  
+  {{JSON.stringify($json)}}
+  
+  Provide:
+  1. Overall performance summary
+  2. Best performing platform
+  3. Recommendations for next week
+
+// 5. Google Docs Node - Create report
+Document: Weekly Social Media Report
+Content: |
+  # Social Media Report - Week of {{$now.toFormat('MMM dd')}}
+  
+  ## 📊 Overview
+  - Total Posts: {{$('Calculate').json.totalPosts}}
+  - Total Engagement: {{$('Calculate').json.totalEngagement}}
+  
+  ## 🏆 Top Post
+  {{$('Calculate').json.topPerformer.content}}
+  Engagement: {{$('Calculate').json.topPerformer.engagement}}
+  
+  ## 🤖 AI Insights
+  {{$json.insights}}
+
+// 6. Slack Node - Share report
+Channel: #marketing
+Message: |
+  📈 Weekly Social Media Report is ready!
+  
+  [Link to Google Doc]
+```
+
+#### Example 4: User-Generated Content Workflow
+
+```javascript
+// Monitor brand mentions and repost with permission
+
+// 1. HTTP Request - Search for brand mentions
+// (Use Twitter API, Instagram API, or web scraping)
+
+// 2. Code Node - Filter quality content
+const mentions = $json;
+return mentions.filter(m => 
+  m.engagement > 100 && 
+  m.sentiment === 'positive' &&
+  !m.author.isSpam
+);
+
+// 3. Send Email - Request permission
+To: {{$json.author.email}}
+Subject: Love to feature your content!
+Message: |
+  Hi {{$json.author.name}},
+  
+  We noticed your awesome post about our product!
+  May we share it on our channels with credit?
+  
+  Reply YES to approve.
+
+// 4. Wait for Webhook - User approval
+// Email reply triggers webhook
+
+// 5. IF Node - Check approval
+Condition: {{$json.response}} === "YES"
+
+// 6. Postiz Node - Schedule repost
+Content: |
+  Amazing content from @{{$json.author.username}}! 🎉
+  
+  {{$json.original_content}}
+  
+  #UserFeature #Community
+Channels: ["twitter", "instagram", "linkedin"]
+Media: {{$json.media_url}}
+```
+
+### API Endpoints Reference
+
+**Create Post:**
+```bash
+POST /api/public/v1/posts
+{
+  "content": "Your post content",
+  "scheduledTime": "2025-01-20T10:00:00Z",
+  "integrations": ["twitter_id", "facebook_id"]
+}
+```
+
+**Get Posts:**
+```bash
+GET /api/public/v1/posts?startDate=2025-01-01&endDate=2025-01-20
+```
+
+**Upload Media:**
+```bash
+POST /api/public/v1/upload
+{
+  "file": "base64_encoded_image"
+}
+```
+
+**Upload from URL:**
+```bash
+POST /api/public/v1/upload-from-url
+{
+  "url": "https://example.com/image.jpg"
+}
+```
+
+### AI Content Generation
+
+**Using built-in AI assistant:**
+
+1. Create new post in Postiz UI
+2. Click **AI Generate** button
+3. Enter prompt: "Create engaging post about product launch"
+4. AI generates content with hashtags and emojis
+5. Edit and schedule
+
+**Current limitation:** Only OpenAI supported (no Ollama yet)
+
+**Workaround for local AI:**
+Use n8n with Ollama to generate content, then send to Postiz API.
+
+### Team Collaboration
+
+**Invite Team Members:**
+
+1. Settings → **Team**
+2. Click **Invite Member**
+3. Enter email and select role:
+   - **Admin** - Full access
+   - **Member** - Create and schedule posts
+   - **Viewer** - View-only access
+
+**Comment on Posts:**
+- Team members can comment on scheduled posts
+- Discuss changes before publishing
+- Approval workflow for sensitive content
+
+### Troubleshooting
+
+**Posts not publishing:**
+
+```bash
+# Check Postiz workers
+docker logs postiz-worker --tail 50
+
+# Verify social account connection
+# Postiz UI → Integrations → Check status
+
+# Re-authorize account if needed
+# Tokens expire after 60-90 days for most platforms
+
+# Check scheduled time
+# Posts must be scheduled at least 5 minutes in future
+```
+
+**API rate limit exceeded:**
+
+```bash
+# Error: 429 Too Many Requests
+# Limit: 30 requests/hour
+
+# Solution: Implement request throttling in n8n
+// Add Wait Node between requests
+Wait: 2 minutes
+
+// Or batch schedule posts
+// Schedule multiple posts in single API call
+```
+
+**Media upload failed:**
+
+```bash
+# Check file size
+# Max: 10MB per file
+
+# Supported formats:
+# Images: JPG, PNG, GIF, WEBP
+# Videos: MP4, MOV (max 100MB)
+
+# Compress large files before upload
+docker exec n8n ffmpeg -i input.mp4 -vcodec libx264 -crf 28 output.mp4
+```
+
+**OAuth authentication failed:**
+
+```bash
+# Requires public URL for callbacks
+# Cannot use localhost
+
+# If using Cloudflare Tunnel:
+# Make sure tunnel is active
+
+# Check callback URL in platform settings
+# Example Twitter: https://postiz.yourdomain.com/api/integration/twitter/callback
+```
+
+### Resources
+
+- **Official Website:** https://postiz.com/
+- **Documentation:** https://docs.postiz.com/
+- **GitHub:** https://github.com/gitroomhq/postiz-app
+- **API Docs:** https://docs.postiz.com/public-api
+- **n8n Community Node:** https://www.npmjs.com/package/n8n-nodes-postiz
+- **Discord Community:** https://discord.gg/postiz
+
+### Best Practices
+
+**Content Strategy:**
+- Plan content 1-2 weeks ahead
+- Use visual calendar for overview
+- Batch create content on specific days
+- Mix promotional and engaging content
+
+**Scheduling:**
+- Post during peak engagement times
+- Stagger posts across platforms (don't post everywhere simultaneously)
+- Use Postiz analytics to find best times
+- Schedule at least 5 minutes in advance
+
+**Media:**
+- Always include images/videos (higher engagement)
+- Use design studio for branded graphics
+- Keep videos under 2 minutes for best performance
+- Optimize images (compress before upload)
+
+**API Automation:**
+- Implement error handling in workflows
+- Use webhooks for real-time updates
+- Batch operations to respect rate limits
+- Monitor API usage to avoid hitting limits
+
+**Team Workflow:**
+- Create approval process for sensitive posts
+- Use comments for collaboration
+- Assign specific platforms to team members
+- Regular review meetings using analytics
 
 </details>
 
@@ -2501,7 +3394,457 @@ docker exec n8nmcp npm run rebuild-cache
 <details>
 <summary><b>📹 Jitsi Meet - Video Conferencing</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Jitsi Meet?
+
+Jitsi Meet is a professional, self-hosted video conferencing platform that provides secure, feature-rich meetings without external dependencies. It integrates seamlessly with Cal.com for automated meeting room generation, making it perfect for client calls, team meetings, webinars, and remote collaboration.
+
+### ⚠️ CRITICAL Requirements
+
+**UDP Port 10000 is MANDATORY for audio/video:**
+- Without UDP 10000: Only chat works, NO audio/video!
+- Many VPS providers block UDP traffic by default
+- Test UDP connectivity BEFORE relying on Jitsi for production
+- Alternative: Use external services (Zoom, Google Meet) with Cal.com
+
+### Pre-Installation UDP Test
+
+**Before installing Jitsi, verify UDP works on your VPS:**
+
+```bash
+# 1. Open UDP port in firewall
+sudo ufw allow 10000/udp
+
+# 2. Test UDP connectivity (requires two terminals)
+# Terminal 1 (on your VPS):
+nc -u -l 10000
+
+# Terminal 2 (from external network, e.g., your laptop):
+nc -u YOUR_VPS_IP 10000
+# Type some text and press Enter
+# If text appears in Terminal 1, UDP works! ✅
+# If nothing appears, UDP is blocked by your provider ❌
+```
+
+### VPS Provider Compatibility
+
+**Known to work well with Jitsi:**
+- ✅ **Hetzner Cloud** - WebRTC-friendly, recommended
+- ✅ **DigitalOcean** - Good WebRTC performance
+- ✅ **Contabo** - Game server support = UDP OK
+- ✅ **Vultr** - Good for real-time applications
+
+**Often problematic:**
+- ❌ **OVH** - Frequently blocks UDP traffic
+- ❌ **Scaleway** - Strict firewall restrictions
+- ⚠️ **AWS/GCP** - Requires NAT configuration (advanced)
+
+### Features
+
+- **No Authentication Required** - Guest-friendly for meeting participants
+- **Lobby Mode** - Control who enters your meetings
+- **HD Video** - Up to 1280x720 resolution
+- **Screen Sharing** - Share desktop or specific applications
+- **Recording** - Optional local recording (requires extra setup)
+- **Mobile Apps** - iOS and Android native apps
+- **Cal.com Integration** - Automatic meeting room generation
+- **End-to-End Encryption** - Optional E2EE for sensitive meetings
+- **Chat & Reactions** - In-meeting text chat and emoji reactions
+
+### Initial Setup
+
+**Test Jitsi After Installation:**
+
+1. Navigate to `https://meet.yourdomain.com`
+2. Create a test room: `https://meet.yourdomain.com/test123`
+3. Allow camera/microphone permissions
+4. Verify:
+   - ✅ You can see yourself on video
+   - ✅ Audio is working
+   - ✅ Screen sharing works
+5. Test from different network (mobile phone with 4G)
+
+**Architecture:**
+
+Jitsi consists of multiple components:
+- **jitsi-web** - Web interface
+- **jitsi-prosody** - XMPP server for signaling
+- **jitsi-jicofo** - Focus component (manages sessions)
+- **jitsi-jvb** - Video bridge (handles media streams via UDP 10000)
+
+### Cal.com Integration
+
+**Automatic Video Conferencing for Bookings:**
+
+#### 1. Install Jitsi App in Cal.com
+
+1. Open Cal.com: `https://cal.yourdomain.com`
+2. Go to **Settings** → **Apps**
+3. Find **Jitsi Video**
+4. Click **Install App**
+5. Configure:
+   - **Server URL:** `https://meet.yourdomain.com`
+   - No trailing slash!
+6. Click **Save**
+
+#### 2. Configure Event Types
+
+1. Go to **Event Types**
+2. Edit any event type (or create new)
+3. Under **Location**, select **Jitsi Video**
+4. Save changes
+
+**Meeting links are now auto-generated!**
+
+#### 3. Meeting URL Format
+
+When someone books a meeting:
+- **Automatic format:** `https://meet.yourdomain.com/cal/[booking-reference]`
+- **Example:** `https://meet.yourdomain.com/cal/abc123def456`
+
+Both you and the attendee receive this link in confirmation emails.
+
+### n8n Integration
+
+**Automated Meeting Workflows:**
+
+#### Example 1: Meeting Reminders
+
+```javascript
+// 1. Cal.com Webhook Trigger - booking.created
+// Fires when someone books a meeting
+
+// 2. Code Node - Calculate reminder time
+const booking = $json;
+const meetingTime = new Date(booking.startTime);
+const reminderTime = new Date(meetingTime.getTime() - 3600000); // 1 hour before
+
+return {
+  attendeeEmail: booking.attendees[0].email,
+  meetingTitle: booking.title,
+  meetingUrl: `https://meet.yourdomain.com/cal/${booking.uid}`,
+  reminderTime: reminderTime.toISOString(),
+  attendeeName: booking.attendees[0].name,
+  hostName: booking.user.name
+};
+
+// 3. Wait Node - Until reminder time
+Wait Until: {{$json.reminderTime}}
+
+// 4. Send Email Node - Reminder to attendee
+To: {{$('Code Node').json.attendeeEmail}}
+Subject: Meeting reminder - {{$('Code Node').json.meetingTitle}}
+Message: |
+  Hi {{$('Code Node').json.attendeeName}},
+  
+  Your meeting with {{$('Code Node').json.hostName}} starts in 1 hour!
+  
+  📅 Meeting: {{$('Code Node').json.meetingTitle}}
+  🔗 Join here: {{$('Code Node').json.meetingUrl}}
+  
+  See you soon!
+
+// 5. Slack Node - Notify team
+Channel: #meetings
+Message: |
+  🔔 Upcoming meeting in 1 hour
+  Meeting: {{$('Code Node').json.meetingTitle}}
+  Attendee: {{$('Code Node').json.attendeeName}}
+  Link: {{$('Code Node').json.meetingUrl}}
+```
+
+#### Example 2: Post-Meeting Follow-up
+
+```javascript
+// 1. Cal.com Webhook Trigger - booking.completed
+// Fires after meeting ends (based on scheduled duration)
+
+// 2. Wait Node - 5 minutes after meeting
+Wait: 5 minutes
+
+// 3. Send Email Node - Thank you + feedback
+To: {{$json.attendees[0].email}}
+Subject: Thanks for the meeting!
+Message: |
+  Hi {{$json.attendees[0].name}},
+  
+  Thanks for meeting with us today!
+  
+  We'd love your feedback:
+  [Feedback Form Link]
+  
+  Next steps:
+  - We'll send the summary by EOD
+  - Follow-up meeting in 2 weeks
+  
+  Best regards,
+  {{$json.user.name}}
+
+// 4. HTTP Request - Create task in project management
+Method: POST
+URL: http://vikunja:3456/api/v1/tasks
+Body: {
+  "title": "Follow up with {{$json.attendees[0].name}}",
+  "description": "Meeting: {{$json.title}}\nDate: {{$json.startTime}}",
+  "due_date": "{{$now.plus(2, 'weeks').toISO()}}"
+}
+```
+
+#### Example 3: AI Meeting Transcription
+
+```javascript
+// Requires Whisper service
+
+// 1. Cal.com Webhook - booking.created
+// 2. Wait Until - Meeting time
+// 3. Wait - Meeting duration + 5 minutes
+// 4. Check if recording exists (manual recording required)
+// 5. If recording exists:
+//    - Transcribe with Whisper
+//    - Summarize with OpenAI
+//    - Email summary to participants
+```
+
+### Security & Access Control
+
+**Why No Basic Auth?**
+- Meeting participants need direct URL access
+- Mobile apps expect direct connection
+- Cal.com integration requires open access
+- Security is handled at room level, not site level
+
+**Room-Level Security Options:**
+
+1. **Lobby Mode** (Recommended)
+   - Host must approve participants before entry
+   - Prevents unwanted guests
+   - Enable in meeting settings
+
+2. **Meeting Passwords**
+   - Add password to room URL
+   - Format: `https://meet.yourdomain.com/SecureRoom123?jwt=password`
+   - Share password separately from link
+
+3. **Unique Room Names**
+   - Use long, random room names
+   - Avoid predictable names like "sales-call"
+   - Example: `https://meet.yourdomain.com/xK9mP2nQ4vL7`
+
+4. **Time-Limited Meetings**
+   - Configure max meeting duration
+   - Automatically end after timeout
+   - Set in Jitsi configuration
+
+### Troubleshooting
+
+**No Audio/Video (Most Common Issue):**
+
+```bash
+# 1. Verify UDP port is open in firewall
+sudo ufw status | grep 10000
+
+# Should show:
+# 10000/udp                  ALLOW       Anywhere
+
+# 2. Check if JVB (Video Bridge) is running
+docker ps | grep jitsi-jvb
+
+# Should show container with "Up" status
+
+# 3. Check JVB logs for errors
+docker logs jitsi-jvb --tail 100
+
+# Look for:
+# - "Failed to bind" → Port conflict
+# - "No candidates" → UDP blocked
+# - "ICE failed" → Network issues
+
+# 4. Test UDP from external network
+# (See Pre-Installation UDP Test above)
+
+# 5. Verify JVB host address is set correctly
+grep JVB_DOCKER_HOST_ADDRESS .env
+
+# Should show your public IP:
+# JVB_DOCKER_HOST_ADDRESS=YOUR_PUBLIC_IP
+```
+
+**Participants Can't Join:**
+
+```bash
+# 1. Check all Jitsi components are running
+docker ps | grep jitsi
+
+# Should see 4 containers:
+# - jitsi-web
+# - jitsi-prosody
+# - jitsi-jicofo
+# - jitsi-jvb
+
+# 2. Check Caddy routing
+docker logs caddy | grep jitsi
+
+# 3. Test from external browser (incognito)
+# Open: https://meet.yourdomain.com
+
+# 4. Check browser console for errors (F12)
+```
+
+**One-Way Video (You see them, they don't see you):**
+
+```bash
+# Usually indicates UDP issues for outbound traffic
+
+# Check firewall rules
+sudo iptables -L -n | grep 10000
+
+# Restart JVB
+docker compose restart jitsi-jvb
+
+# Check if your router/firewall allows outbound UDP
+# Some corporate networks block UDP
+```
+
+**Jitsi Services Not Starting:**
+
+```bash
+# Check logs for each component
+docker logs jitsi-web --tail 50
+docker logs jitsi-prosody --tail 50
+docker logs jitsi-jicofo --tail 50
+docker logs jitsi-jvb --tail 50
+
+# Verify all passwords are generated in .env
+grep JICOFO_COMPONENT_SECRET .env
+grep JICOFO_AUTH_PASSWORD .env
+grep JVB_AUTH_PASSWORD .env
+
+# If any are missing, regenerate secrets:
+cd ai-launchkit
+sudo bash ./scripts/03_generate_secrets.sh
+
+# Restart all Jitsi services
+docker compose down
+docker compose up -d jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb
+```
+
+**Cal.com Integration Not Working:**
+
+```bash
+# 1. Verify Jitsi server URL in Cal.com
+# Settings → Apps → Jitsi Video
+# Must be: https://meet.yourdomain.com (no trailing slash)
+
+# 2. Test manual meeting creation
+# Create event in Cal.com
+# Book a test meeting
+# Check if Jitsi link is generated
+
+# 3. Check Cal.com logs
+docker logs calcom --tail 100 | grep -i jitsi
+
+# 4. Verify Jitsi is accessible from Cal.com container
+docker exec calcom curl https://meet.yourdomain.com
+# Should return HTML, not error
+```
+
+**UDP Blocked by VPS Provider (No Solution):**
+
+If UDP test fails and provider won't enable it:
+
+**Alternative Solutions:**
+1. **Use External Services**
+   - Configure Cal.com with Zoom instead
+   - Or Google Meet integration
+   - Both work well with Cal.com
+
+2. **Change VPS Provider**
+   - Migrate to Hetzner, DigitalOcean, or Contabo
+   - All support UDP for WebRTC
+
+3. **Set up TURN Server** (Advanced)
+   - Falls back to TURN when UDP fails
+   - Requires additional VPS with UDP
+   - More complex configuration
+
+4. **Use Jitsi as a Service**
+   - Free: https://meet.jit.si
+   - Paid: https://8x8.vc
+   - Configure in Cal.com instead
+
+### Performance Tips
+
+**Bandwidth Requirements:**
+- **Video:** 2-4 Mbps per participant (HD)
+- **Audio only:** 50-100 Kbps per participant
+- **Screen share:** +1-2 Mbps
+
+**Server Resources:**
+- **CPU:** ~1 core per 10 participants
+- **RAM:** 1-2GB for Jitsi services
+- **Tested:** Up to 35 participants on 4-core VPS
+
+**Best Practices:**
+- Use **lobby mode** for meetings >10 people
+- Disable video for large meetings (audio only)
+- Use **720p** instead of 1080p (better performance)
+- Limit screen sharing to one person at a time
+- Consider external service for >30 participants
+
+### Advanced Configuration
+
+**Enable Recording:**
+
+Requires additional setup:
+1. Install Jibri (Jitsi recording service)
+2. Configure storage location
+3. Enable in meeting settings
+
+**Custom Branding:**
+
+Edit Jitsi config to customize:
+- Logo and colors
+- Welcome page text
+- Room name format
+- Default settings
+
+**Integration with Other Tools:**
+
+- **Matrix/Element** - Bridge Jitsi to Matrix rooms
+- **Slack/Discord** - Start Jitsi calls from chat
+- **WordPress** - Embed Jitsi on website
+
+### Resources
+
+- **Official Documentation:** https://jitsi.github.io/handbook/
+- **Community Forum:** https://community.jitsi.org/
+- **GitHub:** https://github.com/jitsi/jitsi-meet
+- **Docker Setup:** https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-docker
+- **Mobile Apps:**
+  - iOS: https://apps.apple.com/app/jitsi-meet/id1165103905
+  - Android: https://play.google.com/store/apps/details?id=org.jitsi.meet
+
+### Best Practices
+
+**For Hosts:**
+- Test meeting room before important calls
+- Use lobby mode for client meetings
+- Share meeting link 24h before call
+- Keep room names professional
+- Have backup plan (phone number, Zoom link)
+
+**For Participants:**
+- Join 2-3 minutes early to test audio/video
+- Use headphones to avoid echo
+- Mute when not speaking
+- Use "Raise hand" feature for questions
+- Stable internet connection (wired > WiFi)
+
+**For Organizations:**
+- Create naming convention for meeting rooms
+- Set up automated reminders (n8n)
+- Monitor server resources during large meetings
+- Have IT support contact ready
+- Document setup for team members
 
 </details>
 
@@ -2510,7 +3853,575 @@ docker exec n8nmcp npm run rebuild-cache
 <details>
 <summary><b>📅 Cal.com - Scheduling Platform</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Cal.com?
+
+Cal.com is a powerful open-source scheduling platform that provides a self-hosted alternative to Calendly. It offers automated booking workflows, team scheduling, payment integration, and seamless n8n integration for comprehensive automation. Perfect for managing client meetings, consultations, and team calendars.
+
+### Features
+
+- **Event Types** - Multiple meeting types: 15min, 30min, 1-on-1, team meetings, recurring events
+- **Team Scheduling** - Round-robin assignment, collective availability, team event types
+- **Video Integration** - Auto-generated links for Jitsi, Zoom, Google Meet, Teams
+- **Payment Processing** - Stripe and PayPal for paid consultations
+- **Custom Fields** - Collect additional information during booking
+- **Native n8n Integration** - Built-in Cal.com trigger and action nodes
+- **Webhooks** - Real-time events for booking.created, cancelled, rescheduled, completed
+
+### Initial Setup
+
+**First Login to Cal.com:**
+
+1. Navigate to `https://cal.yourdomain.com`
+2. **First user becomes admin** - Register your account
+3. Complete onboarding wizard:
+   - Set your availability schedule (working hours)
+   - Connect calendar services (Google Calendar, Office 365 - optional)
+   - Create event types (15min call, 30min meeting, etc.)
+4. Your booking link: `https://cal.yourdomain.com/[username]`
+
+**Generate API Key for n8n:**
+
+1. Go to **Settings** → **Developer** → **API Keys**
+2. Click **Create new API key**
+3. Name it `n8n Integration`
+4. Copy and save securely
+
+### n8n Integration Setup
+
+Cal.com has **native n8n nodes** - no manual configuration needed!
+
+#### Cal.com Trigger Node
+
+**Listen for booking events in real-time:**
+
+1. Add **Cal.com Trigger** node to workflow
+2. Create Cal.com credentials:
+   - Click **Create New Credential**
+   - **API Key:** Paste your Cal.com API key
+   - **Base URL:** `http://calcom:3000` (internal) or `https://cal.yourdomain.com` (external)
+   - Save
+3. Select trigger events:
+   - `booking.created` - New booking made
+   - `booking.rescheduled` - Booking time changed
+   - `booking.cancelled` - Booking cancelled
+   - `booking.completed` - Meeting finished
+   - `booking.rejected` - Booking rejected (if approval required)
+   - `booking.requested` - Booking awaits approval
+4. Activate workflow
+
+**The trigger fires automatically when events occur!**
+
+#### Cal.com Node (Actions)
+
+**Perform actions in Cal.com:**
+
+Available operations:
+- **Event Types** - List, get, create, update, delete event types
+- **Bookings** - List, get, cancel, confirm bookings
+- **Availability** - Get/set availability schedules
+- **Users** - Get user information
+- **Webhooks** - Manage webhooks programmatically
+
+### Jitsi Meet Integration
+
+**Automatic Video Conferencing:**
+
+1. Settings → **Apps**
+2. Find **Jitsi Video**
+3. Click **Install App**
+4. Configure:
+   - **Server URL:** `https://meet.yourdomain.com`
+   - No trailing slash!
+5. Save
+
+**Configure Event Types:**
+1. Edit any event type
+2. Under **Location**, select **Jitsi Video**
+3. Save
+
+**Meeting URLs are auto-generated:**
+- Format: `https://meet.yourdomain.com/cal/[booking-reference]`
+- Included in confirmation emails automatically
+
+### Example Workflows
+
+#### Example 1: Automated Booking Confirmation
+
+```javascript
+// Complete workflow for new bookings
+
+// 1. Cal.com Trigger Node
+Event: booking.created
+
+// 2. Code Node - Extract booking data
+const booking = $json;
+return {
+  attendeeName: booking.attendees[0].name,
+  attendeeEmail: booking.attendees[0].email,
+  meetingTitle: booking.title,
+  startTime: new Date(booking.startTime).toLocaleString('de-DE'),
+  endTime: new Date(booking.endTime).toLocaleString('de-DE'),
+  meetingUrl: `https://meet.yourdomain.com/cal/${booking.uid}`,
+  eventType: booking.eventType.title,
+  organizerName: booking.organizer.name
+};
+
+// 3. Slack Node - Notify team
+Channel: #sales
+Message: |
+  📅 New Booking!
+  
+  Customer: {{$json.attendeeName}}
+  Meeting: {{$json.meetingTitle}}
+  Time: {{$json.startTime}}
+  Link: {{$json.meetingUrl}}
+
+// 4. Google Calendar Node - Create calendar event
+Operation: Create Event
+Calendar: Sales Team Calendar
+Summary: {{$('Code').json.meetingTitle}}
+Description: |
+  Meeting with {{$('Code').json.attendeeName}}
+  Join: {{$('Code').json.meetingUrl}}
+Start: {{$json.startTime}}
+End: {{$json.endTime}}
+
+// 5. Send Email Node - Custom confirmation
+To: {{$('Code').json.attendeeEmail}}
+Subject: Meeting Confirmed - {{$('Code').json.meetingTitle}}
+Message: |
+  Hi {{$('Code').json.attendeeName}},
+  
+  Your meeting with {{$('Code').json.organizerName}} is confirmed!
+  
+  📅 Date & Time: {{$('Code').json.startTime}}
+  🔗 Join meeting: {{$('Code').json.meetingUrl}}
+  
+  Looking forward to speaking with you!
+
+// 6. Baserow/NocoDB Node - Add to CRM
+Table: bookings
+Fields: {
+  customer_name: {{$('Code').json.attendeeName}},
+  customer_email: {{$('Code').json.attendeeEmail}},
+  meeting_type: {{$('Code').json.eventType}},
+  scheduled_time: {{$json.startTime}},
+  status: "confirmed"
+}
+```
+
+#### Example 2: Meeting Reminder System
+
+```javascript
+// Automated reminders 1 hour before meeting
+
+// 1. Cal.com Trigger Node
+Event: booking.created
+
+// 2. Code Node - Calculate reminder time
+const meetingTime = new Date($json.startTime);
+const reminderTime = new Date(meetingTime.getTime() - 3600000); // 1 hour before
+
+return {
+  attendeeEmail: $json.attendees[0].email,
+  attendeeName: $json.attendees[0].name,
+  meetingTitle: $json.title,
+  meetingUrl: `https://meet.yourdomain.com/cal/${$json.uid}`,
+  reminderTime: reminderTime.toISOString(),
+  hostName: $json.user.name
+};
+
+// 3. Wait Node
+Wait Until: {{$json.reminderTime}}
+
+// 4. Send Email Node - Reminder
+To: {{$('Code Node').json.attendeeEmail}}
+Subject: Meeting Reminder - Starts in 1 hour!
+Message: |
+  Hi {{$('Code Node').json.attendeeName}},
+  
+  Your meeting with {{$('Code Node').json.hostName}} starts in 1 hour!
+  
+  📅 Meeting: {{$('Code Node').json.meetingTitle}}
+  🕐 Time: In 1 hour
+  🔗 Join here: {{$('Code Node').json.meetingUrl}}
+  
+  See you soon!
+
+// 5. SMS Node (optional - via Twilio)
+// Send SMS reminder for mobile notification
+```
+
+#### Example 3: AI-Enhanced Meeting Preparation
+
+```javascript
+// Research and prepare briefing before meeting
+
+// 1. Cal.com Trigger Node
+Event: booking.created
+
+// 2. Code Node - Extract company domain
+const attendeeEmail = $json.attendees[0].email;
+const companyDomain = attendeeEmail.split('@')[1];
+
+return {
+  attendeeName: $json.attendees[0].name,
+  attendeeEmail: attendeeEmail,
+  companyDomain: companyDomain,
+  meetingTitle: $json.title,
+  meetingTime: $json.startTime,
+  bookingId: $json.id
+};
+
+// 3. HTTP Request - Research company (via Perplexica)
+Method: POST
+URL: http://perplexica:3000/api/search
+Body: {
+  "query": "{{$json.companyDomain}} company information, recent news, key people",
+  "focusMode": "webSearch"
+}
+
+// 4. OpenAI Node - Generate meeting briefing
+Model: gpt-4o-mini
+System Message: "You are a meeting preparation assistant."
+User Message: |
+  Create a concise meeting briefing for:
+  
+  Meeting: {{$('Code Node').json.meetingTitle}}
+  Attendee: {{$('Code Node').json.attendeeName}}
+  Company: {{$('Code Node').json.companyDomain}}
+  
+  Research findings:
+  {{$json.results}}
+  
+  Include:
+  1. Company background (2-3 sentences)
+  2. Recent news or developments
+  3. Key talking points
+  4. Questions to ask
+
+// 5. Wait Node
+Wait until: 30 minutes before meeting
+
+// 6. Slack Node - Send briefing to host
+Channel: @{{$('Code Node').json.hostName}}
+Message: |
+  📋 Meeting Briefing
+  
+  Meeting in 30 minutes with {{$('Code Node').json.attendeeName}}
+  
+  {{$('OpenAI').json.briefing}}
+
+// 7. Cal.com Node - Add notes to booking
+Operation: Update Booking
+Booking ID: {{$('Code Node').json.bookingId}}
+Notes: {{$('OpenAI').json.briefing}}
+```
+
+#### Example 4: Post-Meeting Follow-up
+
+```javascript
+// Automated follow-up after meeting completes
+
+// 1. Cal.com Trigger Node
+Event: booking.completed
+
+// 2. Wait Node
+Wait: 1 hour after meeting end
+
+// 3. Send Email Node - Thank you & feedback
+To: {{$json.attendees[0].email}}
+Subject: Thanks for the meeting!
+Message: |
+  Hi {{$json.attendees[0].name}},
+  
+  Thanks for meeting with us today!
+  
+  📝 We'd love your feedback:
+  https://forms.yourdomain.com/meeting-feedback?id={{$json.id}}
+  
+  Next Steps:
+  - Summary will be sent by EOD
+  - Follow-up meeting in 2 weeks
+  
+  Questions? Just reply to this email.
+  
+  Best regards,
+  {{$json.user.name}}
+
+// 4. HTTP Request - Create follow-up task (via Vikunja)
+Method: POST
+URL: http://vikunja:3456/api/v1/tasks
+Headers:
+  Authorization: Bearer {{$env.VIKUNJA_API_TOKEN}}
+Body: {
+  "title": "Follow up with {{$json.attendees[0].name}}",
+  "description": "Meeting: {{$json.title}}\nDate: {{$json.startTime}}",
+  "due_date": "{{$now.plus(2, 'weeks').toISO()}}",
+  "project_id": 1
+}
+
+// 5. Cal.com Node - Schedule follow-up meeting (optional)
+Operation: Create Booking
+Event Type: Follow-up Call
+Date: {{$now.plus(2, 'weeks')}}
+```
+
+#### Example 5: Smart Scheduling with AI
+
+```javascript
+// AI-powered scheduling from natural language
+
+// 1. Webhook Trigger - Receive scheduling request
+// Example: Customer fills form or sends chat message
+
+// 2. OpenAI Node - Parse scheduling request
+Model: gpt-4o-mini
+Prompt: |
+  Extract scheduling preferences from this request:
+  "{{$json.message}}"
+  
+  Return JSON:
+  {
+    "preferredDays": ["Monday", "Wednesday"],
+    "preferredTimes": ["morning", "afternoon"],
+    "duration": 30,
+    "topic": "product demo",
+    "urgency": "high"
+  }
+
+// 3. Cal.com Node - Get availability
+Operation: Get Available Slots
+Event Type: Consultation
+Date Range: Next 7 days
+
+// 4. Code Node - Rank slots by AI preferences
+const slots = $json.slots;
+const preferences = $('OpenAI').json;
+
+// Score each slot based on preferences
+const rankedSlots = slots.map(slot => {
+  let score = 0;
+  
+  // Preferred day match
+  const slotDay = new Date(slot.time).toLocaleDateString('en-US', {weekday: 'long'});
+  if (preferences.preferredDays.includes(slotDay)) score += 10;
+  
+  // Preferred time match
+  const slotHour = new Date(slot.time).getHours();
+  if (preferences.preferredTimes.includes('morning') && slotHour < 12) score += 5;
+  if (preferences.preferredTimes.includes('afternoon') && slotHour >= 12) score += 5;
+  
+  // Urgency (prefer sooner)
+  if (preferences.urgency === 'high') {
+    const daysUntil = Math.floor((new Date(slot.time) - new Date()) / (1000 * 60 * 60 * 24));
+    score += (7 - daysUntil);
+  }
+  
+  return { ...slot, score };
+}).sort((a, b) => b.score - a.score);
+
+return rankedSlots[0]; // Best match
+
+// 5. Cal.com Node - Create booking
+Operation: Create Booking
+Event Type ID: 1
+Start Time: {{$json.time}}
+Attendee Name: {{$('Webhook').json.name}}
+Attendee Email: {{$('Webhook').json.email}}
+
+// 6. Send Confirmation
+To: {{$('Webhook').json.email}}
+Subject: Meeting Scheduled!
+Message: |
+  Great news! Your meeting is scheduled:
+  
+  📅 {{$json.startTime}}
+  🔗 {{$json.conferenceUrl}}
+  
+  This time was selected based on your preferences.
+```
+
+### Advanced API Usage
+
+**For operations not available in the native node, use HTTP Request:**
+
+```javascript
+// Get all event types with full details
+Method: GET
+URL: http://calcom:3000/api/v2/event-types
+Headers:
+  Authorization: Bearer {{$env.CAL_API_KEY}}
+  Content-Type: application/json
+
+// Create custom availability schedule
+Method: POST
+URL: http://calcom:3000/api/v2/schedules
+Body: {
+  "name": "Summer Hours",
+  "timeZone": "Europe/Berlin",
+  "availability": [
+    {
+      "days": [1, 2, 3, 4, 5],
+      "startTime": "09:00",
+      "endTime": "17:00"
+    }
+  ]
+}
+
+// Bulk cancel bookings
+Method: POST
+URL: http://calcom:3000/api/v2/bookings/cancel
+Body: {
+  "bookingIds": [123, 124, 125],
+  "reason": "Holiday closure"
+}
+```
+
+### Common Webhook Payload
+
+**booking.created event:**
+```json
+{
+  "triggerEvent": "booking.created",
+  "payload": {
+    "id": 12345,
+    "uid": "abc123def456",
+    "title": "30 Min Meeting",
+    "description": "Let's discuss the project",
+    "startTime": "2025-01-20T10:00:00.000Z",
+    "endTime": "2025-01-20T10:30:00.000Z",
+    "organizer": {
+      "name": "John Host",
+      "email": "john@example.com",
+      "username": "john"
+    },
+    "attendees": [{
+      "name": "Jane Guest",
+      "email": "jane@example.com"
+    }],
+    "eventType": {
+      "id": 1,
+      "title": "30 Min Meeting",
+      "slug": "30min"
+    },
+    "location": "Jitsi Video",
+    "conferenceUrl": "https://meet.yourdomain.com/cal/abc123",
+    "status": "ACCEPTED"
+  }
+}
+```
+
+### Email Notifications
+
+Cal.com automatically sends emails for:
+- **Booking Confirmations** - To organizer and attendee
+- **Reminders** - Configurable timing (15min, 1h, 1day before)
+- **Cancellations** - Notification to all parties
+- **Rescheduling** - Update emails with new time
+
+All emails use your configured mail system (Mailpit for development, Docker-Mailserver for production).
+
+### Troubleshooting
+
+**Webhook not firing:**
+
+```bash
+# Check Cal.com logs
+docker logs calcom --tail 100 | grep -i webhook
+
+# Verify webhook is registered
+# Cal.com → Settings → Webhooks
+# Should show n8n webhook URL
+
+# Test webhook manually
+curl -X POST https://n8n.yourdomain.com/webhook/cal-com-test \
+  -H "Content-Type: application/json" \
+  -d '{"test": "data"}'
+
+# Restart Cal.com if needed
+docker compose restart calcom
+```
+
+**API authentication failed:**
+
+```bash
+# Verify API key is valid
+# Cal.com → Settings → Developer → API Keys
+# Check key hasn't expired
+
+# Test API key
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://cal.yourdomain.com/api/v2/me
+
+# Should return your user info, not 401
+```
+
+**Calendar sync not working:**
+
+```bash
+# Check Cal.com can reach external calendars
+docker exec calcom curl https://www.googleapis.com
+
+# Reconnect calendar integration
+# Cal.com → Settings → Apps → Google Calendar → Reconnect
+
+# Check logs for OAuth errors
+docker logs calcom | grep -i oauth
+```
+
+**Slow booking page load:**
+
+```bash
+# Check database performance
+docker exec calcom-db pg_stat_activity
+
+# Restart Cal.com services
+docker compose restart calcom calcom-db
+
+# Check server resources
+docker stats calcom
+```
+
+### Resources
+
+- **Official Documentation:** https://cal.com/docs
+- **API Reference:** https://cal.com/docs/api-reference
+- **GitHub:** https://github.com/calcom/cal.com
+- **n8n Integration:** https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.calcom/
+- **Community Forum:** https://github.com/calcom/cal.com/discussions
+
+### Best Practices
+
+**Event Type Setup:**
+- Create specific types for different use cases (sales, support, consultation)
+- Set appropriate buffer times between meetings
+- Use location-specific event types (office vs. remote)
+- Configure custom fields to collect required information
+
+**Availability Management:**
+- Set realistic working hours
+- Block personal time in connected calendars
+- Use multiple schedules for different seasons
+- Enable "minimum notice" to avoid last-minute bookings
+
+**n8n Integration:**
+- Use internal URL (`http://calcom:3000`) for performance
+- Implement error handling for failed bookings
+- Add deduplication logic for webhook events
+- Store API key in n8n credentials, not hardcoded
+
+**Team Coordination:**
+- Use round-robin for sales leads
+- Set up collective events for panel interviews
+- Configure team routing rules
+- Monitor team booking metrics
+
+**Customer Experience:**
+- Customize confirmation emails with branding
+- Provide clear meeting preparation instructions
+- Set up automatic reminders
+- Collect feedback after meetings
 
 </details>
 

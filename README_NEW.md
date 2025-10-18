@@ -17462,7 +17462,7 @@ curl http://localhost:3000/json/list
 <details>
 <summary><b>📚 RAGApp - RAG Assistant Builder</b></summary>
 
-### Was ist RAGApp?
+### What is RagAPP?
 
 RAGApp is an enterprise-ready platform for building Agentic RAG (Retrieval-Augmented Generation) applications, built on LlamaIndex. It's as simple to configure as OpenAI's custom GPTs but deployable in your own cloud infrastructure using Docker. RAGApp provides a complete solution with Admin UI, Chat UI, and REST API, allowing you to build AI assistants that can intelligently reason over your documents and data.
 
@@ -17885,7 +17885,7 @@ curl http://localhost:11434/api/generate \
 <details>
 <summary><b>🔍 Qdrant - Vector Database</b></summary>
 
-### Was ist Qdrant?
+### What is Qdrant?
 
 Qdrant (pronounced "quadrant") is a high-performance, open-source vector database and similarity search engine written in Rust. It provides production-ready infrastructure for storing, searching, and managing high-dimensional vectors with additional JSON-like payloads. Qdrant is optimized for AI applications like RAG (Retrieval-Augmented Generation), semantic search, recommendation systems, and anomaly detection, offering both speed and scalability for billion-scale vector operations.
 
@@ -18459,7 +18459,7 @@ curl -X PUT http://localhost:6333/collections/documents/snapshots/upload \
 <details>
 <summary><b>🗄️ Weaviate - AI Vector Database</b></summary>
 
-### Was ist Weaviate?
+### What is Weaviate?
 
 Weaviate (pronounced "we-vee-eight") is an open-source, AI-native vector database written in Go. It stores both data objects and their vector embeddings, enabling advanced semantic search capabilities by comparing meaning encoded in vectors rather than relying solely on keyword matching. Weaviate combines the power of vector similarity search with structured filtering, multi-tenancy, and cloud-native scalability, making it ideal for RAG applications, recommendation systems, and agent-driven workflows.
 
@@ -19203,35 +19203,2779 @@ Weaviate supports multiple distance metrics:
 <details>
 <summary><b>🎤 Faster-Whisper - Speech-to-Text</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Faster-Whisper?
+
+Faster-Whisper is an optimized implementation of OpenAI's Whisper speech recognition model that provides OpenAI-compatible API endpoints for speech-to-text transcription. It offers significant performance improvements while maintaining the same accuracy as the original Whisper model, making it perfect for self-hosted transcription workflows.
+
+### Features
+
+- **OpenAI-Compatible API**: Drop-in replacement for OpenAI's Whisper API
+- **High Performance**: Up to 4x faster than original Whisper implementation
+- **Multi-Language Support**: Transcribe audio in 99 languages including English, German, Spanish, French, Chinese, Japanese, and more
+- **Automatic Language Detection**: No need to specify language if unknown
+- **Timestamp Support**: Get word-level and sentence-level timestamps
+- **Multiple Model Sizes**: Choose between tiny, base, small, medium, and large models based on accuracy vs speed requirements
+
+### Initial Setup
+
+**Faster-Whisper is deployed internally (no direct web access):**
+
+- **Internal URL**: `http://faster-whisper:8000`
+- **API Endpoint**: `/v1/audio/transcriptions`
+- **Authentication**: None required (internal service)
+- **Model Loading**: Models are downloaded automatically on first use
+
+**First transcription will take longer** (~2-5 minutes) as the model downloads. Subsequent transcriptions are much faster.
+
+### n8n Integration Setup
+
+**No credentials needed** - Faster-Whisper is accessed via HTTP Request Node with internal URL.
+
+**Internal URL:** `http://faster-whisper:8000`
+
+### Example Workflows
+
+#### Example 1: Basic Audio Transcription
+
+```javascript
+// 1. Trigger Node (Webhook, File Upload, etc.)
+// Receives audio file in various formats (mp3, wav, m4a, flac, etc.)
+
+// 2. HTTP Request Node - Transcribe Audio
+Method: POST
+URL: http://faster-whisper:8000/v1/audio/transcriptions
+Send Body: Form Data Multipart
+
+Body Parameters:
+1. Binary File:
+   - Parameter Type: n8n Binary File
+   - Name: file
+   - Input Data Field Name: data
+
+2. Model:
+   - Parameter Type: Form Data
+   - Name: model
+   - Value: Systran/faster-whisper-large-v3
+
+3. Language (optional):
+   - Parameter Type: Form Data
+   - Name: language
+   - Value: en
+   // Supported: en, de, es, fr, it, pt, nl, pl, ru, ja, ko, zh, ar, etc.
+
+// Response format:
+{
+  "text": "Transcribed text appears here..."
+}
+
+// 3. Set Node or Code Node - Extract text
+// Access transcription: {{ $json.text }}
+```
+
+#### Example 2: Voice-to-Voice AI Assistant
+
+```javascript
+// Complete voice agent pipeline
+
+// 1. Telegram Trigger - Receive voice message
+// Telegram sends audio file automatically
+
+// 2. HTTP Request - Download voice file from Telegram
+Method: GET
+URL: {{ $json.file_url }}
+
+// 3. HTTP Request - Transcribe with Faster-Whisper
+Method: POST
+URL: http://faster-whisper:8000/v1/audio/transcriptions
+Body: Form Data Multipart
+  - file: {{ $binary.data }}
+  - model: Systran/faster-whisper-large-v3
+  - language: de  // or 'en' for English
+
+// 4. AI Agent Node - Process with LLM
+// Use OpenAI, Claude, or Ollama node
+Model: gpt-4 / claude-3-5-sonnet / llama3.2
+Prompt: You are a helpful voice assistant. Respond to: {{ $json.text }}
+
+// 5. HTTP Request - Generate speech response
+Method: POST
+URL: http://openedai-speech:8000/v1/audio/speech
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer sk-dummy
+Body: {
+  "model": "tts-1",
+  "input": "{{ $json.response }}",
+  "voice": "alloy"  // or "thorsten" for German
+}
+
+// 6. Telegram Node - Send audio response
+Action: Send Audio
+Audio: {{ $binary.data }}
+
+// User receives AI voice response in seconds!
+```
+
+#### Example 3: Meeting Recording Auto-Transcription
+
+```javascript
+// Automated meeting transcript workflow
+
+// 1. Schedule Trigger - Check for new recordings
+// Or Webhook from video conferencing tool
+
+// 2. Google Drive Node - List recent recordings
+Folder: /Recordings
+Filter: Created in last 24 hours
+
+// 3. Loop Node - Process each recording
+Items: {{ $json.files }}
+
+// 4. Google Drive - Download audio file
+File ID: {{ $json.id }}
+
+// 5. HTTP Request - Transcribe with timestamps
+Method: POST
+URL: http://faster-whisper:8000/v1/audio/transcriptions
+Body:
+  - file: {{ $binary.data }}
+  - model: Systran/faster-whisper-large-v3
+  - language: en
+  - timestamp_granularities: ["segment"]  // word-level or segment-level
+
+// 6. HTTP Request - Summarize with LLM
+Method: POST
+URL: http://open-webui:8080/api/chat/completions
+Body: {
+  "model": "gpt-4o-mini",
+  "messages": [{
+    "role": "system",
+    "content": "Summarize this meeting transcript with key points and action items."
+  }, {
+    "role": "user",
+    "content": "{{ $json.text }}"
+  }]
+}
+
+// 7. Google Docs - Create meeting notes
+Title: Meeting Notes - {{ $json.meeting_date }}
+Content: 
+  ## Meeting Transcript
+  {{ $json.transcription }}
+  
+  ## Summary
+  {{ $json.summary }}
+  
+  ## Action Items
+  - [ ] {{ $json.action_items }}
+
+// 8. Gmail - Send to participants
+To: {{ $json.participants }}
+Subject: Meeting Notes - {{ $now.format('YYYY-MM-DD') }}
+```
+
+#### Example 4: Multi-Language Customer Support
+
+```javascript
+// Automatic transcription and translation
+
+// 1. Webhook - Receive voicemail from customer
+// Audio file in any language
+
+// 2. HTTP Request - Transcribe (auto-detect language)
+Method: POST
+URL: http://faster-whisper:8000/v1/audio/transcriptions
+Body:
+  - file: {{ $binary.data }}
+  - model: Systran/faster-whisper-large-v3
+  // No language specified = auto-detect
+
+// Response includes detected language:
+{
+  "text": "Transcribed text",
+  "language": "de"  // Detected: German
+}
+
+// 3. IF Node - Check if translation needed
+If: {{ $json.language }} !== 'en'
+
+// 4. HTTP Request - Translate to English
+Method: POST
+URL: http://translate:5000/translate
+Body: {
+  "q": "{{ $json.text }}",
+  "source": "{{ $json.language }}",
+  "target": "en"
+}
+
+// 5. Set Node - Combine information
+{
+  "original_text": "{{ $node.Transcribe.json.text }}",
+  "original_language": "{{ $json.language }}",
+  "translated_text": "{{ $json.translatedText }}",
+  "customer_id": "{{ $json.customer_id }}"
+}
+
+// 6. Create ticket in CRM with both versions
+// 7. Notify support team
+```
+
+### Model Selection Guide
+
+Choose the right model based on your requirements:
+
+| Model | RAM | Speed | Quality | Best For |
+|-------|-----|-------|---------|----------|
+| **tiny** | ~1GB | Fastest | Good | Real-time, development, testing |
+| **base** | ~1.5GB | Fast | Better | Default choice, balanced performance |
+| **small** | ~3GB | Medium | Good | Accents, professional use |
+| **medium** | ~5GB | Slow | Great | High accuracy requirements |
+| **large-v3** | ~10GB | Slowest | Best | Maximum quality, complex audio |
+
+**Model Download Times (first use only):**
+- tiny: ~40MB (~30 seconds)
+- base: ~145MB (~1 minute)
+- small: ~466MB (~3 minutes)
+- medium: ~1.5GB (~8 minutes)
+- large-v3: ~6GB (~30 minutes)
+
+**Recommended Settings:**
+- **English-only**: `large-v3` for best accuracy
+- **Multi-language**: `large-v3` with language detection
+- **Real-time apps**: `base` or `small` for speed
+- **Development/testing**: `tiny` for fast iteration
+
+### Troubleshooting
+
+**Issue 1: First Transcription is Very Slow**
+
+```bash
+# Model downloads on first use - this is normal
+# Check download progress
+docker logs faster-whisper
+
+# You'll see:
+# Downloading model: Systran/faster-whisper-large-v3
+# Progress: [████████████████████] 100%
+
+# Subsequent transcriptions are fast
+```
+
+**Solution:**
+- First request takes 2-30 minutes depending on model size
+- Subsequent requests complete in seconds
+- Pre-download models by running a test transcription after installation
+
+**Issue 2: German Audio Transcribed as English Gibberish**
+
+```bash
+# Problem: Using wrong model or no language specified
+```
+
+**Solution:**
+- Use full model: `Systran/faster-whisper-large-v3` (not distil version)
+- Add language parameter: `"language": "de"`
+- Distil models have poor non-English support
+
+**Issue 3: Transcription Quality is Poor**
+
+```bash
+# Check audio quality
+ffmpeg -i input.mp3 -af "volumedetect" -f null -
+
+# Check for:
+# - Low volume (< -20dB)
+# - Heavy background noise
+# - Multiple speakers talking simultaneously
+```
+
+**Solution:**
+- Use larger model (medium or large-v3)
+- Pre-process audio to remove noise
+- Split multi-speaker audio before transcription
+- Ensure audio is at least 16kHz sample rate
+- Convert to mono if stereo (Whisper uses mono)
+
+**Issue 4: Service Not Responding / Timeout**
+
+```bash
+# Check service status
+docker ps | grep faster-whisper
+
+# Check logs
+docker logs faster-whisper --tail 50
+
+# Restart service
+docker compose restart faster-whisper
+
+# Check memory usage (models need RAM)
+free -h
+```
+
+**Solution:**
+- Ensure server has enough RAM for model (see table above)
+- First transcription triggers model download (wait 5-30 mins)
+- Check logs for out-of-memory errors
+- Reduce to smaller model if insufficient RAM
+
+**Issue 5: Cannot Access from n8n**
+
+```bash
+# Test API endpoint
+docker exec n8n curl http://faster-whisper:8000/
+
+# Should return: {"detail":"Not Found"}
+# This confirms service is accessible
+
+# Test actual transcription endpoint
+docker exec n8n curl -X POST http://faster-whisper:8000/v1/audio/transcriptions
+```
+
+**Solution:**
+- Use internal URL: `http://faster-whisper:8000` (not localhost)
+- Ensure both services are in same Docker network
+- Check service is running: `docker ps | grep faster-whisper`
+
+### Language Support
+
+Faster-Whisper supports 99 languages:
+
+**Common Languages:**
+- English: `en`
+- German: `de`
+- Spanish: `es`
+- French: `fr`
+- Italian: `it`
+- Portuguese: `pt`
+- Dutch: `nl`
+- Polish: `pl`
+- Russian: `ru`
+- Japanese: `ja`
+- Korean: `ko`
+- Chinese: `zh`
+- Arabic: `ar`
+- Turkish: `tr`
+- Hindi: `hi`
+
+**Auto-Detection:**
+- Omit `language` parameter to auto-detect
+- Whisper will identify language automatically
+- Slightly slower than specifying language
+- Very accurate for most languages
+
+### Resources
+
+- **GitHub**: https://github.com/SYSTRAN/faster-whisper
+- **Original Whisper**: https://github.com/openai/whisper
+- **Model Card**: https://huggingface.co/Systran/faster-whisper-large-v3
+- **Language Support**: https://github.com/openai/whisper#available-models-and-languages
+- **API Documentation**: OpenAI-compatible endpoints
+
+### Best Practices
+
+**For Best Transcription Results:**
+
+1. **Audio Quality Matters:**
+   - Use lossless formats when possible (WAV, FLAC)
+   - Minimum 16kHz sample rate (higher is better)
+   - Clear, front-facing microphone recordings
+   - Minimize background noise
+
+2. **Choose Right Model:**
+   - Development: tiny/base for speed
+   - Production: medium/large-v3 for accuracy
+   - Real-time: base/small with streaming
+
+3. **Specify Language When Known:**
+   - Faster processing (skips detection)
+   - Slightly better accuracy
+   - Required for best non-English results
+
+4. **Pre-process Audio:**
+   - Normalize volume levels
+   - Remove long silences
+   - Split files >30 minutes for better processing
+   - Convert to mono (Whisper doesn't use stereo)
+
+5. **Handle Errors Gracefully:**
+   - Add retry logic for network issues
+   - Validate audio format before sending
+   - Set reasonable timeout (5-10 minutes for long files)
+   - Cache results to avoid re-processing
+
+6. **Optimize Performance:**
+   - Batch process multiple files with queue
+   - Use smaller models for preview/draft
+   - Pre-download models during off-hours
+   - Monitor server RAM usage
+
+**When to Use Faster-Whisper:**
+
+- ✅ Voice messages, voicemail transcription
+- ✅ Meeting and interview recordings
+- ✅ Podcast and video subtitles
+- ✅ Voice command interfaces
+- ✅ Multi-language customer support
+- ✅ Accessibility features (closed captions)
+- ✅ Voice-driven workflows and automation
+- ❌ Real-time live transcription (use Scriberr/Vexa instead)
+- ❌ Speaker diarization (use Scriberr instead)
 
 </details>
 
 <details>
 <summary><b>🔊 OpenedAI-Speech - Text-to-Speech</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is OpenedAI-Speech?
+
+OpenedAI-Speech is a self-hosted text-to-speech service that provides OpenAI-compatible API endpoints powered by Piper TTS. It offers high-quality, natural-sounding voices in multiple languages with complete privacy - all audio generation happens on your server without sending data to external services.
+
+### Features
+
+- **OpenAI-Compatible API**: Drop-in replacement for OpenAI's TTS API (`/v1/audio/speech`)
+- **Multiple Voice Models**: Pre-configured English voices (alloy, echo, fable, onyx, nova, shimmer)
+- **Multi-Language Support**: Add voices in 50+ languages including German, French, Spanish, Italian, and more
+- **Fast Generation**: ~2-5 seconds per sentence on CPU, <1 second with GPU
+- **Privacy-First**: All audio generation happens locally on your server
+- **Automatic Model Download**: Voice models download automatically on first use
+
+### Initial Setup
+
+**OpenedAI-Speech is deployed internally (no direct web access):**
+
+- **Internal URL**: `http://openedai-speech:8000`
+- **API Endpoint**: `/v1/audio/speech`
+- **Authentication**: Bearer token (dummy token accepted: `sk-dummy`)
+- **Voice Models**: Downloaded automatically on first use
+
+**Pre-configured English voices:**
+- `alloy` - Neutral, balanced voice
+- `echo` - Male, confident voice
+- `fable` - British, narrative voice
+- `onyx` - Deep, authoritative voice
+- `nova` - Female, energetic voice
+- `shimmer` - Soft, warm voice
+
+### n8n Integration Setup
+
+**No credentials needed** - OpenedAI-Speech is accessed via HTTP Request Node with dummy authentication.
+
+**Internal URL:** `http://openedai-speech:8000`
+
+### Example Workflows
+
+#### Example 1: Basic Text-to-Speech
+
+```javascript
+// 1. Trigger Node (Webhook, Schedule, etc.)
+// Input text to convert to speech
+
+// 2. HTTP Request Node - Generate Speech
+Method: POST
+URL: http://openedai-speech:8000/v1/audio/speech
+
+Headers:
+  - Name: Content-Type
+    Value: application/json
+  - Name: Authorization
+    Value: Bearer sk-dummy
+
+Send Body: JSON
+{
+  "model": "tts-1",
+  "input": "{{ $json.text }}",
+  "voice": "alloy",
+  "response_format": "mp3"
+}
+
+Response Format: File
+Put Output in Field: data
+
+// 3. Action Node - Use the audio
+// Save to file, send via email, upload to cloud, etc.
+```
+
+#### Example 2: Multi-Language Voice Response
+
+```javascript
+// Text-to-speech in German or English
+
+// 1. Webhook Trigger - Receive text + language
+// Input: { "text": "Hallo Welt", "language": "de" }
+
+// 2. IF Node - Check language
+If: {{ $json.language }} === 'de'
+
+// 3a. HTTP Request - German Voice
+Method: POST
+URL: http://openedai-speech:8000/v1/audio/speech
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer sk-dummy
+Body: {
+  "model": "tts-1",
+  "input": "{{ $json.text }}",
+  "voice": "thorsten"  // German male voice
+}
+
+// 3b. HTTP Request - English Voice
+Method: POST
+URL: http://openedai-speech:8000/v1/audio/speech
+Body: {
+  "model": "tts-1",
+  "input": "{{ $json.text }}",
+  "voice": "alloy"
+}
+
+// 4. HTTP Response - Return audio file
+Response: Binary
+Binary Property: data
+```
+
+#### Example 3: Automated Podcast Generation
+
+```javascript
+// Generate audio podcast from blog posts
+
+// 1. RSS Feed Trigger - New blog post published
+// Or Schedule Trigger + fetch RSS
+
+// 2. HTTP Request - Fetch article content
+Method: GET
+URL: {{ $json.link }}
+
+// 3. HTML Extract Node - Get main text
+Selector: article, .post-content, main
+Output: text
+
+// 4. Code Node - Clean and format text
+const text = $input.item.json.text;
+
+// Remove extra whitespace
+const cleaned = text.replace(/\s+/g, ' ').trim();
+
+// Split into chunks (Piper has ~500 char limit per request)
+const chunks = [];
+const sentences = cleaned.match(/[^.!?]+[.!?]+/g) || [cleaned];
+let currentChunk = '';
+
+for (const sentence of sentences) {
+  if ((currentChunk + sentence).length < 450) {
+    currentChunk += sentence;
+  } else {
+    if (currentChunk) chunks.push(currentChunk);
+    currentChunk = sentence;
+  }
+}
+if (currentChunk) chunks.push(currentChunk);
+
+return chunks.map(chunk => ({ text: chunk }));
+
+// 5. Loop Node - Process each chunk
+Items: {{ $json }}
+
+// 6. HTTP Request - Generate speech for chunk
+Method: POST
+URL: http://openedai-speech:8000/v1/audio/speech
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer sk-dummy
+Body: {
+  "model": "tts-1",
+  "input": "{{ $json.text }}",
+  "voice": "fable"  // British narrator voice
+}
+
+// 7. Code Node - Concatenate audio files
+// Use FFmpeg to merge all audio chunks
+
+// 8. Upload to Cloud Storage - Final podcast audio
+// Google Drive, S3, Dropbox, etc.
+
+// 9. Update WordPress/Ghost - Add audio player to post
+```
+
+#### Example 4: Voice-Enabled Customer Notifications
+
+```javascript
+// Send voice messages to customers
+
+// 1. Webhook Trigger - Order status update
+// Input: { "customer_phone": "+491234567890", "status": "shipped", "order_id": "12345" }
+
+// 2. Set Node - Create notification message
+const messages = {
+  shipped: `Your order ${$json.order_id} has been shipped! Track your package at our website.`,
+  delivered: `Great news! Your order ${$json.order_id} has been delivered. Enjoy your purchase!`,
+  delayed: `We apologize, but order ${$json.order_id} is delayed. We'll update you soon.`
+};
+
+return {
+  phone: $json.customer_phone,
+  message: messages[$json.status] || 'Order update available'
+};
+
+// 3. HTTP Request - Generate voice message
+Method: POST
+URL: http://openedai-speech:8000/v1/audio/speech
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer sk-dummy
+Body: {
+  "model": "tts-1",
+  "input": "{{ $json.message }}",
+  "voice": "nova"  // Friendly female voice
+}
+
+// 4. Twilio Node - Send voice call
+Action: Make Call
+To: {{ $json.phone }}
+URL: [URL to hosted audio file]
+
+// Or WhatsApp/Telegram with audio message
+```
+
+### Adding German Voices (or Other Languages)
+
+OpenedAI-Speech uses Piper TTS which supports 50+ languages. Here's how to add German voices:
+
+**Step 1: Edit Voice Configuration**
+
+```bash
+# Access your server
+ssh user@yourdomain.com
+
+# Navigate to AI LaunchKit
+cd ~/ai-launchkit
+
+# Edit voice configuration
+nano openedai-config/voice_to_speaker.yaml
+```
+
+**Step 2: Add German Voices**
+
+Find the `tts-1` section and add German voices:
+
+```yaml
+tts-1:
+  # Existing English voices...
+  alloy:
+    model: en_US-amy-medium
+    speaker: # default speaker
+  
+  # Add German voices below:
+  thorsten:
+    model: de_DE-thorsten-medium
+    speaker: # default speaker
+  eva:
+    model: de_DE-eva_k-x_low
+    speaker: # default speaker
+  kerstin:
+    model: de_DE-kerstin-low
+    speaker: # default speaker
+```
+
+**Step 3: Restart Service**
+
+```bash
+docker compose restart openedai-speech
+```
+
+**Step 4: Use German Voices in n8n**
+
+```javascript
+// HTTP Request Node
+Method: POST
+URL: http://openedai-speech:8000/v1/audio/speech
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer sk-dummy
+Body: {
+  "model": "tts-1",
+  "input": "Hallo, dies ist ein Test der deutschen Sprachausgabe.",
+  "voice": "thorsten"  // High-quality German male voice
+}
+```
+
+**Available German Voices:**
+
+| Voice | Gender | Quality | Speed | Best For |
+|-------|--------|---------|-------|----------|
+| `thorsten` | Male | Medium | Balanced | General use, professional |
+| `eva` | Female | X-Low | Very Fast | Quick notifications |
+| `kerstin` | Female | Low | Fast | Casual content |
+
+**More voices available at:** https://rhasspy.github.io/piper-samples/
+
+### Adding Other Languages
+
+The same process works for any Piper-supported language:
+
+**Popular Language Codes:**
+- German: `de_DE`
+- French: `fr_FR`
+- Spanish: `es_ES`
+- Italian: `it_IT`
+- Portuguese: `pt_BR`
+- Dutch: `nl_NL`
+- Polish: `pl_PL`
+- Russian: `ru_RU`
+
+**Example: Add French voice**
+
+```yaml
+tts-1:
+  # French voice
+  marie:
+    model: fr_FR-siwis-medium
+    speaker: # default speaker
+```
+
+Restart service and use: `"voice": "marie"`
+
+### Voice Model Download
+
+**Models download automatically on first use:**
+
+1. First request with a new voice triggers download
+2. Download time: ~30-90 seconds per voice
+3. Models cached permanently (~20-100MB per voice)
+4. Subsequent requests are instant
+
+**Check download progress:**
+
+```bash
+docker logs openedai-speech -f
+```
+
+### Response Formats
+
+OpenedAI-Speech supports multiple audio formats:
+
+**Available formats:**
+- `mp3` - Compressed, small file size (default)
+- `opus` - High quality, efficient compression
+- `aac` - Good quality, wide compatibility
+- `flac` - Lossless, large file size
+- `wav` - Uncompressed, best quality, very large
+- `pcm` - Raw audio data
+
+**Specify format in request:**
+
+```json
+{
+  "model": "tts-1",
+  "input": "Hello world",
+  "voice": "alloy",
+  "response_format": "opus"
+}
+```
+
+### Troubleshooting
+
+**Issue 1: Service Not Responding**
+
+```bash
+# Check service status
+docker ps | grep openedai-speech
+
+# Should show: STATUS = Up
+
+# Check logs
+docker logs openedai-speech --tail 50
+
+# Restart if needed
+docker compose restart openedai-speech
+```
+
+**Solution:**
+- Ensure service is running: `docker ps | grep openedai-speech`
+- Check for port conflicts (port 8000 is used by Supabase Kong)
+- OpenedAI-Speech uses port 8000 internally (accessible via service name)
+
+**Issue 2: Voice Not Found Error**
+
+```bash
+# Check available voices
+docker exec openedai-speech cat /app/config/voice_to_speaker.yaml
+
+# Verify voice name spelling
+# Voice names are case-sensitive!
+```
+
+**Solution:**
+- Voice names must match exactly (case-sensitive)
+- Check `voice_to_speaker.yaml` for configured voices
+- Default voices: alloy, echo, fable, onyx, nova, shimmer
+- Custom voices: Must be added to config file
+
+**Issue 3: First Request is Very Slow**
+
+```bash
+# Monitor model download
+docker logs openedai-speech -f
+
+# You'll see:
+# Downloading voice model: en_US-amy-medium
+# Progress: [████████████████████] 100%
+```
+
+**Solution:**
+- First request downloads voice model (~30-90 seconds)
+- Subsequent requests complete in 2-5 seconds
+- Models are cached permanently
+- Pre-download models by testing each voice after setup
+
+**Issue 4: German Voice Sounds Wrong**
+
+```bash
+# Check voice configuration
+docker exec openedai-speech cat /app/config/voice_to_speaker.yaml | grep -A 2 thorsten
+
+# Should show:
+# thorsten:
+#   model: de_DE-thorsten-medium
+#   speaker:
+```
+
+**Solution:**
+- Ensure correct model code: `de_DE-thorsten-medium` (not `en_US`)
+- Voice must be added to `voice_to_speaker.yaml`
+- Restart service after config changes
+- Verify language code matches voice model
+
+**Issue 5: Audio Quality is Poor**
+
+**Solution:**
+- Use higher quality voice models:
+  - `*-low` → `*-medium` → `*-high`
+- Switch to uncompressed format: `"response_format": "wav"`
+- Try different voices (some are higher quality)
+- For best quality: Use medium or high quality models
+- Example: `en_US-libritts-high` (best English quality)
+
+**Issue 6: Cannot Access from n8n**
+
+```bash
+# Test connection from n8n container
+docker exec n8n curl http://openedai-speech:8000/
+
+# Should return health check or error page
+
+# Test actual TTS endpoint
+docker exec n8n curl -X POST http://openedai-speech:8000/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-dummy" \
+  -d '{"model":"tts-1","input":"test","voice":"alloy"}'
+```
+
+**Solution:**
+- Use internal URL: `http://openedai-speech:8000` (not localhost or IP)
+- Ensure both services in same Docker network
+- Add dummy Authorization header: `Bearer sk-dummy`
+- Check service is running: `docker ps | grep openedai-speech`
+
+### Resources
+
+- **GitHub**: https://github.com/matatonic/openedai-speech
+- **Piper TTS**: https://github.com/rhasspy/piper
+- **Voice Samples**: https://rhasspy.github.io/piper-samples/
+- **OpenAI TTS API Reference**: https://platform.openai.com/docs/api-reference/audio/createSpeech
+- **Available Languages**: 50+ languages supported
+
+### Best Practices
+
+**For Best Audio Quality:**
+
+1. **Choose Right Voice Quality:**
+   - Development/testing: low quality (fast, small)
+   - Production: medium quality (balanced)
+   - Premium: high quality (slow, large)
+
+2. **Optimize Text Input:**
+   - Keep sentences under 500 characters
+   - Use proper punctuation for natural pauses
+   - Split long text into chunks
+   - Add commas for natural pacing
+
+3. **Handle Errors Gracefully:**
+   - Retry on network failures
+   - Validate text length before sending
+   - Cache generated audio to avoid regeneration
+   - Set reasonable timeout (10-30 seconds)
+
+4. **Performance Optimization:**
+   - Pre-download commonly used voice models
+   - Use lower quality voices for real-time apps
+   - Batch process multiple requests
+   - Cache results for repeated phrases
+
+5. **Multi-Language Support:**
+   - Pre-configure voices for all needed languages
+   - Test each voice before production
+   - Consider regional accents (US vs UK English)
+   - Use language-specific voices for best quality
+
+**When to Use OpenedAI-Speech:**
+
+- ✅ Voice notifications and alerts
+- ✅ Audiobook and podcast generation
+- ✅ Voice assistants and chatbots
+- ✅ Accessibility features (text-to-speech)
+- ✅ Multi-language content
+- ✅ Phone system IVR messages
+- ✅ Educational content
+- ❌ Real-time low-latency (<100ms) - use Chatterbox instead
+- ❌ Emotional expression control - use Chatterbox instead
+- ❌ Voice cloning - use Chatterbox instead
+
+### Integration with Other Services
+
+**Voice-to-Voice Pipeline:**
+
+```
+Faster-Whisper (STT) → LLM (Processing) → OpenedAI-Speech (TTS)
+```
+
+**Complete workflow:**
+1. User sends voice message
+2. Faster-Whisper transcribes to text
+3. LLM (GPT/Claude/Ollama) processes request
+4. OpenedAI-Speech converts response to audio
+5. Send audio back to user
+
+**Example platforms:**
+- Telegram voice messages
+- WhatsApp audio messages
+- Phone systems (Twilio)
+- Discord voice bots
+- Web apps with audio
 
 </details>
 
 <details>
 <summary><b>🗣️ TTS Chatterbox - Advanced TTS</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is TTS Chatterbox?
+
+TTS Chatterbox is a state-of-the-art text-to-speech service that offers emotion control, voice cloning, and multi-language support. Based on Resemble AI's Chatterbox model, it achieved a 63.75% preference rate over ElevenLabs in blind tests, making it one of the highest-quality open-source TTS solutions available.
+
+### Features
+
+- **State-of-the-Art Quality**: 63.75% preference over ElevenLabs in blind tests
+- **Emotion Control**: Adjust emotional intensity with exaggeration parameter (0.25-2.0)
+- **Voice Cloning**: Clone any voice with just 10-30 seconds of audio sample
+- **22+ Languages**: Language-aware synthesis for natural-sounding speech
+- **OpenAI-Compatible API**: Drop-in replacement for OpenAI TTS API
+- **Built-in Watermarking**: PerTh neural watermarking for audio traceability
+- **GPU Acceleration**: <1 second per sentence with GPU support
+
+### Initial Setup
+
+**First Login to Chatterbox:**
+
+1. Navigate to `https://chatterbox.yourdomain.com`
+2. **Web Interface**: Simple UI for testing voices and generating audio
+3. **API Key**: Generated during installation and stored in `.env`
+4. Default voice available immediately
+
+**Access Methods:**
+- **Web UI**: `https://chatterbox.yourdomain.com` (for testing)
+- **Internal API**: `http://chatterbox-tts:4123` (for n8n automation)
+- **Swagger Docs**: `http://chatterbox-tts:4123/docs` (API documentation)
+
+### n8n Integration Setup
+
+**Credentials needed:**
+
+1. Go to n8n: `https://n8n.yourdomain.com`
+2. Settings → Credentials → Create New
+3. Type: HTTP Header Auth
+4. Add header:
+   - **Name**: `X-API-Key`
+   - **Value**: `${CHATTERBOX_API_KEY}` (from your `.env` file)
+
+**Internal URL:** `http://chatterbox-tts:4123`
+
+### Example Workflows
+
+#### Example 1: Basic Text-to-Speech with Emotion
+
+```javascript
+// Generate speech with emotional control
+
+// 1. Trigger Node (Webhook, Schedule, etc.)
+// Input: { "text": "I'm so excited about this!", "emotion": "happy" }
+
+// 2. Set Node - Map emotion to exaggeration value
+const emotionMap = {
+  "calm": 0.25,      // Very subdued
+  "neutral": 0.5,    // Balanced
+  "normal": 1.0,     // Standard emotion
+  "happy": 1.5,      // Upbeat, energetic
+  "excited": 2.0,    // Very enthusiastic
+  "sad": 0.3,        // Melancholic
+  "angry": 1.8       // Intense
+};
+
+return {
+  text: $json.text,
+  exaggeration: emotionMap[$json.emotion] || 1.0
+};
+
+// 3. HTTP Request Node - Generate Speech with Chatterbox
+Method: POST
+URL: http://chatterbox-tts:4123/v1/audio/speech
+
+Headers:
+  - Name: X-API-Key
+    Value: {{ $credentials.CHATTERBOX_API_KEY }}
+  - Name: Content-Type
+    Value: application/json
+
+Send Body: JSON
+{
+  "model": "chatterbox",
+  "voice": "default",
+  "input": "{{ $json.text }}",
+  "response_format": "mp3",
+  "exaggeration": {{ $json.exaggeration }},
+  "language_id": "en"
+}
+
+Response Format: File
+Put Output in Field: data
+
+// 4. Action Node - Use the audio
+// Save, send via email, upload to storage, etc.
+```
+
+#### Example 2: Multi-Language Dynamic Storytelling
+
+```javascript
+// Create audiobook with emotion-aware narration
+
+// 1. Google Docs Trigger - New chapter added
+// Or fetch from CMS/database
+
+// 2. Code Node - Parse text and detect emotions
+const text = $json.chapter_text;
+
+// Split by dialogue and narration
+const segments = [];
+const dialogueRegex = /"([^"]+)"/g;
+let lastIndex = 0;
+let match;
+
+while ((match = dialogueRegex.exec(text)) !== null) {
+  // Add narration before dialogue
+  if (match.index > lastIndex) {
+    segments.push({
+      text: text.substring(lastIndex, match.index),
+      type: 'narration',
+      exaggeration: 0.5
+    });
+  }
+  
+  // Add dialogue
+  segments.push({
+    text: match[1],
+    type: 'dialogue',
+    exaggeration: 1.5  // More expressive for dialogue
+  });
+  
+  lastIndex = match.index + match[0].length;
+}
+
+// Add remaining narration
+if (lastIndex < text.length) {
+  segments.push({
+    text: text.substring(lastIndex),
+    type: 'narration',
+    exaggeration: 0.5
+  });
+}
+
+return segments;
+
+// 3. Loop Node - Process each segment
+Items: {{ $json }}
+
+// 4. HTTP Request - Generate audio for segment
+Method: POST
+URL: http://chatterbox-tts:4123/v1/audio/speech
+Headers:
+  X-API-Key: {{ $credentials.CHATTERBOX_API_KEY }}
+Body: {
+  "model": "chatterbox",
+  "voice": "default",
+  "input": "{{ $json.text }}",
+  "exaggeration": {{ $json.exaggeration }},
+  "language_id": "en"
+}
+
+// 5. Code Node - Concatenate audio segments
+// Use FFmpeg to merge all audio files
+
+// 6. Google Drive - Upload complete audiobook chapter
+File Name: Chapter_{{ $json.chapter_number }}.mp3
+```
+
+#### Example 3: Customer Service with Cloned Brand Voice
+
+```javascript
+// Use cloned company spokesperson voice for automated responses
+
+// 1. Webhook Trigger - Customer inquiry received
+// Input: { "customer_name": "Alice", "question": "What are your hours?" }
+
+// 2. HTTP Request - Get answer from knowledge base
+// Or use LLM to generate response
+
+// 3. Set Node - Format personalized response
+return {
+  response: `Hi ${$json.customer_name}, ${$json.answer}. Is there anything else I can help you with?`
+};
+
+// 4. HTTP Request - Generate speech with cloned voice
+Method: POST
+URL: http://chatterbox-tts:4123/v1/audio/speech
+Headers:
+  X-API-Key: {{ $credentials.CHATTERBOX_API_KEY }}
+Body: {
+  "model": "chatterbox",
+  "voice": "company_spokesperson",  // Previously cloned voice
+  "input": "{{ $json.response }}",
+  "exaggeration": 1.0,
+  "language_id": "en"
+}
+
+// 5. Twilio Node - Send voice response
+// Or return audio in webhook response
+```
+
+#### Example 4: Podcast Auto-Generation with Multiple Speakers
+
+```javascript
+// Create podcast with different voices for hosts and guests
+
+// 1. RSS Feed Trigger - New blog post published
+
+// 2. HTTP Request - Send to LLM for podcast script
+Method: POST
+URL: http://open-webui:8080/api/chat/completions
+Body: {
+  "model": "gpt-4o",
+  "messages": [{
+    "role": "system",
+    "content": "Convert this blog post into a podcast script with Host and Guest dialogue."
+  }, {
+    "role": "user",
+    "content": "{{ $json.blog_content }}"
+  }]
+}
+
+// 3. Code Node - Parse script into segments
+const script = $json.response;
+const segments = [];
+
+// Parse "Host: text" and "Guest: text" format
+const lines = script.split('\n');
+for (const line of lines) {
+  if (line.startsWith('Host:')) {
+    segments.push({
+      speaker: 'host',
+      text: line.replace('Host:', '').trim(),
+      voice: 'host_voice',
+      exaggeration: 1.2
+    });
+  } else if (line.startsWith('Guest:')) {
+    segments.push({
+      speaker: 'guest',
+      text: line.replace('Guest:', '').trim(),
+      voice: 'guest_voice',
+      exaggeration: 1.0
+    });
+  }
+}
+
+return segments;
+
+// 4. Loop Node - Generate audio for each segment
+Items: {{ $json }}
+
+// 5. HTTP Request - Chatterbox TTS
+Method: POST
+URL: http://chatterbox-tts:4123/v1/audio/speech
+Body: {
+  "model": "chatterbox",
+  "voice": "{{ $json.voice }}",
+  "input": "{{ $json.text }}",
+  "exaggeration": {{ $json.exaggeration }}
+}
+
+// 6. Code Node - Merge audio segments with FFmpeg
+// 7. Upload to podcast hosting platform
+```
+
+### Voice Cloning Setup
+
+One of Chatterbox's most powerful features is the ability to clone voices with minimal audio samples.
+
+**Step 1: Prepare Voice Sample**
+
+```bash
+# SSH into your server
+ssh user@yourdomain.com
+
+# Create voice directory
+mkdir -p ~/ai-launchkit/shared/tts/voices
+
+# Upload your voice sample (10-30 seconds recommended)
+# Upload via SCP or save directly:
+# scp voice_sample.wav user@yourdomain.com:~/ai-launchkit/shared/tts/voices/
+```
+
+**Requirements for best results:**
+- **Duration**: 10-30 seconds (more is better, up to 60 seconds)
+- **Format**: WAV or MP3 (WAV preferred)
+- **Quality**: Clear audio, minimal background noise
+- **Content**: Natural speech with varied intonation
+- **Single speaker**: One person only in the recording
+
+**Step 2: Clone Voice via API (n8n)**
+
+```javascript
+// HTTP Request Node - Clone Voice
+Method: POST
+URL: http://chatterbox-tts:4123/v1/voice/clone
+
+Headers:
+  - Name: X-API-Key
+    Value: {{ $credentials.CHATTERBOX_API_KEY }}
+
+Send Body: Form Data Multipart
+Body Parameters:
+  1. Audio File:
+     - Parameter Type: n8n Binary File
+     - Name: audio_file
+     - Input Data Field Name: data
+  
+  2. Voice Name:
+     - Parameter Type: Form Data
+     - Name: voice_name
+     - Value: my_cloned_voice
+
+// Response:
+{
+  "success": true,
+  "voice_id": "my_cloned_voice",
+  "message": "Voice cloned successfully"
+}
+```
+
+**Step 3: Use Cloned Voice**
+
+```javascript
+// HTTP Request Node - Generate with Cloned Voice
+Method: POST
+URL: http://chatterbox-tts:4123/v1/audio/speech
+Body: {
+  "model": "chatterbox",
+  "voice": "my_cloned_voice",  // Your cloned voice ID
+  "input": "This is spoken in my cloned voice!",
+  "exaggeration": 1.0
+}
+```
+
+**Managing Cloned Voices:**
+
+```bash
+# List all cloned voices
+curl -X GET http://chatterbox-tts:4123/v1/voices \
+  -H "X-API-Key: ${CHATTERBOX_API_KEY}"
+
+# Delete a cloned voice
+curl -X DELETE http://chatterbox-tts:4123/v1/voices/my_cloned_voice \
+  -H "X-API-Key: ${CHATTERBOX_API_KEY}"
+```
+
+### Emotion Control Guide
+
+The `exaggeration` parameter controls emotional intensity:
+
+| Value | Effect | Best For |
+|-------|--------|----------|
+| **0.25** | Very calm, subdued | Meditation, ASMR, relaxation |
+| **0.5** | Balanced, neutral | Narration, audiobooks, formal |
+| **1.0** | Normal emotion | General use, natural speech |
+| **1.5** | Upbeat, energetic | Marketing, enthusiasm, happy |
+| **2.0** | Very emotional | Excitement, dramatic reading |
+
+**Example scenarios:**
+
+```javascript
+// News reading (neutral)
+{ "exaggeration": 0.5, "text": "Today's headlines..." }
+
+// Sales pitch (enthusiastic)
+{ "exaggeration": 1.8, "text": "This amazing product..." }
+
+// Bedtime story (calm)
+{ "exaggeration": 0.3, "text": "Once upon a time..." }
+
+// Sports commentary (excited)
+{ "exaggeration": 2.0, "text": "GOAL! What an incredible play!" }
+```
+
+### Supported Languages
+
+Chatterbox supports 22+ languages with language-aware synthesis:
+
+**Major Languages:**
+- English: `en`
+- German: `de`
+- Spanish: `es`
+- French: `fr`
+- Italian: `it`
+- Portuguese: `pt`
+- Dutch: `nl`
+- Polish: `pl`
+- Russian: `ru`
+- Japanese: `ja`
+- Korean: `ko`
+- Chinese: `zh`
+- Arabic: `ar`
+- Turkish: `tr`
+- Hindi: `hi`
+- Hebrew: `he`
+- Danish: `da`
+- Finnish: `fi`
+- Greek: `el`
+- Norwegian: `no`
+- Swedish: `sv`
+- Swahili: `sw`
+
+**Specify language in request:**
+
+```json
+{
+  "model": "chatterbox",
+  "voice": "default",
+  "input": "Hallo, wie geht es dir?",
+  "language_id": "de"
+}
+```
+
+### Performance Tips
+
+**CPU Mode** (Default):
+- Speed: ~5-10 seconds per sentence
+- RAM: 2-4GB
+- Best for: Low-volume use, development
+
+**GPU Mode** (If available):
+- Speed: <1 second per sentence
+- VRAM: 4GB+
+- Best for: Production, high volume
+
+**Enable GPU** (if your server has NVIDIA GPU):
+
+```bash
+# Edit docker-compose.yml
+nano ~/ai-launchkit/docker-compose.yml
+
+# Find chatterbox-tts service, add:
+deploy:
+  resources:
+    reservations:
+      devices:
+        - driver: nvidia
+          count: 1
+          capabilities: [gpu]
+
+# Add environment variable:
+environment:
+  - CHATTERBOX_DEVICE=cuda
+
+# Restart service
+docker compose restart chatterbox-tts
+```
+
+**Optimization Tips:**
+- Cache generated audio to avoid regeneration
+- Split long texts into sentences for faster processing
+- Use lower exaggeration values for faster generation
+- Models are cached after first load
+- Batch process multiple requests if possible
+
+### Troubleshooting
+
+**Issue 1: Service Not Responding**
+
+```bash
+# Check service status
+docker ps | grep chatterbox
+
+# Should show: STATUS = Up
+
+# Check logs
+docker logs chatterbox-tts --tail 50
+
+# Restart if needed
+docker compose restart chatterbox-tts
+```
+
+**Issue 2: First Request is Very Slow**
+
+```bash
+# Monitor model loading
+docker logs chatterbox-tts -f
+
+# You'll see:
+# Loading Chatterbox model...
+# Model loaded successfully (takes 30-60 seconds first time)
+```
+
+**Solution:**
+- First request loads model into memory (~2GB, 30-60 seconds)
+- Subsequent requests are much faster (5-10 seconds CPU, <1s GPU)
+- Model stays in memory while service runs
+
+**Issue 3: Voice Quality is Poor**
+
+**Solution:**
+- Check exaggeration value (too high = distorted, too low = flat)
+- Optimal range: 0.5-1.5 for most use cases
+- For voice cloning: Use high-quality source audio (clear, no noise)
+- Ensure correct language_id matches input text
+- Try different voices or clone a custom voice
+
+**Issue 4: Voice Cloning Failed**
+
+```bash
+# Check audio file format
+file voice_sample.wav
+# Should show: RIFF (little-endian) data, WAVE audio
+
+# Check logs during cloning
+docker logs chatterbox-tts -f
+```
+
+**Solution:**
+- Audio must be clear, single speaker, 10+ seconds
+- Convert to WAV if needed: `ffmpeg -i input.mp3 -ar 22050 output.wav`
+- Remove background noise before cloning
+- Minimum 10 seconds, recommended 20-30 seconds
+- Check API key is correct in request headers
+
+**Issue 5: Cannot Access from n8n**
+
+```bash
+# Test connection from n8n container
+docker exec n8n curl -I http://chatterbox-tts:4123/
+
+# Should return HTTP headers
+
+# Test API endpoint
+docker exec n8n curl -X POST http://chatterbox-tts:4123/v1/audio/speech \
+  -H "X-API-Key: ${CHATTERBOX_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"chatterbox","input":"test","voice":"default"}'
+```
+
+**Solution:**
+- Use internal URL: `http://chatterbox-tts:4123` (not localhost)
+- Ensure both services in same Docker network
+- API Key must be in header: `X-API-Key: YOUR_KEY`
+- Check service is running: `docker ps | grep chatterbox`
+
+**Issue 6: Audio Sounds Robotic**
+
+**Solution:**
+- Increase exaggeration (try 1.2-1.5)
+- Use voice cloning for more natural results
+- Check input text has proper punctuation
+- Avoid all-caps text (sounds shouted)
+- Add commas for natural pauses
+
+### Resources
+
+- **GitHub**: https://github.com/travisvn/chatterbox-tts-api
+- **Model Info**: https://www.resemble.ai/chatterbox/
+- **API Docs**: `http://chatterbox-tts:4123/docs` (after installation)
+- **Paper**: https://www.resemble.ai/papers/chatterbox
+- **Voice Samples**: Available in web UI
+
+### Best Practices
+
+**For Best Audio Quality:**
+
+1. **Input Text Optimization:**
+   - Use proper punctuation (commas = pauses, periods = stops)
+   - Avoid abbreviations (write "Doctor" not "Dr.")
+   - Spell out numbers ("twenty-five" not "25")
+   - Use natural sentence structure
+
+2. **Emotion Control:**
+   - Start with 1.0 and adjust incrementally
+   - Test different values for your use case
+   - Lower for formal content, higher for energetic
+   - Consistent values within same context
+
+3. **Voice Cloning Tips:**
+   - Record in quiet environment
+   - Use external microphone if possible
+   - Natural, conversational tone in sample
+   - Varied intonation (not monotone)
+   - 20-30 seconds is sweet spot
+
+4. **Performance:**
+   - Cache frequently used audio
+   - Batch generate overnight for large projects
+   - Use GPU if available for production
+   - Pre-generate common phrases
+
+5. **Multi-Language:**
+   - Always specify language_id for best results
+   - Test with native speakers if possible
+   - Some languages work better than others
+   - English has best quality overall
+
+**When to Use Chatterbox vs OpenedAI-Speech:**
+
+**Use Chatterbox when you need:**
+- ✅ Emotion control and expression
+- ✅ Voice cloning capability
+- ✅ Highest quality natural speech
+- ✅ Marketing, brand voice, podcasts
+- ✅ Audiobooks with emotion
+- ✅ Multi-speaker content
+
+**Use OpenedAI-Speech when you need:**
+- ✅ Faster generation (lower latency)
+- ✅ More voice variety (60+ voices)
+- ✅ Lower resource usage
+- ✅ Simple notifications
+- ✅ Quick prototyping
+
+**Best of both worlds:**
+- Use OpenedAI-Speech for development/testing
+- Use Chatterbox for final production audio
+- Clone your brand voice with Chatterbox
+- Use OpenedAI for quick notifications
 
 </details>
 
 <details>
 <summary><b>🌍 LibreTranslate - Translation API</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is LibreTranslate?
+
+LibreTranslate is a free, open-source, self-hosted translation API that provides machine translation for 50+ languages. It offers complete privacy as all translations happen on your server, with no data sent to external services, and includes automatic language detection.
+
+### Features
+
+- **50+ Languages**: Translate between major world languages
+- **Automatic Language Detection**: No need to specify source language
+- **Privacy-First**: All translations happen locally on your server
+- **Unlimited Translations**: No API rate limits or costs
+- **Format Preservation**: HTML formatting preserved in translations
+- **Document Translation**: Translate TXT, DOCX, PDF files directly
+- **OpenAPI/Swagger**: Full API documentation with interactive testing
+
+### Initial Setup
+
+**First Login to LibreTranslate:**
+
+1. Navigate to `https://translate.yourdomain.com`
+2. **Web Interface Available**: Simple UI for testing translations
+3. **No Authentication Required**: Internal access from n8n doesn't need auth
+4. **External Access**: Protected by Basic Auth (credentials in `.env`)
+
+**Access Methods:**
+- **Web UI**: `https://translate.yourdomain.com` (for testing)
+- **Internal API**: `http://libretranslate:5000` (for n8n automation)
+- **External API**: `https://translate.yourdomain.com` (requires Basic Auth)
+
+### n8n Integration Setup
+
+**No credentials needed for internal access** - LibreTranslate is accessed via HTTP Request Node from n8n without authentication.
+
+**Internal URL:** `http://libretranslate:5000`
+
+### Example Workflows
+
+#### Example 1: Basic Text Translation
+
+```javascript
+// Simple text translation
+
+// 1. Trigger Node (Webhook, Database, etc.)
+// Input: { "text": "Hello, how are you?", "target_lang": "de" }
+
+// 2. HTTP Request Node - Translate Text
+Method: POST
+URL: http://libretranslate:5000/translate
+
+Headers:
+  - Name: Content-Type
+    Value: application/json
+
+Send Body: JSON
+{
+  "q": "{{ $json.text }}",
+  "source": "auto",
+  "target": "{{ $json.target_lang }}",
+  "format": "text"
+}
+
+// Response:
+{
+  "translatedText": "Hallo, wie geht es dir?"
+}
+
+// 3. Set Node - Extract translation
+return {
+  original: $json.text,
+  translated: $('HTTP Request').json.translatedText,
+  language: $json.target_lang
+};
+```
+
+#### Example 2: Multi-Language Customer Support
+
+```javascript
+// Automated customer support with language detection
+
+// 1. Webhook Trigger - Customer inquiry received
+// Input: { "customer_id": "12345", "message": "Hola, necesito ayuda" }
+
+// 2. HTTP Request - Detect Language
+Method: POST
+URL: http://libretranslate:5000/detect
+
+Headers:
+  Content-Type: application/json
+
+Body: {
+  "q": "{{ $json.message }}"
+}
+
+// Response:
+[
+  {
+    "confidence": 0.95,
+    "language": "es"
+  }
+]
+
+// 3. IF Node - Check if translation needed
+If: {{ $json[0].language }} !== 'en'
+
+// 4. HTTP Request - Translate to English
+Method: POST
+URL: http://libretranslate:5000/translate
+Body: {
+  "q": "{{ $('Webhook').json.message }}",
+  "source": "{{ $('Detect Language').json[0].language }}",
+  "target": "en",
+  "format": "text"
+}
+
+// 5. OpenAI Node - Generate response in English
+Model: gpt-4o-mini
+Prompt: Respond to this customer inquiry: {{ $json.translatedText }}
+
+// 6. HTTP Request - Translate response back to customer's language
+Method: POST
+URL: http://libretranslate:5000/translate
+Body: {
+  "q": "{{ $json.response }}",
+  "source": "en",
+  "target": "{{ $('Detect Language').json[0].language }}",
+  "format": "text"
+}
+
+// 7. Send Response - Return in customer's language
+To: {{ $('Webhook').json.customer_id }}
+Message: {{ $json.translatedText }}
+```
+
+#### Example 3: Automated Document Translation
+
+```javascript
+// Translate documents uploaded to Google Drive
+
+// 1. Google Drive Trigger - New file uploaded
+Folder: "/Documents/To Translate"
+File Type: TXT, DOCX, PDF
+
+// 2. HTTP Request - Detect document language
+Method: POST
+URL: http://libretranslate:5000/detect
+Body: {
+  "q": "{{ $json.content_preview }}"
+}
+
+// 3. Loop Node - Translate to multiple languages
+Items: ["de", "fr", "es", "it", "pt"]  // Target languages
+
+// 4. HTTP Request - Translate document
+Method: POST
+URL: http://libretranslate:5000/translate
+Body: {
+  "q": "{{ $('Google Drive').json.content }}",
+  "source": "{{ $('Detect Language').json[0].language }}",
+  "target": "{{ $json }}",
+  "format": "text"
+}
+
+// 5. Google Docs - Create translated document
+Title: {{ $('Google Drive').json.name }}_{{ $json }}
+Content: {{ $json.translatedText }}
+
+// 6. Move to Folder - Organize by language
+Source: Translated document
+Destination: /Documents/Translated/{{ $json }}
+```
+
+#### Example 4: Real-Time Chat Translation
+
+```javascript
+// Translate chat messages in real-time
+
+// 1. Webhook Trigger - New chat message
+// Input: { "user_id": "123", "message": "Bonjour!", "room_id": "general" }
+
+// 2. HTTP Request - Detect message language
+Method: POST
+URL: http://libretranslate:5000/detect
+Body: {
+  "q": "{{ $json.message }}"
+}
+
+// 3. Code Node - Store original language
+return {
+  user_id: $json.user_id,
+  message: $json.message,
+  original_lang: $('Detect Language').json[0].language,
+  room_id: $json.room_id
+};
+
+// 4. HTTP Request - Get room members' languages
+// Query database for user language preferences
+
+// 5. Loop Node - Translate for each user
+Items: {{ $json.room_members }}
+
+// 6. IF Node - Skip if same language
+If: {{ $json.preferred_lang }} !== {{ $('Code').json.original_lang }}
+
+// 7. HTTP Request - Translate message
+Method: POST
+URL: http://libretranslate:5000/translate
+Body: {
+  "q": "{{ $('Code').json.message }}",
+  "source": "{{ $('Code').json.original_lang }}",
+  "target": "{{ $json.preferred_lang }}",
+  "format": "text"
+}
+
+// 8. Slack/Discord/Matrix - Send translated message
+Channel: {{ $('Code').json.room_id }}
+User: @{{ $json.username }}
+Message: [🌍 {{ $json.preferred_lang }}] {{ $json.translatedText }}
+```
+
+### Supported Languages
+
+LibreTranslate supports 50+ languages:
+
+**Major Languages:**
+
+| Code | Language | Code | Language | Code | Language |
+|------|----------|------|----------|------|----------|
+| `en` | English | `de` | German | `zh` | Chinese |
+| `es` | Spanish | `fr` | French | `ja` | Japanese |
+| `it` | Italian | `pt` | Portuguese | `ar` | Arabic |
+| `ru` | Russian | `nl` | Dutch | `ko` | Korean |
+| `pl` | Polish | `tr` | Turkish | `hi` | Hindi |
+| `sv` | Swedish | `fi` | Finnish | `th` | Thai |
+| `da` | Danish | `no` | Norwegian | `vi` | Vietnamese |
+| `cs` | Czech | `el` | Greek | `id` | Indonesian |
+| `ro` | Romanian | `he` | Hebrew | `ms` | Malay |
+| `hu` | Hungarian | `uk` | Ukrainian | `fa` | Persian |
+
+**Get full list via API:**
+
+```bash
+# List all available languages
+curl http://libretranslate:5000/languages
+
+# Response:
+[
+  {"code": "en", "name": "English"},
+  {"code": "de", "name": "German"},
+  ...
+]
+```
+
+### API Endpoints Reference
+
+#### Translate Text
+
+```javascript
+POST http://libretranslate:5000/translate
+Content-Type: application/json
+
+{
+  "q": "Text to translate",
+  "source": "auto",  // or specific language code
+  "target": "de",
+  "format": "text"  // or "html"
+}
+```
+
+#### Detect Language
+
+```javascript
+POST http://libretranslate:5000/detect
+Content-Type: application/json
+
+{
+  "q": "Text to detect"
+}
+
+// Response:
+[
+  {
+    "confidence": 0.95,
+    "language": "en"
+  }
+]
+```
+
+#### Get Available Languages
+
+```javascript
+GET http://libretranslate:5000/languages
+
+// Response:
+[
+  {"code": "en", "name": "English", "targets": ["de", "es", "fr", ...]},
+  {"code": "de", "name": "German", "targets": ["en", "es", "fr", ...]},
+  ...
+]
+```
+
+#### Translate File
+
+```javascript
+POST http://libretranslate:5000/translate_file
+Content-Type: multipart/form-data
+
+file: [binary file data]
+source: auto
+target: de
+```
+
+### Format Preservation
+
+LibreTranslate can preserve HTML formatting during translation:
+
+**HTML Translation:**
+
+```javascript
+// HTTP Request Node
+Method: POST
+URL: http://libretranslate:5000/translate
+Body: {
+  "q": "<h1>Hello World</h1><p>This is a <strong>test</strong>.</p>",
+  "source": "en",
+  "target": "de",
+  "format": "html"  // Preserves HTML tags
+}
+
+// Response:
+{
+  "translatedText": "<h1>Hallo Welt</h1><p>Dies ist ein <strong>Test</strong>.</p>"
+}
+```
+
+### Troubleshooting
+
+**Issue 1: Service Not Responding**
+
+```bash
+# Check service status
+docker ps | grep libretranslate
+
+# Should show: STATUS = Up
+
+# Check logs
+docker logs libretranslate --tail 50
+
+# Restart if needed
+docker compose restart libretranslate
+```
+
+**Issue 2: First Translation is Slow**
+
+```bash
+# Monitor model loading
+docker logs libretranslate -f
+
+# You'll see:
+# Loading language models...
+# Models loaded successfully
+```
+
+**Solution:**
+- First translation triggers model download (1-3 minutes per language pair)
+- Subsequent translations are fast (<1 second)
+- Models are cached permanently
+- Pre-load common languages by testing translations after installation
+
+**Issue 3: Translation Quality is Poor**
+
+**Solution:**
+- LibreTranslate uses Argos Translate (neural machine translation)
+- Quality varies by language pair
+- Best for: English ↔ Major European languages
+- Moderate for: Asian languages, Arabic
+- For better quality: Consider using OpenAI/Claude API for critical content
+- Combine with human review for important documents
+
+**Issue 4: Cannot Access from n8n**
+
+```bash
+# Test connection from n8n container
+docker exec n8n curl http://libretranslate:5000/languages
+
+# Should return JSON list of languages
+
+# Test translation endpoint
+docker exec n8n curl -X POST http://libretranslate:5000/translate \
+  -H "Content-Type: application/json" \
+  -d '{"q":"test","source":"auto","target":"de"}'
+```
+
+**Solution:**
+- Use internal URL: `http://libretranslate:5000` (not localhost)
+- Ensure both services in same Docker network
+- No authentication required for internal access
+- Check service is running: `docker ps | grep libretranslate`
+
+**Issue 5: File Translation Fails**
+
+```bash
+# Check supported file types
+# TXT, DOCX, PDF only
+
+# Verify file size (max 10MB default)
+docker logs libretranslate | grep "file size"
+
+# Check file encoding
+file uploaded_document.txt
+```
+
+**Solution:**
+- Ensure file is UTF-8 encoded
+- Maximum file size: 10MB (configurable)
+- For PDFs: Extract text first with OCR tools
+- For large files: Split into chunks and translate separately
+- Use text extraction tools before translation
+
+**Issue 6: Language Detection is Incorrect**
+
+**Solution:**
+- Detection works best with 50+ characters
+- Short text may detect incorrectly
+- Specify source language explicitly for better results
+- Confidence score <0.5 indicates uncertain detection
+- Test with longer text samples
+
+### Resources
+
+- **Official Website**: https://libretranslate.com
+- **GitHub**: https://github.com/LibreTranslate/LibreTranslate
+- **API Documentation**: `https://translate.yourdomain.com/docs` (Swagger UI)
+- **Supported Languages**: https://github.com/argosopentech/argos-translate#supported-languages
+- **Community**: https://github.com/LibreTranslate/LibreTranslate/discussions
+
+### Best Practices
+
+**For Best Translation Quality:**
+
+1. **Source Text Quality:**
+   - Use proper grammar and spelling
+   - Avoid slang and idioms
+   - Keep sentences simple and clear
+   - Use formal language when possible
+
+2. **Language Detection:**
+   - Provide 50+ characters for accurate detection
+   - Specify source language if known (faster + more accurate)
+   - Use confidence score to validate detection
+
+3. **Performance Optimization:**
+   - Cache frequent translations
+   - Pre-load commonly used language pairs
+   - Batch translate multiple texts together
+   - Use async processing for large volumes
+
+4. **Format Handling:**
+   - Use `format: "html"` to preserve formatting
+   - Clean up text before translation
+   - Post-process translations if needed
+   - Test with sample content first
+
+5. **Error Handling:**
+   - Validate language codes before sending
+   - Handle network timeouts gracefully
+   - Provide fallback for failed translations
+   - Log failed translations for review
+
+**When to Use LibreTranslate:**
+
+- ✅ Privacy-sensitive content
+- ✅ High-volume translations (no API costs)
+- ✅ Internal tools and automation
+- ✅ Basic communication across languages
+- ✅ Quick prototyping
+- ✅ Educational projects
+- ❌ Professional/legal documents (use human translator)
+- ❌ Marketing copy (consider paid services)
+- ❌ Critical communications
+
+**LibreTranslate vs Commercial Services:**
+
+| Feature | LibreTranslate | Google Translate | DeepL |
+|---------|----------------|------------------|-------|
+| **Cost** | Free (self-hosted) | Pay per character | Limited free tier |
+| **Privacy** | Complete | Data sent to Google | Data sent to DeepL |
+| **Quality** | Good | Excellent | Excellent |
+| **Languages** | 50+ | 100+ | 30+ |
+| **Speed** | Fast (local) | Fast | Fast |
+| **Best For** | Privacy, volume | General use | Professional |
+
+### Integration with Other Services
+
+**Translation Pipeline:**
+
+```
+Content Creation → LibreTranslate → Review → Publish
+```
+
+**Multi-Language Workflow:**
+
+1. Create content in primary language (English)
+2. Auto-translate to target languages (LibreTranslate)
+3. Store translations in database
+4. Human review (optional)
+5. Publish to all markets
+
+**Combined with Speech Services:**
+
+```
+Speech → Whisper (STT) → LibreTranslate → TTS → Speech
+```
+
+**Use case:** Real-time voice translation for meetings
+
+**Document Processing:**
+
+```
+Upload → OCR (Tesseract) → LibreTranslate → Format → Save
+```
+
+**Use case:** Translate scanned documents
 
 </details>
 
 <details>
 <summary><b>👁️ OCR Bundle - Text Extraction</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is the OCR Bundle?
+
+The OCR Bundle provides two complementary OCR (Optical Character Recognition) engines that work together to extract text from images and PDFs: **Tesseract** for speed and clean documents, and **EasyOCR** for quality on photos and complex documents. This dual-engine approach ensures you have the right tool for every document type.
+
+### Features
+
+- **Dual Engine Approach**: Tesseract (fast) + EasyOCR (quality) for optimal results
+- **90+ Languages**: Tesseract supports 90+ languages, EasyOCR supports 80+
+- **Multiple Document Types**: Images (JPG, PNG, TIFF), PDFs, scanned documents
+- **Handwriting Support**: EasyOCR handles handwritten text better than Tesseract
+- **PSM Modes**: Tesseract's Page Segmentation Modes for different document layouts
+- **REST APIs**: Both engines accessible via HTTP for easy n8n integration
+- **Automatic Language Detection**: EasyOCR can detect language automatically
+
+### Initial Setup
+
+**Both services are deployed internally (no direct web access):**
+
+- **Tesseract URL**: `http://tesseract-ocr:8884`
+- **EasyOCR URL**: `http://easyocr:2000`
+- **Authentication**: EasyOCR requires secret key (from `.env`)
+- **No Web UI**: API-only services for automation
+
+**Performance:**
+- **Tesseract**: ~3-4 seconds per image (consistent speed)
+- **EasyOCR**: ~7-8 seconds per image (first request ~30s for model loading)
+
+### n8n Integration Setup
+
+**Tesseract: No credentials needed** - Simple HTTP Request Node
+
+**EasyOCR: Requires API Key:**
+1. Find key in `.env` file: `EASYOCR_SECRET_KEY`
+2. Use in HTTP Request Node body
+
+**Internal URLs:**
+- **Tesseract**: `http://tesseract-ocr:8884`
+- **EasyOCR**: `http://easyocr:2000`
+
+### Example Workflows
+
+#### Example 1: Smart OCR Engine Selection
+
+```javascript
+// Automatically choose the best OCR engine based on document type
+
+// 1. Trigger Node (Webhook, Email, Google Drive, etc.)
+// Receives document/image
+
+// 2. Code Node - Analyze Document and Choose Engine
+const fileType = $binary.data.mimeType;
+const fileName = $binary.data.fileName || '';
+const fileSize = $binary.data.fileSize;
+
+let ocrEngine = 'tesseract'; // Default: fast engine
+let reasoning = '';
+
+// Decision logic
+if (fileType.includes('jpeg') || fileType.includes('png')) {
+  // Photos typically need better quality
+  if (fileName.toLowerCase().includes('receipt') || 
+      fileName.toLowerCase().includes('invoice') ||
+      fileName.toLowerCase().includes('photo')) {
+    ocrEngine = 'easyocr';
+    reasoning = 'Photo/receipt detected - using EasyOCR for better quality';
+  } else {
+    ocrEngine = 'tesseract';
+    reasoning = 'Clean image - using Tesseract for speed';
+  }
+} else if (fileType.includes('pdf')) {
+  // PDFs are usually scanned documents (clean)
+  ocrEngine = 'tesseract';
+  reasoning = 'PDF document - using Tesseract for speed';
+} else if (fileSize > 5000000) {
+  // Large files (>5MB) benefit from speed
+  ocrEngine = 'tesseract';
+  reasoning = 'Large file - using Tesseract for faster processing';
+}
+
+return {
+  ocrEngine,
+  endpoint: ocrEngine === 'easyocr' 
+    ? 'http://easyocr:2000/ocr'
+    : 'http://tesseract-ocr:8884/tesseract',
+  reasoning
+};
+
+// 3. Switch Node - Route to correct OCR engine
+Mode: Rules
+Output: {{ $json.ocrEngine }}
+
+// 4a. Branch: Tesseract OCR
+// HTTP Request Node
+Method: POST
+URL: http://tesseract-ocr:8884/tesseract
+
+Send Body: Form Data Multipart
+Body Parameters:
+  1. Binary File:
+     - Parameter Type: n8n Binary File
+     - Name: file
+     - Input Data Field Name: data
+  
+  2. OCR Options:
+     - Parameter Type: Form Data
+     - Name: options
+     - Value: {"languages":["eng","deu"],"psm":3}
+
+// Response:
+{
+  "text": "Extracted text appears here..."
+}
+
+// 4b. Branch: EasyOCR
+// HTTP Request Node
+Method: POST
+URL: http://easyocr:2000/ocr
+
+Headers:
+  - Name: Content-Type
+    Value: application/json
+
+Send Body: JSON
+{
+  "secret_key": "{{ $env.EASYOCR_SECRET_KEY }}",
+  "image_base64": "{{ $binary.data.toString('base64') }}",
+  "languages": ["en", "de"],
+  "detail": 1,
+  "paragraph": true
+}
+
+// Response:
+{
+  "text": "Extracted text...",
+  "confidence": 0.95,
+  "language": "en"
+}
+
+// 5. Merge - Combine branches
+Mode: Combine
+Output: All
+
+// 6. Set Node - Standardize output
+return {
+  text: $json.text,
+  engine: $('Code Node').json.ocrEngine,
+  reasoning: $('Code Node').json.reasoning,
+  original_file: $('Trigger').json.fileName
+};
+```
+
+#### Example 2: Invoice Processing Pipeline
+
+```javascript
+// Extract data from invoice images and create accounting records
+
+// 1. Email IMAP Trigger - Monitor invoice inbox
+Host: mailserver
+Port: 993
+Mailbox: INBOX/Invoices
+Check for new emails every: 5 minutes
+
+// 2. Loop Node - Process each email attachment
+
+// 3. IF Node - Check if image/PDF
+Condition: {{ $json.mimeType }} contains "image" OR "pdf"
+
+// 4. HTTP Request - Extract text with Tesseract
+Method: POST
+URL: http://tesseract-ocr:8884/tesseract
+Body (Form Data):
+  file: {{ $binary.data }}
+  options: {"languages":["eng","deu"],"psm":6}
+
+// 5. Code Node - Parse invoice data
+const text = $json.text;
+
+// Extract invoice details using regex
+const invoiceNumber = text.match(/Invoice\s*#?\s*:?\s*(\w+-?\d+)/i)?.[1] || '';
+const invoiceDate = text.match(/Date\s*:?\s*([\d\/\-]+)/i)?.[1] || '';
+const vendor = text.match(/From\s*:?\s*(.+?)\n/i)?.[1]?.trim() || '';
+
+// Extract amount (multiple patterns)
+const amountPatterns = [
+  /Total\s*:?\s*\$?\s?([\d,]+\.?\d*)/i,
+  /Amount\s*Due\s*:?\s*\$?\s?([\d,]+\.?\d*)/i,
+  /Grand\s*Total\s*:?\s*\$?\s?([\d,]+\.?\d*)/i
+];
+
+let amount = '';
+for (const pattern of amountPatterns) {
+  const match = text.match(pattern);
+  if (match) {
+    amount = match[1].replace(',', '');
+    break;
+  }
+}
+
+// Parse date to YYYY-MM-DD format
+let parsedDate = '';
+if (invoiceDate) {
+  const dateParts = invoiceDate.split(/[\/\-]/);
+  if (dateParts.length === 3) {
+    // Assume MM/DD/YYYY or DD/MM/YYYY format
+    parsedDate = `20${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+  }
+}
+
+return {
+  invoiceNumber,
+  vendor,
+  amount: parseFloat(amount) || 0,
+  date: parsedDate || new Date().toISOString().split('T')[0],
+  originalText: text,
+  fileName: $('Loop').json.filename
+};
+
+// 6. IF Node - Validate required fields
+Condition: {{ $json.invoiceNumber }} AND {{ $json.amount }} > 0
+
+// 7. HTTP Request - Create record in accounting system
+Method: POST
+URL: http://odoo:8069/api/v1/invoices
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer {{ $env.ODOO_API_KEY }}
+Body: {
+  "vendor": "{{ $json.vendor }}",
+  "invoice_number": "{{ $json.invoiceNumber }}",
+  "amount": {{ $json.amount }},
+  "date": "{{ $json.date }}",
+  "status": "pending_review"
+}
+
+// 8. Send Email - Confirmation
+To: accounting@yourdomain.com
+Subject: Invoice Processed: {{ $json.invoiceNumber }}
+Body: |
+  Invoice automatically processed:
+  
+  Vendor: {{ $json.vendor }}
+  Invoice #: {{ $json.invoiceNumber }}
+  Amount: ${{ $json.amount }}
+  Date: {{ $json.date }}
+  
+  Please review in accounting system.
+
+// 9. Move Email - Archive processed invoice
+Mailbox: INBOX/Invoices/Processed
+```
+
+#### Example 3: Receipt Scanner for Expense Tracking
+
+```javascript
+// OCR receipts from Telegram and track expenses
+
+// 1. Telegram Trigger - Receive photo messages
+Bot Token: {{ $env.TELEGRAM_BOT_TOKEN }}
+Updates: Message with photo
+
+// 2. Telegram Node - Get Photo
+Operation: Get File
+File ID: {{ $json.message.photo[0].file_id }}
+
+// 3. HTTP Request - OCR with EasyOCR (better for photos)
+Method: POST
+URL: http://easyocr:2000/ocr
+Headers:
+  Content-Type: application/json
+Body: {
+  "secret_key": "{{ $env.EASYOCR_SECRET_KEY }}",
+  "image_base64": "{{ $binary.data.toString('base64') }}",
+  "languages": ["en", "de"],
+  "detail": 2,
+  "paragraph": true
+}
+
+// 4. Code Node - Extract expense data
+const text = $json.text;
+const userId = $('Telegram Trigger').json.message.from.id;
+
+// Extract merchant name (usually at top)
+const lines = text.split('\n');
+const merchant = lines[0]?.trim() || 'Unknown Merchant';
+
+// Extract total amount
+const amountMatch = text.match(/Total\s*:?\s*\$?\s?([\d,]+\.?\d*)/i) ||
+                   text.match(/Sum\s*:?\s*\$?\s?([\d,]+\.?\d*)/i) ||
+                   text.match(/EUR\s*([\d,]+\.?\d*)/i);
+const amount = amountMatch ? parseFloat(amountMatch[1].replace(',', '')) : 0;
+
+// Extract date
+const dateMatch = text.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/);
+const date = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+
+// Detect category from text
+let category = 'Other';
+if (/restaurant|café|coffee|food|pizza/i.test(text)) {
+  category = 'Food & Dining';
+} else if (/taxi|uber|transport|fuel|gas/i.test(text)) {
+  category = 'Transportation';
+} else if (/hotel|airbnb|accommodation/i.test(text)) {
+  category = 'Lodging';
+} else if (/supermarket|grocery|aldi|rewe/i.test(text)) {
+  category = 'Groceries';
+}
+
+return {
+  userId,
+  merchant,
+  amount,
+  date,
+  category,
+  fullText: text
+};
+
+// 5. HTTP Request - Save to expense database
+Method: POST
+URL: http://supabase-kong:8000/rest/v1/expenses
+Headers:
+  apikey: {{ $env.SUPABASE_ANON_KEY }}
+  Content-Type: application/json
+Body: {
+  "user_id": "{{ $json.userId }}",
+  "merchant": "{{ $json.merchant }}",
+  "amount": {{ $json.amount }},
+  "date": "{{ $json.date }}",
+  "category": "{{ $json.category }}",
+  "receipt_text": "{{ $json.fullText }}"
+}
+
+// 6. Telegram Node - Send confirmation
+Operation: Send Message
+Chat ID: {{ $('Telegram Trigger').json.message.chat.id }}
+Message: |
+  ✅ Receipt processed!
+  
+  🏪 Merchant: {{ $json.merchant }}
+  💰 Amount: ${{ $json.amount }}
+  📅 Date: {{ $json.date }}
+  📂 Category: {{ $json.category }}
+  
+  Expense saved to your tracker!
+```
+
+#### Example 4: Multi-Language Document Digitization
+
+```javascript
+// Scan and digitize documents in multiple languages
+
+// 1. Google Drive Trigger - New file in folder
+Folder: /Documents/To Scan
+File Types: PDF, Image
+
+// 2. HTTP Request - Detect language with EasyOCR
+Method: POST
+URL: http://easyocr:2000/ocr
+Body: {
+  "secret_key": "{{ $env.EASYOCR_SECRET_KEY }}",
+  "image_base64": "{{ $binary.data.toString('base64') }}",
+  "languages": ["en", "de", "fr", "es"],
+  "detail": 0,
+  "paragraph": false
+}
+
+// 3. Code Node - Determine primary language
+const text = $json.text;
+const confidence = $json.confidence || 0;
+
+// Simple language detection based on common words
+let detectedLang = 'eng';
+if (/der|die|das|und|ich|Sie|werden/i.test(text)) {
+  detectedLang = 'deu';
+} else if (/le|la|les|et|je|vous|sont/i.test(text)) {
+  detectedLang = 'fra';
+} else if (/el|la|los|las|y|yo|usted|son/i.test(text)) {
+  detectedLang = 'spa';
+}
+
+return {
+  detectedLang,
+  confidence,
+  fileName: $('Google Drive Trigger').json.name
+};
+
+// 4. HTTP Request - Full OCR with correct language
+Method: POST
+URL: http://tesseract-ocr:8884/tesseract
+Body (Form Data):
+  file: {{ $('Google Drive Trigger').binary.data }}
+  options: {
+    "languages": ["{{ $json.detectedLang }}"],
+    "psm": 3
+  }
+
+// 5. HTTP Request - Translate to English (if needed)
+IF: {{ $('Code Node').json.detectedLang }} !== 'eng'
+Method: POST
+URL: http://libretranslate:5000/translate
+Body: {
+  "q": "{{ $json.text }}",
+  "source": "{{ $('Code Node').json.detectedLang.substring(0,2) }}",
+  "target": "en"
+}
+
+// 6. Google Docs - Create searchable document
+Title: {{ $('Code Node').json.fileName }}_text
+Content: |
+  Original Language: {{ $('Code Node').json.detectedLang }}
+  
+  OCR Text:
+  {{ $('Full OCR').json.text }}
+  
+  English Translation:
+  {{ $json.translatedText }}
+
+// 7. Google Drive - Move to processed folder
+Source: {{ $('Google Drive Trigger').json.id }}
+Destination: /Documents/Processed/{{ $('Code Node').json.detectedLang }}
+```
+
+### Tesseract Configuration
+
+**Page Segmentation Modes (PSM):**
+
+| PSM | Description | Best For |
+|-----|-------------|----------|
+| `0` | Orientation and script detection only | Initial analysis |
+| `1` | Automatic page segmentation with OSD | Mixed layouts |
+| `3` | Fully automatic (default) | General documents |
+| `4` | Single column of variable sizes | Newspaper |
+| `5` | Single uniform block of vertical text | Vertical text |
+| `6` | Single uniform block | Clean documents |
+| `7` | Single line of text | Short text |
+| `8` | Single word | Individual words |
+| `11` | Sparse text, find as much as possible | Receipts, forms |
+| `13` | Raw line, treat as single text line | Business cards |
+
+**Choose PSM based on document:**
+```javascript
+// Clean business letter
+{"psm": 6}
+
+// Receipt or form
+{"psm": 11}
+
+// Business card
+{"psm": 13}
+
+// Mixed document layout
+{"psm": 1}
+```
+
+### Language Support
+
+**Common Language Codes:**
+
+**Tesseract:**
+
+| Language | Code | Language | Code |
+|----------|------|----------|------|
+| English | `eng` | German | `deu` |
+| Spanish | `spa` | French | `fra` |
+| Italian | `ita` | Portuguese | `por` |
+| Dutch | `nld` | Polish | `pol` |
+| Russian | `rus` | Chinese (Simplified) | `chi_sim` |
+| Chinese (Traditional) | `chi_tra` | Japanese | `jpn` |
+| Korean | `kor` | Arabic | `ara` |
+| Turkish | `tur` | Hindi | `hin` |
+
+**EasyOCR:**
+
+| Language | Code | Language | Code |
+|----------|------|----------|------|
+| English | `en` | German | `de` |
+| Spanish | `es` | French | `fr` |
+| Italian | `it` | Portuguese | `pt` |
+| Dutch | `nl` | Polish | `pl` |
+| Russian | `ru` | Chinese (Simplified) | `ch_sim` |
+| Chinese (Traditional) | `ch_tra` | Japanese | `ja` |
+| Korean | `ko` | Arabic | `ar` |
+| Turkish | `tr` | Hindi | `hi` |
+
+**Multi-Language OCR:**
+```javascript
+// Tesseract - multiple languages
+{"languages": ["eng", "deu", "fra"], "psm": 3}
+
+// EasyOCR - multiple languages
+{"languages": ["en", "de", "fr"], "detail": 1}
+```
+
+### Troubleshooting
+
+**Issue 1: Services Not Responding**
+
+```bash
+# Check service status
+docker ps | grep "tesseract\|easyocr"
+
+# Should show both services running
+
+# Check Tesseract logs
+docker logs tesseract-ocr --tail 50
+
+# Check EasyOCR logs
+docker logs easyocr --tail 50
+
+# Restart if needed
+docker compose restart tesseract-ocr easyocr
+```
+
+**Issue 2: EasyOCR First Request Very Slow**
+
+```bash
+# Monitor model loading
+docker logs easyocr -f
+
+# You'll see:
+# Downloading detection model...
+# Downloading recognition model...
+# Models loaded successfully
+```
+
+**Solution:**
+- First request loads models (~30-90 seconds)
+- Subsequent requests are fast (7-8 seconds)
+- Models cached permanently after first load
+- Increase HTTP timeout to 120 seconds for first request
+
+**Issue 3: Poor OCR Quality**
+
+```bash
+# Check image quality
+file input_image.jpg
+
+# Verify image is not too small
+identify -format "%wx%h" input_image.jpg
+# Should be at least 1000x1000 pixels for good results
+```
+
+**Solution:**
+- **For Tesseract:** Use PSM mode appropriate for layout
+- **For EasyOCR:** Try with `detail: 2` for better accuracy
+- **Preprocessing:** Convert to grayscale, increase contrast
+- **Resolution:** Ensure minimum 300 DPI for scanned documents
+- **Switch engines:** Try EasyOCR if Tesseract fails (or vice versa)
+
+**Issue 4: Wrong Language Detected**
+
+**Solution:**
+- Specify language explicitly instead of auto-detection
+- Use multiple languages if document is multilingual
+- Ensure correct language packs installed
+- For mixed scripts (English + Chinese), specify both languages
+
+**Issue 5: Cannot Access from n8n**
+
+```bash
+# Test Tesseract connection
+docker exec n8n curl -I http://tesseract-ocr:8884/
+
+# Should return HTTP headers
+
+# Test EasyOCR connection
+docker exec n8n curl -I http://easyocr:2000/
+
+# Test actual OCR endpoint
+docker exec n8n curl -X POST http://tesseract-ocr:8884/tesseract \
+  -F "file=@test.jpg" \
+  -F 'options={"languages":["eng"],"psm":3}'
+```
+
+**Solution:**
+- Use internal URLs: `http://tesseract-ocr:8884` and `http://easyocr:2000`
+- Ensure services in same Docker network
+- EasyOCR requires secret_key in request body
+- Check services are running: `docker ps | grep ocr`
+
+**Issue 6: Empty or Garbled Text Output**
+
+**Solution:**
+- Try the other OCR engine (switch between Tesseract/EasyOCR)
+- Check image is not corrupted: `identify input.jpg`
+- Ensure image has sufficient contrast
+- Verify language settings are correct
+- For photos: Always use EasyOCR
+- For scans: Always use Tesseract
+
+### Resources
+
+**Tesseract:**
+- **GitHub**: https://github.com/tesseract-ocr/tesseract
+- **Documentation**: https://tesseract-ocr.github.io/
+- **Language Data**: https://github.com/tesseract-ocr/tessdata
+- **PSM Modes**: https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html
+
+**EasyOCR:**
+- **GitHub**: https://github.com/JaidedAI/EasyOCR
+- **Documentation**: https://www.jaided.ai/easyocr/documentation/
+- **Supported Languages**: https://www.jaided.ai/easyocr/
+- **API Reference**: https://github.com/JaidedAI/EasyOCR#api
+
+### Best Practices
+
+**Choosing the Right Engine:**
+
+| Document Type | Recommended Engine | Reason |
+|---------------|-------------------|---------|
+| **Scanned PDFs** | Tesseract | Fast, optimized for clean scans |
+| **Business documents** | Tesseract | Consistent formatting, high speed |
+| **Photos of receipts** | EasyOCR | Better quality on photos |
+| **Handwritten text** | EasyOCR | Superior handwriting recognition |
+| **Low-quality images** | EasyOCR | Better noise handling |
+| **Mixed languages** | EasyOCR | Better multi-language support |
+| **Bulk processing** | Tesseract | Consistent fast speed |
+| **Street signs/photos** | EasyOCR | Optimized for real-world images |
+
+**Image Preprocessing:**
+
+```javascript
+// Code Node - Preprocess image before OCR
+const sharp = require('sharp');
+
+// Get image from previous node
+const imageBuffer = Buffer.from($binary.data.data, 'base64');
+
+// Preprocess: grayscale, increase contrast, sharpen
+const processedImage = await sharp(imageBuffer)
+  .grayscale()
+  .normalize()
+  .sharpen()
+  .toBuffer();
+
+return {
+  binary: {
+    data: {
+      ...$ $binary.data,
+      data: processedImage.toString('base64')
+    }
+  }
+};
+
+// Then send to OCR engine
+```
+
+**Performance Optimization:**
+
+1. **Batch Processing:**
+   - Process multiple files in parallel with Loop Node
+   - Use Queue node to control concurrency
+   - Tesseract handles 5-10 simultaneous requests well
+
+2. **Caching:**
+   - Store OCR results in database to avoid re-processing
+   - Check if document already processed before OCR
+
+3. **Smart Routing:**
+   - Analyze document first (size, type, quality)
+   - Route to appropriate engine based on analysis
+   - Use Tesseract by default, EasyOCR for edge cases
+
+4. **Error Handling:**
+   - Always add Try/Catch nodes
+   - Retry with other engine if first fails
+   - Log failed documents for manual review
+
+**Document Types:**
+
+- ✅ **Tesseract**: Books, newspapers, business letters, forms, clean PDFs
+- ✅ **EasyOCR**: Receipts, invoices, photos, street signs, screenshots, handwriting
+- ❌ **Neither**: Very low quality images, heavily distorted text, artistic fonts
+
+**When to Use Both:**
+
+1. **Quality Check:** Run both engines and compare results
+2. **Confidence:** Use engine with higher confidence score
+3. **Mixed Documents:** Tesseract for main text, EasyOCR for photos
+4. **Fallback:** Try Tesseract first (fast), use EasyOCR if confidence <80%
 
 </details>
 

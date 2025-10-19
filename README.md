@@ -386,7 +386,7 @@ The installer will now:
 6. ✅ Import workflows (if selected)
 7. ✅ Generate final report
 
-💡 **Tip:** If you encounter Docker Hub rate limit errors (`toomanyrequests: Rate exceeded`) during installation/update, run `docker login` first (free account required) - this gives you individual rate limits instead of sharing with all VPS users, significantly reducing timeout issues.
+💡 **Tip:** If you encounter Docker Hub rate limit errors (`toomanyrequests: Rate exceeded`) during installation/update, run `docker login` first (free account required) - this gives you individual rate limits instead of sharing with all VPS users, significantly reducing timeout issues. If that doesn't work, I recommend not installing all services with one installation, but only a maximum of 15-20 at first and then gradually installing the others via updates!
 
 #### Step 6: Save Installation Report
 
@@ -654,7 +654,7 @@ cd ai-launchkit
 # 2. Run update script
 sudobash ./scripts/update.sh
 
-💡 **Tip:** If you encounter Docker Hub rate limit errors (`toomanyrequests: Rate exceeded`) during installation/update, run `docker login` first (free account required) - this gives you individual rate limits instead of sharing with all VPS users, significantly reducing timeout issues.
+💡 **Tip:** If you encounter Docker Hub rate limit errors (`toomanyrequests: Rate exceeded`) during installation/update, run `docker login` first (free account required) - this gives you individual rate limits instead of sharing with all VPS users, significantly reducing timeout issues. If that doesn't work, I recommend not installing all services with one installation, but only a maximum of 15-20 at first and then gradually installing the others via updates!
 
 # 3. Check service status
 docker compose ps

@@ -29,7 +29,7 @@ Originally forked from [n8n-installer](https://github.com/kossakovsky/n8n-instal
 git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && sudo bash ./scripts/install.sh
 ```
 
-**That's it!** Your AI development stack is ready in ~10-15 minutes.
+**That's it!** Your AI development stack is ready in ~10-15 minutes (or several hours with optional workflow import).
 
 **ATTENTION!** The AI LaunchKit is currently in development. It is regularly tested and updated. However, use is at your own risk!
 
@@ -216,6 +216,9 @@ Pre-installed in the n8n container for seamless media manipulation:
 
 ## 🚀 Quick Start
 
+<details>
+<summary><b>Installation</b></summary>
+
 ### Installation Command
 
 ```bash
@@ -242,8 +245,8 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 ### Installation Time
 
 - **Base Installation:** 10-15 minutes
-- **With Workflow Import:** +20-30 minutes (optional)
-- **Total:** 15-45 minutes depending on selections
+- **With Workflow Import:** +several hours (optional, depends on server speed)
+- **Total:** 15 minutes to several hours depending on selections
 
 **System Requirements:**
 - 4GB RAM minimum (8GB+ recommended)
@@ -251,9 +254,41 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 - Ubuntu 22.04/24.04 or Debian 11/12
 - Domain with wildcard DNS configured
 
+</details>
+
+<details>
+<summary><b>Update</b></summary>
+
+### Update Command
+
+```bash
+cd ai-launchkit && sudo bash ./scripts/update.sh
+```
+
+### What the Update Does
+
+1. **Backs Up Data** - Creates automatic backups before updating
+2. **Pulls Latest Changes** - Downloads newest version from GitHub
+3. **Updates Docker Images** - Pulls latest container versions
+4. **Restarts Services** - Applies updates with minimal downtime
+5. **Verifies Health** - Checks that all services started correctly
+
+### Update Time
+
+- **Standard Update:** 5-10 minutes
+- **Major Version:** 10-15 minutes
+- **With PostgreSQL Migration:** 15-20 minutes
+
+**Always backup before updating!** See detailed update guide below for backup commands.
+
+</details>
+
 ---
 
 ## 📦 Installation - Detailed version
+
+<details>
+<summary><b>Click to expand detailed installation guide</b></summary>
 
 ### Prerequisites
 
@@ -325,7 +360,7 @@ Enter Groq API key (or press Enter to skip): gsk_...
 ```
 Import 300+ n8n community workflows? [y/N]: y
 ```
-*Note: This takes 20-30 minutes extra*
+**Note: This can take several hours depending on your server speed!**
 
 **5. Worker Configuration:**
 ```
@@ -547,9 +582,14 @@ cd ai-launchkit
 docker compose restart
 ```
 
+</details>
+
 ---
 
 ## 🔄 Update - Detailed version
+
+<details>
+<summary><b>Click to expand detailed update guide</b></summary>
 
 ### When to Update
 
@@ -933,6 +973,8 @@ If you encounter issues:
 2. **Search Issues**: [GitHub Issues](https://github.com/freddy-schuetz/ai-launchkit/issues)
 3. **Community Forum**: Ask for help
 4. **Rollback**: Use the procedure above if needed
+
+</details>
 
 ---
 

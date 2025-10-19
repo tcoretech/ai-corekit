@@ -28691,14 +28691,1352 @@ SELECT * FROM user_stats WHERE user_id = 'uuid';
 <details>
 <summary><b>🐘 PostgreSQL - Relational Database</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is PostgreSQL?
+
+PostgreSQL (also known as Postgres) is the world's most advanced open-source relational database. AI LaunchKit uses PostgreSQL 17, which brings significant performance improvements, enhanced JSON capabilities, and better support for AI workloads through extensions like pgvector. PostgreSQL serves as the primary database for n8n, Cal.com, Supabase, and many other services in the stack.
+
+PostgreSQL 17 includes overhauled memory management (up to 20x less RAM for vacuum operations), 2x faster bulk exports, improved logical replication for high availability, and SQL/JSON support with the JSON_TABLE function for converting JSON to relational tables.
+
+### Features
+
+- ✅ **PostgreSQL 17** - Latest version with improved performance and scalability
+- ✅ **ACID Compliance** - Full transaction support with data integrity guarantees
+- ✅ **Advanced SQL** - Support for JSON, arrays, full-text search, window functions
+- ✅ **pgvector Extension** - Store and query vector embeddings for AI/ML applications
+- ✅ **Logical Replication** - Real-time data replication with failover support
+- ✅ **Row Level Security** - Fine-grained access control at the row level
+- ✅ **JSON/JSONB Support** - Native JSON storage with indexing and querying
+- ✅ **Full-Text Search** - Built-in text search without external services
+- ✅ **Foreign Data Wrappers** - Connect to external data sources (MySQL, MongoDB, etc.)
+- ✅ **Stored Procedures** - Complex business logic in SQL, PL/pgSQL, Python, JavaScript
+
+### Initial Setup
+
+PostgreSQL is automatically installed and configured during AI LaunchKit installation.
+
+**Access PostgreSQL:**
+
+```bash
+# Access PostgreSQL CLI
+docker exec -it postgres psql -U postgres
+
+# Or connect as a specific database user
+docker exec -it postgres psql -U n8n -d n8n
+```
+
+**Important Credentials (stored in `.env`):**
+
+```bash
+# View PostgreSQL credentials
+grep "POSTGRES" .env
+
+# Key variables:
+# POSTGRES_USER - Admin username (default: postgres)
+# POSTGRES_PASSWORD - Admin password
+# POSTGRES_DB - Default database name
+```
+
+**Create Your First Database:**
+
+```sql
+-- Connect to PostgreSQL
+docker exec -it postgres psql -U postgres
+
+-- Create a new database
+CREATE DATABASE myapp;
+
+-- Create a user
+CREATE USER myapp_user WITH PASSWORD 'secure_password';
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE myapp TO myapp_user;
+
+-- Enable pgvector extension (for AI/vector operations)
+\c myapp
+CREATE EXTENSION vector;
+
+-- Verify pgvector is enabled
+SELECT * FROM pg_extension WHERE extname = 'vector';
+```
+
+### n8n Integration Setup
+
+PostgreSQL is accessible from n8n using internal Docker networking.
+
+**Internal URL for n8n:** `http://postgres:5432`
+
+**Create PostgreSQL Credentials in n8n:**
+
+1. In n8n, go to **Credentials** → **New Credential**
+2. Search for **Postgres**
+3. Fill in:
+   - **Host:** `postgres` (internal Docker hostname)
+   - **Database:** Your database name (e.g., `n8n`, `postgres`, or custom DB)
+   - **User:** Database user (e.g., `postgres` or `n8n`)
+   - **Password:** From `.env` file (`POSTGRES_PASSWORD`)
+   - **Port:** `5432` (default)
+   - **SSL:** Disable (not needed for internal connections)
+
+### Example Workflows
+
+#### Example 1: Customer Data Pipeline with PostgreSQL
+
+```javascript
+// Store customer data in PostgreSQL and trigger actions on changes
+
+// 1. Webhook Trigger - Receive new customer signup
+
+// 2. Postgres Node - Insert customer record
+Operation: Insert
+Table: customers
+Columns: name, email, company, created_at
+Values:
+  name: {{$json.name}}
+  email: {{$json.email}}
+  company: {{$json.company}}
+  created_at: {{$now.toISO()}}
+Return Fields: * (return all columns including ID)
+
+// 3. Code Node - Generate welcome email content
+const customer = $input.item.json;
+
+return {
+  customerId: customer.id,
+  subject: `Welcome to our platform, ${customer.name}!`,
+  body: `Hi ${customer.name},\n\nWe're excited to have ${customer.company} on board!\n\nBest regards,\nThe Team`,
+  email: customer.email
+};
+
+// 4. SMTP Node - Send welcome email
+To: {{$json.email}}
+Subject: {{$json.subject}}
+Message: {{$json.body}}
+
+// 5. Postgres Node - Update customer status
+Operation: Update
+Table: customers
+Where: id = {{$('Insert Customer').json.id}}
+Columns: status, welcome_email_sent_at
+Values:
+  status: active
+  welcome_email_sent_at: {{$now.toISO()}}
+```
+
+#### Example 2: Vector Search for Semantic Document Retrieval (RAG)
+
+```javascript
+// Use pgvector to store and search document embeddings
+
+// 1. HTTP Request - Fetch documents from API or Webhook
+
+// 2. Loop Over Documents
+
+// 3. OpenAI Node - Generate embedding for each document
+Model: text-embedding-3-small (outputs 1536-dimensional vector)
+Input: {{$json.content}}
+
+// 4. Postgres Node - Store document with embedding
+Operation: Execute Query
+Query: |
+  INSERT INTO documents (title, content, embedding, created_at)
+  VALUES (
+    $1,
+    $2,
+    $3::vector,
+    NOW()
+  )
+  RETURNING id;
+Parameters:
+  $1: {{$json.title}}
+  $2: {{$json.content}}
+  $3: {{$json.embedding}}  -- OpenAI returns JSON array, Postgres converts it
+
+// 5. Search Trigger (Webhook or Schedule)
+
+// 6. OpenAI Node - Generate embedding for search query
+Model: text-embedding-3-small
+Input: {{$json.search_query}}
+
+// 7. Postgres Node - Semantic search using pgvector
+Operation: Execute Query
+Query: |
+  SELECT 
+    id,
+    title,
+    content,
+    1 - (embedding <=> $1::vector) AS similarity_score
+  FROM documents
+  WHERE 1 - (embedding <=> $1::vector) > 0.7  -- similarity threshold
+  ORDER BY embedding <=> $1::vector  -- cosine distance
+  LIMIT 5;
+Parameters:
+  $1: {{$json.embedding}}  -- query embedding
+
+// Returns top 5 most semantically similar documents
+// <=> operator is cosine distance (0 = identical, 2 = opposite)
+```
+
+#### Example 3: Real-Time Data Sync with Database Triggers
+
+```javascript
+// Use PostgreSQL triggers to automatically notify n8n of data changes
+
+// Step 1: Create notification function in PostgreSQL
+// Run this SQL in your database:
+
+CREATE OR REPLACE FUNCTION notify_n8n_on_order()
+RETURNS TRIGGER AS $$
+DECLARE
+  payload JSON;
+BEGIN
+  -- Build JSON payload
+  payload := json_build_object(
+    'event', TG_OP,  -- INSERT, UPDATE, DELETE
+    'table', TG_TABLE_NAME,
+    'record', row_to_json(NEW),
+    'old_record', row_to_json(OLD)
+  );
+  
+  -- Send webhook notification
+  PERFORM pg_notify('order_changes', payload::text);
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+// Step 2: Create trigger
+CREATE TRIGGER order_changes
+  AFTER INSERT OR UPDATE OR DELETE ON orders
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_n8n_on_order();
+
+// Step 3: n8n Workflow with Postgres Trigger Node
+// 1. Postgres Trigger Node
+Database: your_database
+Channel: order_changes  -- matches pg_notify channel name
+// This node listens for PostgreSQL NOTIFY events
+
+// 2. Code Node - Process the trigger event
+const event = JSON.parse($input.item.json.payload);
+
+return {
+  eventType: event.event,  // INSERT, UPDATE, DELETE
+  tableName: event.table,
+  newData: event.record,
+  oldData: event.old_record,
+  timestamp: new Date().toISOString()
+};
+
+// 3. IF Node - Route based on event type
+{{$json.eventType}} equals 'INSERT'
+
+// 4. Different actions for each event type
+// - INSERT: Send "New Order" notification
+// - UPDATE: Check if status changed, send update
+// - DELETE: Log cancellation, send refund workflow
+```
+
+### Advanced Use Cases
+
+#### Setting Up pgvector for AI Applications
+
+```sql
+-- Enable pgvector extension
+CREATE EXTENSION vector;
+
+-- Create table with vector column
+CREATE TABLE documents (
+  id SERIAL PRIMARY KEY,
+  title TEXT,
+  content TEXT,
+  embedding VECTOR(1536),  -- 1536 dimensions for OpenAI text-embedding-3-small
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create HNSW index for fast similarity search
+-- HNSW is recommended for most use cases (fast and accurate)
+CREATE INDEX ON documents USING hnsw (embedding vector_cosine_ops);
+
+-- Alternative: IVFFlat index (good for very large datasets)
+-- CREATE INDEX ON documents USING ivfflat (embedding vector_l2_ops) WITH (lists = 100);
+
+-- Insert document with embedding (example)
+INSERT INTO documents (title, content, embedding)
+VALUES (
+  'PostgreSQL Guide',
+  'PostgreSQL is a powerful database...',
+  '[0.1, 0.2, -0.3, ...]'::vector  -- Your 1536-dimensional embedding
+);
+
+-- Semantic search query
+SELECT 
+  id,
+  title,
+  content,
+  1 - (embedding <=> '[0.1, 0.2, ...]'::vector) AS similarity
+FROM documents
+ORDER BY embedding <=> '[0.1, 0.2, ...]'::vector  -- cosine distance
+LIMIT 5;
+```
+
+**Distance Operators:**
+- `<->` - Euclidean distance (L2)
+- `<=>` - Cosine distance (recommended for embeddings)
+- `<#>` - Negative inner product (for max inner product search)
+
+**Index Types:**
+- **HNSW**: Best for most cases, faster queries, more accurate
+- **IVFFlat**: Better for very large datasets (>1M rows), uses less memory
+
+#### Row Level Security (RLS) for Multi-Tenant Applications
+
+```sql
+-- Enable RLS on table
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can only see their own documents
+CREATE POLICY "users_own_documents"
+ON documents
+FOR ALL
+USING (user_id = current_user_id());
+
+-- Policy: Admins can see everything
+CREATE POLICY "admins_see_all"
+ON documents
+FOR ALL
+USING (
+  EXISTS (
+    SELECT 1 FROM users
+    WHERE users.id = current_user_id()
+    AND users.role = 'admin'
+  )
+);
+
+-- Function to get current user ID (implement based on your auth system)
+CREATE OR REPLACE FUNCTION current_user_id()
+RETURNS UUID AS $$
+BEGIN
+  RETURN current_setting('app.user_id')::UUID;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- Set user ID in session (from n8n or application)
+-- SET app.user_id = 'user-uuid-here';
+```
+
+#### Database Functions for Complex Logic
+
+```sql
+-- Create function to calculate order total with tax
+CREATE OR REPLACE FUNCTION calculate_order_total(
+  order_id_param INTEGER
+)
+RETURNS NUMERIC AS $$
+DECLARE
+  subtotal NUMERIC;
+  tax_rate NUMERIC := 0.08;  -- 8% tax
+  total NUMERIC;
+BEGIN
+  -- Calculate subtotal
+  SELECT SUM(quantity * price) INTO subtotal
+  FROM order_items
+  WHERE order_id = order_id_param;
+  
+  -- Calculate total with tax
+  total := subtotal * (1 + tax_rate);
+  
+  RETURN total;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Call function from n8n:
+// Postgres Node - Execute Query
+SELECT calculate_order_total(123) AS total;
+
+-- Or create a trigger to automatically update totals:
+CREATE TRIGGER update_order_total
+  AFTER INSERT OR UPDATE OR DELETE ON order_items
+  FOR EACH ROW
+  EXECUTE FUNCTION recalculate_order_total();
+```
+
+### Troubleshooting
+
+**Connection refused / Cannot connect to database:**
+
+```bash
+# Check if PostgreSQL is running
+docker ps | grep postgres
+
+# Check PostgreSQL logs
+docker logs postgres --tail 100
+
+# Restart PostgreSQL
+docker compose restart postgres
+
+# Test connection from host
+docker exec postgres pg_isready -U postgres
+# Should return: postgres:5432 - accepting connections
+
+# Test connection from n8n container
+docker exec n8n ping postgres
+# Should successfully ping the postgres container
+```
+
+**Database queries are slow:**
+
+```bash
+# Check active connections and queries
+docker exec postgres psql -U postgres -c "SELECT * FROM pg_stat_activity WHERE state = 'active';"
+
+# Check table sizes
+docker exec postgres psql -U postgres -c "
+  SELECT 
+    schemaname,
+    tablename,
+    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+  FROM pg_tables
+  WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+  ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+  LIMIT 10;"
+
+# Analyze query performance with EXPLAIN
+docker exec postgres psql -U postgres -d your_database -c "
+  EXPLAIN ANALYZE
+  SELECT * FROM your_table WHERE your_column = 'value';"
+
+# Create indexes for frequently queried columns
+# In psql or via n8n Postgres Node:
+CREATE INDEX idx_table_column ON your_table(your_column);
+
+# Vacuum and analyze tables (reclaim space and update statistics)
+docker exec postgres psql -U postgres -d your_database -c "VACUUM ANALYZE;"
+```
+
+**pgvector queries returning no results or errors:**
+
+```bash
+# Check if pgvector extension is enabled
+docker exec postgres psql -U postgres -d your_database -c "
+  SELECT * FROM pg_extension WHERE extname = 'vector';"
+
+# If not enabled, enable it:
+docker exec postgres psql -U postgres -d your_database -c "CREATE EXTENSION vector;"
+
+# Verify vector column dimension
+docker exec postgres psql -U postgres -d your_database -c "
+  SELECT column_name, data_type, udt_name
+  FROM information_schema.columns
+  WHERE table_name = 'your_table' AND data_type = 'USER-DEFINED';"
+
+# Check if HNSW index exists and is valid
+docker exec postgres psql -U postgres -d your_database -c "
+  SELECT indexname, indexdef
+  FROM pg_indexes
+  WHERE tablename = 'your_table';"
+
+# Rebuild index if corrupted
+docker exec postgres psql -U postgres -d your_database -c "
+  REINDEX INDEX your_index_name;"
+```
+
+**Common issues:**
+- **Wrong vector dimension**: Ensure embedding dimension matches column definition (e.g., `VECTOR(1536)`)
+- **Missing index**: Create HNSW or IVFFlat index for fast searches
+- **Distance operator**: Use `<=>` for cosine distance (most common for embeddings)
+- **JSONB conversion**: When passing embeddings from n8n, they're already JSON arrays and Postgres converts them automatically
+
+**Out of memory during vacuum:**
+
+```bash
+# PostgreSQL 17 has improved vacuum memory management
+# But if still experiencing issues:
+
+# Check current maintenance_work_mem setting
+docker exec postgres psql -U postgres -c "SHOW maintenance_work_mem;"
+
+# Increase if needed (in postgresql.conf or via ALTER SYSTEM)
+docker exec postgres psql -U postgres -c "ALTER SYSTEM SET maintenance_work_mem = '1GB';"
+
+# Reload configuration
+docker exec postgres psql -U postgres -c "SELECT pg_reload_conf();"
+
+# Restart PostgreSQL
+docker compose restart postgres
+```
+
+**Version compatibility issues (PostgreSQL 18 vs 17):**
+
+```bash
+# Check your PostgreSQL version
+docker exec postgres postgres --version
+
+# AI LaunchKit pins to PostgreSQL 17 by default
+# If you have PostgreSQL 18 and want to keep it:
+echo "POSTGRES_VERSION=18" >> .env
+
+# If you have incompatible data after upgrade:
+# 1. Backup your data
+docker exec postgres pg_dumpall -U postgres > postgres_backup.sql
+
+# 2. Stop services
+docker compose down
+
+# 3. Remove volume
+docker volume rm localai_postgres_data
+
+# 4. Start PostgreSQL
+docker compose up -d postgres
+sleep 10
+
+# 5. Restore data
+docker exec -i postgres psql -U postgres < postgres_backup.sql
+
+# 6. Start all services
+docker compose up -d
+```
+
+### Resources
+
+- **Official Documentation:** https://www.postgresql.org/docs/17/
+- **PostgreSQL 17 Release Notes:** https://www.postgresql.org/docs/17/release-17.html
+- **pgvector Documentation:** https://github.com/pgvector/pgvector
+- **pgvector Examples:** https://github.com/pgvector/pgvector#examples
+- **SQL Tutorial:** https://www.postgresql.org/docs/17/tutorial.html
+- **Performance Tips:** https://wiki.postgresql.org/wiki/Performance_Optimization
+- **n8n Postgres Node:** https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/
+- **PostgreSQL Community:** https://www.postgresql.org/community/
+
+### Best Practices
+
+**Database Design:**
+- Use UUID for primary keys: `id UUID DEFAULT gen_random_uuid()`
+- Add timestamps: `created_at TIMESTAMPTZ DEFAULT NOW()`
+- Always add indexes on foreign keys and frequently queried columns
+- Use `SERIAL` or `BIGSERIAL` for auto-incrementing IDs
+- Normalize data appropriately (usually 3NF)
+
+**Vector Embeddings:**
+- Use `text-embedding-3-small` (1536 dimensions) for OpenAI embeddings
+- HNSW index is recommended for most use cases (fast + accurate)
+- Normalize embeddings before storage for cosine distance
+- Store metadata alongside embeddings for filtering
+- Use `VECTOR(dimension)` column type matching your embedding model
+
+**Performance:**
+- Create indexes on columns used in WHERE, JOIN, ORDER BY
+- Use connection pooling (PgBouncer) for high-traffic applications
+- Run `VACUUM ANALYZE` regularly (or enable autovacuum)
+- Monitor with `pg_stat_statements` extension
+- Use prepared statements in n8n for repeated queries
+
+**Security:**
+- Use Row Level Security (RLS) for multi-tenant applications
+- Never store plaintext passwords (use `pgcrypto` extension)
+- Use least privilege principle for database users
+- Enable SSL for production external connections
+- Regularly backup with `pg_dump` or `pg_basebackup`
+
+**Backup Strategy:**
+```bash
+# Daily automated backup script
+docker exec postgres pg_dump -U postgres -d your_database -F c > backup_$(date +%Y%m%d).dump
+
+# Restore from backup
+docker exec -i postgres pg_restore -U postgres -d your_database < backup_YYYYMMDD.dump
+
+# Full cluster backup
+docker exec postgres pg_dumpall -U postgres > full_backup_$(date +%Y%m%d).sql
+```
 
 </details>
 
 <details>
 <summary><b>⚡ Redis - In-Memory Store</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Redis?
+
+Redis (REmote DIctionary Server) is an open-source, in-memory data structure store used as a database, cache, message broker, and streaming engine. Unlike traditional databases that store data on disk, Redis keeps everything in RAM, enabling sub-millisecond response times and handling millions of requests per second. In AI LaunchKit, Redis powers caching layers, session storage, job queues, and real-time features across multiple services.
+
+Redis supports rich data types including strings, hashes, lists, sets, sorted sets, bitmaps, and streams. With atomic operations and Lua scripting, Redis enables complex workflows while maintaining blazing-fast performance.
+
+### Features
+
+- ✅ **In-Memory Performance** - Sub-millisecond latency with data stored in RAM
+- ✅ **Rich Data Structures** - Strings, hashes, lists, sets, sorted sets, bitmaps, streams
+- ✅ **Atomic Operations** - Thread-safe operations without race conditions
+- ✅ **Pub/Sub Messaging** - Real-time message broadcasting for event-driven architectures
+- ✅ **Persistence Options** - RDB snapshots and AOF (Append-Only File) for data durability
+- ✅ **Lua Scripting** - Execute complex operations atomically on the server side
+- ✅ **Expiration/TTL** - Automatic key expiration for cache management
+- ✅ **Transactions** - Multi-command transactions with WATCH for optimistic locking
+- ✅ **Replication** - Master-replica replication for high availability
+- ✅ **Clustering** - Horizontal scaling across multiple nodes
+
+### Initial Setup
+
+Redis is automatically installed and configured during AI LaunchKit installation.
+
+**Access Redis:**
+
+```bash
+# Access Redis CLI
+docker exec -it redis redis-cli
+
+# Test connection
+docker exec redis redis-cli PING
+# Should return: PONG
+
+# Check Redis info
+docker exec redis redis-cli INFO
+```
+
+**Important Configuration:**
+
+```bash
+# Redis runs on default port 6379 (internal only)
+# No password required for internal Docker network connections
+
+# Check Redis configuration
+docker exec redis redis-cli CONFIG GET maxmemory
+docker exec redis redis-cli CONFIG GET maxmemory-policy
+```
+
+**Basic Redis Commands:**
+
+```bash
+# Set a key
+docker exec redis redis-cli SET mykey "Hello Redis"
+
+# Get a key
+docker exec redis redis-cli GET mykey
+
+# Set with expiration (TTL)
+docker exec redis redis-cli SETEX mykey 60 "expires in 60 seconds"
+
+# Check remaining TTL
+docker exec redis redis-cli TTL mykey
+
+# Delete a key
+docker exec redis redis-cli DEL mykey
+
+# List all keys (use with caution in production!)
+docker exec redis redis-cli KEYS "*"
+```
+
+### n8n Integration Setup
+
+Redis is accessible from n8n using the native Redis node.
+
+**Internal URL for n8n:** `redis` (hostname) on port `6379`
+
+**Create Redis Credentials in n8n:**
+
+1. In n8n, go to **Credentials** → **New Credential**
+2. Search for **Redis**
+3. Fill in:
+   - **Password:** Leave empty (no password for internal connections)
+   - **Host:** `redis` (Docker service name)
+   - **Port:** `6379` (default)
+   - **Database Number:** `0` (default)
+
+**Available Redis Operations in n8n:**
+- **Delete** - Remove a key
+- **Get** - Retrieve value
+- **Incr** - Increment counter
+- **Info** - Redis server info
+- **Keys** - Find keys by pattern
+- **Pop** - Remove and return element from list
+- **Push** - Add element to list
+- **Set** - Store key-value pair
+- **Set Expire** - Set TTL on key
+
+### Example Workflows
+
+#### Example 1: Rate Limiting API Requests
+
+```javascript
+// Implement rate limiting to prevent API abuse
+
+// 1. Webhook Trigger - Receive API request
+
+// 2. Code Node - Extract user identifier
+const userId = $json.headers['x-user-id'] || $json.query.user_id;
+const rateKey = `rate_limit:${userId}`;
+
+return {
+  userId: userId,
+  rateKey: rateKey,
+  timestamp: Date.now()
+};
+
+// 3. Redis Node - Check current request count
+Operation: Get
+Key: {{$json.rateKey}}
+
+// 4. Code Node - Calculate rate limit
+const currentCount = parseInt($input.item.json.value || '0');
+const limit = 100; // 100 requests per hour
+const ttl = 3600; // 1 hour in seconds
+
+if (currentCount >= limit) {
+  // Rate limit exceeded
+  return {
+    allowed: false,
+    remaining: 0,
+    resetTime: Date.now() + (ttl * 1000),
+    message: 'Rate limit exceeded. Try again later.'
+  };
+}
+
+return {
+  allowed: true,
+  currentCount: currentCount,
+  remaining: limit - currentCount - 1,
+  key: $('Code Node').json.rateKey
+};
+
+// 5. IF Node - Check if allowed
+{{$json.allowed}} equals true
+
+// TRUE BRANCH:
+// 6. Redis Node - Increment counter
+Operation: Incr
+Key: {{$('Code Node').json.rateKey}}
+
+// 7. Redis Node - Set expiration on first request
+Operation: Set Expire
+Key: {{$('Code Node').json.rateKey}}
+TTL: 3600
+
+// 8. HTTP Request - Forward to actual API
+// ... process request ...
+
+// 9. Respond with success + rate limit headers
+Headers:
+  X-RateLimit-Limit: 100
+  X-RateLimit-Remaining: {{$('Code Node').json.remaining}}
+  X-RateLimit-Reset: {{$('Code Node').json.resetTime}}
+
+// FALSE BRANCH:
+// 10. Respond with 429 Too Many Requests
+Status Code: 429
+Body: {{$('Code Node').json.message}}
+```
+
+#### Example 2: Caching Database Queries
+
+```javascript
+// Cache expensive database queries in Redis
+
+// 1. Webhook or Schedule Trigger
+
+// 2. Code Node - Generate cache key
+const query = $json.query || 'SELECT * FROM products WHERE category = "electronics"';
+const cacheKey = `cache:query:${require('crypto').createHash('md5').update(query).digest('hex')}`;
+
+return {
+  query: query,
+  cacheKey: cacheKey
+};
+
+// 3. Redis Node - Try to get cached result
+Operation: Get
+Key: {{$json.cacheKey}}
+
+// 4. IF Node - Check if cache hit
+{{$json.value}} is not empty
+
+// CACHE HIT (TRUE BRANCH):
+// 5. Code Node - Parse cached data
+return {
+  source: 'cache',
+  data: JSON.parse($input.item.json.value),
+  cached: true
+};
+
+// CACHE MISS (FALSE BRANCH):
+// 6. Postgres Node - Execute query
+Query: {{$('Code Node').json.query}}
+
+// 7. Code Node - Prepare cache data
+const results = $input.all();
+const cacheData = JSON.stringify(results);
+
+return {
+  source: 'database',
+  data: results,
+  cacheData: cacheData,
+  cacheKey: $('Code Node').json.cacheKey
+};
+
+// 8. Redis Node - Store in cache
+Operation: Set
+Key: {{$json.cacheKey}}
+Value: {{$json.cacheData}}
+TTL: 3600  // Cache for 1 hour
+
+// 9. Merge Branch - Return results
+// (Both branches converge here with data)
+
+// Performance improvement:
+// - First request: ~100ms (database query)
+// - Cached requests: ~5ms (Redis lookup)
+// - 20x faster response time!
+```
+
+#### Example 3: Session Management for Multi-User Application
+
+```javascript
+// Store and manage user sessions in Redis
+
+// WORKFLOW 1: User Login - Create Session
+
+// 1. Webhook Trigger - POST /api/login
+Body: {"username": "user@example.com", "password": "***"}
+
+// 2. Postgres Node - Verify credentials
+Query: SELECT id, username, role FROM users WHERE email = $1 AND password_hash = crypt($2, password_hash)
+Parameters: [{{$json.username}}, {{$json.password}}]
+
+// 3. IF Node - Check if user found
+{{$json.id}} exists
+
+// 4. Code Node - Generate session
+const crypto = require('crypto');
+const sessionId = crypto.randomBytes(32).toString('hex');
+const sessionData = {
+  userId: $input.item.json.id,
+  username: $input.item.json.username,
+  role: $input.item.json.role,
+  loginTime: new Date().toISOString(),
+  lastActivity: new Date().toISOString()
+};
+
+return {
+  sessionId: sessionId,
+  sessionKey: `session:${sessionId}`,
+  sessionData: JSON.stringify(sessionData),
+  userId: sessionData.userId
+};
+
+// 5. Redis Node - Store session
+Operation: Set
+Key: {{$json.sessionKey}}
+Value: {{$json.sessionData}}
+TTL: 86400  // 24 hours
+
+// 6. Respond with session token
+Status: 200
+Body: {
+  "success": true,
+  "sessionId": "{{$json.sessionId}}",
+  "expiresIn": 86400
+}
+Headers:
+  Set-Cookie: session_id={{$json.sessionId}}; HttpOnly; Secure; Max-Age=86400
+
+
+// WORKFLOW 2: Validate Session on Each Request
+
+// 1. Webhook Trigger - Any API request
+
+// 2. Code Node - Extract session ID
+const sessionId = $json.headers.cookie?.match(/session_id=([^;]+)/)?.[1] 
+                  || $json.headers['x-session-id'];
+
+return {
+  sessionId: sessionId,
+  sessionKey: `session:${sessionId}`
+};
+
+// 3. Redis Node - Get session data
+Operation: Get
+Key: {{$json.sessionKey}}
+
+// 4. IF Node - Check if valid session
+{{$json.value}} is not empty
+
+// TRUE BRANCH - Valid session:
+// 5. Code Node - Parse and update session
+const session = JSON.parse($input.item.json.value);
+session.lastActivity = new Date().toISOString();
+
+return {
+  session: session,
+  sessionKey: $('Code Node').json.sessionKey,
+  sessionData: JSON.stringify(session)
+};
+
+// 6. Redis Node - Update last activity
+Operation: Set
+Key: {{$json.sessionKey}}
+Value: {{$json.sessionData}}
+TTL: 86400  // Refresh TTL
+
+// 7. Continue with authorized request...
+
+// FALSE BRANCH - Invalid/expired session:
+// 8. Respond 401 Unauthorized
+Status: 401
+Body: {"error": "Invalid or expired session"}
+
+
+// WORKFLOW 3: Logout - Destroy Session
+
+// 1. Webhook Trigger - POST /api/logout
+
+// 2. Code Node - Extract session ID
+const sessionId = $json.headers['x-session-id'];
+return { sessionKey: `session:${sessionId}` };
+
+// 3. Redis Node - Delete session
+Operation: Delete
+Key: {{$json.sessionKey}}
+
+// 4. Respond with success
+Status: 200
+Body: {"success": true, "message": "Logged out successfully"}
+```
+
+#### Example 4: Job Queue with Background Processing
+
+```javascript
+// Use Redis lists as a job queue for background tasks
+
+// PRODUCER WORKFLOW - Add Jobs to Queue
+
+// 1. Webhook or Schedule Trigger
+
+// 2. Code Node - Create job payload
+const jobs = [
+  {
+    id: Date.now(),
+    type: 'send_email',
+    data: {
+      to: 'user@example.com',
+      subject: 'Welcome!',
+      body: 'Thanks for signing up'
+    }
+  },
+  {
+    id: Date.now() + 1,
+    type: 'generate_report',
+    data: {
+      reportType: 'monthly',
+      userId: 12345
+    }
+  }
+];
+
+return jobs.map(job => ({
+  json: {
+    queueKey: 'jobs:pending',
+    jobData: JSON.stringify(job)
+  }
+}));
+
+// 3. Redis Node - Push job to queue
+Operation: Push
+Key: {{$json.queueKey}}
+Value: {{$json.jobData}}
+Position: Right  // RPUSH - add to end of queue
+
+
+// CONSUMER WORKFLOW - Process Jobs
+
+// 1. Schedule Trigger - Every 10 seconds
+
+// 2. Redis Node - Pop job from queue (blocking)
+Operation: Pop
+Key: jobs:pending
+Position: Left  // LPOP - remove from front of queue
+
+// 3. IF Node - Check if job exists
+{{$json.value}} is not empty
+
+// 4. Code Node - Parse job
+const job = JSON.parse($input.item.json.value);
+
+return {
+  jobId: job.id,
+  jobType: job.type,
+  jobData: job.data
+};
+
+// 5. Switch Node - Route by job type
+{{$json.jobType}}
+  Case: send_email → Send Email Branch
+  Case: generate_report → Generate Report Branch
+  Case: process_data → Process Data Branch
+
+// SEND EMAIL BRANCH:
+// 6a. SMTP Node - Send email
+To: {{$json.jobData.to}}
+Subject: {{$json.jobData.subject}}
+Body: {{$json.jobData.body}}
+
+// 7a. Redis Node - Mark job complete
+Operation: Set
+Key: job:{{$json.jobId}}:status
+Value: completed
+TTL: 3600  // Keep status for 1 hour
+
+// GENERATE REPORT BRANCH:
+// 6b. Postgres Node - Fetch report data
+// 7b. Generate PDF
+// 8b. Upload to storage
+// 9b. Mark complete...
+
+// Job queue benefits:
+// - Decouple producers from consumers
+// - Handle traffic spikes gracefully
+// - Retry failed jobs
+// - Scale workers independently
+```
+
+#### Example 5: Real-Time Pub/Sub Notifications
+
+```javascript
+// Use Redis Pub/Sub for real-time event broadcasting
+
+// PUBLISHER WORKFLOW - Send Notifications
+
+// 1. Webhook Trigger - Order placed event
+
+// 2. Code Node - Create notification
+const notification = {
+  type: 'order_placed',
+  orderId: $json.orderId,
+  userId: $json.userId,
+  amount: $json.total,
+  timestamp: new Date().toISOString(),
+  message: `New order #${$json.orderId} for $${$json.total}`
+};
+
+return {
+  channel: 'notifications:orders',
+  message: JSON.stringify(notification)
+};
+
+// 3. Execute Command Node - Publish to Redis channel
+Command: docker
+Arguments: exec redis redis-cli PUBLISH {{$json.channel}} '{{$json.message}}'
+
+// Or use HTTP Request to Redis REST API (if available)
+// Or integrate with a service that listens to Redis Pub/Sub
+
+
+// SUBSCRIBER WORKFLOW - Listen for Notifications
+// Note: n8n doesn't have native Redis Pub/Sub trigger
+// But you can use Redis Trigger node with polling or external service
+
+// Alternative: Use webhook + external subscriber
+// External script listens to Redis Pub/Sub and sends webhooks to n8n
+
+// Example external subscriber (Node.js):
+/*
+const redis = require('redis');
+const axios = require('axios');
+
+const subscriber = redis.createClient({
+  host: 'redis',
+  port: 6379
+});
+
+subscriber.subscribe('notifications:orders');
+
+subscriber.on('message', (channel, message) => {
+  const notification = JSON.parse(message);
+  
+  // Send to n8n webhook
+  axios.post('https://n8n.yourdomain.com/webhook/order-notification', notification);
+});
+*/
+
+// 1. Webhook Trigger - Receives notifications from subscriber
+
+// 2. Switch Node - Route by notification type
+{{$json.type}}
+  Case: order_placed → Notify warehouse
+  Case: payment_received → Send confirmation email
+  Case: order_shipped → Update tracking
+
+// 3. Take appropriate action based on notification type
+
+// Pub/Sub use cases:
+// - Real-time dashboards
+// - Chat applications
+// - Live updates
+// - Event broadcasting
+// - Microservices communication
+```
+
+### Advanced Use Cases
+
+#### Leaderboard with Sorted Sets
+
+```bash
+# Sorted sets are perfect for leaderboards, rankings, priority queues
+
+# Add players with scores
+docker exec redis redis-cli ZADD leaderboard 1500 "player1"
+docker exec redis redis-cli ZADD leaderboard 2300 "player2"
+docker exec redis redis-cli ZADD leaderboard 1800 "player3"
+
+# Get top 10 players
+docker exec redis redis-cli ZREVRANGE leaderboard 0 9 WITHSCORES
+
+# Get player rank
+docker exec redis redis-cli ZREVRANK leaderboard "player2"
+
+# Increment player score
+docker exec redis redis-cli ZINCRBY leaderboard 100 "player1"
+
+# Get players in score range
+docker exec redis redis-cli ZRANGEBYSCORE leaderboard 1500 2000 WITHSCORES
+```
+
+#### Distributed Locking
+
+```bash
+# Prevent race conditions in distributed systems
+
+# Acquire lock (SET with NX and EX)
+docker exec redis redis-cli SET lock:resource:123 "worker-1" NX EX 30
+# Returns OK if lock acquired, nil if already locked
+
+# Release lock (only if you own it)
+docker exec redis redis-cli EVAL "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end" 1 lock:resource:123 "worker-1"
+
+# Use case: Ensure only one worker processes a job
+# - Worker tries to acquire lock before processing
+# - If successful, process job and release lock
+# - If failed, skip job (another worker is handling it)
+```
+
+#### Cache Eviction Policies
+
+```bash
+# Configure how Redis handles memory limits
+
+# Check current policy
+docker exec redis redis-cli CONFIG GET maxmemory-policy
+
+# Set eviction policy
+docker exec redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
+
+# Available policies:
+# - noeviction: Return errors when memory limit reached
+# - allkeys-lru: Evict least recently used keys
+# - allkeys-lfu: Evict least frequently used keys
+# - volatile-lru: Evict LRU keys with TTL set
+# - volatile-lfu: Evict LFU keys with TTL set
+# - volatile-ttl: Evict keys with shortest TTL
+# - allkeys-random: Evict random keys
+# - volatile-random: Evict random keys with TTL
+
+# Set memory limit
+docker exec redis redis-cli CONFIG SET maxmemory 256mb
+```
+
+### Troubleshooting
+
+**Connection refused / Cannot connect to Redis:**
+
+```bash
+# Check if Redis is running
+docker ps | grep redis
+
+# Check Redis logs
+docker logs redis --tail 100
+
+# Test Redis connection
+docker exec redis redis-cli PING
+# Should return: PONG
+
+# Restart Redis
+docker compose restart redis
+
+# Test from n8n container
+docker exec n8n ping redis
+# Should successfully ping
+```
+
+**Redis memory issues / Out of memory:**
+
+```bash
+# Check memory usage
+docker exec redis redis-cli INFO memory
+
+# Key metrics to check:
+# - used_memory_human: Total memory used by Redis
+# - used_memory_rss_human: Resident set size (physical RAM)
+# - maxmemory_human: Memory limit
+# - mem_fragmentation_ratio: Memory fragmentation
+
+# Check largest keys
+docker exec redis redis-cli --bigkeys
+
+# Clear all keys (DANGER! Use with caution)
+docker exec redis redis-cli FLUSHALL
+
+# Set memory limit
+docker exec redis redis-cli CONFIG SET maxmemory 512mb
+
+# Enable LRU eviction
+docker exec redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
+```
+
+**Slow Redis performance:**
+
+```bash
+# Check for slow commands
+docker exec redis redis-cli SLOWLOG GET 10
+
+# Monitor Redis operations in real-time
+docker exec redis redis-cli MONITOR
+# Press Ctrl+C to stop
+
+# Check current connections
+docker exec redis redis-cli CLIENT LIST
+
+# Check latency
+docker exec redis redis-cli --latency
+
+# Check if Redis is saving to disk (can cause latency spikes)
+docker exec redis redis-cli INFO persistence
+
+# Disable persistence for pure cache (faster, but data loss on restart)
+docker exec redis redis-cli CONFIG SET save ""
+docker exec redis redis-cli CONFIG SET appendonly no
+```
+
+**Keys not expiring:**
+
+```bash
+# Check if key has TTL set
+docker exec redis redis-cli TTL mykey
+# Returns: -2 (key doesn't exist), -1 (no expiration), or seconds remaining
+
+# Set expiration on existing key
+docker exec redis redis-cli EXPIRE mykey 3600
+
+# Check expiration frequency
+docker exec redis redis-cli CONFIG GET hz
+# Higher hz = more frequent expiration checks (default: 10)
+
+# Force immediate expiration check (not recommended in production)
+docker exec redis redis-cli DEBUG SLEEP 0
+```
+
+**Redis persistence issues:**
+
+```bash
+# Check last save time
+docker exec redis redis-cli LASTSAVE
+
+# Force save to disk
+docker exec redis redis-cli SAVE
+# or async:
+docker exec redis redis-cli BGSAVE
+
+# Check persistence configuration
+docker exec redis redis-cli CONFIG GET save
+docker exec redis redis-cli CONFIG GET appendonly
+
+# View AOF (Append-Only File) rewrite info
+docker exec redis redis-cli INFO persistence | grep aof
+
+# Disable persistence (cache-only mode)
+docker exec redis redis-cli CONFIG SET save ""
+docker exec redis redis-cli CONFIG SET appendonly no
+```
+
+**Common n8n Redis Node errors:**
+
+```bash
+# Error: "Connection timeout"
+# Solution: Check Redis is running and accessible
+docker compose restart redis
+
+# Error: "WRONGTYPE Operation against a key holding the wrong kind of value"
+# Solution: Key exists with different data type, use different key or DEL old key
+docker exec redis redis-cli DEL mykey
+
+# Error: "OOM command not allowed when used memory > 'maxmemory'"
+# Solution: Increase memory limit or enable eviction policy
+docker exec redis redis-cli CONFIG SET maxmemory 512mb
+docker exec redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
+```
+
+### Resources
+
+- **Official Documentation:** https://redis.io/docs/
+- **Commands Reference:** https://redis.io/commands/
+- **Data Types:** https://redis.io/docs/data-types/
+- **Pub/Sub Guide:** https://redis.io/docs/interact/pubsub/
+- **n8n Redis Node:** https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.redis/
+- **Redis Best Practices:** https://redis.io/docs/management/optimization/
+- **Redis University:** https://university.redis.com/ (free courses)
+- **Try Redis:** https://try.redis.io/ (interactive tutorial)
+
+### Best Practices
+
+**Performance:**
+- Use pipelining for multiple operations (reduces network round-trips)
+- Avoid KEYS command in production (use SCAN instead)
+- Use Redis transactions (MULTI/EXEC) for atomic operations
+- Set appropriate TTLs on all cache keys
+- Monitor memory usage and set maxmemory limits
+- Use connection pooling (most Redis clients do this automatically)
+
+**Caching Strategy:**
+- Cache-aside pattern: App checks cache, then DB on miss
+- Write-through: Write to cache and DB simultaneously
+- Write-behind: Write to cache, async write to DB
+- Use consistent hashing for distributed caching
+- Implement cache warming for critical data
+- Add randomization to TTLs to avoid cache stampede
+
+**Data Structures:**
+- Use hashes for objects instead of multiple keys
+- Use sets for unique items and membership checks
+- Use sorted sets for rankings, leaderboards, time-series
+- Use lists for queues (LPUSH/RPOP or RPUSH/LPOP)
+- Use streams for event logs and message queues
+
+**Security:**
+- Don't expose Redis to public internet (internal Docker network only)
+- Use Redis ACLs for fine-grained access control (Redis 6+)
+- Enable authentication in production environments
+- Use TLS for encrypted connections
+- Regularly backup RDB files
+- Monitor for unusual command patterns
+
+**Memory Management:**
+```bash
+# Set memory limit
+maxmemory 512mb
+
+# Set eviction policy
+maxmemory-policy allkeys-lru
+
+# Disable persistence for pure cache
+save ""
+appendonly no
+
+# Enable compression
+# (Redis doesn't compress, but use compressed values in app)
+```
+
+**Monitoring:**
+- Monitor memory usage, hit rate, evictions
+- Set alerts for memory thresholds
+- Track slow queries with SLOWLOG
+- Monitor connection count and latency
+- Use Redis INFO for detailed metrics
+- Consider Redis monitoring tools (RedisInsight, Redis Enterprise)
 
 </details>
 
@@ -28707,7 +30045,532 @@ SELECT * FROM user_stats WHERE user_id = 'uuid';
 <details>
 <summary><b>🔐 Vaultwarden - Password Manager</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Vaultwarden?
+
+Vaultwarden is a lightweight, self-hosted password manager that's 100% compatible with Bitwarden clients. Written in Rust, it provides the same features as the official Bitwarden server but with significantly lower resource requirements. Perfect for managing all your AI LaunchKit service credentials, API keys, and team passwords securely.
+
+With 40+ services in AI LaunchKit generating unique passwords and API keys, credential management becomes critical. Vaultwarden provides a central, encrypted vault accessible via browser extensions, mobile apps, and desktop clients.
+
+### Features
+
+- ✅ **100% Bitwarden Compatible** - Works with all official Bitwarden clients
+- ✅ **Lightweight & Fast** - Only 50-200MB RAM vs 2GB+ for official Bitwarden
+- ✅ **Browser Integration** - Auto-fill passwords for all services (Chrome, Firefox, Safari, Edge)
+- ✅ **Mobile Apps** - iOS and Android apps with biometric unlock
+- ✅ **Team Sharing** - Organizations for secure credential sharing
+- ✅ **2FA Support** - TOTP, WebAuthn, YubiKey, Duo, Email
+- ✅ **Password Generator** - Create strong, unique passwords
+- ✅ **Security Reports** - Identify weak, reused, or compromised passwords
+- ✅ **Emergency Access** - Trusted contacts for account recovery
+- ✅ **Send Feature** - Securely share text/files with expiration
+
+### Initial Setup
+
+**First Steps After Installation:**
+
+1. **Access Admin Panel:** Navigate to `https://vault.yourdomain.com/admin`
+2. **Enter Admin Token:** Found in installation report or `.env` file as `VAULTWARDEN_ADMIN_TOKEN`
+   ```bash
+   # Get admin token from .env
+   grep "VAULTWARDEN_ADMIN_TOKEN" .env
+   ```
+3. **Configure SMTP:** Uses your configured mail system (Mailpit or Docker-Mailserver)
+   - For Mailpit (development): Already configured automatically
+   - For Docker-Mailserver: Update SMTP settings in admin panel
+4. **Disable Public Signups (Security):** In admin panel, disable signups after creating your account
+5. **Create First User:** Navigate to `https://vault.yourdomain.com` and click "Create Account"
+6. **Install Browser Extension:** Available for Chrome, Firefox, Safari, Edge, Opera
+
+**Create Your First Account:**
+
+1. Go to `https://vault.yourdomain.com`
+2. Click **"Create Account"**
+3. Enter email and create a **strong master password** (this cannot be reset!)
+4. Verify email (if SMTP is configured)
+5. Login and start adding passwords
+
+### Automatic Credential Import
+
+AI LaunchKit automatically generates a Bitwarden-compatible JSON file with all your service credentials:
+
+```bash
+# Generate and download credentials (after installation)
+sudo bash ./scripts/download_credentials.sh
+```
+
+**What this script does:**
+1. Generates a JSON file with all service passwords, API keys, and tokens
+2. Opens port 8889 temporarily (60 seconds)
+3. Displays a download link for your browser
+4. Automatically deletes the file after download for security
+
+**Import into Vaultwarden:**
+
+1. Download the file using the link provided by the script
+2. Open Vaultwarden: `https://vault.yourdomain.com`
+3. Go to **Tools** → **Import Data**
+4. Select Format: **Bitwarden (json)**
+5. Choose the downloaded file
+6. Click **Import Data**
+
+All credentials will be organized in an "AI LaunchKit Services" folder with:
+- Service URLs
+- Usernames/emails
+- Passwords
+- API tokens
+- Admin credentials
+- SMTP settings
+
+### Client Configuration
+
+**Browser Extensions:**
+
+1. Install official Bitwarden extension from:
+   - Chrome Web Store: Search "Bitwarden"
+   - Firefox Add-ons: Search "Bitwarden"
+   - Safari Extensions: Available in Mac App Store
+   - Edge Add-ons: Search "Bitwarden"
+2. Click extension icon
+3. Click **"Settings"** (gear icon)
+4. Enter Server URL: `https://vault.yourdomain.com`
+5. Click **"Save"**
+6. Login with your credentials
+7. Enable auto-fill in extension settings
+
+**Mobile Apps:**
+
+1. Download Bitwarden from:
+   - iOS: App Store - "Bitwarden Password Manager"
+   - Android: Play Store - "Bitwarden Password Manager"
+2. Open app and tap **"Self-hosted"** during setup
+3. Enter Server URL: `https://vault.yourdomain.com`
+4. Login with your credentials
+5. Enable biometric unlock (Face ID, Touch ID, Fingerprint)
+
+**Desktop Apps:**
+
+1. Download from [bitwarden.com/download](https://bitwarden.com/download/)
+2. Install and open application
+3. Go to **Settings** → **Server URL**
+4. Enter: `https://vault.yourdomain.com`
+5. Click **"Save"**
+6. Login with your credentials
+
+### Organizing AI LaunchKit Credentials
+
+**Recommended Folder Structure:**
+
+```
+📁 AI LaunchKit Services (root folder from import)
+├── 📁 Core Services
+│   ├── 🔑 n8n Admin (https://n8n.yourdomain.com)
+│   ├── 🔑 Supabase Dashboard
+│   ├── 🔑 PostgreSQL Database
+│   └── 🔑 Redis (internal)
+├── 📁 AI Tools
+│   ├── 🔑 OpenAI API Key
+│   ├── 🔑 Anthropic API Key
+│   ├── 🔑 Groq API Key
+│   ├── 🔑 Ollama Admin
+│   └── 🔑 Open WebUI
+├── 📁 Development
+│   ├── 🔑 bolt.diy Access
+│   ├── 🔑 ComfyUI Login
+│   ├── 🔑 GitHub Tokens
+│   └── 🔑 Portainer Admin
+├── 📁 Business Tools
+│   ├── 🔑 Cal.com Admin
+│   ├── 🔑 Vikunja Login
+│   ├── 🔑 NocoDB API Token
+│   └── 🔑 Leantime Admin
+└── 📁 Monitoring
+    ├── 🔑 Grafana Admin
+    ├── 🔑 Prometheus Access
+    └── 🔑 Mailpit Dashboard
+```
+
+**Organization Best Practices:**
+
+- Use **folders** to group related services
+- Add **custom fields** for API keys, tokens, internal URLs
+- Use **tags** for quick filtering (e.g., #production, #staging, #api)
+- Enable **favorites** for frequently accessed credentials
+- Add **notes** with setup instructions or recovery codes
+
+### Security Features
+
+**Enable Two-Factor Authentication (2FA):**
+
+1. Go to **Settings** → **Two-step Login**
+2. Choose method:
+   - **Authenticator App** (recommended): Use Google Authenticator, Authy, etc.
+   - **Email:** Receive codes via email
+   - **WebAuthn:** Use hardware keys (YubiKey, etc.)
+   - **Duo:** If you have Duo account
+3. Follow setup wizard
+4. **Save recovery code** in a safe place (offline!)
+
+**Password Generator:**
+
+- Access via browser extension or vault web interface
+- Customize: Length (8-128 chars), uppercase, lowercase, numbers, symbols
+- Options: Passphrases (easier to remember), minimum numbers/symbols
+- Generated passwords are automatically strong and unique
+
+**Security Reports:**
+
+1. Go to **Tools** → **Reports**
+2. Available reports:
+   - **Exposed Passwords:** Check against haveibeenpwned.com database
+   - **Reused Passwords:** Find passwords used multiple times
+   - **Weak Passwords:** Identify passwords below strength threshold
+   - **Unsecured Websites:** HTTP sites storing credentials
+   - **Inactive 2FA:** Sites offering 2FA that you haven't enabled
+   - **Data Breach Report:** Check if your accounts were compromised
+
+**Emergency Access:**
+
+1. Go to **Settings** → **Emergency Access**
+2. Click **"Add emergency contact"**
+3. Enter trusted contact's email
+4. Set wait time (0-90 days)
+5. Choose access level: View or Takeover
+6. Contact receives invitation to accept
+
+**Send Feature (Secure Sharing):**
+
+1. Click **"Send"** in vault menu
+2. Choose type: Text or File (max 500MB)
+3. Set options:
+   - Deletion date (1 hour to 31 days, or manual)
+   - Expiration date
+   - Maximum access count
+   - Password protection
+   - Hide email from recipients
+4. Share the generated link
+
+### n8n Integration
+
+While Vaultwarden doesn't have a native n8n node, you can use it programmatically via the API:
+
+**API Authentication:**
+
+1. Login to Vaultwarden web interface
+2. Get API credentials by logging in via CLI:
+   ```bash
+   # Using curl to get auth token
+   curl -X POST https://vault.yourdomain.com/identity/connect/token \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "grant_type=password&username=YOUR_EMAIL&password=YOUR_PASSWORD&scope=api&client_id=web"
+   ```
+
+**Example: Retrieve Credentials in n8n Workflow**
+
+```javascript
+// This is a conceptual example - requires API token
+
+// 1. HTTP Request - Get Access Token
+Method: POST
+URL: https://vault.yourdomain.com/identity/connect/token
+Headers:
+  Content-Type: application/x-www-form-urlencoded
+Body (Form):
+  grant_type: password
+  username: {{$env.VAULTWARDEN_EMAIL}}
+  password: {{$env.VAULTWARDEN_PASSWORD}}
+  scope: api
+  client_id: web
+
+// 2. Set Node - Save token
+Keep Only Set: true
+Values:
+  token: {{$json.access_token}}
+
+// 3. HTTP Request - Get Vault Items
+Method: GET
+URL: https://vault.yourdomain.com/api/ciphers
+Headers:
+  Authorization: Bearer {{$json.token}}
+
+// 4. Code Node - Find specific credential
+const items = $input.item.json.Data;
+const targetItem = items.find(item => 
+  item.Name.includes('OpenAI') || 
+  item.Login?.Uris?.some(uri => uri.Uri.includes('openai.com'))
+);
+
+return {
+  name: targetItem.Name,
+  username: targetItem.Login?.Username,
+  password: targetItem.Login?.Password,
+  notes: targetItem.Notes
+};
+```
+
+**Better Approach:** Store API keys directly in n8n environment variables:
+- More secure than fetching from Vaultwarden in every workflow
+- Faster execution
+- Simpler workflow logic
+- Use Vaultwarden as the secure storage, manually update n8n .env when keys change
+
+### Backup & Recovery
+
+**Backup Vaultwarden Data:**
+
+```bash
+# Method 1: Backup entire data directory
+docker exec vaultwarden tar -czf /tmp/vaultwarden-backup-$(date +%Y%m%d).tar.gz /data
+docker cp vaultwarden:/tmp/vaultwarden-backup-$(date +%Y%m%d).tar.gz ./backups/
+
+# Method 2: Backup Docker volume
+docker run --rm \
+  -v vaultwarden_data:/data \
+  -v $(pwd)/backups:/backup \
+  alpine tar -czf /backup/vaultwarden-backup-$(date +%Y%m%d).tar.gz /data
+
+# Verify backup
+ls -lh ./backups/vaultwarden-backup-*.tar.gz
+```
+
+**Export Vault (User-Level Backup):**
+
+1. Login to Vaultwarden web interface
+2. Go to **Tools** → **Export Vault**
+3. Choose format:
+   - **JSON** (recommended): Full export with folders
+   - **CSV**: Simple format, no folders
+   - **JSON (Encrypted)**: Password-protected export
+4. Click **"Export Vault"**
+5. Store export file securely (encrypted storage recommended)
+
+**Restore from Backup:**
+
+```bash
+# Stop Vaultwarden
+docker stop vaultwarden
+
+# Restore data
+docker run --rm \
+  -v vaultwarden_data:/data \
+  -v $(pwd)/backups:/backup \
+  alpine sh -c "cd /data && tar -xzf /backup/vaultwarden-backup-YYYYMMDD.tar.gz --strip-components=1"
+
+# Start Vaultwarden
+docker start vaultwarden
+```
+
+**Automated Backup Script:**
+
+Create a cron job for automated backups:
+
+```bash
+# Create backup script
+cat > ~/vaultwarden-backup.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="/home/$(whoami)/vaultwarden-backups"
+DATE=$(date +%Y%m%d)
+
+mkdir -p "$BACKUP_DIR"
+
+# Create backup
+docker run --rm \
+  -v vaultwarden_data:/data \
+  -v "$BACKUP_DIR":/backup \
+  alpine tar -czf "/backup/vaultwarden-${DATE}.tar.gz" /data
+
+# Keep only last 30 days
+find "$BACKUP_DIR" -name "vaultwarden-*.tar.gz" -mtime +30 -delete
+
+echo "Backup completed: vaultwarden-${DATE}.tar.gz"
+EOF
+
+chmod +x ~/vaultwarden-backup.sh
+
+# Add to cron (runs daily at 2 AM)
+crontab -e
+# Add line:
+0 2 * * * /home/$(whoami)/vaultwarden-backup.sh >> /var/log/vaultwarden-backup.log 2>&1
+```
+
+### Troubleshooting
+
+**Cannot access admin panel / Forgot admin token:**
+
+```bash
+# Get admin token from environment file
+grep "VAULTWARDEN_ADMIN_TOKEN" .env
+
+# Or regenerate token
+NEW_TOKEN=$(openssl rand -base64 32)
+echo "New admin token: $NEW_TOKEN"
+
+# Update .env file
+sed -i "s/VAULTWARDEN_ADMIN_TOKEN=.*/VAULTWARDEN_ADMIN_TOKEN=$NEW_TOKEN/" .env
+
+# Restart Vaultwarden
+docker compose restart vaultwarden
+```
+
+**Email verification not working:**
+
+```bash
+# Check Vaultwarden logs
+docker logs vaultwarden --tail 100 | grep -i "mail\|smtp"
+
+# Test SMTP configuration
+docker exec vaultwarden cat /data/config.json | grep -i smtp
+
+# For Mailpit (development):
+# Emails go to http://mail.yourdomain.com - check there
+
+# For Docker-Mailserver:
+# Check mailserver logs
+docker logs mailserver --tail 100
+```
+
+**Browser extension not connecting:**
+
+1. Verify server URL is correct: `https://vault.yourdomain.com`
+2. Check for HTTPS errors (certificate issues):
+   ```bash
+   curl -I https://vault.yourdomain.com
+   # Should return: HTTP/2 200
+   ```
+3. Clear browser extension data:
+   - Extension settings → Logout
+   - Remove extension and reinstall
+   - Reconfigure server URL
+4. Check if Vaultwarden is running:
+   ```bash
+   docker ps | grep vaultwarden
+   docker logs vaultwarden --tail 50
+   ```
+
+**Master password forgotten (NO RECOVERY POSSIBLE):**
+
+⚠️ **Critical:** There is NO way to recover or reset a forgotten master password!
+
+**Prevention:**
+- Write down master password and store in physical safe
+- Use a very memorable but strong passphrase
+- Enable emergency access with trusted contact
+- Regular vault exports as backup
+
+**If Lost:**
+- Delete account and create new one
+- Re-import credentials from backup/export
+- Update all changed passwords manually
+
+**Slow vault sync / Performance issues:**
+
+```bash
+# Check container resources
+docker stats vaultwarden --no-stream
+
+# Restart Vaultwarden
+docker compose restart vaultwarden
+
+# Rebuild vault icon cache (if icons slow)
+docker exec vaultwarden rm -rf /data/icon_cache/*
+docker compose restart vaultwarden
+
+# Check available disk space
+df -h
+
+# Compact SQLite database
+docker exec vaultwarden sqlite3 /data/db.sqlite3 "VACUUM;"
+```
+
+**Signups disabled but need to add user:**
+
+```bash
+# Option 1: Temporarily enable signups in admin panel
+# Access: https://vault.yourdomain.com/admin
+# Enable signups → Add user → Disable signups
+
+# Option 2: Invite user via admin panel
+# Admin panel → Invite User → Enter email → Send invite
+
+# Option 3: Enable via environment variable
+echo "SIGNUPS_ALLOWED=true" >> .env
+docker compose restart vaultwarden
+# After user registers:
+echo "SIGNUPS_ALLOWED=false" >> .env  
+docker compose restart vaultwarden
+```
+
+### Resources
+
+- **Official Documentation:** https://github.com/dani-garcia/vaultwarden/wiki
+- **Bitwarden Help Center:** https://bitwarden.com/help/
+- **API Documentation:** https://bitwarden.com/help/api/
+- **Browser Extensions:** https://bitwarden.com/download/
+- **Mobile Apps:** Available on App Store and Play Store
+- **Desktop Apps:** https://bitwarden.com/download/
+- **Community:** https://github.com/dani-garcia/vaultwarden/discussions
+
+### Best Practices
+
+**Password Management:**
+- Use Vaultwarden's password generator for all new accounts
+- Enable 2FA (TOTP) on all services that support it
+- Never reuse passwords across services
+- Run security reports monthly
+- Use different master passwords for work/personal vaults
+- Store recovery codes in secure offline location
+
+**Team Collaboration:**
+- Create **Organizations** for team credential sharing
+- Use **Collections** to organize shared credentials by project
+- Assign appropriate permissions (Can View, Can Edit)
+- Regularly audit organization members
+- Remove access immediately when team members leave
+
+**Security Hardening:**
+- Enable 2FA on your Vaultwarden account
+- Disable public signups after initial setup
+- Use strong master password (15+ characters, passphrases)
+- Enable emergency access with trusted contact
+- Regular vault exports (weekly/monthly)
+- Keep master password offline in secure location
+- Use password manager for password manager backup (ironic but effective)
+
+**API Key Management:**
+- Store all API keys in Vaultwarden (OpenAI, Anthropic, etc.)
+- Use custom fields for multiple keys per service
+- Add expiration date in notes field
+- Tag with #api #production #staging
+- Document key permissions and scope
+- Rotate keys quarterly
+
+**Browser Extension Tips:**
+- Enable auto-fill only on HTTPS sites
+- Disable auto-fill for financial sites (manual verification)
+- Use keyboard shortcuts (Ctrl+Shift+L for auto-fill)
+- Review auto-fill matches before submitting
+- Clear clipboard after copying passwords (auto-clear setting)
+
+**Resource Usage:**
+- **RAM:** 50-200MB typical (vs 2GB+ official Bitwarden)
+- **Storage:** ~100MB base + user data (minimal)
+- **CPU:** Negligible except during login/sync
+- **Network:** Minimal bandwidth usage
+- **Perfect for VPS:** Designed for resource-constrained environments
+
+**Monitoring:**
+```bash
+# Check Vaultwarden status
+docker ps | grep vaultwarden
+
+# Monitor resource usage
+docker stats vaultwarden
+
+# Check recent logins (in admin panel)
+# https://vault.yourdomain.com/admin
+
+# Database size
+docker exec vaultwarden du -sh /data/db.sqlite3
+```
 
 </details>
 

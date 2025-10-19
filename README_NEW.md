@@ -30575,23 +30575,1685 @@ docker exec vaultwarden du -sh /data/db.sqlite3
 </details>
 
 <details>
-<summary><b>🌐 Caddy - Web Server</b></summary>
+<summary><b>🌐 Caddy - Automatic HTTPS Reverse Proxy</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Caddy?
+
+Caddy is a modern, powerful web server written in Go that serves as the **automatic HTTPS reverse proxy** for all AI LaunchKit services. It handles SSL certificate provisioning, renewal, and routing - completely automatically with zero manual configuration required.
+
+Caddy automatically obtains, renews, and manages SSL/TLS certificates from Let's Encrypt using the ACME protocol, ensuring all your services are secured with HTTPS by default. Unlike traditional web servers like Nginx or Apache, Caddy requires no manual certificate management - it just works.
+
+### Features
+
+- **Automatic HTTPS:** Zero-configuration SSL certificates from Let's Encrypt with automatic 90-day renewal
+- **Reverse Proxy:** Routes traffic to backend services with load balancing, health checks, and failover
+- **WebSocket Support:** Full support for real-time connections (Jitsi, LiveKit, n8n workflows)
+- **Basic Authentication:** Password-protect services with bcrypt-hashed credentials
+- **Streaming Support:** Optimized for AI model APIs with `flush_interval -1` for streaming responses
+- **Wildcard DNS:** Single configuration serves all `*.yourdomain.com` subdomains
+- **Zero Downtime:** Graceful config reloads without dropping connections
+- **Performance:** Written in Go for high throughput and low resource usage
+
+### Initial Setup
+
+**Caddy in AI LaunchKit is fully automated - no manual setup required!**
+
+When you run the installer, Caddy automatically:
+
+1. **Configures all service routes** from your `.env` file
+2. **Obtains SSL certificates** for all enabled services
+3. **Sets up reverse proxies** with optimal headers and timeouts
+4. **Enables automatic renewal** for certificates (every 60 days)
+
+**Access Caddy:**
+- Caddy runs in the background - you never interact with it directly
+- All services are automatically available at `https://[service].yourdomain.com`
+- Certificate status visible in logs: `docker logs caddy | grep certificate`
+
+**Caddyfile Location:**
+```bash
+# View Caddy configuration
+cat Caddyfile
+
+# Reload after manual changes
+docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+### How Caddy Works in AI LaunchKit
+
+**1. Automatic SSL Certificates:**
+Caddy communicates with Let's Encrypt via the ACME protocol, automatically obtaining certificates during the first request to each domain. Certificates are stored in Docker volumes and renewed automatically before expiration.
+
+**2. Reverse Proxy Routing:**
+Each service gets its own subdomain configuration in the `Caddyfile`:
+
+```caddyfile
+# Example: n8n service
+{$N8N_HOSTNAME} {
+    reverse_proxy n8n:5678
+}
+
+# Example: Service with basic auth
+{$VAULTWARDEN_HOSTNAME} {
+    basic_auth {
+        {$VAULTWARDEN_USERNAME} {$VAULTWARDEN_PASSWORD_HASH}
+    }
+    reverse_proxy vaultwarden:80
+}
+
+# Example: AI service with streaming
+{$OLLAMA_HOSTNAME} {
+    reverse_proxy ollama:11434 {
+        flush_interval -1  # Enable streaming responses
+    }
+}
+```
+
+**3. Environment Variables:**
+All service hostnames are configured in `.env`:
+
+```bash
+# Service hostnames
+N8N_HOSTNAME=n8n.yourdomain.com
+VAULTWARDEN_HOSTNAME=vault.yourdomain.com
+OLLAMA_HOSTNAME=ollama.yourdomain.com
+
+# Basic auth (optional)
+VAULTWARDEN_USERNAME=admin
+VAULTWARDEN_PASSWORD=your-secure-password
+VAULTWARDEN_PASSWORD_HASH=hashed-with-bcrypt
+```
+
+### n8n Integration Setup
+
+**Use Case:** Monitor SSL certificate expiration, test service availability, or automate Caddy configuration changes.
+
+**Caddy has no native n8n node**, but you can interact with services through Caddy or manage it via Docker commands.
+
+#### Example 1: Check SSL Certificate Expiration
+
+Monitor when certificates need renewal (Caddy does this automatically, but you may want alerts):
+
+```javascript
+// 1. Trigger: Schedule (daily at 9 AM)
+
+// 2. Execute Command Node
+// Command: docker
+// Arguments: exec,caddy,caddy,list-certificates,--json
+
+// 3. Code Node: Parse certificate expiration
+const certificates = JSON.parse($json.stdout);
+const expiringS soon = [];
+const warningDays = 30; // Alert 30 days before expiration
+
+for (const cert of certificates) {
+  const expiryDate = new Date(cert.not_after);
+  const daysUntilExpiry = Math.floor((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+  
+  if (daysUntilExpiry < warningDays) {
+    expiringSoon.push({
+      domain: cert.names[0],
+      expiresIn: daysUntilExpiry,
+      expiryDate: expiryDate.toISOString()
+    });
+  }
+}
+
+return expiringSoon.length > 0 ? expiringSoon : [];
+
+// 4. IF Node: Check if any certificates expiring soon
+// Condition: {{ $json.length > 0 }}
+
+// 5. Send Email / Slack Notification
+// Subject: SSL Certificates Expiring Soon
+// Body: {{ $json }}
+```
+
+#### Example 2: Test Service Availability via Caddy
+
+Verify that services are accessible through the reverse proxy:
+
+```javascript
+// 1. Trigger: Schedule (every 5 minutes)
+
+// 2. HTTP Request Node
+// Method: GET
+// URL: https://n8n.yourdomain.com/healthz
+// Authentication: None
+// Options:
+//   - Timeout: 5000ms
+//   - Follow Redirects: true
+//   - Ignore SSL Issues: false
+
+// 3. Code Node: Check response
+const services = [
+  'https://n8n.yourdomain.com/healthz',
+  'https://vault.yourdomain.com',
+  'https://ollama.yourdomain.com'
+];
+
+const results = [];
+for (const serviceUrl of services) {
+  try {
+    const response = await this.helpers.httpRequest({
+      method: 'GET',
+      url: serviceUrl,
+      timeout: 5000
+    });
+    results.push({
+      service: serviceUrl,
+      status: 'online',
+      statusCode: response.statusCode
+    });
+  } catch (error) {
+    results.push({
+      service: serviceUrl,
+      status: 'offline',
+      error: error.message
+    });
+  }
+}
+
+return results;
+
+// 4. Filter Node: Get offline services
+// Condition: {{ $json.status === "offline" }}
+
+// 5. Send Alert if any services offline
+```
+
+#### Example 3: Reload Caddy After Configuration Change
+
+Automate Caddy config reload when you update the Caddyfile:
+
+```javascript
+// 1. Trigger: Webhook (called after config changes)
+
+// 2. Execute Command Node
+// Command: docker
+// Arguments: exec,caddy,caddy,reload,--config,/etc/caddy/Caddyfile
+
+// 3. Code Node: Check reload success
+const output = $json.stdout || '';
+const error = $json.stderr || '';
+
+if (error.includes('error') || $json.exitCode !== 0) {
+  return [{
+    success: false,
+    error: error,
+    output: output
+  }];
+}
+
+return [{
+  success: true,
+  message: 'Caddy reloaded successfully',
+  output: output
+}];
+
+// 4. Send Notification
+// Success: "Caddy configuration reloaded"
+// Failure: "Caddy reload failed: {{ $json.error }}"
+```
+
+#### Example 4: Add New Service to Caddy (Advanced)
+
+Automatically add a new service route to the Caddyfile and reload:
+
+```javascript
+// 1. Trigger: Manual / Webhook with service details
+
+// 2. Code Node: Generate Caddyfile entry
+const serviceName = $input.item.json.serviceName; // e.g., "myapp"
+const hostname = $input.item.json.hostname; // e.g., "myapp.yourdomain.com"
+const port = $input.item.json.port; // e.g., 8080
+const requiresAuth = $input.item.json.requiresAuth || false;
+
+let caddyConfig = `\n# ${serviceName}\n`;
+caddyConfig += `${hostname} {\n`;
+
+if (requiresAuth) {
+  caddyConfig += `    basic_auth {\n`;
+  caddyConfig += `        {$${serviceName.toUpperCase()}_USERNAME} {$${serviceName.toUpperCase()}_PASSWORD_HASH}\n`;
+  caddyConfig += `    }\n`;
+}
+
+caddyConfig += `    reverse_proxy ${serviceName}:${port}\n`;
+caddyConfig += `}\n`;
+
+return [{ caddyConfig }];
+
+// 3. Execute Command: Append to Caddyfile
+// Command: bash
+// Arguments: -c,"echo '{{ $json.caddyConfig }}' >> /path/to/Caddyfile"
+
+// 4. Execute Command: Reload Caddy
+// Command: docker
+// Arguments: exec,caddy,caddy,reload,--config,/etc/caddy/Caddyfile
+
+// 5. Notify admin of new service added
+```
+
+**Internal Caddy URL:** Not applicable - Caddy is the entry point, not called internally.
+
+### Troubleshooting
+
+**Issue 1: SSL Certificate Not Issued**
+
+```bash
+# Check Caddy logs for certificate errors
+docker logs caddy | grep -i certificate
+
+# Common error: "CAA record prevents issuance"
+# Solution: Check DNS CAA records allow Let's Encrypt
+dig CAA yourdomain.com
+
+# Common error: "Rate limit exceeded"
+# Solution: Let's Encrypt has rate limits (50 certs/week per domain)
+# Wait or use staging environment for testing
+
+# Common error: "Challenge failed"
+# Solution: Ensure ports 80 and 443 are open and DNS is correct
+curl -I http://yourdomain.com
+curl -I https://yourdomain.com
+```
+
+**Solution:**
+- **Verify DNS:** Wildcard A record `*.yourdomain.com` points to your server IP
+- **Check Firewall:** Ports 80 (HTTP) and 443 (HTTPS) must be open
+- **Staging Mode:** Test with Let's Encrypt staging to avoid rate limits
+- **Force Renewal:** `docker exec caddy caddy reload --config /etc/caddy/Caddyfile`
+
+**Issue 2: 502 Bad Gateway**
+
+```bash
+# Check if backend service is running
+docker ps | grep [service-name]
+
+# Check Caddy logs for proxy errors
+docker logs caddy --tail 100 | grep 502
+
+# Test backend directly
+curl http://localhost:[service-port]
+
+# Common cause: Service hasn't fully started yet
+docker logs [service-name] --tail 50
+```
+
+**Solution:**
+- Wait 2-3 minutes for services to start (especially ComfyUI, Supabase, Cal.com)
+- Verify service is listening on correct port in `docker-compose.yml`
+- Check service logs for startup errors
+- Restart specific service: `docker compose restart [service-name]`
+
+**Issue 3: Certificate Warnings in Browser**
+
+```bash
+# Check certificate validity
+docker exec caddy caddy list-certificates
+
+# Should show valid certificates for your domains
+# If showing self-signed certs, wait 5-10 minutes
+
+# Force certificate renewal
+docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+**Solution:**
+- **Temporary:** Caddy may briefly use a self-signed certificate while requesting one from Let's Encrypt - this usually resolves within 1-24 hours
+- **Clear Browser Cache:** Try incognito/private browsing window
+- **Check Email:** Let's Encrypt sends notifications if certificate issuance fails
+- **Verify Hostname:** Ensure `HOSTNAME` in `.env` matches your actual domain
+
+**Issue 4: WebSocket Connections Failing**
+
+```bash
+# WebSockets require specific headers - check Caddy logs
+docker logs caddy | grep -i websocket
+
+# Test WebSocket connection
+curl -i -N \
+  -H "Connection: Upgrade" \
+  -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Version: 13" \
+  -H "Sec-WebSocket-Key: test" \
+  https://yourservice.yourdomain.com
+```
+
+**Solution:**
+- Caddy supports WebSockets by default via `reverse_proxy` directive
+- No special configuration needed in most cases
+- For services like Jitsi or LiveKit, ensure UDP ports are also open
+- Check service-specific requirements (some need additional headers)
+
+**Issue 5: Service Not Accessible After Adding to Caddyfile**
+
+```bash
+# Verify Caddyfile syntax
+docker exec caddy caddy validate --config /etc/caddy/Caddyfile
+
+# Check for syntax errors in output
+# Reload Caddy to apply changes
+docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+
+# Monitor reload
+docker logs caddy --follow
+```
+
+**Solution:**
+- Always validate Caddyfile syntax before reloading
+- Check that environment variables exist in `.env` file
+- Use exact format: `{$VARIABLE_NAME}` for environment variables
+- Restart Caddy if reload fails: `docker compose restart caddy`
+- Verify new route works: `curl -I https://newservice.yourdomain.com`
+
+### Resources
+
+- **Official Documentation:** https://caddyserver.com/docs/
+- **Reverse Proxy Guide:** https://caddyserver.com/docs/quick-starts/reverse-proxy
+- **Automatic HTTPS:** https://caddyserver.com/docs/automatic-https
+- **Caddyfile Syntax:** https://caddyserver.com/docs/caddyfile
+- **JSON Config API:** https://caddyserver.com/docs/api
+- **GitHub:** https://github.com/caddyserver/caddy
+- **Community Forum:** https://caddy.community/
+- **Let's Encrypt Rate Limits:** https://letsencrypt.org/docs/rate-limits/
+- **ACME Protocol:** https://caddyserver.com/docs/automatic-https#acme-protocol
+- **Docker Image:** https://hub.docker.com/_/caddy
+
+### Best Practices
+
+**Security:**
+- Caddy automatically enables HTTPS - never disable it in production
+- Use strong bcrypt password hashes for basic auth (cost factor 14+)
+- Rotate basic auth passwords quarterly
+- Monitor certificate expiration (though Caddy auto-renews)
+- Keep Caddy updated: `docker compose pull caddy && docker compose up -d caddy`
+
+**Performance:**
+- Use `flush_interval -1` for AI streaming responses (Ollama, OpenAI proxies)
+- Enable compression for text responses (Caddy does this by default)
+- For high-traffic services, consider `load_balancing` directive
+- Monitor container stats: `docker stats caddy --no-stream`
+
+**Configuration Management:**
+- Always use environment variables for hostnames (`.env` file)
+- Keep Caddyfile in version control (Git)
+- Test changes with `caddy validate` before reloading
+- Document custom routes in comments within Caddyfile
+- Use consistent naming: `{$SERVICE_HOSTNAME}` pattern
+
+**Monitoring:**
+```bash
+# Check Caddy health
+docker ps | grep caddy  # Should show "Up" status
+
+# View active connections
+docker exec caddy caddy list-certificates | jq
+
+# Monitor logs in real-time
+docker logs caddy --follow --tail 100
+
+# Check certificate expiration
+docker exec caddy caddy list-certificates | grep -i "not after"
+
+# Resource usage
+docker stats caddy --no-stream
+# Typical: 50-150MB RAM, <5% CPU
+```
+
+**Backup:**
+```bash
+# Backup SSL certificates (stored in Docker volume)
+docker run --rm -v caddy_data:/data -v $(pwd):/backup \
+  ubuntu tar czf /backup/caddy-certs-backup.tar.gz /data
+
+# Backup Caddyfile
+cp Caddyfile Caddyfile.backup.$(date +%Y%m%d)
+```
+
+**Common Patterns:**
+
+**Pattern 1: Service with Authentication**
+```caddyfile
+{$SERVICE_HOSTNAME} {
+    basic_auth {
+        {$SERVICE_USERNAME} {$SERVICE_PASSWORD_HASH}
+    }
+    reverse_proxy service:port
+}
+```
+
+**Pattern 2: AI Service with Streaming**
+```caddyfile
+{$AI_SERVICE_HOSTNAME} {
+    reverse_proxy ai-service:port {
+        flush_interval -1
+        header_up X-Real-IP {remote}
+    }
+}
+```
+
+**Pattern 3: WebSocket Service**
+```caddyfile
+{$WS_SERVICE_HOSTNAME} {
+    reverse_proxy ws-service:port
+    # WebSockets work automatically, no special config needed
+}
+```
+
+**Pattern 4: Static Site with Caching**
+```caddyfile
+static.yourdomain.com {
+    root * /var/www/static
+    file_server
+    encode gzip
+    header Cache-Control "max-age=31536000"
+}
+```
 
 </details>
 
 <details>
-<summary><b>☁️ Cloudflare Tunnel - Secure Access</b></summary>
+<summary><b>☁️ Cloudflare Tunnel - Zero-Trust Secure Access</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Cloudflare Tunnel?
+
+Cloudflare Tunnel (formerly Argo Tunnel) creates a secure, encrypted connection between your services and Cloudflare's global network **without exposing your server to the public internet**. No open ports, no port forwarding, no firewall changes required.
+
+The lightweight `cloudflared` daemon runs in your infrastructure and establishes an **outbound-only connection** to Cloudflare. Your server's IP address remains completely hidden, protecting you from direct attacks, DDoS, and reconnaissance. All traffic is routed through Cloudflare's Zero Trust platform with built-in DDoS mitigation and identity-based access control.
+
+**Perfect for:** Bypassing restrictive firewalls, securing self-hosted services, protecting development environments, or connecting IoT devices without static IPs.
+
+### Features
+
+- **Zero Firewall Configuration:** No open ports 80/443 required - only outbound HTTPS connections (port 443)
+- **Hidden Origin IP:** Your server's public IP remains completely private - prevents direct attacks
+- **Zero Trust Security:** Integrate with Cloudflare Access for email-based authentication, OTP, or SSO
+- **DDoS Protection:** Automatic protection via Cloudflare's global network (200+ data centers)
+- **Easy Docker Integration:** Run as a lightweight container alongside your services
+- **WebSocket Support:** Full support for real-time connections (WebSockets, gRPC, etc.)
+- **Free Tier Available:** Up to 50 users with Cloudflare Zero Trust Free plan
+- **No VPN Required:** Direct access to internal services without complex VPN setup
+
+### When to Use Cloudflare Tunnel
+
+**✅ Use Cloudflare Tunnel when:**
+- Your VPS provider blocks incoming ports (common with some cloud providers)
+- You want to hide your server's public IP for security
+- You need Zero Trust authentication (email OTP, SSO, etc.)
+- You're behind a restrictive firewall or CGNAT
+- You want DDoS protection included by default
+- You're running services on a home network without static IP
+- You want to bypass port forwarding on your router
+
+**❌ Don't use Cloudflare Tunnel when:**
+- You're already using Caddy with Let's Encrypt (Caddy provides SSL automatically)
+- You want full control over SSL certificates (Cloudflare terminates SSL at their edge)
+- You need non-HTTP protocols without Cloudflare's WARP client
+- You want to minimize latency (adds ~20-50ms via Cloudflare routing)
+- You're handling sensitive data that cannot pass through third-party networks
+
+**Note:** In AI LaunchKit, Cloudflare Tunnel is **optional**. The default setup uses Caddy for automatic HTTPS, which works perfectly for most use cases. Use Cloudflare Tunnel only if you have specific requirements like hiding your IP or need Zero Trust authentication.
+
+### Initial Setup
+
+Cloudflare Tunnel requires a Cloudflare account and a domain managed by Cloudflare.
+
+#### Prerequisites
+
+1. **Cloudflare Account:** Sign up at https://dash.cloudflare.com
+2. **Domain on Cloudflare:** Add your domain and change nameservers to Cloudflare
+3. **Zero Trust Account:** Enable at https://one.dash.cloudflare.com (free tier available)
+
+#### Step 1: Create Tunnel in Cloudflare Dashboard
+
+1. **Navigate to Zero Trust Dashboard:**
+   - Go to https://one.dash.cloudflare.com
+   - Click **Networks** → **Tunnels**
+   - Click **Create a tunnel**
+
+2. **Select Connector Type:**
+   - Choose **Cloudflared** (not WARP Connector)
+   - Click **Next**
+
+3. **Name Your Tunnel:**
+   - Enter a name (e.g., `ai-launchkit-prod`)
+   - Click **Save tunnel**
+
+4. **Get Tunnel Token:**
+   - Cloudflare will display a Docker command with your tunnel token
+   - Copy the token from the command (it starts with `eyJ...`)
+   - **Save this token** - you'll need it for Docker setup
+
+#### Step 2: Configure Tunnel in Docker
+
+Add Cloudflare Tunnel to your `docker-compose.yml`:
+
+```yaml
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    restart: unless-stopped
+    environment:
+      - TUNNEL_TOKEN=eyJhIjoiNTU2MDgw...  # Your token from Step 1
+    command: tunnel run
+    networks:
+      - default
+
+networks:
+  default:
+    name: localai_default
+    external: true
+```
+
+**Start the tunnel:**
+```bash
+docker compose up -d cloudflared
+```
+
+**Verify it's running:**
+```bash
+# Check container status
+docker ps | grep cloudflared
+
+# View logs
+docker logs cloudflared-tunnel
+
+# Should see: "Connection established" and "Registered tunnel"
+```
+
+#### Step 3: Add Public Hostnames
+
+Back in the Cloudflare Zero Trust Dashboard:
+
+1. **Click on your tunnel name** in the Tunnels list
+2. **Go to Public Hostname tab**
+3. **Click Add a public hostname**
+
+4. **Configure Service:**
+   ```
+   Subdomain: n8n
+   Domain: yourdomain.com
+   Type: HTTP
+   URL: n8n:5678
+   ```
+   - If cloudflared is on the same Docker network, use container name (e.g., `n8n:5678`)
+   - If different network, use `http://IP:PORT`
+
+5. **Click Save hostname**
+
+6. **Test Access:**
+   - Visit `https://n8n.yourdomain.com`
+   - DNS will automatically point to Cloudflare (CNAME record created)
+   - Traffic routes: User → Cloudflare → Tunnel → n8n
+
+#### Step 4: Add Zero Trust Authentication (Optional)
+
+**Protect services with email-based OTP:**
+
+1. **Create Access Application:**
+   - Go to **Access** → **Applications**
+   - Click **Add an application**
+   - Select **Self-hosted**
+
+2. **Configure Application:**
+   ```
+   Application name: n8n
+   Session Duration: 24 hours
+   Application domain: https://n8n.yourdomain.com
+   ```
+
+3. **Create Access Policy:**
+   - Policy name: Email whitelist
+   - Action: Allow
+   - Configure rule: **Emails**
+   - Enter allowed emails (e.g., `admin@yourcompany.com`)
+
+4. **Save and Test:**
+   - Visit `https://n8n.yourdomain.com`
+   - You'll be redirected to Cloudflare Access login
+   - Enter your email → receive OTP code → access granted
+
+### n8n Integration Setup
+
+**Cloudflare has no native n8n node**, but you can manage tunnels via the Cloudflare API using HTTP Request nodes.
+
+**Cloudflare API Setup:**
+1. Go to https://dash.cloudflare.com/profile/api-tokens
+2. Create API Token with permissions:
+   - **Zone.DNS** - Edit
+   - **Account.Cloudflare Tunnel** - Edit
+   - **Account.Access** - Edit
+3. Save token for n8n credentials
+
+#### Example 1: List All Tunnels
+
+Monitor tunnel status and health:
+
+```javascript
+// 1. HTTP Request Node
+// Method: GET
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel
+// Authentication: Generic Credential Type
+//   Header Auth:
+//     Name: Authorization
+//     Value: Bearer {{$env.CF_API_TOKEN}}
+
+// 2. Code Node: Parse tunnel status
+const tunnels = $json.result || [];
+const tunnelStatus = [];
+
+for (const tunnel of tunnels) {
+  tunnelStatus.push({
+    name: tunnel.name,
+    id: tunnel.id,
+    status: tunnel.status,
+    created: tunnel.created_at,
+    connections: tunnel.connections?.length || 0,
+    healthy: tunnel.status === 'healthy'
+  });
+}
+
+return tunnelStatus;
+
+// 3. IF Node: Check if any tunnels down
+// Condition: {{ $json.filter(t => !t.healthy).length > 0 }}
+
+// 4. Send Alert if tunnels unhealthy
+```
+
+#### Example 2: Create New Tunnel via API
+
+Automate tunnel creation for new services:
+
+```javascript
+// 1. Trigger: Manual / Webhook with service details
+
+// 2. HTTP Request Node: Create Tunnel
+// Method: POST
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel
+// Authentication: Bearer Token (CF_API_TOKEN)
+// Body (JSON):
+{
+  "name": "{{ $json.serviceName }}-tunnel",
+  "config_src": "cloudflare"
+}
+
+// 3. Code Node: Extract tunnel ID and token
+const tunnel = $json.result;
+return [{
+  tunnelId: tunnel.id,
+  tunnelName: tunnel.name,
+  tunnelToken: tunnel.token  // Use this to run cloudflared
+}];
+
+// 4. HTTP Request: Create DNS Record
+// Method: POST
+// URL: https://api.cloudflare.com/client/v4/zones/{{$env.CF_ZONE_ID}}/dns_records
+// Body:
+{
+  "type": "CNAME",
+  "name": "{{ $json.serviceName }}",
+  "content": "{{ $json.tunnelId }}.cfargotunnel.com",
+  "proxied": true
+}
+
+// 5. HTTP Request: Add Public Hostname
+// Method: PUT
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel/{{$json.tunnelId}}/configurations
+// Body:
+{
+  "config": {
+    "ingress": [
+      {
+        "hostname": "{{ $json.serviceName }}.yourdomain.com",
+        "service": "http://{{ $json.serviceName }}:{{ $json.port }}"
+      },
+      {
+        "service": "http_status:404"
+      }
+    ]
+  }
+}
+
+// 6. Notify admin with tunnel details
+```
+
+#### Example 3: Monitor Tunnel Health
+
+Check if tunnels are connected and responsive:
+
+```javascript
+// 1. Trigger: Schedule (every 5 minutes)
+
+// 2. HTTP Request: Get Tunnel Details
+// Method: GET
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel/{{$env.TUNNEL_ID}}
+
+// 3. Code Node: Check connection status
+const tunnel = $json.result;
+const connections = tunnel.connections || [];
+
+const health = {
+  tunnelName: tunnel.name,
+  status: tunnel.status,
+  totalConnections: connections.length,
+  activeConnections: connections.filter(c => c.is_pending_reconnect === false).length,
+  unhealthy: connections.filter(c => c.is_pending_reconnect).length,
+  datacenters: connections.map(c => c.colo_name),
+  uptime: connections.length > 0
+};
+
+return [health];
+
+// 4. IF Node: Check if tunnel unhealthy
+// Condition: {{ $json.unhealthy > 0 || $json.totalConnections === 0 }}
+
+// 5. Send Slack/Email Alert
+// Message: "Tunnel {{ $json.tunnelName }} is unhealthy! Active connections: {{ $json.activeConnections }}"
+```
+
+#### Example 4: Update Tunnel Configuration
+
+Add or remove services from tunnel programmatically:
+
+```javascript
+// 1. Trigger: Webhook (when service added/removed)
+
+// 2. HTTP Request: Get Current Config
+// Method: GET
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel/{{$env.TUNNEL_ID}}/configurations
+
+// 3. Code Node: Modify ingress rules
+const currentConfig = $json.result.config;
+const newService = $input.item.json;  // { hostname, service, port }
+
+// Add new ingress rule (before the catch-all 404)
+const ingressRules = currentConfig.ingress.slice(0, -1);  // Remove 404 rule
+ingressRules.push({
+  hostname: newService.hostname,
+  service: `http://${newService.service}:${newService.port}`
+});
+ingressRules.push({ service: "http_status:404" });  // Re-add catch-all
+
+return [{
+  config: {
+    ingress: ingressRules
+  }
+}];
+
+// 4. HTTP Request: Update Tunnel Config
+// Method: PUT
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel/{{$env.TUNNEL_ID}}/configurations
+// Body: {{ $json.config }}
+
+// 5. Notify success
+```
+
+**Internal Cloudflare Tunnel URL:** Not applicable - Tunnel is the entry point from external internet.
+
+### Troubleshooting
+
+**Issue 1: Tunnel Shows as "Inactive" or "Down"**
+
+```bash
+# Check cloudflared container status
+docker ps | grep cloudflared
+
+# If not running, check logs
+docker logs cloudflared-tunnel
+
+# Common error: "authentication failed"
+# Solution: Verify TUNNEL_TOKEN is correct in docker-compose.yml
+
+# Common error: "no route to host"
+# Solution: Check Docker network configuration
+docker network inspect localai_default
+
+# Restart tunnel
+docker compose restart cloudflared
+```
+
+**Solution:**
+- Verify tunnel token is correct (starts with `eyJ`)
+- Check Docker network exists and cloudflared is connected
+- Ensure outbound HTTPS (port 443) is allowed on firewall
+- Check Cloudflare dashboard shows tunnel as "Healthy"
+
+**Issue 2: Services Not Accessible via Tunnel**
+
+```bash
+# Test service is reachable from cloudflared container
+docker exec cloudflared-tunnel ping n8n
+
+# Should get ping responses if on same network
+
+# Test HTTP connectivity
+docker exec cloudflared-tunnel curl http://n8n:5678
+
+# Should get HTML response or redirect
+
+# Check tunnel configuration in dashboard
+# Verify hostname, service type (HTTP), and URL are correct
+```
+
+**Solution:**
+- Ensure cloudflared and service are on the same Docker network
+- Use container names (not localhost) for service URLs
+- Verify service is actually running: `docker ps | grep n8n`
+- Check Public Hostname configuration in Cloudflare dashboard
+- Wait 1-2 minutes for configuration changes to propagate
+
+**Issue 3: DNS Not Resolving**
+
+```bash
+# Check if CNAME record exists
+nslookup n8n.yourdomain.com
+
+# Should point to: xxxxx.cfargotunnel.com
+
+# Check Cloudflare DNS dashboard
+# Go to: dash.cloudflare.com → your domain → DNS
+
+# Verify CNAME record:
+# Type: CNAME
+# Name: n8n
+# Target: <tunnel-id>.cfargotunnel.com
+# Proxied: Yes (orange cloud)
+```
+
+**Solution:**
+- Cloudflare auto-creates CNAME records when you add Public Hostname
+- If missing, manually create CNAME pointing to `<tunnel-id>.cfargotunnel.com`
+- Ensure "Proxied" (orange cloud) is enabled
+- DNS changes can take 1-5 minutes to propagate
+- Clear browser DNS cache: Chrome → `chrome://net-internals/#dns` → Clear
+
+**Issue 4: Cloudflare Access Login Loop**
+
+```bash
+# Check Access application policy
+# Go to: Zero Trust Dashboard → Access → Applications
+
+# Common issues:
+# 1. Email not in allowed list
+# 2. Session expired
+# 3. Cookie blocked by browser
+
+# Test without Access policy first
+# Temporarily remove policy to verify tunnel works
+```
+
+**Solution:**
+- Verify your email is in the Access policy "Allowed emails" list
+- Check browser allows cookies (required for Access sessions)
+- Try incognito/private browsing to rule out cookie issues
+- Check session duration in Access application settings
+- Clear browser cookies for your domain
+
+**Issue 5: High Latency Through Tunnel**
+
+```bash
+# Test latency to Cloudflare edge
+ping your-tunnel-domain.com
+
+# Typical latency: 20-100ms depending on location
+
+# Test direct to service (bypass tunnel)
+curl -w "@curl-format.txt" https://n8n.yourdomain.com
+
+# Compare with direct IP access
+curl -w "@curl-format.txt" http://YOUR_SERVER_IP:5678
+```
+
+**Solution:**
+- Cloudflare Tunnel adds 20-50ms latency on average (traffic routes through Cloudflare)
+- For latency-sensitive applications, consider direct access with Caddy instead
+- Use Cloudflare's Smart Routing (requires Argo Smart Routing - paid)
+- Ensure tunnel connected to nearest Cloudflare datacenter
+- Check `cloudflared` logs for routing information
+
+### Resources
+
+- **Official Documentation:** https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+- **Getting Started Guide:** https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/
+- **Docker Setup:** https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deploy-tunnels/deployment-guides/docker/
+- **API Documentation:** https://developers.cloudflare.com/api/operations/cloudflare-tunnel-create-a-tunnel
+- **GitHub:** https://github.com/cloudflare/cloudflared
+- **Docker Hub:** https://hub.docker.com/r/cloudflare/cloudflared
+- **Zero Trust Dashboard:** https://one.dash.cloudflare.com
+- **Cloudflare Access:** https://developers.cloudflare.com/cloudflare-one/policies/access/
+- **Community Forum:** https://community.cloudflare.com/c/security/access/51
+- **Tutorials:** https://developers.cloudflare.com/learning-paths/zero-trust-web-access/
+
+### Best Practices
+
+**Security:**
+- Never expose tunnel tokens in Git repositories or logs
+- Use environment variables for tokens in docker-compose.yml
+- Rotate tunnel tokens quarterly (delete old tunnel, create new)
+- Enable Cloudflare Access for production services
+- Use email whitelisting for Access policies (not "anyone with email")
+- Review Access logs regularly: Zero Trust → Logs → Access requests
+
+**Configuration:**
+- One tunnel per environment (dev, staging, prod)
+- Use descriptive tunnel names: `company-env-location` (e.g., `acme-prod-vps1`)
+- Document tunnel ID and creation date in team wiki
+- Keep tunnel configuration in version control (infrastructure as code)
+- Set up monitoring/alerts for tunnel health
+
+**Performance:**
+- Minimize number of Public Hostnames per tunnel (better to create multiple tunnels)
+- Use Cloudflare's Argo Smart Routing for better performance (paid feature)
+- Enable Cloudflare caching for static assets
+- Monitor latency: expect 20-50ms overhead compared to direct access
+- For latency-sensitive apps, consider direct access + WAF rules instead
+
+**Docker Integration:**
+- Run cloudflared on the same Docker network as your services
+- Use container names for service URLs (not `localhost` or IP addresses)
+- Set `restart: unless-stopped` to ensure tunnel auto-starts
+- Monitor container logs: `docker logs cloudflared-tunnel --follow`
+- Resource limits: cloudflared uses ~20-50MB RAM (very lightweight)
+
+**Monitoring:**
+```bash
+# Check tunnel status
+docker ps | grep cloudflared
+docker logs cloudflared-tunnel --tail 50
+
+# Monitor connections
+# In Cloudflare Dashboard: Networks → Tunnels → [Your tunnel]
+# Should show "Healthy" with 1+ active connections
+
+# Test service accessibility
+curl -I https://yourservice.yourdomain.com
+
+# Monitor Access logs (if using Zero Trust)
+# Zero Trust Dashboard → Logs → Access requests
+# Look for failed authentications or unusual patterns
+```
+
+**Backup & Disaster Recovery:**
+```bash
+# Backup tunnel token (CRITICAL!)
+# Store in password manager (Vaultwarden)
+echo "TUNNEL_TOKEN=eyJ..." > tunnel-token.txt.gpg
+gpg -c tunnel-token.txt
+
+# Document tunnel configuration
+# Export from Cloudflare Zero Trust Dashboard
+# Networks → Tunnels → [Tunnel] → Configure → Export config
+
+# Test failover
+# Create second tunnel in different region/VPS
+# Configure with same hostnames for instant failover
+```
+
+**Cost Optimization:**
+- Cloudflare Tunnel is **free** up to 50 users
+- Zero Trust Access is **free** for up to 50 users
+- No bandwidth charges for tunnel traffic
+- Argo Smart Routing is paid ($0.10/GB)
+- For >50 users, pricing starts at $7/user/month
+
+**Common Patterns:**
+
+**Pattern 1: Simple Service Exposure**
+```yaml
+# docker-compose.yml
+cloudflared:
+  image: cloudflare/cloudflared:latest
+  container_name: cloudflared
+  restart: unless-stopped
+  environment:
+    - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
+  command: tunnel run
+```
+
+**Pattern 2: Service with Zero Trust Auth**
+- Configure in Cloudflare Dashboard (easier than API)
+- Access → Applications → Add application
+- Apply email-based OTP policy
+- Session duration: 24 hours
+
+**Pattern 3: Multiple Services, One Tunnel**
+```
+Public Hostnames (in Cloudflare Dashboard):
+- n8n.example.com → http://n8n:5678
+- vault.example.com → http://vaultwarden:80
+- webui.example.com → http://open-webui:8080
+```
+
+**Pattern 4: Development vs Production Tunnels**
+```bash
+# Development
+Tunnel name: acme-dev
+Hostnames: *.dev.example.com
+No Access policies
+
+# Production
+Tunnel name: acme-prod
+Hostnames: *.example.com
+Access policies: Email whitelist
+```
 
 </details>
 
 <details>
-<summary><b>🐍 Python Runner - Script Execution</b></summary>
+<summary><b>🐍 Python Runner - Native Python Execution for n8n</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Python Runner?
+
+Python Runner (officially **n8n Task Runners**) is a sidecar container (`n8nio/runners`) that enables **native Python execution** in n8n workflows. Unlike n8n's legacy Pyodide-based Python (WebAssembly), Python Runner uses **real Python 3.x** with full access to the standard library and third-party packages.
+
+This allows you to use powerful Python libraries like `pandas`, `numpy`, `requests`, `scikit-learn`, and many others directly in your n8n Code nodes - perfect for data processing, machine learning, API interactions, and complex transformations that would be difficult or impossible with JavaScript.
+
+**Currently in Beta:** This feature is actively being developed and will become the default Python execution method in future n8n versions.
+
+### Features
+
+- **Native Python 3.x:** Real CPython interpreter (not WebAssembly) with full standard library
+- **Rich Package Support:** Install `pandas`, `numpy`, `requests`, `scikit-learn`, `beautifulsoup4`, and hundreds more
+- **Better Performance:** Faster execution compared to Pyodide for compute-intensive tasks
+- **Sandboxed Execution:** Each task runs in an isolated environment for security
+- **Automatic Lifecycle:** Python processes spawn on-demand and shut down after idle timeout
+- **WebSocket Communication:** Fast, real-time communication between n8n and Python runner
+- **Custom Dependencies:** Add your own Python packages via custom Docker image
+- **Concurrent Execution:** Run multiple Python tasks simultaneously (configurable concurrency)
+
+### How It Works
+
+1. **n8n Main Container:** Handles workflow orchestration and UI
+2. **n8nio/runners Sidecar:** Runs Python (and JavaScript) task runners
+3. **Code Node Execution:** When a Code node with Python is triggered:
+   - n8n sends the Python code to the runner via WebSocket
+   - Runner spawns a Python process, executes the code
+   - Returns results back to n8n
+   - Python process terminates after idle timeout
+
+**Architecture:**
+```
+n8n Container ← WebSocket → n8nio/runners Container
+(Workflow Engine)             (Python + JS Runners)
+```
+
+### Initial Setup
+
+Python Runner is **already configured in AI LaunchKit** if you installed with the latest version. Verify it's enabled:
+
+#### Step 1: Check if Python Runner is Enabled
+
+```bash
+# Check n8n environment variables
+docker exec n8n env | grep N8N_RUNNERS
+
+# Should show:
+# N8N_RUNNERS_ENABLED=true
+# N8N_RUNNERS_MODE=external
+# N8N_RUNNERS_AUTH_TOKEN=<secret>
+```
+
+#### Step 2: Verify Runner Container is Running
+
+```bash
+# Check if n8nio/runners container exists
+docker ps | grep runners
+
+# Should show container named 'python-runner' or similar
+```
+
+#### Step 3: Test Python in n8n Code Node
+
+1. **Open n8n:** Navigate to `https://n8n.yourdomain.com`
+2. **Create Test Workflow:**
+   - Add **Manual Trigger** node
+   - Add **Code** node
+   - Select **Python** as language (not JavaScript)
+   
+3. **Test Code:**
+```python
+# Test native Python with standard library
+import sys
+import json
+from datetime import datetime
+
+result = {
+    "python_version": sys.version,
+    "current_time": datetime.now().isoformat(),
+    "message": "Native Python is working!"
+}
+
+return [result]
+```
+
+4. **Execute Workflow:**
+   - Click "Execute Workflow"
+   - Should see Python version and current time in output
+   - If working: Python Runner is properly configured! ✅
+
+#### Step 4: Install Additional Python Packages (Optional)
+
+To use packages beyond Python's standard library, you need to build a custom `n8nio/runners` image:
+
+**Create Custom Dockerfile:**
+```dockerfile
+# custom-runners.Dockerfile
+FROM n8nio/runners:latest
+
+# Switch to root to install packages
+USER root
+
+# Install additional Python packages
+RUN pip install --no-cache-dir \
+    pandas==2.1.4 \
+    numpy==1.26.3 \
+    requests==2.31.0 \
+    beautifulsoup4==4.12.3 \
+    scikit-learn==1.4.0 \
+    pillow==10.2.0
+
+# Switch back to non-root user
+USER node
+
+# Update allowlist for Code node (IMPORTANT!)
+# This file controls which packages can be imported
+COPY n8n-task-runners.json /usr/local/lib/node_modules/@n8n/task-runner/
+```
+
+**Create Allowlist File (`n8n-task-runners.json`):**
+```json
+{
+  "N8N_RUNNERS_PYTHON_ALLOW_BUILTIN": "*",
+  "N8N_RUNNERS_PYTHON_ALLOW_EXTERNAL": [
+    "pandas",
+    "numpy",
+    "requests",
+    "bs4",
+    "sklearn",
+    "PIL"
+  ]
+}
+```
+
+**Build and Deploy:**
+```bash
+# Build custom image
+docker build -f custom-runners.Dockerfile -t custom-runners:latest .
+
+# Update docker-compose.yml to use custom image
+# Change: image: n8nio/runners:latest
+# To: image: custom-runners:latest
+
+# Restart containers
+docker compose down
+docker compose up -d
+```
+
+### Using Python in n8n Code Nodes
+
+#### Access Input Data
+
+Python Code nodes receive data from previous nodes via the `_items` variable:
+
+```python
+# Get all input items
+items = _items
+
+# Process each item
+for item in items:
+    # Access JSON data
+    name = item["json"]["name"]
+    age = item["json"]["age"]
+    
+    # Modify or add fields
+    item["json"]["greeting"] = f"Hello, {name}! You are {age} years old."
+
+# Return modified items
+return items
+```
+
+#### Common Patterns
+
+**Pattern 1: Data Transformation with Pandas**
+```python
+import pandas as pd
+
+# Convert input items to DataFrame
+df = pd.DataFrame([item["json"] for item in _items])
+
+# Perform transformations
+df["total"] = df["price"] * df["quantity"]
+df["category"] = df["product"].str.upper()
+
+# Filter rows
+df = df[df["total"] > 100]
+
+# Convert back to n8n items
+result = []
+for _, row in df.iterrows():
+    result.append({"json": row.to_dict()})
+
+return result
+```
+
+**Pattern 2: API Requests**
+```python
+import requests
+
+results = []
+for item in _items:
+    url = item["json"]["api_url"]
+    
+    # Make HTTP request
+    response = requests.get(url, timeout=10)
+    
+    # Add response to results
+    results.append({
+        "json": {
+            "url": url,
+            "status_code": response.status_code,
+            "data": response.json()
+        }
+    })
+
+return results
+```
+
+**Pattern 3: Machine Learning Prediction**
+```python
+from sklearn.ensemble import RandomForestClassifier
+import numpy as np
+
+# Assuming model was trained elsewhere
+# Here we just demonstrate the pattern
+
+# Extract features from input
+features = []
+for item in _items:
+    features.append([
+        item["json"]["feature1"],
+        item["json"]["feature2"],
+        item["json"]["feature3"]
+    ])
+
+X = np.array(features)
+
+# Make predictions (example - you'd load a trained model)
+# predictions = model.predict(X)
+
+# For demo, just return processed data
+results = []
+for i, item in enumerate(_items):
+    results.append({
+        "json": {
+            **item["json"],
+            "processed": True,
+            "index": i
+        }
+    })
+
+return results
+```
+
+**Pattern 4: Web Scraping**
+```python
+from bs4 import BeautifulSoup
+import requests
+
+url = _items[0]["json"]["url"]
+
+# Fetch webpage
+response = requests.get(url)
+soup = BeautifulSoup(response.content, 'html.parser')
+
+# Extract data
+titles = soup.find_all('h2')
+links = soup.find_all('a')
+
+results = [{
+    "json": {
+        "url": url,
+        "title_count": len(titles),
+        "link_count": len(links),
+        "titles": [t.text.strip() for t in titles[:5]]
+    }
+}]
+
+return results
+```
+
+### n8n Integration Examples
+
+#### Example 1: CSV Data Analysis
+
+Analyze CSV data uploaded via n8n:
+
+```
+1. HTTP Request Node: Download CSV file
+2. Code Node (Python):
+```
+
+```python
+import pandas as pd
+import io
+
+# Get CSV content from previous node
+csv_content = _items[0]["binary"]["data"]
+
+# Read CSV
+df = pd.read_csv(io.StringIO(csv_content.decode('utf-8')))
+
+# Perform analysis
+summary = {
+    "total_rows": len(df),
+    "columns": list(df.columns),
+    "numeric_summary": df.describe().to_dict(),
+    "missing_values": df.isnull().sum().to_dict()
+}
+
+return [{"json": summary}]
+```
+
+#### Example 2: Batch Image Processing
+
+Process images using Pillow:
+
+```
+1. Loop Over Items Node
+2. HTTP Request: Download image
+3. Code Node (Python):
+```
+
+```python
+from PIL import Image
+import io
+import base64
+
+# Get image from previous node
+image_data = _items[0]["binary"]["data"]
+
+# Open and resize image
+img = Image.open(io.BytesIO(image_data))
+img_resized = img.resize((800, 600))
+
+# Convert to base64
+buffer = io.BytesIO()
+img_resized.save(buffer, format="PNG")
+img_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+return [{
+    "json": {
+        "original_size": img.size,
+        "new_size": img_resized.size
+    },
+    "binary": {
+        "data": img_base64
+    }
+}]
+```
+
+#### Example 3: Natural Language Processing
+
+Analyze text sentiment (requires TextBlob):
+
+```
+1. Webhook Trigger: Receive text input
+2. Code Node (Python):
+```
+
+```python
+# Note: Requires custom runner image with textblob installed
+
+from textblob import TextBlob
+
+results = []
+for item in _items:
+    text = item["json"]["text"]
+    
+    # Analyze sentiment
+    blob = TextBlob(text)
+    sentiment = blob.sentiment
+    
+    results.append({
+        "json": {
+            "text": text,
+            "polarity": sentiment.polarity,  # -1 to 1
+            "subjectivity": sentiment.subjectivity,  # 0 to 1
+            "sentiment": "positive" if sentiment.polarity > 0 else "negative"
+        }
+    })
+
+return results
+```
+
+#### Example 4: Database Operations with SQLAlchemy
+
+Direct database access (requires custom runner with sqlalchemy):
+
+```
+1. Schedule Trigger: Daily at 9 AM
+2. Code Node (Python):
+```
+
+```python
+from sqlalchemy import create_engine, text
+import pandas as pd
+
+# Database connection
+engine = create_engine("postgresql://user:pass@postgres:5432/mydb")
+
+# Query data
+query = """
+SELECT customer_id, SUM(amount) as total
+FROM orders
+WHERE order_date >= CURRENT_DATE - INTERVAL '30 days'
+GROUP BY customer_id
+ORDER BY total DESC
+LIMIT 10
+"""
+
+df = pd.read_sql(query, engine)
+
+# Convert to n8n items
+results = []
+for _, row in df.iterrows():
+    results.append({"json": row.to_dict()})
+
+return results
+```
+
+### Troubleshooting
+
+**Issue 1: Python Runner Not Starting**
+
+```bash
+# Check runner container logs
+docker logs python-runner --tail 100
+
+# Common error: "connection refused"
+# Solution: Verify N8N_RUNNERS_AUTH_TOKEN matches in both containers
+
+# Check n8n environment
+docker exec n8n env | grep N8N_RUNNERS_AUTH_TOKEN
+
+# Check runner environment
+docker exec python-runner env | grep N8N_RUNNERS_AUTH_TOKEN
+
+# Should be identical
+```
+
+**Solution:**
+- Ensure `N8N_RUNNERS_AUTH_TOKEN` is set and matches in both n8n and runners container
+- Restart both containers: `docker compose restart n8n python-runner`
+- Check network connectivity: `docker exec n8n ping python-runner`
+
+**Issue 2: "Module not found" Error**
+
+```python
+# Error: ModuleNotFoundError: No module named 'pandas'
+```
+
+**Solution:**
+- Python Runner only includes standard library by default
+- To use third-party packages, build custom runner image (see Setup Step 4)
+- Add package to allowlist in `n8n-task-runners.json`
+- Verify package is installed: `docker exec python-runner pip list | grep pandas`
+
+**Issue 3: Code Execution Timeout**
+
+```bash
+# Check timeout settings
+docker exec n8n env | grep N8N_RUNNERS_TASK_TIMEOUT
+
+# Default is 60 seconds
+```
+
+**Solution:**
+- Increase timeout for long-running tasks:
+```yaml
+# docker-compose.yml
+environment:
+  - N8N_RUNNERS_TASK_TIMEOUT=300  # 5 minutes
+```
+- Optimize Python code for performance
+- Use batch processing instead of loops where possible
+- Consider breaking task into smaller chunks
+
+**Issue 4: High Memory Usage**
+
+```bash
+# Monitor runner memory usage
+docker stats python-runner --no-stream
+
+# Check max memory allocation
+docker exec python-runner env | grep N8N_RUNNERS_MAX_OLD_SPACE_SIZE
+```
+
+**Solution:**
+- Increase memory limit in docker-compose.yml:
+```yaml
+python-runner:
+  image: n8nio/runners:latest
+  deploy:
+    resources:
+      limits:
+        memory: 2G  # Increase from default 1G
+```
+- Optimize Python code (use generators, process in batches)
+- Check for memory leaks in custom packages
+
+**Issue 5: "Permission Denied" Errors**
+
+```bash
+# Check runner user
+docker exec python-runner whoami
+
+# Should be: node (not root)
+```
+
+**Solution:**
+- Runner runs as non-root user for security
+- Don't try to install system packages at runtime
+- Build custom image with packages pre-installed as root
+- Avoid file operations requiring root permissions
+
+### Resources
+
+- **n8n Task Runners Documentation:** https://docs.n8n.io/hosting/configuration/task-runners/
+- **Task Runner Environment Variables:** https://docs.n8n.io/hosting/configuration/environment-variables/task-runners/
+- **Code Node Documentation:** https://docs.n8n.io/code/code-node/
+- **n8nio/runners Docker Image:** https://hub.docker.com/r/n8nio/runners
+- **GitHub - n8n Repository:** https://github.com/n8n-io/n8n
+- **Adding Extra Dependencies:** https://github.com/n8n-io/n8n/tree/master/docker/images/runners
+- **Python Built-in Modules:** https://docs.python.org/3/library/
+- **n8n Community Forum:** https://community.n8n.io/
+- **Task Runner Launcher:** https://github.com/n8n-io/task-runner-launcher
+
+### Best Practices
+
+**Performance:**
+- Use native Python instead of Pyodide for compute-intensive tasks
+- Process data in batches to reduce number of Python task invocations
+- Set appropriate `N8N_RUNNERS_MAX_CONCURRENCY` (default: 5) based on server resources
+- Monitor memory usage and adjust limits accordingly
+- Use generator expressions instead of list comprehensions for large datasets
+
+**Security:**
+- Never disable `N8N_RUNNERS_PYTHON_DENY_INSECURE_BUILTINS` in production
+- Only allowlist packages you actually need in `n8n-task-runners.json`
+- Keep Python packages updated in custom runner image
+- Use secrets/environment variables for sensitive data (not hardcoded in code)
+- Validate and sanitize all input data before processing
+
+**Package Management:**
+- Pin exact package versions in custom Dockerfile (e.g., `pandas==2.1.4`)
+- Test custom runner image thoroughly before deploying to production
+- Document all installed packages and their purposes
+- Regularly update packages for security patches
+- Keep custom runner image in version control
+
+**Debugging:**
+- Enable debug logging: `N8N_RUNNERS_LAUNCHER_LOG_LEVEL=debug`
+- Use `print()` statements in Python code (output appears in Code node)
+- Monitor runner logs: `docker logs python-runner --follow`
+- Test Python code locally before adding to n8n
+- Start with simple examples and gradually add complexity
+
+**Code Organization:**
+```python
+# Good: Organized and reusable
+def process_item(item):
+    """Process a single item."""
+    # Processing logic here
+    return modified_item
+
+results = [process_item(item) for item in _items]
+return results
+
+# Bad: Everything in one block
+# (Hard to read and debug)
+```
+
+**Error Handling:**
+```python
+# Always include error handling
+results = []
+for item in _items:
+    try:
+        # Processing logic
+        result = process(item)
+        results.append({"json": result})
+    except Exception as e:
+        # Log error and continue
+        results.append({
+            "json": {
+                "error": str(e),
+                "item": item["json"]
+            }
+        })
+
+return results
+```
+
+**Resource Monitoring:**
+```bash
+# Check runner health
+docker exec python-runner curl -f http://localhost:5680/healthz || echo "Runner unhealthy"
+
+# Monitor concurrent tasks
+docker logs python-runner | grep "concurrent tasks"
+
+# Memory and CPU usage
+docker stats python-runner --no-stream
+```
+
+**Typical Resource Usage:**
+- **Idle:** ~50-100MB RAM, <1% CPU
+- **Active (light tasks):** ~200-500MB RAM, 5-20% CPU
+- **Active (heavy tasks):** ~500MB-2GB RAM, 50-100% CPU
 
 </details>
 

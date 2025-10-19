@@ -982,6 +982,8 @@ If you encounter issues:
 
 ---
 
+## 📧 Services
+
 📚 **For detailed service documentation, setup guides, n8n integration examples, and troubleshooting, see [README_Services.md](README_Services.md)**
 
 ---
@@ -2696,17 +2698,14 @@ docker compose up -d n8n
    - Include any error messages
 
 **Community Resources:**
-- **Forum:** [oTTomator Think Tank](https://thinktank.ottomator.ai/c/local-ai/18)
 - **GitHub Issues:** [Report a bug](https://github.com/freddy-schuetz/ai-launchkit/issues/new)
-- **Discord:** Coming soon
 
 </details>
 
 ### Getting Help
 
 **Community Resources:**
-- **Discord**: [Join our community](https://discord.gg/ai-launchkit) *(coming soon)*
-- **Forum**: [oTTomator Think Tank](https://thinktank.ottomator.ai/c/local-ai/18)
+- **LinkedIn**: [Friedemann Schuetz at LinkedIn](https://www.linkedin.com/in/friedemann-schuetz)
 - **Issues**: [GitHub Issues](https://github.com/freddy-schuetz/ai-launchkit/issues)
 
 **Before Creating an Issue:**

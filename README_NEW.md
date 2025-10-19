@@ -15110,25 +15110,24 @@ curl -X POST http://localhost:5001/v1/chat-messages \
 </details>
 
 <details>
-<parameter name="💾 Letta - Stateful AI Agent Server</b></summary>
+<summary><b>💾 Letta - Stateful AI Agent Platform</b></summary>
 
 ### What is Letta?
 
-Letta (formerly MemGPT) is an open-source platform for building stateful AI agents with persistent, long-term memory. Unlike traditional LLMs that forget everything after a conversation ends, Letta agents maintain memory across sessions, learn from interactions, and evolve over time. Built by AI researchers from UC Berkeley, Letta introduces the concept of an "LLM Operating System" that manages memory hierarchically, similar to how computer operating systems manage RAM and storage.
+Letta (formerly MemGPT) is an advanced platform for building stateful AI agents with persistent, long-term memory that learn and evolve over time. Unlike traditional LLMs that operate in a stateless paradigm where each interaction exists in isolation, Letta agents maintain continuous memory across sessions, actively forming and updating memories based on accumulated experience. Built by AI researchers from UC Berkeley who created MemGPT, Letta provides an Agent Development Environment for visualizing and managing agent memory, reasoning steps, and tool calls. Agents continue to exist and maintain state even when your application isn't running, with computation happening on the server and all memory, context, and tool connections handled by the Letta server.
 
 ### Features
 
-- **Stateful Agents** - Agents persist across sessions with continuous memory and context
-- **Memory Hierarchy** - Self-editing memory split between in-context and out-of-context storage
-- **Memory Blocks** - Editable memory components (persona, human, archival, recall)
-- **Agent Development Environment (ADE)** - Visual interface for building, testing, and debugging agents
-- **Model-Agnostic** - Works with any LLM provider (OpenAI, Anthropic, Groq, Ollama, etc.)
-- **Tool Integration** - Agents can use external tools and APIs via function calling
-- **Multi-Agent Support** - Agents can share memory blocks and collaborate
-- **REST API + SDKs** - Python and TypeScript SDKs for integration
-- **Agent File Format (.af)** - Portable format for sharing, checkpointing, and versioning agents
-- **Perpetual Self-Improvement** - Agents can reflect on and refine their memories during idle time
-- **Production-Ready** - Built for scaling from prototypes to millions of agents
+- **Stateful Agents** - Agents with perpetual (infinite) message history that persist across sessions
+- **Advanced Memory System** - Self-editing memory blocks (persona, human, archival) that evolve over time
+- **Agent Development Environment (ADE)** - No-code UI for building, testing, and debugging agents with full visibility into memory and reasoning
+- **Model-Agnostic** - Works with any LLM (OpenAI, Anthropic, Groq, Ollama, local models)
+- **Sleep-Time Agents** - Background agents that process and refine memory during downtime
+- **Agent File (.af)** - Open file format for serializing and sharing stateful agents
+- **Multi-Agent Memory Sharing** - Single memory blocks can be attached to multiple agents
+- **Tool Integration** - Built-in support for Composio, LangChain, CrewAI tools, and MCP servers
+- **Full API & SDKs** - REST API with native Python and TypeScript SDKs
+- **Letta Cloud or Self-Hosted** - Deploy agents in the cloud or run your own server
 
 ### Initial Setup
 
@@ -15136,60 +15135,79 @@ Letta (formerly MemGPT) is an open-source platform for building stateful AI agen
 
 1. Navigate to `https://letta.yourdomain.com`
 2. **No authentication by default** - The Agent Development Environment (ADE) opens directly
-3. If you enabled password protection, use your configured credentials
-4. Setup complete - start creating agents!
+3. If you enabled password protection in `.env`, use your configured credentials
+4. You'll see the ADE interface with options to create agents, view memory, and test tools
 
 **Configure LLM Providers:**
 
-1. In the ADE, go to **Settings** → **Model Providers**
-2. Add your AI providers:
+1. In the ADE, click **Settings** → **Models**
+2. Add your AI model providers:
 
 **For Ollama (local, free):**
 ```
-Provider: Ollama
+Provider Type: Ollama
 Base URL: http://ollama:11434
-Models: Auto-detected (llama3.2, mistral, qwen)
+Models: Auto-detected (llama3.2, mistral, qwen2.5)
 ```
 
 **For OpenAI:**
 ```
-Provider: OpenAI
+Provider Type: OpenAI
 API Key: sk-...
-Models: gpt-4o, gpt-4o-mini, gpt-4-turbo
+Models: gpt-4.1, gpt-4.o-mini, o1-preview
+Embedding: text-embedding-3-small
 ```
 
 **For Anthropic:**
 ```
-Provider: Anthropic
+Provider Type: Anthropic
 API Key: sk-ant-...
-Models: claude-3-5-sonnet-20241022
+Models: claude-4.5-sonnet-20250929
 ```
 
-3. **Test connection** - Click "Test" for each provider
-4. Save configuration
+**For Groq (fast inference):**
+```
+Provider Type: Groq
+API Key: gsk-...
+Models: llama-3.1-70b-versatile, mixtral-8x7b
+```
 
-**Generate API Key (for n8n integration):**
+3. **Test connection** - Click "Test" to verify each provider
+4. **Set default model** - Choose which model to use by default for new agents
 
-1. If using Letta Cloud, get API key from `https://app.letta.com/settings`
-2. If self-hosted without password protection, API key not required
-3. If self-hosted with password protection, use your password as API key
-4. Save securely for use in n8n
+**Create Your First Agent:**
+
+1. Click **Create Agent** in the ADE
+2. Configure agent memory blocks:
+   - **Persona Block**: "My name is Sam, a helpful AI assistant..."
+   - **Human Block**: "The human's name is [User]..."
+3. Select your LLM model and embedding model
+4. Add tools (optional): web_search, calculator, send_email, etc.
+5. Click **Create** - your stateful agent is now running!
+6. Send a message to test - agent will remember this conversation forever
+
+**Generate API Key (for n8n/external integration):**
+
+1. **If using Letta Cloud:** Get API key from `https://app.letta.com/settings`
+2. **If self-hosted without password:** No API key required, use base URL directly
+3. **If self-hosted with password:** Use your configured password as the token
+4. Save this key securely for use in n8n workflows
 
 ### n8n Integration Setup
 
 **Create Letta Credentials in n8n:**
 
-Letta does not have a native n8n node. Use HTTP Request nodes with optional Bearer token authentication.
+Letta does not have a native n8n node. Use HTTP Request nodes with the Letta REST API.
 
-1. In n8n, create credentials (if using authentication):
+1. In n8n, create credentials (only if using authentication):
    - Type: **Header Auth**
    - Name: **Letta API**
-   - Name (Header): `Authorization`
-   - Value: `Bearer YOUR_LETTA_API_KEY` (or just password if self-hosted)
+   - Header Name: `Authorization`
+   - Value: `Bearer YOUR_LETTA_API_KEY` (for Letta Cloud) or just `YOUR_PASSWORD` (for self-hosted with password)
 
-2. For self-hosted without auth, no credentials needed
+2. For self-hosted without authentication, no credentials needed
 
-**Internal URL:** `http://letta:8283` (Letta server)  
+**Internal URL:** `http://letta:8283`  
 **External URL:** `https://letta.yourdomain.com`
 **ADE Web UI:** `https://letta.yourdomain.com` (Agent Development Environment)
 
@@ -15221,44 +15239,65 @@ Letta agents manage memory through editable "memory blocks":
 
 ### Example Workflows
 
-#### Example 1: Personal Assistant with Persistent Memory
+#### Example 1: Create Stateful Agent via n8n
 
-Create an agent that remembers user preferences across sessions:
+Create a persistent agent that remembers all past conversations:
 
 ```javascript
-// 1. Create Agent via n8n (or use ADE first, then get agent_id)
+// n8n Workflow: Create Letta Agent
 
-// HTTP Request - Create Agent
+// 1. HTTP Request Node - Create Agent
 Method: POST
 URL: http://letta:8283/v1/agents
+Authentication: Use Letta credentials (if password protected)
 Headers:
   Content-Type: application/json
 Body:
 {
-  "name": "Personal Assistant",
-  "model": "openai/gpt-4o-mini",
+  "name": "Customer Support Agent",
+  "model": "openai/gpt-4.1",
   "embedding": "openai/text-embedding-3-small",
   "memory_blocks": [
     {
       "label": "human",
-      "value": "Name: Unknown\nPreferences: Not yet learned"
+      "value": "Customer name: New Customer\nAccount tier: Free\nPreferences: Unknown"
     },
     {
       "label": "persona",
-      "value": "I am a helpful personal assistant. I learn about the user's preferences and remember them across conversations."
+      "value": "I am a helpful customer support agent. I remember all past interactions and learn about customer preferences over time. I maintain professional, friendly communication."
     }
   ],
-  "tools": ["send_message", "core_memory_append", "core_memory_replace"]
+  "tools": ["send_message", "core_memory_append", "core_memory_replace", "archival_memory_insert", "conversation_search"]
 }
 
-// Response includes agent_id: "agent-abc123..."
-// Save this for future interactions
+// Response includes agent.id
+// Example: "agent-d9be2c54-1234-5678-9abc-def012345678"
 
-// 2. Webhook Trigger - User message
+// 2. PostgreSQL Node - Save Agent ID (optional)
+Operation: Insert
+Table: letta_agents
+Data:
+  agent_id: {{ $json.id }}
+  customer_email: {{ $('Trigger').json.email }}
+  created_at: {{ new Date().toISOString() }}
 
-// 3. HTTP Request - Send Message to Agent
+// Agent is now created and will persist indefinitely
+```
+
+#### Example 2: Chat with Stateful Agent
+
+Interact with a persistent agent that remembers context across sessions:
+
+```javascript
+// n8n Workflow: Chat with Letta Agent
+
+// 1. Webhook Trigger - Receive user message
+POST /webhook/letta-chat
+Body: { "agent_id": "agent-...", "message": "Hello, do you remember me?" }
+
+// 2. HTTP Request Node - Send Message to Agent
 Method: POST
-URL: http://letta:8283/v1/agents/{{$('Create Agent').json.id}}/messages
+URL: http://letta:8283/v1/agents/{{ $json.agent_id }}/messages
 Headers:
   Content-Type: application/json
 Body:
@@ -15266,179 +15305,345 @@ Body:
   "messages": [
     {
       "role": "user",
-      "content": "{{$json.message}}"
+      "content": "{{ $json.message }}"
     }
   ],
   "stream": false
 }
 
-// 4. Code Node - Process Agent Response
-const response = $json;
-const messages = response.messages;
+// 3. Code Node - Extract Response
+const response = $input.first().json;
 
-// Extract agent's reply and any memory edits
-const agentReply = messages.find(m => m.role === 'assistant')?.content || '';
-const memoryEdits = messages.filter(m => m.role === 'tool');
+// Find assistant message (agent's reply to user)
+const assistantMessage = response.messages.find(
+  msg => msg.message_type === 'assistant_message'
+);
 
-// Log memory changes for visibility
-if (memoryEdits.length > 0) {
-  console.log('Agent updated memory:', memoryEdits);
-}
+// Find reasoning messages (agent's inner thoughts)
+const reasoning = response.messages.filter(
+  msg => msg.message_type === 'reasoning_message'
+);
+
+// Find tool calls (memory edits, searches)
+const toolCalls = response.messages.filter(
+  msg => msg.message_type === 'tool_call_message'
+);
 
 return {
   json: {
-    reply: agentReply,
-    agent_id: $('Send Message').json.id,
-    memory_updates: memoryEdits.length,
+    agent_reply: assistantMessage?.content || "No response",
+    agent_thoughts: reasoning.map(r => r.content),
+    memory_edits: toolCalls.map(t => ({
+      tool: t.tool_call?.name,
+      args: t.tool_call?.arguments
+    })),
     usage: response.usage
   }
 };
 
-// 5. Respond to User
-Response: {{$json.reply}}
-
-// Agent will automatically:
-// - Update "human" memory block with learned information
-// - Remember this across all future conversations
-// - No context window limitations!
+// 4. Respond to User Node
+Response:
+  reply: {{ $json.agent_reply }}
+  
+// The agent automatically saved all context - next time user chats,
+// agent will remember this entire conversation
 ```
 
-#### Example 2: Customer Support with Conversation History
+#### Example 3: Agent with Custom Tools
 
-Build a support agent that can search past conversations:
+Create an agent with access to external APIs and tools:
 
 ```javascript
-// Prerequisite: Create agent in ADE with these tools:
-// - send_message
-// - conversation_search (search recall memory)
-// - archival_memory_search (search knowledge base)
-// - core_memory_append/replace
+// n8n Workflow: Letta Agent with Custom Tools
 
-// 1. Webhook Trigger - Support ticket
-
-// 2. Code Node - Check if returning customer
-const customerId = $json.customer_id;
-const isReturning = customerId !== null;
-
-return {
-  json: {
-    customer_id: customerId,
-    message: $json.message,
-    is_returning: isReturning
-  }
-};
-
-// 3. IF Node - Returning customer?
-Condition: {{$json.is_returning}} === true
-
-// Branch: Returning customer
-// 4a. HTTP Request - Send message (agent will auto-search history)
+// 1. HTTP Request - Create Agent with Tools
 Method: POST
-URL: http://letta:8283/v1/agents/support-agent-id/messages
+URL: http://letta:8283/v1/agents
 Body:
 {
-  "messages": [
+  "name": "Research Assistant",
+  "model": "anthropic/claude-4.5-sonnet-20250929",
+  "embedding": "openai/text-embedding-3-small",
+  "memory_blocks": [
     {
-      "role": "system",
-      "content": "This is customer {{$json.customer_id}}. Search conversation history if relevant."
+      "label": "human",
+      "value": "Researcher working on AI safety"
     },
     {
-      "role": "user",
-      "content": "{{$json.message}}"
+      "label": "persona",
+      "value": "I am a research assistant specialized in AI safety. I can search the web, read papers, and maintain comprehensive notes about research topics."
     }
+  ],
+  "tools": [
+    "send_message",
+    "core_memory_replace",
+    "archival_memory_insert",
+    "archival_memory_search",
+    "web_search",
+    "read_arxiv_paper",
+    "save_research_notes"
   ]
 }
 
-// Agent will automatically:
-// 1. Recognize it should search past conversations
-// 2. Use conversation_search tool to find relevant history
-// 3. Incorporate past context into response
-// 4. Update memory with new information
+// Note: Custom tools (web_search, read_arxiv_paper, save_research_notes)
+// must be registered in Letta server first
 
-// Branch: New customer
-// 4b. HTTP Request - Fresh conversation
-// Agent treats as new interaction
+// 2. User sends: "Find recent papers on Claude 4 and summarize key findings"
 
-// 5. Extract Response
-// ... (similar to Example 1)
+// 3. Agent will:
+// - Use web_search tool to find papers
+// - Use read_arxiv_paper to extract content
+// - Save findings to archival_memory_insert
+// - Reply with summary using send_message
+
+// 4. Later, user asks: "What did we find about Claude 4?"
+
+// 5. Agent will:
+// - Use archival_memory_search to retrieve past findings
+// - Provide comprehensive answer based on saved research
+// - No need to search web again - it's in agent's memory
 ```
 
-#### Example 3: Multi-Agent Collaboration
+#### Example 4: Multi-Agent with Shared Memory
 
-Create multiple agents that share memory:
+Create multiple agents sharing the same memory block:
 
 ```javascript
-// Concept: Create multiple agents with shared memory block
+// n8n Workflow: Multi-Agent System
 
-// 1. Create Shared Memory Block
+// 1. HTTP Request - Create Shared Memory Block
 Method: POST
 URL: http://letta:8283/v1/blocks
 Body:
 {
-  "label": "project_context",
-  "value": "Project: AI LaunchKit Documentation\nStatus: In Progress",
-  "limit": 2000
+  "label": "project_knowledge",
+  "value": "Project: AI LaunchKit\nStatus: Active\nTeam members: Alice, Bob\nKey decisions: ..."
 }
-// Save block_id for both agents
 
-// 2. Create Agent 1 - Research Agent
+// Response: { "id": "block-shared-123" }
+
+// 2. HTTP Request - Create Agent 1 (Developer)
 Method: POST
 URL: http://letta:8283/v1/agents
 Body:
 {
-  "name": "Research Agent",
-  "model": "openai/gpt-4o",
+  "name": "Developer Agent",
+  "model": "openai/gpt-4.1",
   "memory_blocks": [
-    {"label": "persona", "value": "I research topics and gather information."},
-    {"block_id": "{{$('Create Block').json.id}}"} // Shared block
+    { "label": "persona", "value": "I am a developer agent focused on code implementation." },
+    { "id": "block-shared-123" }  // Reference shared block
   ],
-  "tools": ["web_search", "archival_memory_insert", "send_message"]
+  "tools": ["send_message", "core_memory_replace", "run_code", "git_commit"]
 }
 
-// 3. Create Agent 2 - Writing Agent  
+// 3. HTTP Request - Create Agent 2 (Product Manager)
 Method: POST
 URL: http://letta:8283/v1/agents
 Body:
 {
-  "name": "Writing Agent",
-  "model": "openai/gpt-4o",
+  "name": "PM Agent",
+  "model": "openai/gpt-4.1",
   "memory_blocks": [
-    {"label": "persona", "value": "I write documentation based on research."},
-    {"block_id": "{{$('Create Block').json.id}}"} // Same shared block!
+    { "label": "persona", "value": "I am a product manager agent focused on requirements and planning." },
+    { "id": "block-shared-123" }  // Same shared block
   ],
-  "tools": ["send_message", "core_memory_replace"]
+  "tools": ["send_message", "core_memory_replace", "create_task", "update_roadmap"]
 }
 
-// Now both agents share "project_context" memory
-// When Research Agent updates it, Writing Agent sees changes!
-
-// 4. Workflow: Research → Write
-// 4a. Send task to Research Agent
-// 4b. Research Agent updates shared memory
-// 4c. Send writing task to Writing Agent
-// 4d. Writing Agent reads updated shared memory
+// Now both agents share the "project_knowledge" memory block
+// When one agent updates it, the other agent sees the changes
+// Perfect for coordinated multi-agent workflows
 ```
 
-#### Example 4: Agent File Export/Import
+#### Example 5: Export and Import Agents (.af files)
 
-Checkpoint and share agent configurations:
+Checkpoint agents and move them between servers:
+
+```javascript
+// n8n Workflow: Backup and Restore Agents
+
+// 1. HTTP Request - Export Agent to .af file
+Method: GET
+URL: http://letta:8283/v1/agents/{{ $json.agent_id }}/export
+Response Format: File
+
+// Save the .af file to storage (Google Drive, S3, etc.)
+
+// 2. Later: Import Agent from .af file
+Method: POST
+URL: http://letta:8283/v1/agents/import
+Headers:
+  Content-Type: multipart/form-data
+Body:
+  file: {{ $binary.data }}
+
+// Agent is restored with complete state:
+// - All memory blocks
+// - Full conversation history
+// - Tool configurations
+// - Exact same personality
+
+// Use cases:
+// - Backup critical agents
+// - Move agents between Letta Cloud and self-hosted
+// - Version control for agent development
+// - Share agents with team members
+```
+
+### Troubleshooting
+
+**Issue 1: Letta Server Won't Start**
 
 ```bash
-# 1. Export agent to .af file
-curl -X GET http://letta:8283/v1/agents/{agent_id}/export \
-  > my-agent.af
+# Check Letta container logs
+docker logs letta --tail 100
 
-# 2. Import agent from .af file
-curl -X POST http://letta:8283/v1/agents/import \
-  -H "Content-Type: application/json" \
-  -d @my-agent.af
+# Common errors:
+# 1. "Could not connect to PostgreSQL"
+# Solution: Ensure PostgreSQL is running
+docker ps | grep postgres
 
-# Use cases:
-# - Version control agents in Git
-# - Share agent configurations with team
-# - Backup agent states
-# - Move agents between Letta servers
-# - Distribute pre-trained agents
+# 2. "Invalid model configuration"
+# Solution: Check .env file has valid model endpoints
+grep LETTA_ .env
+
+# 3. Port 8283 already in use
+# Solution: Change port in docker-compose.yml or kill process using port
+sudo lsof -i :8283
+docker compose restart letta
+```
+
+**Issue 2: Agent Not Remembering Past Conversations**
+
+```bash
+# Check if agent has proper memory blocks
+curl http://letta:8283/v1/agents/{agent_id} | jq '.memory_blocks'
+
+# Verify PostgreSQL persistence is enabled
+docker exec letta env | grep DATABASE_URL
+
+# Check if agent state is being saved
+curl http://letta:8283/v1/agents/{agent_id}/messages | jq '.messages | length'
+# Should show all past messages
+
+# If memory is lost: Agent was likely recreated instead of reused
+# Always save agent_id and reuse the same agent for persistent memory
+```
+
+**Issue 3: API Returns 401 Unauthorized**
+
+```bash
+# For self-hosted with password:
+# Verify password is correct
+grep LETTA_SERVER_PASS .env
+
+# Test authentication
+curl -H "Authorization: Bearer YOUR_PASSWORD" \
+  http://letta:8283/v1/agents
+
+# For Letta Cloud:
+# Verify API key is valid
+curl -H "Authorization: Bearer LETTA_API_KEY" \
+  https://api.letta.com/v1/agents
+```
+
+**Issue 4: Agent Responses are Slow**
+
+```bash
+# Check which LLM model is being used
+# Faster models: gpt-4.o-mini, claude-haiku, llama-3.1-8b (via Groq)
+# Slower models: o1-preview, gpt-4, claude-opus
+
+# Check if using local Ollama
+docker exec letta curl http://ollama:11434/api/tags
+
+# For faster inference: Use Groq with Llama models
+# In ADE: Settings → Models → Add Groq provider
+
+# Monitor token usage
+docker logs letta | grep "tokens"
+# High token counts = slower responses
+```
+
+**Issue 5: Memory Blocks Not Updating**
+
+```bash
+# Verify agent has the correct tools enabled
+curl http://letta:8283/v1/agents/{agent_id} | jq '.tools'
+
+# Should include: core_memory_append, core_memory_replace
+
+# Check if agent is actually using the tools
+curl http://letta:8283/v1/agents/{agent_id}/messages | jq '.messages[] | select(.message_type=="tool_call_message")'
+
+# If no tool calls: Agent may need better prompting or different model
+# Try using a more capable model (gpt-4.1, claude-4.5-sonnet)
+```
+
+**Issue 6: Can't Access Agent Development Environment**
+
+```bash
+# Check if Letta is running
+docker ps | grep letta
+
+# Test ADE endpoint
+curl http://localhost:8283/
+# Should return HTML
+
+# Check Caddy proxy configuration
+docker exec caddy cat /etc/caddy/Caddyfile | grep letta
+
+# Restart both services
+docker compose restart letta caddy
+```
+
+### Resources
+
+- **Official Website:** https://www.letta.com
+- **Documentation:** https://docs.letta.com
+- **GitHub Repository:** https://github.com/letta-ai/letta
+- **Agent Development Environment (ADE):** https://docs.letta.com/ade
+- **API Reference:** https://docs.letta.com/api-reference
+- **Python SDK:** https://github.com/letta-ai/letta-python
+- **TypeScript SDK:** https://github.com/letta-ai/letta-node
+- **Agent File Format (.af):** https://github.com/letta-ai/agent-file
+- **Letta Cloud (Hosted):** https://app.letta.com
+- **Quickstart Tutorial:** https://docs.letta.com/quickstart
+- **Memory System Guide:** https://docs.letta.com/guides/agents/memory
+- **Tool Integration:** https://docs.letta.com/guides/agents/tools
+- **Discord Community:** https://discord.gg/letta-ai
+- **Blog (Stateful Agents):** https://www.letta.com/blog/stateful-agents
+- **Research Paper (MemGPT):** https://arxiv.org/abs/2310.08560
+
+### Key Concepts
+
+**Stateful vs Stateless:**
+- Traditional LLMs: Stateless, forget after session ends
+- Letta Agents: Stateful, permanent memory across all sessions
+
+**Memory Hierarchy:**
+- Core Memory: Always in context window (persona, human blocks)
+- Archival Memory: Infinite storage, searchable with embeddings
+- Recall Memory: All past conversations, searchable database
+
+**Agent Persistence:**
+- Agents exist permanently on Letta server
+- All state automatically saved to PostgreSQL
+- Agents continue to exist even when your app isn't running
+
+**Tool-Based Memory Management:**
+- Agents control their own memory via tools
+- core_memory_append: Add to memory blocks
+- core_memory_replace: Update memory blocks
+- archival_memory_insert: Save to long-term storage
+- conversation_search: Search past messages
+
+**Model Context Protocol (MCP) Support:**
+- Connect to MCP servers for pre-built tools
+- Use standardized tool libraries
+- Seamless integration with MCP ecosystem
+
+</details>
 ```
 
 ### Memory Management Best Practices
@@ -39625,21 +39830,1154 @@ docker compose up -d mailpit mailserver snappymail
 <details>
 <summary><b>🐳 Docker & Network Issues</b></summary>
 
-<!-- TODO: Content will be added -->
+### VPN Conflicts
+
+**Symptoms:**
+- Unable to download Docker images during installation
+- "no route to host" errors
+- Timeout errors when pulling images
+
+**Solution:**
+```bash
+# Temporarily disable VPN during installation/updates
+sudo systemctl stop openvpn
+# Or disconnect VPN in your VPN client
+
+# Perform installation or update
+./install.sh
+# or
+./update.sh
+
+# Re-enable VPN after completion
+```
+
+### Container Name Conflicts
+
+**Symptoms:**
+- "Container name already in use" error during installation
+- Unable to start new services
+
+**Solution:**
+```bash
+# Stop and remove conflicting container
+docker stop [container-name]
+docker rm [container-name]
+
+# Or remove all stopped containers
+docker container prune
+
+# Restart the installation/service
+docker compose up -d [service-name]
+```
+
+### Port Already in Use
+
+**Symptoms:**
+- "Bind: address already in use" error
+- Service fails to start
+- Docker logs show port conflict
+
+**Solution:**
+```bash
+# Find what's using the port
+sudo lsof -i :PORT_NUMBER
+
+# Example: Check port 5678
+sudo lsof -i :5678
+
+# Kill the process if it's not needed
+sudo kill -9 [PID]
+
+# Or change port in .env file
+nano .env
+# Find the service port variable and change it
+# Example: N8N_PORT=5678 → N8N_PORT=5679
+
+# Restart services
+docker compose down
+docker compose up -d
+```
+
+### Network Communication Issues
+
+**Symptoms:**
+- Services can't communicate with each other internally
+- "no such host" errors in logs
+- "connection refused" between containers
+
+**Diagnosis:**
+```bash
+# 1. Check if containers are on same network
+docker network inspect ai-launchkit_default
+
+# Should show all service containers in "Containers" section
+
+# 2. Test connectivity between containers
+docker exec n8n ping postgres
+docker exec n8n ping supabase-db
+docker exec caddy ping n8n
+
+# 3. Check if service is actually listening
+docker exec postgres netstat -tlnp | grep 5432
+docker exec n8n netstat -tlnp | grep 5678
+```
+
+**Solutions:**
+```bash
+# Solution 1: Recreate Docker network
+docker compose down
+docker network prune
+docker compose up -d
+
+# Solution 2: Verify internal DNS resolution
+# Use container names (not localhost or 127.0.0.1)
+# Correct: http://postgres:5432
+# Wrong: http://localhost:5432
+
+# Solution 3: Check firewall rules
+sudo ufw status
+# Ensure Docker networks are allowed
+
+# Solution 4: Restart Docker daemon
+sudo systemctl restart docker
+docker compose up -d
+```
+
+### Docker Compose Issues
+
+**Symptoms:**
+- "docker compose: command not found"
+- Services won't start after update
+- Unexpected service behavior
+
+**Solutions:**
+```bash
+# Check Docker Compose version
+docker compose version
+
+# Should be v2.x.x or higher
+
+# If using old version (docker-compose with hyphen), update:
+sudo apt update
+sudo apt install docker-compose-plugin
+
+# Validate docker-compose.yml
+docker compose config
+
+# If validation fails, check for syntax errors in docker-compose.yml
+
+# Force recreate all containers
+docker compose up -d --force-recreate
+
+# Pull latest images
+docker compose pull
+docker compose up -d
+```
+
+### Network Performance Issues
+
+**Symptoms:**
+- Slow response times between services
+- Timeouts on internal API calls
+- High latency in Docker network
+
+**Diagnosis:**
+```bash
+# Test network latency between containers
+docker exec n8n ping -c 10 postgres
+
+# Check for packet loss and latency
+
+# Monitor network I/O
+docker stats --no-stream
+
+# Look at "NET I/O" column for unusual traffic
+```
+
+**Solutions:**
+```bash
+# Solution 1: Restart problematic containers
+docker compose restart [service-name]
+
+# Solution 2: Check MTU settings
+docker network inspect ai-launchkit_default | grep MTU
+
+# Solution 3: Reduce DNS lookup time
+# Add to docker-compose.yml for services with issues:
+dns:
+  - 8.8.8.8
+  - 8.8.4.4
+
+# Solution 4: Clear DNS cache
+docker compose down
+docker compose up -d
+```
+
+### Docker Storage Issues
+
+**Symptoms:**
+- "no space left on device" errors
+- Docker can't pull images
+- Container logs show disk full errors
+
+**Solutions:**
+```bash
+# Check Docker disk usage
+docker system df
+
+# Remove unused data (careful!)
+docker system prune -a
+# WARNING: This removes all unused containers, networks, images
+
+# Safer approach - remove specific items:
+
+# Remove stopped containers
+docker container prune
+
+# Remove unused images
+docker image prune -a
+
+# Remove unused volumes (careful with data!)
+docker volume prune
+
+# Remove unused networks
+docker network prune
+
+# Move Docker data to larger disk (if needed)
+# See: https://docs.docker.com/config/daemon/
+```
+
+### Docker Daemon Issues
+
+**Symptoms:**
+- Cannot connect to Docker daemon
+- "permission denied" errors
+- Docker commands fail
+
+**Solutions:**
+```bash
+# Check if Docker is running
+sudo systemctl status docker
+
+# Start Docker if stopped
+sudo systemctl start docker
+
+# Enable Docker to start on boot
+sudo systemctl enable docker
+
+# Add your user to docker group (to avoid sudo)
+sudo usermod -aG docker $USER
+
+# Log out and back in for group changes to take effect
+
+# Test Docker without sudo
+docker ps
+
+# If still issues, restart Docker daemon
+sudo systemctl restart docker
+```
 
 </details>
 
 <details>
 <summary><b>⚡ Performance Issues</b></summary>
 
-<!-- TODO: Content will be added -->
+### High Memory Usage
+
+**Symptoms:**
+- System running slow
+- OOMKiller messages in logs
+- Services crashing randomly
+- "out of memory" errors
+
+**Diagnosis:**
+```bash
+# Check overall system memory
+free -h
+
+# Output example:
+#               total        used        free      shared  buff/cache   available
+# Mem:           3.8Gi       3.2Gi       124Mi        28Mi       481Mi       340Mi
+
+# If "available" is < 500MB, you have memory pressure
+
+# Check which containers use most memory
+docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}"
+
+# Check system logs for OOM events
+sudo dmesg | grep -i "out of memory"
+sudo journalctl -k | grep -i "killed process"
+```
+
+**Solutions:**
+
+**1. Add Swap Space (Temporary Solution):**
+```bash
+# Create 4GB swap file
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Verify swap is active
+free -h
+
+# Make swap permanent (add to /etc/fstab)
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Adjust swappiness (optional - makes system prefer RAM)
+sudo sysctl vm.swappiness=10
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+```
+
+**2. Reduce Running Services:**
+```bash
+# Stop memory-heavy services you don't use
+docker compose stop comfyui     # ~1-2GB
+docker compose stop dify        # ~1.5GB
+docker compose stop calcom      # ~800MB
+docker compose stop supabase    # ~1GB (all components)
+
+# List services by memory usage
+docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}" | sort -k2 -hr
+```
+
+**3. Optimize n8n Workers:**
+```bash
+# Edit .env file
+nano .env
+
+# Reduce concurrent workers (default: 10)
+N8N_CONCURRENCY_PRODUCTION_LIMIT=3
+
+# Restart n8n
+docker compose restart n8n
+
+# This reduces n8n memory but slows down parallel workflows
+```
+
+**4. Limit Container Memory:**
+```bash
+# Edit docker-compose.yml to add memory limits
+# Example for n8n:
+services:
+  n8n:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+# Apply changes
+docker compose up -d
+```
+
+**5. Upgrade VPS (Permanent Solution):**
+- Minimum recommended: 4GB RAM
+- Comfortable setup: 8GB RAM
+- Full stack (all services): 16GB+ RAM
+
+### High CPU Usage
+
+**Symptoms:**
+- Server sluggish/unresponsive
+- Websites loading slowly
+- High load average (>4.0 on 4-core system)
+
+**Diagnosis:**
+```bash
+# Check CPU usage
+htop
+# Press F4 to filter by high CPU processes
+# Press q to quit
+
+# Check load average
+uptime
+# Output: load average: 2.15, 1.89, 1.67
+# If load > CPU cores, system is overloaded
+
+# Check container CPU usage
+docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}"
+
+# Identify CPU-heavy processes
+docker top [container-name]
+```
+
+**Solutions:**
+
+**1. Limit Container CPU:**
+```bash
+# Edit docker-compose.yml
+services:
+  comfyui:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'  # Limit to 2 CPU cores
+
+# Apply changes
+docker compose up -d
+```
+
+**2. Optimize AI Services:**
+```bash
+# For Ollama - reduce concurrent requests
+# In .env:
+OLLAMA_MAX_LOADED_MODELS=1  # Default: 3
+OLLAMA_NUM_PARALLEL=1       # Default: 4
+
+# For ComfyUI - reduce batch sizes in workflows
+
+# For Open WebUI - limit concurrent requests
+WEBUI_PARALLEL_REQUESTS=2   # Default: 4
+
+docker compose restart ollama open-webui comfyui
+```
+
+**3. Stop Resource-Heavy Services:**
+```bash
+# Stop AI services when not in use
+docker compose stop ollama comfyui flowise
+
+# Restart when needed
+docker compose start ollama comfyui flowise
+```
+
+**4. Check for Runaway Processes:**
+```bash
+# Find processes using >90% CPU
+docker stats --no-stream | awk '$3 > 90.0 {print $1, $2, $3}'
+
+# Check logs for errors causing high CPU
+docker logs [container-name] --tail 200
+
+# Restart problematic container
+docker compose restart [container-name]
+```
+
+### Slow Database Performance
+
+**Symptoms:**
+- Queries taking long time
+- Applications timing out
+- High database CPU/memory usage
+
+**Diagnosis:**
+```bash
+# Check PostgreSQL performance
+docker exec postgres psql -U postgres -c "SELECT datname, pg_size_pretty(pg_database_size(datname)) FROM pg_database;"
+
+# Check active connections
+docker exec postgres psql -U postgres -c "SELECT count(*) FROM pg_stat_activity;"
+
+# Check slow queries (requires pg_stat_statements)
+docker exec postgres psql -U postgres -d [database_name] -c "
+SELECT query, calls, total_exec_time, mean_exec_time 
+FROM pg_stat_statements 
+ORDER BY mean_exec_time DESC 
+LIMIT 10;"
+
+# Monitor PostgreSQL logs
+docker logs postgres --tail 100 | grep "duration"
+```
+
+**Solutions:**
+
+**1. Optimize PostgreSQL Configuration:**
+```bash
+# Edit PostgreSQL config for better performance
+# In docker-compose.yml, add:
+services:
+  postgres:
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB      # 25% of RAM
+      - -c
+      - effective_cache_size=1GB  # 50-75% of RAM
+      - -c
+      - max_connections=100
+
+docker compose up -d postgres
+```
+
+**2. Create Database Indexes:**
+```bash
+# Connect to database
+docker exec -it postgres psql -U postgres -d [database_name]
+
+# Create indexes on frequently queried columns
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_posts_created_at ON posts(created_at DESC);
+
+# Analyze table statistics
+ANALYZE users;
+ANALYZE posts;
+```
+
+**3. Vacuum Database:**
+```bash
+# Reclaim storage and update statistics
+docker exec postgres psql -U postgres -d [database_name] -c "VACUUM ANALYZE;"
+
+# For aggressive cleanup
+docker exec postgres psql -U postgres -d [database_name] -c "VACUUM FULL ANALYZE;"
+```
+
+**4. Monitor Connection Pool:**
+```bash
+# Check for connection leaks
+docker exec postgres psql -U postgres -c "
+SELECT pid, usename, application_name, client_addr, state, query_start 
+FROM pg_stat_activity 
+WHERE state != 'idle';"
+
+# Kill idle connections older than 1 hour
+docker exec postgres psql -U postgres -c "
+SELECT pg_terminate_backend(pid) 
+FROM pg_stat_activity 
+WHERE state = 'idle' 
+AND now() - query_start > interval '1 hour';"
+```
+
+### Slow Disk I/O
+
+**Symptoms:**
+- High disk wait times
+- Slow container startup
+- Database write delays
+
+**Diagnosis:**
+```bash
+# Check disk I/O
+iostat -x 1 5
+# Look at %util column - if >80%, disk is bottleneck
+
+# Check Docker disk usage
+docker system df -v
+
+# Check which containers use most disk
+docker ps -s --format "table {{.Names}}\t{{.Size}}"
+
+# Monitor disk I/O per container
+docker stats --format "table {{.Name}}\t{{.BlockIO}}"
+```
+
+**Solutions:**
+
+**1. Move to Faster Storage:**
+- Use SSD instead of HDD
+- Use NVMe if available
+- Check VPS provider's disk performance specs
+
+**2. Optimize Docker Storage:**
+```bash
+# Clean up unused data
+docker system prune -a --volumes
+
+# Optimize log size (edit docker-compose.yml)
+services:
+  n8n:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+docker compose up -d
+```
+
+**3. Optimize Database Storage:**
+```bash
+# For PostgreSQL - reduce WAL size
+# In docker-compose.yml:
+services:
+  postgres:
+    command:
+      - postgres
+      - -c
+      - wal_buffers=16MB
+      - -c
+      - checkpoint_completion_target=0.9
+
+# Restart PostgreSQL
+docker compose restart postgres
+```
+
+**4. Use tmpfs for Temporary Data:**
+```bash
+# Mount temp directories in RAM (docker-compose.yml)
+services:
+  n8n:
+    tmpfs:
+      - /tmp
+      - /data/temp
+
+docker compose up -d n8n
+```
+
+### Network Latency Issues
+
+**Symptoms:**
+- Slow API responses
+- Timeouts on service-to-service calls
+- High ping times internally
+
+**Diagnosis:**
+```bash
+# Test internal network latency
+docker exec n8n ping -c 10 postgres
+docker exec n8n ping -c 10 supabase-db
+
+# Check for packet loss (should be 0%)
+
+# Test DNS resolution speed
+time docker exec n8n getent hosts postgres
+
+# Monitor network throughput
+docker stats --format "table {{.Name}}\t{{.NetIO}}"
+```
+
+**Solutions:**
+```bash
+# 1. Optimize DNS
+# Add to docker-compose.yml:
+services:
+  n8n:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
+# 2. Increase network buffer sizes
+# In /etc/sysctl.conf:
+net.core.rmem_max=134217728
+net.core.wmem_max=134217728
+net.ipv4.tcp_rmem=4096 87380 67108864
+net.ipv4.tcp_wmem=4096 65536 67108864
+
+sudo sysctl -p
+
+# 3. Restart Docker network
+docker compose down
+docker network prune
+docker compose up -d
+```
+
+### General Performance Tips
+
+**1. Monitor System Resources Regularly:**
+```bash
+# Create monitoring script (~/check_resources.sh)
+#!/bin/bash
+echo "=== System Resources ==="
+free -h
+echo ""
+echo "=== Load Average ==="
+uptime
+echo ""
+echo "=== Top Memory Containers ==="
+docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}" | sort -k2 -hr | head -6
+echo ""
+echo "=== Top CPU Containers ==="
+docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}" | sort -k2 -hr | head -6
+
+# Make executable
+chmod +x ~/check_resources.sh
+
+# Run regularly
+~/check_resources.sh
+```
+
+**2. Set Up Grafana Monitoring:**
+- Use the included Grafana service
+- Monitor CPU, memory, disk, network
+- Set up alerts for high resource usage
+
+**3. Optimize Service Startup Order:**
+- Start core services first (PostgreSQL, Redis)
+- Then dependent services (n8n, Supabase)
+- Finally, optional services (ComfyUI, etc.)
+
+**4. Regular Maintenance:**
+```bash
+# Weekly cleanup
+docker system prune -a
+
+# Monthly database vacuum
+docker exec postgres psql -U postgres -d [database] -c "VACUUM ANALYZE;"
+
+# Monitor log sizes
+du -sh /var/lib/docker/containers/*/*.log | sort -hr | head -10
+```
 
 </details>
 
 <details>
 <summary><b>⚠️ General Troubleshooting</b></summary>
 
-<!-- TODO: Content will be added -->
+### Server Requirements Check
+
+Before troubleshooting, ensure your server meets the minimum requirements:
+
+```bash
+# Check OS version
+lsb_release -a
+# Should show: Ubuntu 24.04 LTS (64-bit)
+
+# Check RAM
+free -h
+# Minimum: 4GB total RAM
+# Recommended: 8GB+ for multiple services
+
+# Check disk space
+df -h
+# Minimum: 30GB free on /
+# Recommended: 50GB+ for logs and data
+
+# Check CPU cores
+nproc
+# Minimum: 2 cores
+# Recommended: 4+ cores
+
+# Check if virtualization enabled (for Docker)
+egrep -c '(vmx|svm)' /proc/cpuinfo
+# Should return > 0
+
+# Check Docker version
+docker --version
+# Should be Docker version 20.10+ or higher
+
+docker compose version
+# Should be Docker Compose version v2.0+ or higher
+```
+
+### Checking Service Health
+
+**View All Running Containers:**
+```bash
+# See all containers and their status
+docker ps -a
+
+# Status should be "Up" for running services
+# If "Exited" or "Restarting", there's an issue
+
+# Format output for easier reading
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+```
+
+**Check Specific Service Logs:**
+```bash
+# View last 50 lines of logs
+docker logs [service-name] --tail 50
+
+# Follow logs in real-time
+docker logs [service-name] --follow
+
+# View logs with timestamps
+docker logs [service-name] --timestamps --tail 100
+
+# Search logs for errors
+docker logs [service-name] 2>&1 | grep -i error
+
+# Common service names:
+# n8n, postgres, caddy, supabase-db, ollama, 
+# comfyui, flowise, open-webui, etc.
+```
+
+**Restart Services:**
+```bash
+# Restart a specific service
+docker compose restart [service-name]
+
+# Restart all services
+docker compose restart
+
+# Stop and start (more thorough than restart)
+docker compose stop [service-name]
+docker compose start [service-name]
+
+# Recreate container (if config changed)
+docker compose up -d --force-recreate [service-name]
+
+# Restart everything from scratch
+docker compose down
+docker compose up -d
+```
+
+### Common Diagnostic Commands
+
+**Check Environment Variables:**
+```bash
+# View .env file
+cat .env
+
+# Check specific variable
+grep "N8N_" .env
+grep "POSTGRES_" .env
+
+# Verify variables are loaded in container
+docker exec n8n env | grep N8N_
+docker exec postgres env | grep POSTGRES_
+```
+
+**Test Network Connectivity:**
+```bash
+# Ping between containers
+docker exec n8n ping postgres
+docker exec n8n ping supabase-db
+docker exec caddy ping n8n
+
+# Test HTTP connectivity
+docker exec n8n curl http://postgres:5432
+docker exec n8n curl http://ollama:11434/api/tags
+
+# Check DNS resolution
+docker exec n8n nslookup postgres
+docker exec n8n nslookup yourdomain.com
+```
+
+**Check DNS Configuration:**
+```bash
+# Verify A record for your domain
+nslookup yourdomain.com
+
+# Should point to your VPS IP
+
+# Verify wildcard subdomain
+nslookup n8n.yourdomain.com
+nslookup random.yourdomain.com
+
+# Both should resolve to same IP
+
+# Check from external DNS server
+nslookup yourdomain.com 8.8.8.8
+```
+
+**Verify SSL Certificates:**
+```bash
+# Check Caddy's certificate status
+docker exec caddy caddy list-certificates
+
+# Test HTTPS connectivity
+curl -I https://n8n.yourdomain.com
+# Should return: HTTP/2 200
+
+# Check certificate validity
+echo | openssl s_client -connect n8n.yourdomain.com:443 2>/dev/null | openssl x509 -noout -dates
+
+# View Caddy logs for certificate issues
+docker logs caddy --tail 100 | grep -i "certificate\|acme\|tls"
+```
+
+**Check Port Availability:**
+```bash
+# Check if port is open from outside
+nc -zv yourdomain.com 80
+nc -zv yourdomain.com 443
+
+# Check if port is listening locally
+sudo netstat -tlnp | grep :80
+sudo netstat -tlnp | grep :443
+
+# Check all Docker-exposed ports
+docker ps --format "table {{.Names}}\t{{.Ports}}"
+```
+
+**Monitor Resource Usage:**
+```bash
+# Real-time resource monitoring
+docker stats
+
+# One-time snapshot
+docker stats --no-stream
+
+# Specific container
+docker stats n8n --no-stream
+
+# System-wide resources
+htop
+# Press F5 for tree view
+# Press q to quit
+```
+
+### Database Connection Issues
+
+**PostgreSQL Connection Troubleshooting:**
+```bash
+# Check if PostgreSQL is running
+docker ps | grep postgres
+
+# Test connection from host
+docker exec -it postgres psql -U postgres -c "SELECT version();"
+
+# Test connection from another container
+docker exec n8n psql -h postgres -U postgres -c "SELECT 1;"
+
+# Check PostgreSQL logs for errors
+docker logs postgres --tail 100
+
+# Common issues:
+
+# 1. Wrong password in .env
+grep POSTGRES_PASSWORD .env
+# Verify matches in all services using PostgreSQL
+
+# 2. Database doesn't exist
+docker exec postgres psql -U postgres -c "\l"
+# Lists all databases
+
+# 3. Too many connections
+docker exec postgres psql -U postgres -c "SELECT count(*) FROM pg_stat_activity;"
+# If near max_connections (default 100), restart services
+
+# 4. Special characters in password
+# Avoid: @ # $ % & * ( ) in POSTGRES_PASSWORD
+# Use: alphanumeric + - _ .
+```
+
+**Supabase Database Connection:**
+```bash
+# Check all Supabase components
+docker ps | grep supabase
+
+# Critical components:
+# - supabase-db (PostgreSQL)
+# - supabase-kong (API Gateway)
+# - supabase-auth
+# - supabase-rest
+# - supabase-storage
+
+# Test Kong API Gateway
+curl http://localhost:8000/health
+
+# Check Supabase Studio access
+curl http://localhost:3000
+
+# View Kong logs (common issue source)
+docker logs supabase-kong --tail 50
+
+# Restart Supabase stack
+docker compose stop supabase-db supabase-kong supabase-auth supabase-rest supabase-storage
+docker compose start supabase-db
+# Wait 10 seconds for DB to be ready
+sleep 10
+docker compose start supabase-kong supabase-auth supabase-rest supabase-storage
+```
+
+### Permission Issues
+
+**File Permission Errors:**
+```bash
+# Check ownership of Docker volumes
+ls -la ./data
+ls -la ./media
+ls -la ./temp
+
+# Fix ownership (user 1000 is default for most containers)
+sudo chown -R 1000:1000 ./data
+sudo chown -R 1000:1000 ./media
+sudo chown -R 1000:1000 ./temp
+
+# Fix permissions
+sudo chmod -R 755 ./data
+sudo chmod -R 775 ./media
+sudo chmod -R 775 ./temp
+
+# Restart affected services
+docker compose restart n8n
+```
+
+**Docker Permission Errors:**
+```bash
+# Add user to docker group
+sudo usermod -aG docker $USER
+
+# Log out and back in, then test
+docker ps
+# Should work without sudo
+
+# If still issues, check Docker socket permissions
+ls -l /var/run/docker.sock
+# Should show: srw-rw---- 1 root docker
+
+# Fix if needed
+sudo chmod 666 /var/run/docker.sock
+```
+
+### Configuration File Issues
+
+**Validate docker-compose.yml:**
+```bash
+# Check syntax
+docker compose config
+
+# If errors shown, file has syntax issues
+# Common issues:
+# - Incorrect indentation (must use spaces, not tabs)
+# - Missing quotes around special characters
+# - Invalid YAML structure
+
+# View processed configuration
+docker compose config > validated-config.yml
+cat validated-config.yml
+```
+
+**Validate .env File:**
+```bash
+# Check for common issues
+cat .env
+
+# Look for:
+# 1. Spaces around = sign (should be VAR=value, not VAR = value)
+# 2. Special characters not in quotes
+# 3. Duplicate variable definitions
+# 4. Missing required variables
+
+# Test variable expansion
+source .env
+echo $N8N_HOST
+echo $POSTGRES_PASSWORD
+
+# If empty, variable not set correctly
+```
+
+### Log Collection for Support
+
+If you need to create a GitHub issue or ask for help, collect diagnostic information:
+
+```bash
+# Create diagnostic report
+mkdir ~/launchkit-diagnostics
+cd ~/launchkit-diagnostics
+
+# 1. System information
+uname -a > system-info.txt
+lsb_release -a >> system-info.txt
+free -h >> system-info.txt
+df -h >> system-info.txt
+docker --version >> system-info.txt
+docker compose version >> system-info.txt
+
+# 2. Container status
+docker ps -a > container-status.txt
+
+# 3. Environment variables (REDACT PASSWORDS!)
+cp ~/.ai-launchkit/.env env-backup.txt
+# Edit env-backup.txt and replace password values with "REDACTED"
+
+# 4. Service logs
+docker logs caddy --tail 200 > caddy-logs.txt 2>&1
+docker logs n8n --tail 200 > n8n-logs.txt 2>&1
+docker logs postgres --tail 200 > postgres-logs.txt 2>&1
+# Add other failing services
+
+# 5. Docker Compose configuration
+docker compose config > docker-compose-processed.yml
+
+# 6. Network information
+docker network ls > networks.txt
+docker network inspect ai-launchkit_default > network-details.txt 2>&1
+
+# 7. Resource usage
+docker stats --no-stream > resource-usage.txt
+
+# Create archive
+cd ~
+tar -czf launchkit-diagnostics.tar.gz launchkit-diagnostics/
+
+echo "Diagnostic archive created: ~/launchkit-diagnostics.tar.gz"
+echo "Upload this file when creating a GitHub issue"
+```
+
+### Reset and Reinstall
+
+**Nuclear Option - Complete Reset:**
+```bash
+# WARNING: This deletes ALL data and configurations!
+# Make backups first!
+
+# 1. Stop all services
+cd ~/.ai-launchkit
+docker compose down -v
+
+# 2. Remove all containers, images, volumes
+docker system prune -a --volumes
+
+# 3. Remove AI LaunchKit directory
+cd ~
+rm -rf ~/.ai-launchkit
+
+# 4. Re-run installer
+curl -sSL https://raw.githubusercontent.com/freddy-schuetz/ai-launchkit/main/install.sh | sudo bash
+
+# Or clone and run manually:
+git clone https://github.com/freddy-schuetz/ai-launchkit.git
+cd ai-launchkit
+chmod +x install.sh
+./install.sh
+```
+
+**Selective Service Reset:**
+```bash
+# Reset specific service without affecting others
+cd ~/.ai-launchkit
+
+# 1. Stop and remove container
+docker compose stop [service-name]
+docker compose rm [service-name]
+
+# 2. Remove service volume (if exists)
+docker volume rm ai-launchkit_[service-name]-data
+
+# 3. Remove service configuration from .env
+nano .env
+# Comment out or remove service-specific variables
+
+# 4. Restart service
+docker compose up -d [service-name]
+
+# Example: Reset n8n
+docker compose stop n8n
+docker compose rm n8n
+docker volume rm ai-launchkit_n8n-data
+docker compose up -d n8n
+```
+
+### Still Having Issues?
+
+**Before Creating a GitHub Issue:**
+
+1. **Search Existing Issues:**
+   - Check [GitHub Issues](https://github.com/freddy-schuetz/ai-launchkit/issues)
+   - Check [Community Forum](https://thinktank.ottomator.ai/c/local-ai/18)
+   - Search for your error message
+
+2. **Try Basic Fixes:**
+   - Restart the affected service
+   - Check logs for error messages
+   - Verify .env configuration
+   - Ensure DNS is properly configured
+   - Check system resources (RAM, disk, CPU)
+
+3. **Collect Information:**
+   - VPS specifications (RAM, CPU, disk)
+   - Services you enabled during installation
+   - Error messages (exact text)
+   - Steps to reproduce the issue
+   - Diagnostic files (see "Log Collection" above)
+
+4. **Create Detailed Issue:**
+   - Use issue template if available
+   - Include system information
+   - Attach diagnostic archive
+   - Describe what you expected vs. what happened
+   - Include any error messages
+
+**Community Resources:**
+- **Forum:** [oTTomator Think Tank](https://thinktank.ottomator.ai/c/local-ai/18)
+- **GitHub Issues:** [Report a bug](https://github.com/freddy-schuetz/ai-launchkit/issues/new)
+- **Discord:** Coming soon
 
 </details>
 

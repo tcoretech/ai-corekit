@@ -37583,14 +37583,1476 @@ docker compose restart llm-guard
 <details>
 <summary><b>🔒 Microsoft Presidio - PII Detection (English)</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Microsoft Presidio?
+
+Microsoft Presidio is an enterprise-grade PII (Personally Identifiable Information) detection and anonymization framework designed for GDPR compliance. It uses pattern matching and context-aware entity recognition to identify sensitive data like names, email addresses, credit card numbers, SSNs, and phone numbers in text. Presidio provides multiple anonymization operators (mask, replace, redact, hash) to protect personal data while preserving text structure for analysis. Unlike neural models, Presidio uses regex patterns and pre-defined recognizers, making it fast, predictable, and perfect for English text processing.
+
+### Features
+
+- **Multi-Language PII Detection** - Supports English, German, French, Spanish, Italian, Dutch with language-specific recognizers
+- **30+ Built-in Recognizers** - Detects names, emails, phone numbers, credit cards, SSNs, IBANs, addresses, dates, and more
+- **Custom Recognizers** - Add domain-specific patterns (German Tax ID, Personalausweis, etc.)
+- **Multiple Anonymization Operators** - Mask, replace, redact, hash, encrypt PII with configurable options
+- **Context-Aware Detection** - Uses surrounding words to improve accuracy (e.g., "Name: John Doe")
+- **Confidence Scoring** - Adjustable thresholds (0.0-1.0) to balance precision and recall
+- **GDPR Compliant** - Designed for Article 25 (data protection by design) and right to erasure
+- **Fast Processing** - Pattern-based detection (50-100ms per text, 10-15s first load for models)
+- **No External Dependencies** - All processing happens locally on your server
+- **RESTful APIs** - Separate Analyzer and Anonymizer services for flexible workflows
+
+### Initial Setup
+
+**Presidio is Pre-Configured:**
+
+Presidio runs as two separate services and is accessible internally:
+- **Analyzer:** `http://presidio-analyzer:3000` (detects PII entities)
+- **Anonymizer:** `http://presidio-anonymizer:3000` (anonymizes detected PII)
+
+**No authentication required** for internal API access (services are not publicly exposed).
+
+**Test Presidio:**
+
+```bash
+# Test Analyzer - Detect PII
+curl -X POST http://localhost:3000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "My name is John Doe and my email is john@example.com",
+    "language": "en"
+  }'
+
+# Response:
+[
+  {
+    "entity_type": "PERSON",
+    "start": 11,
+    "end": 19,
+    "score": 0.85,
+    "analysis_explanation": "Recognized as PERSON"
+  },
+  {
+    "entity_type": "EMAIL_ADDRESS",
+    "start": 37,
+    "end": 54,
+    "score": 1.0
+  }
+]
+
+# Test Anonymizer - Anonymize PII
+curl -X POST http://localhost:3000/anonymize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "My name is John Doe and my email is john@example.com",
+    "analyzer_results": [
+      {"entity_type": "PERSON", "start": 11, "end": 19, "score": 0.85},
+      {"entity_type": "EMAIL_ADDRESS", "start": 37, "end": 54, "score": 1.0}
+    ],
+    "operators": {
+      "DEFAULT": {"type": "replace", "new_value": "<REDACTED>"}
+    }
+  }'
+
+# Response:
+{
+  "text": "My name is <REDACTED> and my email is <REDACTED>",
+  "items": [...]
+}
+```
+
+**Adjust Detection Sensitivity:**
+
+The `PRESIDIO_MIN_SCORE` setting (default: 0.5) controls detection sensitivity. Edit `.env` file:
+
+```bash
+# Lower threshold = more detections (more false positives)
+PRESIDIO_MIN_SCORE=0.3
+
+# Higher threshold = fewer false positives (might miss some PII)
+PRESIDIO_MIN_SCORE=0.7
+
+# After changing, restart:
+docker compose restart presidio-analyzer
+```
+
+### n8n Integration Setup
+
+**No credentials needed!** Use HTTP Request nodes with internal URLs.
+
+**Internal URLs:**
+- **Analyzer:** `http://presidio-analyzer:3000`
+- **Anonymizer:** `http://presidio-anonymizer:3000`
+
+**Available Endpoints:**
+- `POST /analyze` - Detect PII entities in text
+- `POST /anonymize` - Anonymize detected PII
+- `GET /supportedentities` - List all supported entity types
+- `GET /health` - Health check
+
+### Example Workflows
+
+#### Example 1: GDPR-Compliant Customer Data Export
+
+**Workflow:** Fetch customer records → Detect PII → Anonymize → Export sanitized dataset
+
+```javascript
+// Complete workflow for anonymizing customer data before export
+
+// 1. PostgreSQL Node - Fetch Customer Records
+Operation: Execute Query
+Query: SELECT * FROM customers WHERE created_at > NOW() - INTERVAL '30 days'
+
+// 2. Code Node - Combine Customer Fields into Text
+const customers = $input.all().map(item => {
+  const customer = item.json;
+  const text = `
+    Name: ${customer.name}
+    Email: ${customer.email}
+    Phone: ${customer.phone}
+    Address: ${customer.address}
+    Notes: ${customer.notes || ''}
+  `.trim();
+  
+  return {
+    json: {
+      customer_id: customer.id,
+      original_data: customer,
+      text_to_analyze: text
+    }
+  };
+});
+
+return customers;
+
+// 3. HTTP Request Node - Presidio Analyzer (Detect PII)
+Method: POST
+URL: http://presidio-analyzer:3000/analyze
+Headers:
+  Content-Type: application/json
+Body (JSON):
+{
+  "text": "{{ $json.text_to_analyze }}",
+  "language": "en",
+  "entities": ["PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "LOCATION", "IBAN", "CREDIT_CARD"]
+}
+
+// 4. HTTP Request Node - Presidio Anonymizer
+Method: POST
+URL: http://presidio-anonymizer:3000/anonymize
+Headers:
+  Content-Type: application/json
+Body (JSON):
+{
+  "text": "{{ $('Code Node').item.json.text_to_analyze }}",
+  "analyzer_results": {{ $json }},
+  "operators": {
+    "PERSON": {
+      "type": "replace",
+      "new_value": "PERSON_{{ $item(0).$itemIndex }}"
+    },
+    "EMAIL_ADDRESS": {
+      "type": "mask",
+      "masking_char": "*",
+      "chars_to_mask": 6,
+      "from_end": false
+    },
+    "PHONE_NUMBER": {
+      "type": "mask",
+      "masking_char": "*",
+      "chars_to_mask": 7,
+      "from_end": false
+    },
+    "LOCATION": {
+      "type": "replace",
+      "new_value": "LOCATION_REDACTED"
+    },
+    "IBAN": {
+      "type": "replace",
+      "new_value": "IBAN_REDACTED"
+    },
+    "CREDIT_CARD": {
+      "type": "replace",
+      "new_value": "CARD_REDACTED"
+    }
+  }
+}
+
+// 5. Code Node - Merge Original and Anonymized Data
+const original = $('Code Node').item.json.original_data;
+const anonymized = $json.text;
+
+return {
+  json: {
+    customer_id: original.id,
+    original_email: original.email,  // Keep for internal tracking
+    anonymized_record: anonymized,
+    anonymized_at: new Date().toISOString(),
+    pii_entities_found: $('HTTP Request').item.json.length
+  }
+};
+
+// 6. Supabase/PostgreSQL Node - Store Anonymized Records
+Table: anonymized_customer_exports
+Operation: Insert
+Data: {{ $json }}
+
+// 7. Google Sheets Node - Export to Analytics Sheet
+Operation: Append
+Spreadsheet: Customer Analytics Export
+Sheet: {{ new Date().toISOString().split('T')[0] }}
+Data: {{ $json.anonymized_record }}
+```
+
+#### Example 2: Real-Time Chat Moderation with PII Removal
+
+**Workflow:** Chat message → Security check → PII detection → Anonymize → Forward to chat system
+
+```javascript
+// Protect customer support chats from PII leakage
+
+// 1. Webhook Trigger - Incoming Chat Message
+Path: /chat/moderate
+Method: POST
+// Expected: { "user_id": "123", "message": "...", "channel": "support" }
+
+// 2. HTTP Request Node - LLM Guard Security Check (Optional)
+Method: POST
+URL: http://llm-guard:8000/analyze/prompt
+Headers:
+  Authorization: Bearer {{ $env.LLM_GUARD_TOKEN }}
+  Content-Type: application/json
+Body (JSON):
+{
+  "prompt": "{{ $json.message }}",
+  "scanners": ["Toxicity", "PromptInjection", "Secrets"]
+}
+
+// 3. IF Node - Check if Message is Safe
+Condition: {{ $json.is_safe }} === true
+
+// 4. HTTP Request Node - Presidio Analyzer (Detect PII)
+Method: POST
+URL: http://presidio-analyzer:3000/analyze
+Headers:
+  Content-Type: application/json
+Body (JSON):
+{
+  "text": "{{ $('Webhook').item.json.message }}",
+  "language": "en",
+  "score_threshold": 0.5
+}
+
+// 5. IF Node - Check if PII Detected
+Condition: {{ $json.length }} > 0
+
+// 6a. If PII FOUND → HTTP Request: Anonymize
+Method: POST
+URL: http://presidio-anonymizer:3000/anonymize
+Headers:
+  Content-Type: application/json
+Body (JSON):
+{
+  "text": "{{ $('Webhook').item.json.message }}",
+  "analyzer_results": {{ $('HTTP Request1').item.json }},
+  "operators": {
+    "DEFAULT": {
+      "type": "replace",
+      "new_value": "<REDACTED>"
+    }
+  }
+}
+
+// 7. Code Node - Prepare Final Message
+const original = $('Webhook').item.json;
+const piiFound = $('IF Node').item.json.length > 0;
+const cleanMessage = piiFound ? $json.text : original.message;
+
+return {
+  json: {
+    user_id: original.user_id,
+    channel: original.channel,
+    message: cleanMessage,
+    pii_removed: piiFound,
+    timestamp: new Date().toISOString()
+  }
+};
+
+// 8. Slack Node - Post Cleaned Message
+Channel: {{ $json.channel }}
+Message: {{ $json.message }}
+
+// 9. PostgreSQL Node - Log for Compliance (Optional)
+Table: chat_moderation_log
+Operation: Insert
+Data:
+  user_id: {{ $json.user_id }}
+  original_message_hash: {{ crypto.createHash('sha256').update($('Webhook').item.json.message).digest('hex') }}
+  pii_removed: {{ $json.pii_removed }}
+  timestamp: {{ $json.timestamp }}
+```
+
+#### Example 3: Multi-Language PII Detection with Language Detection
+
+**Workflow:** Detect language → Route to Presidio (English) or Flair (German) → Anonymize
+
+```javascript
+// Smart language detection and routing for PII detection
+
+// 1. Webhook Trigger - Text Input
+Path: /detect-pii
+Method: POST
+// Expected: { "text": "...", "auto_detect_language": true }
+
+// 2. Code Node - Simple Language Detection
+const text = $json.text;
+
+// Detect language based on common words
+let detectedLanguage = 'en';
+const germanIndicators = /\b(der|die|das|und|ich|Sie|werden|haben|sein|mit|auf)\b/gi;
+const frenchIndicators = /\b(le|la|les|et|je|vous|sont|être|avec|pour)\b/gi;
+const spanishIndicators = /\b(el|la|los|las|y|yo|usted|son|estar|con|para)\b/gi;
+
+const germanMatches = (text.match(germanIndicators) || []).length;
+const frenchMatches = (text.match(frenchIndicators) || []).length;
+const spanishMatches = (text.match(spanishIndicators) || []).length;
+
+if (germanMatches > 3) {
+  detectedLanguage = 'de';
+} else if (frenchMatches > 3) {
+  detectedLanguage = 'fr';
+} else if (spanishMatches > 3) {
+  detectedLanguage = 'es';
+}
+
+return {
+  json: {
+    text: text,
+    detected_language: detectedLanguage,
+    confidence: Math.max(germanMatches, frenchMatches, spanishMatches)
+  }
+};
+
+// 3. Switch Node - Route by Language
+Mode: Expression
+Output:
+  - If {{ $json.detected_language }} === 'de' → Route to Flair NER
+  - If {{ $json.detected_language }} === 'en' → Route to Presidio
+  - Else → Route to Presidio (default)
+
+// 4a. HTTP Request - Presidio Analyzer (for English/French/Spanish/Italian/Dutch)
+Method: POST
+URL: http://presidio-analyzer:3000/analyze
+Body (JSON):
+{
+  "text": "{{ $('Code Node').item.json.text }}",
+  "language": "{{ $('Code Node').item.json.detected_language }}"
+}
+
+// 4b. HTTP Request - Flair NER (for German)
+Method: POST
+URL: http://flair-ner:5000/detect
+Body (JSON):
+{
+  "text": "{{ $('Code Node').item.json.text }}",
+  "language": "de"
+}
+
+// 5. HTTP Request - Presidio Anonymizer (works for both paths)
+Method: POST
+URL: http://presidio-anonymizer:3000/anonymize
+Body (JSON):
+{
+  "text": "{{ $('Code Node').item.json.text }}",
+  "analyzer_results": {{ $json }},
+  "operators": {
+    "DEFAULT": {"type": "replace", "new_value": "<REDACTED>"}
+  }
+}
+
+// 6. Code Node - Format Response
+return {
+  json: {
+    original_text: $('Code Node').item.json.text,
+    anonymized_text: $json.text,
+    language: $('Code Node').item.json.detected_language,
+    entities_found: $('HTTP Request').item.json.length,
+    processing_path: $('Code Node').item.json.detected_language === 'de' ? 'Flair NER' : 'Presidio'
+  }
+};
+```
+
+### Anonymization Operators
+
+Presidio supports multiple anonymization strategies:
+
+**1. Replace** - Replace entity with fixed value or pattern
+```json
+{
+  "type": "replace",
+  "new_value": "PERSON_{{index}}"  // index = sequential number
+}
+```
+
+**2. Mask** - Mask characters with symbols
+```json
+{
+  "type": "mask",
+  "masking_char": "*",
+  "chars_to_mask": 6,      // Number of characters to mask
+  "from_end": false        // Mask from start (false) or end (true)
+}
+// Example: john@example.com → ******xample.com
+```
+
+**3. Redact** - Remove entity completely
+```json
+{
+  "type": "redact"
+}
+// Example: "John Doe" → ""
+```
+
+**4. Hash** - Hash entity with SHA256
+```json
+{
+  "type": "hash",
+  "hash_type": "sha256"
+}
+// Example: "john@example.com" → "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
+```
+
+**5. Encrypt** - Encrypt entity (reversible)
+```json
+{
+  "type": "encrypt",
+  "key": "your-encryption-key-32-bytes!!"
+}
+```
+
+**6. Keep** - Keep original value (useful for debugging)
+```json
+{
+  "type": "keep"
+}
+```
+
+### Supported Entity Types
+
+**Person Identifiers:**
+- `PERSON` - Names
+- `EMAIL_ADDRESS` - Email addresses
+- `PHONE_NUMBER` - Phone numbers
+- `URL` - Web URLs
+- `DOMAIN_NAME` - Domain names
+- `IP_ADDRESS` - IP addresses
+
+**Financial:**
+- `CREDIT_CARD` - Credit card numbers
+- `IBAN_CODE` - International Bank Account Numbers
+- `US_BANK_NUMBER` - US bank account numbers
+- `CRYPTO` - Cryptocurrency wallet addresses
+
+**Government IDs:**
+- `US_SSN` - Social Security Numbers
+- `US_PASSPORT` - US Passport numbers
+- `US_DRIVER_LICENSE` - US Driver's licenses
+- `UK_NHS` - UK NHS numbers
+
+**German-Specific (with German language pack):**
+- `DE_TAX_ID` - German Tax IDs (Steuernummer)
+- `DE_IDENTITY_CARD` - Personalausweis numbers
+
+**Dates & Locations:**
+- `DATE_TIME` - Dates and times
+- `LOCATION` - Geographic locations
+- `NRP` - Nationalities, religions, political groups
+
+**Medical:**
+- `MEDICAL_LICENSE` - Medical license numbers
+- `US_ITIN` - Individual Taxpayer ID
+
+**Custom Entities:**
+- Add your own patterns with custom recognizers
+
+### Custom Recognizers
+
+Create domain-specific PII patterns:
+
+**Example: German Tax ID (Steuernummer)**
+
+File: `./config/presidio/custom_recognizers.py`
+
+```python
+from presidio_analyzer import Pattern, PatternRecognizer
+
+class GermanTaxIdRecognizer(PatternRecognizer):
+    def __init__(self):
+        patterns = [
+            Pattern(
+                "German Tax ID",
+                r"\b\d{2}/\d{3}/\d{5}\b",  # Format: 12/345/67890
+                0.7  # Confidence score
+            )
+        ]
+        super().__init__(
+            supported_entity="DE_TAX_ID",
+            patterns=patterns,
+            context=["Steuernummer", "Steuer-ID", "Tax", "Finanzamt"]
+        )
+```
+
+**Restart to load:**
+```bash
+docker compose restart presidio-analyzer
+```
+
+### Multi-Language Support
+
+Presidio automatically loads language models for:
+
+- **English (en)** - All standard recognizers
+- **German (de)** - Personalausweis, Steuernummer, German names/addresses
+- **French (fr)** - Numéro de sécurité sociale, French names
+- **Spanish (es)** - NIE, DNI, Spanish patterns
+- **Italian (it)** - Codice Fiscale, Italian patterns
+- **Dutch (nl)** - BSN (Burgerservicenummer)
+
+**Usage:**
+```json
+{
+  "text": "Mein Name ist Max Mustermann und meine Steuer-ID ist 12/345/67890",
+  "language": "de"
+}
+```
+
+### Performance & Optimization
+
+**Performance Characteristics:**
+- **First request:** 10-15 seconds (loads NLP models)
+- **Subsequent requests:** 50-100ms per text
+- **Model loading:** Lazy (only when needed)
+- **Memory usage:** ~500MB per language model
+- **Concurrent requests:** Unlimited (Python async)
+
+**Optimization Tips:**
+
+1. **Warm up service on startup:**
+```bash
+# Add to post-installation script
+curl -X POST http://localhost:3000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"text":"warmup","language":"en"}' > /dev/null 2>&1
+```
+
+2. **Batch processing for large datasets:**
+```javascript
+// Process in chunks of 100 records
+// Use n8n SplitInBatches node
+```
+
+3. **Cache repeated queries:**
+```javascript
+// Use Redis to cache analyzer results
+// Key: hash(text), Value: detected entities
+```
+
+4. **Adjust score threshold:**
+```bash
+# Higher threshold = faster (fewer false positives to process)
+PRESIDIO_MIN_SCORE=0.7
+```
+
+### Troubleshooting
+
+#### Issue 1: Slow First Request (10-15 seconds)
+
+**Cause:** NLP models load on first request per language.
+
+**Solution:** Warm up service after deployment:
+```bash
+# Test endpoint to pre-load models
+curl -X POST http://localhost:3000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"text":"warmup test","language":"en"}'
+
+# For German
+curl -X POST http://localhost:3000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Aufwärmtest","language":"de"}'
+```
+
+**Alternative:** Enable lazy loading in config (models load on startup):
+```bash
+# Edit docker-compose.yml
+environment:
+  - PRESIDIO_ANALYZER_NLPENGINE_LAZY_LOAD=false
+```
+
+#### Issue 2: German Names Not Detected
+
+**Cause:** Low confidence score or missing context words.
+
+**Solution 1:** Lower threshold:
+```bash
+# Edit .env
+PRESIDIO_MIN_SCORE=0.3
+
+# Restart
+docker compose restart presidio-analyzer
+```
+
+**Solution 2:** Add context words to request:
+```json
+{
+  "text": "Name: Max Mustermann",  // "Name:" helps detection
+  "language": "de",
+  "context": ["Name", "Herr", "Frau", "Kunde"]
+}
+```
+
+**Solution 3:** Use Flair NER for German (more accurate):
+```javascript
+// Flair NER is specifically trained for German PII
+// Use http://flair-ner:5000/detect instead
+```
+
+#### Issue 3: False Positives on Product Codes
+
+**Cause:** Product codes match patterns (e.g., "PROD-12345" looks like an ID).
+
+**Solution 1:** Increase minimum score:
+```bash
+PRESIDIO_MIN_SCORE=0.7  // Higher = fewer false positives
+```
+
+**Solution 2:** Add deny list:
+```json
+{
+  "text": "Order PROD-12345",
+  "ad_hoc_recognizers": [
+    {
+      "name": "product_code",
+      "supported_entity": "PRODUCT_CODE",
+      "patterns": [{"name": "prod", "regex": "PROD-\\d+", "score": 0.01}]
+    }
+  ]
+}
+```
+
+**Solution 3:** Use custom recognizer to filter out known patterns.
+
+#### Issue 4: Missing PII Entities
+
+**Cause:** Entity type not in request or language pack not loaded.
+
+**Diagnostic:**
+```bash
+# Check supported entities
+curl http://localhost:3000/supportedentities?language=en
+
+# Check if German language pack loaded
+docker logs presidio-analyzer | grep "de"
+```
+
+**Solution:** Add missing entity types:
+```json
+{
+  "text": "...",
+  "language": "de",
+  "entities": ["PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "LOCATION", "IBAN", "CREDIT_CARD", "DATE_TIME"]
+}
+```
+
+#### Issue 5: Service Not Responding
+
+**Check health:**
+```bash
+# Analyzer
+curl http://localhost:3000/health
+
+# Anonymizer  
+curl http://localhost:3000/health
+```
+
+**View logs:**
+```bash
+docker logs presidio-analyzer -f
+docker logs presidio-anonymizer -f
+```
+
+**Restart services:**
+```bash
+docker compose restart presidio-analyzer presidio-anonymizer
+```
+
+### Resources
+
+- **Official Documentation:** https://microsoft.github.io/presidio
+- **GitHub Repository:** https://github.com/microsoft/presidio
+- **Analyzer Documentation:** https://microsoft.github.io/presidio/analyzer
+- **Anonymizer Documentation:** https://microsoft.github.io/presidio/anonymizer
+- **Supported Entities:** https://microsoft.github.io/presidio/supported_entities
+- **Custom Recognizers Guide:** https://microsoft.github.io/presidio/analyzer/adding_recognizers
+- **Python API:** https://microsoft.github.io/presidio/api
+- **REST API Reference:** https://microsoft.github.io/presidio/tutorial/09_presidio_as_a_service/
+
+### Best Practices
+
+**When to Use Presidio:**
+
+✅ **Use Presidio for:**
+- English text processing (fastest, most accurate)
+- Pattern-based PII (emails, credit cards, SSNs, IBANs)
+- GDPR compliance workflows
+- Real-time PII detection (50-100ms)
+- Multi-language support (EN, FR, ES, IT, NL)
+- Structured data anonymization
+
+❌ **Don't use Presidio for:**
+- German text (use Flair NER instead - 95%+ accuracy)
+- Sentiment analysis (not designed for this)
+- General entity extraction (use spaCy or Flair)
+- OCR output (use EasyOCR + Presidio pipeline)
+
+**Recommended Workflows:**
+
+1. **LLM Input Validation:**
+   ```
+   User Input → LLM Guard (security) → Presidio (PII) → LLM → Output
+   ```
+
+2. **Multi-Language PII Detection:**
+   ```
+   Text → Language Detection → Presidio (EN/FR/ES) OR Flair (DE) → Anonymize
+   ```
+
+3. **Database Export:**
+   ```
+   SQL Query → Presidio Analyzer → Presidio Anonymizer → Export CSV
+   ```
+
+4. **Chat Moderation:**
+   ```
+   Message → Presidio (remove PII) → Toxicity Filter → Post to Chat
+   ```
+
+5. **Compliance Logging:**
+   ```
+   Request → Presidio → Log (original hash + anonymized) → Audit Trail
+   ```
+
+### Integration with AI LaunchKit Services
+
+**Presidio + LLM Guard:**
+- LLM Guard: General security (injection, toxicity, secrets)
+- Presidio: Specialized PII detection and anonymization
+- Pipeline: LLM Guard → Presidio → LLM → LLM Guard output check
+
+**Presidio + Flair NER:**
+- Presidio: English, French, Spanish, Italian, Dutch
+- Flair NER: German (95%+ accuracy for DE text)
+- Route by language: `if (lang === 'de') use Flair else use Presidio`
+
+**Presidio + Supabase:**
+- Store anonymized data in Supabase database
+- Use Row Level Security (RLS) to control access
+- Combine with Presidio for database-level PII protection:
+
+```sql
+CREATE POLICY anonymize_pii ON customer_data
+FOR SELECT USING (
+  current_user_role() = 'admin' OR
+  pii_anonymized = true
+);
+```
+
+**Presidio + Langfuse:**
+- Track PII detection metrics (entities found, processing time)
+- Monitor false positive rates
+- Analyze PII patterns in user data
+
+**Presidio + Open WebUI:**
+- Add PII protection layer to chat interface
+- Workflow: User → n8n webhook → Presidio → Ollama → Response
+- Anonymize chat history before storage
 
 </details>
 
 <details>
 <summary><b>🇩🇪 Flair NER - PII Detection (German)</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Flair NER?
+
+Flair NER is a state-of-the-art Named Entity Recognition framework specifically optimized for German text processing with 95%+ accuracy. Unlike pattern-based tools like Presidio, Flair uses neural sequence labeling models trained on German corpora to detect PII entities like names, addresses, organizations, IBAN numbers, and phone numbers. It excels at understanding German grammar, compound words, and contextual nuances that regex-based systems miss. Flair is the best choice for processing German customer data, contracts, support tickets, and any DSGVO-compliant applications requiring reliable German PII detection.
+
+### Features
+
+- **95%+ Accuracy for German Text** - State-of-the-art neural models trained on German corpora
+- **Context-Aware Detection** - Understands German grammar, compound words, and sentence structure
+- **German-Specific Entities** - Names (Person), locations (Location), organizations (Organization), IBAN, phone numbers
+- **No Pattern Matching** - Uses neural networks instead of regex (handles variations, typos, colloquialisms)
+- **Multi-Language Support** - Supports German, English, French, Spanish, Italian, Dutch, Portuguese, and more
+- **Fine-Grained Entity Types** - Distinguishes between person names, organization names, and locations
+- **Confidence Scoring** - Each detection includes confidence score (0.0-1.0) for filtering
+- **Fast Processing** - 100-200ms per text after model loading (1-2s first request)
+- **DSGVO Compliant** - Designed for German privacy regulations (Datenschutz-Grundverordnung)
+- **Zero External Dependencies** - All processing happens locally on your server
+
+### Initial Setup
+
+**Flair NER is Pre-Configured:**
+
+Flair NER runs as an internal API service and is accessible at:
+- **Internal URL:** `http://flair-ner:5000`
+
+**No authentication required** for internal API access (service is not publicly exposed).
+
+**Test Flair NER:**
+
+```bash
+# Test German PII Detection
+curl -X POST http://localhost:5000/detect \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Mein Name ist Max Mustermann und ich wohne in Berlin. Meine IBAN ist DE89370400440532013000.",
+    "language": "de"
+  }'
+
+# Response:
+{
+  "entities": [
+    {
+      "type": "PER",  // Person name
+      "text": "Max Mustermann",
+      "start": 13,
+      "end": 27,
+      "confidence": 0.9875
+    },
+    {
+      "type": "LOC",  // Location
+      "text": "Berlin",
+      "start": 45,
+      "end": 51,
+      "confidence": 0.9654
+    },
+    {
+      "type": "IBAN",
+      "text": "DE89370400440532013000",
+      "start": 66,
+      "end": 88,
+      "confidence": 0.9912
+    }
+  ],
+  "processing_time": 0.156
+}
+```
+
+**Supported Entity Types:**
+
+- **PER** - Person names (Max Mustermann, Angela Merkel, Hans Schmidt)
+- **LOC** - Locations (Berlin, München, Hauptstraße 123)
+- **ORG** - Organizations (Deutsche Bank, BMW AG, Siemens)
+- **IBAN** - International Bank Account Numbers
+- **PHONE** - German phone numbers (+49, 0171, etc.)
+- **MISC** - Miscellaneous entities (products, events)
+
+**Adjust Detection Confidence:**
+
+```bash
+# In API request, filter by confidence threshold
+# Only return entities with confidence >= 0.8
+{
+  "text": "...",
+  "language": "de",
+  "min_confidence": 0.8
+}
+```
+
+### n8n Integration Setup
+
+**No credentials needed!** Use HTTP Request nodes with internal URL.
+
+**Internal URL:** `http://flair-ner:5000`
+
+**Available Endpoints:**
+- `POST /detect` - Detect PII entities in German text
+- `GET /health` - Health check
+- `GET /models` - List loaded models
+
+### Example Workflows
+
+#### Example 1: DSGVO-Compliant German Customer Data Anonymization
+
+**Workflow:** Fetch German customer records → Detect PII with Flair → Anonymize → Export
+
+```javascript
+// Complete workflow for German text anonymization using Flair NER
+
+// 1. PostgreSQL Node - Fetch German Customer Data
+Operation: Execute Query
+Query: SELECT * FROM kunden WHERE created_at > NOW() - INTERVAL '30 days'
+
+// 2. Code Node - Prepare German Text for Analysis
+const customers = $input.all().map(item => {
+  const kunde = item.json;
+  const text = `
+    Name: ${kunde.name}
+    Adresse: ${kunde.strasse} ${kunde.hausnummer}, ${kunde.plz} ${kunde.stadt}
+    Telefon: ${kunde.telefon}
+    E-Mail: ${kunde.email}
+    IBAN: ${kunde.iban || ''}
+    Notizen: ${kunde.notizen || ''}
+  `.trim();
+  
+  return {
+    json: {
+      kunden_id: kunde.id,
+      original_data: kunde,
+      text_to_analyze: text
+    }
+  };
+});
+
+return customers;
+
+// 3. HTTP Request Node - Flair NER Detection (German PII)
+Method: POST
+URL: http://flair-ner:5000/detect
+Headers:
+  Content-Type: application/json
+Body (JSON):
+{
+  "text": "{{ $json.text_to_analyze }}",
+  "language": "de",
+  "min_confidence": 0.75
+}
+
+// 4. Code Node - Anonymize Detected Entities
+const text = $('Code Node').item.json.text_to_analyze;
+const entities = $json.entities || [];
+
+// Sort entities by position (reverse order) to avoid index shifts
+const sortedEntities = entities.sort((a, b) => b.start - a.start);
+
+let anonymizedText = text;
+const replacements = {
+  'PER': (entity, index) => `PERSON_${index}`,
+  'LOC': (entity, index) => `LOCATION_${index}`,
+  'ORG': (entity, index) => `ORGANIZATION_${index}`,
+  'IBAN': (entity, index) => 'IBAN_REDACTED',
+  'PHONE': (entity, index) => 'PHONE_REDACTED',
+  'MISC': (entity, index) => `MISC_${index}`
+};
+
+sortedEntities.forEach((entity, index) => {
+  const replacement = replacements[entity.type] 
+    ? replacements[entity.type](entity, index)
+    : '<REDACTED>';
+  
+  anonymizedText = 
+    anonymizedText.substring(0, entity.start) + 
+    replacement + 
+    anonymizedText.substring(entity.end);
+});
+
+const original = $('Code Node').item.json.original_data;
+
+return {
+  json: {
+    kunden_id: original.id,
+    original_email: original.email,  // Keep for internal use
+    anonymized_data: anonymizedText,
+    entities_found: entities.length,
+    entity_types: [...new Set(entities.map(e => e.type))],
+    anonymized_at: new Date().toISOString()
+  }
+};
+
+// 5. Supabase/PostgreSQL Node - Store Anonymized Records
+Table: anonymized_customer_exports_de
+Operation: Insert
+Data: {{ $json }}
+
+// 6. Google Sheets Node - Export for Analytics
+Operation: Append
+Spreadsheet: Kunden Analytics Export
+Sheet: {{ new Date().toISOString().split('T')[0] }}
+Data: {{ $json.anonymized_data }}
+
+// 7. Email Node - Notify Data Protection Officer
+To: datenschutz@yourcompany.de
+Subject: DSGVO Export abgeschlossen
+Message: |
+  Anonymisierter Kundendatenexport wurde erstellt.
+  
+  Anzahl Datensätze: {{ $json.kunden_id.length }}
+  Gefundene PII-Entitäten: {{ $json.entities_found }}
+  Entitätstypen: {{ $json.entity_types.join(', ') }}
+  
+  Der Export ist verfügbar in Google Sheets.
+```
+
+#### Example 2: German Contract Review with PII Detection
+
+**Workflow:** Upload German contract → Extract text → Detect PII → Generate redaction report
+
+```javascript
+// Automatically detect and highlight PII in German contracts
+
+// 1. Google Drive Trigger - New Contract Uploaded
+Folder: /Verträge/Neu
+File Types: PDF, DOCX
+
+// 2. Google Drive Download
+File: {{ $json.id }}
+
+// 3. HTTP Request - Extract Text from PDF (using Stirling-PDF)
+Method: POST
+URL: http://stirling-pdf:8080/api/v1/convert/pdf-to-text
+Body (Form Data):
+  file: {{ $binary.data }}
+
+// 4. HTTP Request - Flair NER Detection
+Method: POST
+URL: http://flair-ner:5000/detect
+Headers:
+  Content-Type: application/json
+Body (JSON):
+{
+  "text": "{{ $json.text }}",
+  "language": "de",
+  "min_confidence": 0.70
+}
+
+// 5. Code Node - Generate PII Report
+const entities = $json.entities || [];
+const text = $('HTTP Request').item.json.text;
+
+// Group entities by type
+const groupedEntities = entities.reduce((acc, entity) => {
+  if (!acc[entity.type]) acc[entity.type] = [];
+  acc[entity.type].push({
+    text: entity.text,
+    confidence: entity.confidence.toFixed(2),
+    position: `Zeichen ${entity.start}-${entity.end}`
+  });
+  return acc;
+}, {});
+
+// Create report
+const report = {
+  contract_name: $('Google Drive Trigger').json.name,
+  total_entities: entities.length,
+  entity_breakdown: Object.entries(groupedEntities).map(([type, items]) => ({
+    type: type,
+    count: items.length,
+    entities: items
+  })),
+  risk_level: entities.length > 10 ? 'HOCH' : entities.length > 5 ? 'MITTEL' : 'NIEDRIG',
+  requires_redaction: entities.some(e => e.type === 'PER' || e.type === 'IBAN'),
+  generated_at: new Date().toISOString()
+};
+
+return { json: report };
+
+// 6. Google Docs - Create PII Report
+Title: PII Analyse - {{ $json.contract_name }}
+Content: |
+  # Datenschutz-Analyse: {{ $json.contract_name }}
+  
+  **Risikostufe:** {{ $json.risk_level }}
+  **Gesamt gefundene Entitäten:** {{ $json.total_entities }}
+  **Schwärzung erforderlich:** {{ $json.requires_redaction ? 'JA ⚠️' : 'Nein ✓' }}
+  
+  ## Gefundene personenbezogene Daten:
+  
+  {{ $json.entity_breakdown.map(eb => `
+  ### ${eb.type} (${eb.count})
+  ${eb.entities.map(e => `- ${e.text} (Konfidenz: ${e.confidence}) - ${e.position}`).join('\n')}
+  `).join('\n') }}
+  
+  ---
+  Erstellt: {{ $json.generated_at }}
+
+// 7. IF Node - Check if Redaction Required
+Condition: {{ $json.requires_redaction }} === true
+
+// 8. Slack Notification - Alert Legal Team
+Channel: #rechtliches
+Message: |
+  ⚠️ **Neuer Vertrag benötigt Schwärzung**
+  
+  Vertrag: {{ $json.contract_name }}
+  Risiko: {{ $json.risk_level }}
+  Personendaten: {{ $json.entity_breakdown.find(e => e.type === 'PER')?.count || 0 }}
+  IBAN gefunden: {{ $json.entity_breakdown.find(e => e.type === 'IBAN')?.count || 0 }}
+  
+  [PII-Analyse ansehen](https://docs.google.com/...)
+```
+
+#### Example 3: Multi-Language Support Ticket Routing
+
+**Workflow:** Detect language → Route to Presidio (English) or Flair (German) → Anonymize → Create ticket
+
+```javascript
+// Smart routing based on detected language
+
+// 1. Webhook Trigger - Support Ticket Submission
+Path: /support/ticket
+Method: POST
+// Expected: { "customer_email": "...", "message": "...", "subject": "..." }
+
+// 2. Code Node - Simple Language Detection
+const text = $json.message;
+
+// Detect language based on common words
+const germanIndicators = /\b(der|die|das|und|ich|Sie|werden|haben|sein|mit|auf|für|können|müssen|möchte)\b/gi;
+const englishIndicators = /\b(the|and|is|are|was|were|have|has|can|will|would|should|could)\b/gi;
+
+const germanMatches = (text.match(germanIndicators) || []).length;
+const englishMatches = (text.match(englishIndicators) || []).length;
+
+const detectedLanguage = germanMatches > englishMatches ? 'de' : 'en';
+
+return {
+  json: {
+    original_data: $json,
+    text: text,
+    detected_language: detectedLanguage,
+    confidence: Math.abs(germanMatches - englishMatches)
+  }
+};
+
+// 3. Switch Node - Route by Language
+Mode: Expression
+Outputs:
+  - If {{ $json.detected_language }} === 'de' → Route to Flair NER
+  - If {{ $json.detected_language }} === 'en' → Route to Presidio
+  - Else → Route to Presidio (default)
+
+// 4a. HTTP Request - Flair NER (for German)
+Method: POST
+URL: http://flair-ner:5000/detect
+Body (JSON):
+{
+  "text": "{{ $('Code Node').item.json.text }}",
+  "language": "de",
+  "min_confidence": 0.75
+}
+
+// 4b. HTTP Request - Presidio Analyzer (for English)
+Method: POST
+URL: http://presidio-analyzer:3000/analyze
+Body (JSON):
+{
+  "text": "{{ $('Code Node').item.json.text }}",
+  "language": "en"
+}
+
+// 5. Code Node - Normalize Results (Flair → Presidio Format)
+// Since Flair and Presidio have different response formats, normalize them
+const entities = $json.entities || $json;  // Flair uses .entities, Presidio returns array directly
+const language = $('Code Node').item.json.detected_language;
+
+// Convert Flair entity types to Presidio-compatible
+const typeMapping = {
+  'PER': 'PERSON',
+  'LOC': 'LOCATION',
+  'ORG': 'ORGANIZATION',
+  'IBAN': 'IBAN',
+  'PHONE': 'PHONE_NUMBER'
+};
+
+const normalizedEntities = entities.map(entity => ({
+  entity_type: typeMapping[entity.type] || entity.entity_type || entity.type,
+  start: entity.start,
+  end: entity.end,
+  score: entity.confidence || entity.score || 0,
+  text: entity.text
+}));
+
+return {
+  json: {
+    entities: normalizedEntities,
+    language: language,
+    detection_service: language === 'de' ? 'Flair NER' : 'Presidio'
+  }
+};
+
+// 6. HTTP Request - Anonymize (Presidio Anonymizer works for both)
+Method: POST
+URL: http://presidio-anonymizer:3000/anonymize
+Body (JSON):
+{
+  "text": "{{ $('Code Node').item.json.text }}",
+  "analyzer_results": {{ $json.entities }},
+  "operators": {
+    "DEFAULT": {"type": "replace", "new_value": "<REDACTED>"}
+  }
+}
+
+// 7. Zendesk/Freshdesk Node - Create Ticket
+Operation: Create Ticket
+Subject: {{ $('Webhook').item.json.subject }}
+Description: {{ $json.text }}  // Anonymized text
+Priority: Normal
+Tags: {{ $json.language }}, auto-anonymized, {{ $json.detection_service }}
+
+// 8. Email Node - Confirmation to Customer
+To: {{ $('Webhook').item.json.customer_email }}
+Subject: Ticket erstellt / Ticket Created
+Message: |
+  {{ $json.language === 'de' ? 
+    'Ihr Support-Ticket wurde erstellt. Wir bearbeiten Ihre Anfrage schnellstmöglich.' :
+    'Your support ticket has been created. We will process your request as soon as possible.' }}
+  
+  Ticket ID: {{ $json.ticket_id }}
+```
+
+### Performance & Optimization
+
+**Performance Characteristics:**
+- **First request:** 1-2 seconds (loads neural models into memory)
+- **Subsequent requests:** 100-200ms per text
+- **Model loading:** Lazy (only when language requested)
+- **Memory usage:** ~1.5GB for German model (de-ner-large)
+- **Concurrent requests:** Unlimited (Flask async)
+- **Accuracy:** 95%+ for German text (based on CoNLL-2003 benchmarks)
+
+**Optimization Tips:**
+
+1. **Warm up service on startup:**
+```bash
+# Add to post-installation script
+curl -X POST http://localhost:5000/detect \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Aufwärmen","language":"de"}' > /dev/null 2>&1
+```
+
+2. **Batch processing for large datasets:**
+```javascript
+// Process in chunks of 50 records
+// Use n8n SplitInBatches node with batch size 50
+```
+
+3. **Cache results for repeated texts:**
+```javascript
+// Use Redis to cache Flair results
+// Key: hash(text), Value: detected entities
+// TTL: 24 hours
+```
+
+4. **Adjust confidence threshold:**
+```bash
+# Higher threshold = faster (fewer low-confidence entities)
+{ "min_confidence": 0.85 }
+```
+
+### Troubleshooting
+
+#### Issue 1: Slow First Request (1-2 seconds)
+
+**Cause:** Neural models load on first request for each language.
+
+**Solution:** Warm up service after deployment:
+```bash
+# Pre-load German model
+curl -X POST http://localhost:5000/detect \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Test deutscher Text","language":"de"}'
+
+# Pre-load English model
+curl -X POST http://localhost:5000/detect \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Test English text","language":"en"}'
+```
+
+**Alternative:** Models are cached after first load, so subsequent requests are fast.
+
+#### Issue 2: German Names Not Detected
+
+**Cause:** Low confidence score or ambiguous context.
+
+**Solution 1:** Lower confidence threshold:
+```json
+{
+  "text": "Max Schmidt arbeitet bei BMW",
+  "language": "de",
+  "min_confidence": 0.60  // Lower from default 0.75
+}
+```
+
+**Solution 2:** Add more context:
+```json
+{
+  "text": "Herr Max Schmidt arbeitet bei der BMW AG",  // Better context
+  "language": "de"
+}
+```
+
+**Solution 3:** Check entity type - might be detected as ORG instead of PER:
+```javascript
+// Review all entity types in response
+const allEntities = $json.entities.map(e => ({ type: e.type, text: e.text }));
+```
+
+#### Issue 3: False Positives on Product Names
+
+**Cause:** Product names can look like organization names (e.g., "iPhone 15 Pro").
+
+**Solution:** Filter by confidence and entity type:
+```javascript
+// Only keep high-confidence person names
+const peopleOnly = $json.entities.filter(e => 
+  e.type === 'PER' && e.confidence > 0.85
+);
+```
+
+#### Issue 4: IBAN Not Detected
+
+**Cause:** Flair NER uses pattern matching for IBAN (not neural), so format must be exact.
+
+**Solution:** Ensure IBAN format is correct:
+```javascript
+// Valid: DE89370400440532013000 (22 characters, starts with country code)
+// Invalid: DE89 3704 0044 0532 0130 00 (spaces break pattern)
+
+// Pre-process to remove spaces
+const cleanedText = text.replace(/\s+/g, '');
+```
+
+#### Issue 5: Service Not Responding
+
+**Check health:**
+```bash
+curl http://localhost:5000/health
+
+# Expected response:
+{
+  "status": "healthy",
+  "models_loaded": ["de-ner-large", "en-ner-large"]
+}
+```
+
+**View logs:**
+```bash
+docker logs flair-ner -f
+
+# Look for:
+# - Model loading errors
+# - Out of memory errors
+# - Request processing times
+```
+
+**Restart service:**
+```bash
+docker compose restart flair-ner
+
+# Check if model loads successfully
+docker logs flair-ner | grep "Model loaded"
+```
+
+### Resources
+
+- **Official Documentation:** https://flairnlp.github.io/
+- **GitHub Repository:** https://github.com/flairNLP/flair
+- **NER Tutorial:** https://flairnlp.github.io/docs/tutorial-basics/tagging-entities
+- **German Models:** https://huggingface.co/flair/ner-german-large
+- **Model Performance:** https://github.com/flairNLP/flair/blob/master/resources/docs/EXPERIMENTS.md
+- **Entity Types:** https://flairnlp.github.io/docs/tutorial-basics/tagging-entities#list-of-ner-tags
+- **Python API:** https://flairnlp.github.io/docs/api/models
+
+### Best Practices
+
+**When to Use Flair NER:**
+
+✅ **Use Flair NER for:**
+- German text processing (95%+ accuracy)
+- Complex German grammar (compound words, declensions)
+- DSGVO compliance workflows
+- German customer data, contracts, emails
+- When context matters (neural models understand semantics)
+- Multi-language support (DE, EN, FR, ES, IT, NL, PT)
+
+❌ **Don't use Flair NER for:**
+- English text (use Presidio instead - faster, pattern-based)
+- Simple pattern matching (email, phone) - Presidio is faster
+- Real-time chat (100-200ms too slow) - use Presidio
+- Very short texts (<10 words) - not enough context
+
+**Recommended Workflows:**
+
+1. **German DSGVO Compliance:**
+   ```
+   German Text → Flair NER (detect PII) → Anonymize → Store/Export
+   ```
+
+2. **Multi-Language Support:**
+   ```
+   Text → Detect Language → Flair (DE) OR Presidio (EN) → Anonymize
+   ```
+
+3. **German Contract Analysis:**
+   ```
+   PDF → Extract Text → Flair NER → Generate PII Report → Redact
+   ```
+
+4. **Customer Support Routing:**
+   ```
+   Ticket → Language Detection → Flair/Presidio → Anonymize → Create Ticket
+   ```
+
+5. **Combined Security:**
+   ```
+   Input → LLM Guard (security) → Flair/Presidio (PII) → LLM → Output
+   ```
+
+### Flair vs. Presidio - When to Use Which?
+
+| Criteria | Flair NER | Presidio |
+|----------|-----------|----------|
+| **Language** | German (best) | English (best) |
+| **Accuracy** | 95%+ (neural) | 85-90% (patterns) |
+| **Speed** | 100-200ms | 50-100ms |
+| **Context Understanding** | Excellent | Limited |
+| **Compound Words** | Handles well | Struggles |
+| **First Request** | 1-2s (model load) | 10-15s (model load) |
+| **Memory** | 1.5GB per language | 500MB per language |
+| **Best For** | German text | English text |
+
+**Recommendation:** Use Flair for German, Presidio for English, combine both for multi-language.
+
+### Integration with AI LaunchKit Services
+
+**Flair NER + Microsoft Presidio:**
+- Language detection → Route to appropriate service
+- Flair: German text (95%+ accuracy)
+- Presidio: English, French, Spanish, Italian, Dutch
+- Normalize results to common format for downstream processing
+
+**Flair NER + LLM Guard:**
+- LLM Guard: General security (injection, toxicity)
+- Flair NER: German PII detection
+- Pipeline: LLM Guard → Flair NER → LLM → Output validation
+
+**Flair NER + Supabase:**
+- Store anonymized German customer data
+- Use Row Level Security (RLS) to control access
+- Audit trail for DSGVO compliance (Article 30)
+
+**Flair NER + Langfuse:**
+- Track PII detection metrics for German content
+- Monitor false positive rates
+- Analyze patterns in detected entities
+
+**Flair NER + Open WebUI:**
+- Add PII protection layer to German chat interface
+- Workflow: User → n8n webhook → Flair NER → Ollama → Response
+- Anonymize German chat history before storage
+
+**Flair NER + EspoCRM/Odoo:**
+- Anonymize German customer records automatically
+- DSGVO-compliant data exports
+- Detect PII before sending marketing emails
 
 </details>
 
@@ -37605,14 +39067,558 @@ docker compose restart llm-guard
 <details>
 <summary><b>🚨 502 Bad Gateway Errors</b></summary>
 
-<!-- TODO: Content will be added -->
+502 errors typically indicate that Caddy (the reverse proxy) cannot reach the backend service. This is one of the most common issues, especially during initial setup or when running many services.
+
+### Quick Diagnosis
+
+1. **Check which containers are actually running:**
+   ```bash
+   docker ps -a
+   ```
+   Look for containers with status "Exited" or "Restarting"
+
+2. **Check system resources:**
+   ```bash
+   # RAM usage
+   free -h
+   
+   # CPU usage
+   htop
+   
+   # Disk space
+   df -h
+   ```
+
+3. **Check specific service logs:**
+   ```bash
+   # For the failing service (replace SERVICE_NAME)
+   docker logs [SERVICE_NAME] --tail 100
+   
+   # For Caddy (reverse proxy)
+   docker logs caddy --tail 50
+   ```
+
+### Common Causes and Solutions
+
+#### 1. Services Failed to Start (Most Common)
+
+**Symptoms:**
+- Service container shows "Exited" status
+- Caddy logs show "dial tcp: connection refused"
+
+**Solutions:**
+```bash
+# Check why the service crashed
+docker logs [SERVICE_NAME] --tail 200
+
+# Try restarting the service
+docker compose restart [SERVICE_NAME]
+
+# If it keeps crashing, check the .env file for missing variables
+nano .env
+```
+
+#### 2. Insufficient RAM/Resources
+
+**Symptoms:**
+- High memory usage (>90% in `free -h`)
+- OOMKiller messages in logs
+- Multiple services crashing
+
+**Solutions:**
+```bash
+# Add swap space (temporary fix)
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Reduce number of running services
+docker compose stop [SERVICE_NAME]
+
+# Or upgrade your VPS (permanent solution)
+```
+
+#### 3. Long Startup Times
+
+**Symptoms:**
+- Service works after 5-10 minutes
+- Container is running but not ready
+- Especially common with: Supabase, Dify, ComfyUI, Cal.com
+
+**Solution:**
+```bash
+# Be patient - some services need time to initialize
+# Check progress with:
+docker logs [SERVICE_NAME] --follow
+
+# For Cal.com, first build can take 10-15 minutes
+# For n8n with workflows import, this can take 30+ minutes
+```
+
+#### 4. Port Conflicts
+
+**Symptoms:**
+- "bind: address already in use" in logs
+- Service can't start on its configured port
+
+**Solutions:**
+```bash
+# Find what's using the port
+sudo lsof -i :PORT_NUMBER
+
+# Edit .env to use a different port
+nano .env
+# Change PORT_NAME=8080 to PORT_NAME=8081
+
+# Restart services
+docker compose down
+docker compose up -d
+```
+
+#### 5. Network Issues
+
+**Symptoms:**
+- Services can't communicate internally
+- "no such host" errors in logs
+
+**Solutions:**
+```bash
+# Recreate Docker network
+docker compose down
+docker network prune
+docker compose up -d
+
+# Verify network connectivity
+docker exec caddy ping [SERVICE_NAME]
+```
+
+#### 6. Database Connection Issues
+
+**Symptoms:**
+- Services depending on PostgreSQL fail
+- "connection refused" to postgres:5432
+
+**Solutions:**
+```bash
+# Check if PostgreSQL is running
+docker ps | grep postgres
+
+# Check PostgreSQL logs
+docker logs postgres --tail 100
+
+# Ensure password doesn't contain special characters like @
+# Edit .env and regenerate if needed
+```
+
+### Service-Specific 502 Issues
+
+**n8n:**
+```bash
+# Often caused by workflow import hanging
+# Solution: Skip workflows initially
+docker compose stop n8n
+# Edit .env: set IMPORT_WORKFLOWS=false
+docker compose up -d n8n
+```
+
+**Supabase:**
+```bash
+# Complex service with many components
+# Check each component:
+docker ps | grep supabase
+# Kong (API Gateway) must be healthy
+docker logs supabase-kong --tail 50
+```
+
+**Cal.com:**
+```bash
+# Long build time on first start
+# Check build progress:
+docker logs calcom --follow
+# Can take 10-15 minutes for initial build
+```
+
+**bolt.diy:**
+```bash
+# Requires proper hostname configuration
+# Verify in .env:
+grep BOLT_HOSTNAME .env
+# Should match your domain
+```
+
+### Prevention Tips
+
+1. **Start with minimal services:**
+   - Begin with just n8n
+   - Add services gradually
+   - Monitor resources after each addition
+
+2. **Check requirements before installation:**
+   - Each service adds ~200-500MB RAM usage
+   - Some services (ComfyUI, Dify, Cal.com) need 1-2GB alone
+
+3. **Use monitoring:**
+   ```bash
+   # Watch resources in real-time
+   docker stats
+   
+   # Set up alerts with Grafana (if installed)
+   ```
+
+4. **Regular maintenance:**
+   ```bash
+   # Clean up unused Docker resources
+   docker system prune -a
+   
+   # Check logs regularly
+   docker compose logs --tail 100
+   ```
+
+### Still Getting 502 Errors?
+
+If problems persist after trying these solutions:
+
+1. **Collect diagnostic information:**
+   ```bash
+   # Save all container statuses
+   docker ps -a > docker_status.txt
+   
+   # Save resource usage
+   free -h > memory_status.txt
+   df -h > disk_status.txt
+   
+   # Save logs of failing service
+   docker logs [SERVICE_NAME] > service_logs.txt 2>&1
+   
+   # Save Caddy logs
+   docker logs caddy > caddy_logs.txt 2>&1
+   ```
+
+2. **Create a GitHub issue with:**
+   - Your VPS specifications
+   - Services selected during installation
+   - The diagnostic files above
+   - Specific error messages
+
+3. **Quick workaround:**
+   - Access services directly via ports (bypass Caddy)
+   - Example: `http://YOUR_IP:5678` instead of `https://n8n.yourdomain.com`
+   - Note: This bypasses SSL, use only for testing
 
 </details>
 
 <details>
 <summary><b>📧 Mail System Issues</b></summary>
 
-<!-- TODO: Content will be added -->
+AI LaunchKit includes Mailpit (always active), optional Docker-Mailserver (production), and SnappyMail (webmail). Here's how to troubleshoot common email issues.
+
+### Mailpit Issues
+
+#### Emails Not Appearing in Mailpit
+
+**Symptom:** Emails sent from services don't appear in Mailpit UI
+
+**Solutions:**
+```bash
+# 1. Check if Mailpit is running
+docker ps | grep mailpit
+
+# 2. Check Mailpit logs
+docker logs mailpit --tail 50
+
+# 3. Test SMTP connectivity from n8n
+docker exec n8n nc -zv mailpit 1025
+
+# Should return: Connection successful
+
+# 4. Verify environment variables
+grep "SMTP_\|MAIL" .env
+
+# 5. Test email from command line
+docker exec mailpit nc localhost 1025 << EOF
+HELO test
+MAIL FROM:<test@example.com>
+RCPT TO:<user@example.com>
+DATA
+Subject: Test Email
+This is a test
+.
+QUIT
+EOF
+
+# 6. Check Mailpit Web UI
+curl -I https://mail.yourdomain.com
+```
+
+#### Mailpit Web UI Not Accessible
+
+**Symptom:** Cannot access `https://mail.yourdomain.com`
+
+**Solutions:**
+```bash
+# 1. Check Caddy logs
+docker logs caddy | grep mailpit
+
+# 2. Restart Mailpit container
+docker compose restart mailpit
+
+# 3. Clear browser cache
+# CTRL+F5 or use incognito mode
+
+# 4. Check DNS resolution
+nslookup mail.yourdomain.com
+# Should return your server IP
+
+# 5. Test local access
+curl http://localhost:8025
+```
+
+#### Service Cannot Send Emails to Mailpit
+
+**Symptom:** Service shows SMTP errors in logs
+
+**Solutions:**
+```bash
+# 1. Check service SMTP settings
+docker exec [service-name] env | grep SMTP
+
+# Should show: SMTP_HOST=mailpit, SMTP_PORT=1025
+
+# 2. Check Docker network
+docker network inspect ai-launchkit_default | grep mailpit
+
+# 3. Test connection from service container
+docker exec [service-name] nc -zv mailpit 1025
+
+# 4. Check service logs for SMTP errors
+docker logs [service-name] | grep -i "mail\|smtp"
+
+# 5. Restart service
+docker compose restart [service-name]
+```
+
+### Docker-Mailserver Issues
+
+#### Emails Not Being Delivered
+
+**Symptom:** Real emails not sent when Docker-Mailserver configured
+
+**Solutions:**
+```bash
+# 1. Check if Docker-Mailserver is running
+docker ps | grep mailserver
+
+# 2. Check Docker-Mailserver logs
+docker logs mailserver --tail 100
+
+# 3. Verify DNS records (CRITICAL!)
+nslookup -type=MX yourdomain.com
+nslookup -type=TXT yourdomain.com  # SPF record
+nslookup mail.yourdomain.com
+
+# 4. Test authentication
+docker exec mailserver doveadm auth test noreply@yourdomain.com [password]
+
+# 5. Check mail queue
+docker exec mailserver postqueue -p
+
+# 6. Verify DKIM configuration
+docker exec mailserver setup config dkim status
+
+# 7. Test outbound mail delivery
+echo "Test email body" | docker exec -i mailserver mail -s "Test Subject" test@gmail.com
+```
+
+#### SMTP Authentication Fails
+
+**Symptom:** Services cannot authenticate to Docker-Mailserver
+
+**Solutions:**
+```bash
+# 1. Check account exists
+docker exec mailserver setup email list
+
+# 2. Test authentication manually
+docker exec mailserver doveadm auth test noreply@yourdomain.com [password]
+
+# 3. Verify password in .env
+grep MAIL_NOREPLY_PASSWORD .env
+
+# 4. Reset password if needed
+docker exec mailserver setup email update noreply@yourdomain.com [new-password]
+
+# 5. Restart mailserver
+docker compose restart mailserver
+```
+
+#### Emails Landing in Spam
+
+**Symptom:** Sent emails go to recipient's spam folder
+
+**Solutions:**
+```bash
+# 1. Check DKIM, SPF, DMARC configuration
+# Use online tools: https://mxtoolbox.com/
+
+# 2. Verify DKIM is working
+docker exec mailserver opendkim-testkey -d yourdomain.com -s mail -vvv
+
+# 3. Check IP reputation
+# Use: https://multirbl.valli.org/
+
+# 4. Verify reverse DNS (PTR record)
+dig -x YOUR_SERVER_IP
+
+# 5. Check Rspamd logs
+docker logs mailserver | grep -i rspamd
+
+# 6. Test email deliverability
+# Use: https://www.mail-tester.com/
+```
+
+#### Docker-Mailserver Won't Start
+
+**Symptom:** mailserver container exits immediately
+
+**Solutions:**
+```bash
+# 1. Check logs for specific error
+docker logs mailserver --tail 200
+
+# 2. Check volumes
+docker volume ls | grep mailserver
+
+# 3. Check ports (25, 465, 587, 993)
+sudo netstat -tulpn | grep -E "25|465|587|993"
+
+# 4. Verify .env configuration
+grep -E "MAIL_|SMTP_" .env
+
+# 5. Recreate container
+docker compose down mailserver
+docker compose up -d --force-recreate mailserver
+```
+
+### SnappyMail Issues
+
+#### Cannot Access SnappyMail
+
+**Symptom:** `https://webmail.yourdomain.com` not accessible
+
+**Solutions:**
+```bash
+# 1. Check if SnappyMail is running
+docker ps | grep snappymail
+
+# 2. Get admin password
+docker exec snappymail cat /var/lib/snappymail/_data_/_default_/admin_password.txt
+
+# 3. Check logs
+docker logs snappymail --tail 50
+
+# 4. Verify Docker-Mailserver connection
+docker exec snappymail nc -zv mailserver 143
+docker exec snappymail nc -zv mailserver 587
+
+# 5. Restart if needed
+docker compose restart snappymail
+```
+
+#### Users Cannot Login to SnappyMail
+
+**Symptom:** Login fails with authentication error
+
+**Solutions:**
+1. **Ensure domain is configured in admin panel:**
+   - Access `https://webmail.yourdomain.com/?admin`
+   - Check if your domain is added
+   - Verify IMAP/SMTP settings point to `mailserver`
+
+2. **Verify user account exists in Docker-Mailserver:**
+   ```bash
+   docker exec mailserver setup email list
+   ```
+
+3. **Test authentication:**
+   ```bash
+   docker exec mailserver doveadm auth test user@yourdomain.com [password]
+   ```
+
+4. **Check SnappyMail domain configuration:**
+   - Admin Panel → Domains
+   - IMAP: mailserver:143 (STARTTLS)
+   - SMTP: mailserver:587 (STARTTLS)
+
+### n8n Send Email Node Issues
+
+#### Send Email Node Fails
+
+**Symptom:** n8n Send Email node shows connection error
+
+**Solution for Mailpit (Development):**
+
+Create new SMTP credential in n8n:
+- Host: `mailpit` (not localhost!)
+- Port: `1025`
+- User: `admin`
+- Password: `admin`
+- SSL/TLS: **OFF**
+- Sender Email: `noreply@yourdomain.com`
+
+**Solution for Docker-Mailserver (Production):**
+
+Create new SMTP credential in n8n:
+- Host: `mailserver`
+- Port: `587`
+- User: `noreply@yourdomain.com`
+- Password: Check `.env` file for `MAIL_NOREPLY_PASSWORD`
+- SSL/TLS: **STARTTLS**
+- Sender Email: `noreply@yourdomain.com`
+
+**Test with simple workflow:**
+```javascript
+Manual Trigger → Send Email → Set recipient to test@example.com
+```
+
+### General Mail Troubleshooting
+
+**Check mail flow:**
+```bash
+# 1. Service → Mailpit/Mailserver
+docker logs [service-name] | grep -i smtp
+
+# 2. Mailpit → Web UI
+curl http://localhost:8025/api/v1/messages
+
+# 3. Docker-Mailserver → External
+docker exec mailserver postqueue -p
+docker logs mailserver | grep "status=sent"
+```
+
+**Verify configuration:**
+```bash
+# Check which mail system is active
+grep MAIL_MODE .env
+
+# For Mailpit (default):
+# MAIL_MODE=mailpit
+
+# For Docker-Mailserver:
+# MAIL_MODE=mailserver
+```
+
+**Reset mail configuration:**
+```bash
+# Stop mail services
+docker compose stop mailpit mailserver snappymail
+
+# Clear mail queue (if Docker-Mailserver)
+docker exec mailserver postsuper -d ALL
+
+# Restart mail services
+docker compose up -d mailpit mailserver snappymail
+```
 
 </details>
 

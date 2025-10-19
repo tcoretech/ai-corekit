@@ -15643,7 +15643,6 @@ docker compose restart letta caddy
 - Use standardized tool libraries
 - Seamless integration with MCP ecosystem
 
-</details>
 ```
 
 ### Memory Management Best Practices

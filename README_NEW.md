@@ -32258,23 +32258,2513 @@ docker stats python-runner --no-stream
 </details>
 
 <details>
-<summary><b>📊 Grafana - Metrics Visualization</b></summary>
+<summary><b>📊 Grafana - Metrics Visualization & Monitoring Platform</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Grafana?
+
+Grafana is an open-source analytics and visualization platform that allows you to query, visualize, alert on, and understand your metrics regardless of where they are stored. It transforms complex data from multiple sources into beautiful, interactive dashboards that make monitoring simple and efficient.
+
+### Features
+
+- **Multi-Source Dashboards** - Combine data from Prometheus, PostgreSQL, InfluxDB, and 60+ other data sources in a single view
+- **Real-Time Visualization** - Time series, graphs, heatmaps, histograms, and 30+ visualization types with live data updates
+- **Alerting & Notifications** - Define alert rules with thresholds and get notified via email, Slack, PagerDuty, webhooks, and more
+- **Template Variables** - Create dynamic, reusable dashboards with dropdown filters for different environments, servers, or metrics
+- **Plugin Ecosystem** - Extend functionality with 150+ community and official plugins for data sources, panels, and apps
+- **Team Collaboration** - Share dashboards, set up role-based access control (RBAC), organize with folders and playlists
+
+### Initial Setup
+
+**First Login to Grafana:**
+
+1. Navigate to `https://grafana.yourdomain.com`
+2. Login with default credentials (from installation report):
+   ```
+   Username: admin
+   Password: [Check your installation report or .env file: GRAFANA_ADMIN_PASSWORD]
+   ```
+3. **Change Default Password** - You'll be prompted immediately
+4. Skip the "Welcome" tour or complete it to learn basics
+
+**Connect Your First Data Source (Prometheus):**
+
+1. Go to **Configuration** (⚙️ gear icon) → **Data Sources**
+2. Click **Add data source**
+3. Select **Prometheus**
+4. Configure:
+   ```
+   Name: Prometheus
+   URL: http://prometheus:9090
+   Access: Server (default)
+   ```
+5. Click **Save & Test** - should show "Data source is working"
+
+**Import a Pre-Built Dashboard:**
+
+1. Go to **Dashboards** → **Import**
+2. Enter dashboard ID from [Grafana.com](https://grafana.com/grafana/dashboards/):
+   - `1860` - Node Exporter Full (system metrics)
+   - `3662` - Prometheus 2.0 Overview
+   - `12708` - Docker and system monitoring
+3. Select **Prometheus** as data source
+4. Click **Import**
+5. Your dashboard is ready with live metrics!
+
+### n8n Integration Setup
+
+**Internal URL for n8n:** `http://grafana:3000`
+
+**Authentication Options:**
+
+n8n can interact with Grafana using two methods:
+
+**Method 1: API Token (Recommended)**
+
+1. In Grafana, go to **Configuration** → **API Keys**
+2. Click **Add API key**:
+   ```
+   Key name: n8n-integration
+   Role: Editor (or Viewer for read-only)
+   Time to live: Never expire (or set expiry)
+   ```
+3. Click **Add** and **copy the API key** immediately (shown only once!)
+4. Store in n8n credentials or `.env` file
+
+**Method 2: Service Account Token (Grafana 9+)**
+
+1. Go to **Administration** → **Service accounts**
+2. Click **Add service account**:
+   ```
+   Display name: n8n-automation
+   Role: Editor
+   ```
+3. Click **Add**, then **Add service account token**
+4. Copy the token and store securely
+
+**Create HTTP Request Credentials in n8n:**
+
+1. In n8n, go to **Credentials** → **Create New**
+2. Search for **Header Auth**
+3. Configure:
+   ```
+   Name: Grafana API
+   Header Name: Authorization
+   Header Value: Bearer YOUR_API_TOKEN_HERE
+   ```
+4. Test and save
+
+### Example Workflows
+
+#### Example 1: Alert on High Error Rates
+
+Monitor application errors and notify team when thresholds are exceeded:
+
+```javascript
+// n8n Workflow: Grafana Alert to Slack
+
+// 1. Schedule Trigger - Every 5 minutes
+
+// 2. HTTP Request Node - Query Grafana API for panel data
+Method: GET
+URL: http://grafana:3000/api/datasources/proxy/1/api/v1/query
+Authentication: Use Grafana API credentials
+Query Parameters:
+  query: sum(rate(http_errors_total[5m]))
+
+// 3. Code Node - Evaluate threshold
+const errorRate = $input.first().json.data.result[0]?.value[1];
+const threshold = 100; // errors per second
+
+if (parseFloat(errorRate) > threshold) {
+  return {
+    json: {
+      alert: true,
+      errorRate: errorRate,
+      message: `⚠️ High error rate detected: ${errorRate} errors/sec (threshold: ${threshold})`
+    }
+  };
+} else {
+  return {
+    json: {
+      alert: false,
+      errorRate: errorRate,
+      message: `✅ Error rate normal: ${errorRate} errors/sec`
+    }
+  };
+}
+
+// 4. IF Node - Check if alert condition met
+Expression: {{ $json.alert }} === true
+
+// 5a. Slack Node (if true) - Send alert
+Channel: #alerts
+Message: {{ $json.message }}
+
+// 5b. Do Nothing (if false)
+
+// 6. HTTP Request Node - Create annotation in Grafana
+Method: POST
+URL: http://grafana:3000/api/annotations
+Authentication: Use Grafana API credentials
+Body (JSON):
+{
+  "dashboardId": 1,
+  "time": {{ $now.toUnixInteger() * 1000 }},
+  "tags": ["alert", "automated"],
+  "text": "{{ $json.message }}"
+}
+```
+
+#### Example 2: Automated Dashboard Snapshot & Report
+
+Generate weekly dashboard snapshots and email to stakeholders:
+
+```javascript
+// n8n Workflow: Weekly Grafana Report
+
+// 1. Schedule Trigger - Every Monday at 9 AM
+
+// 2. HTTP Request Node - Create dashboard snapshot
+Method: POST
+URL: http://grafana:3000/api/snapshots
+Authentication: Use Grafana API credentials
+Body (JSON):
+{
+  "dashboard": {
+    "getDashboardId": 1  // Your main dashboard ID
+  },
+  "name": "Weekly Report - {{ $now.format('YYYY-MM-DD') }}",
+  "expires": 604800  // 7 days in seconds
+}
+
+// Store snapshot URL
+// Response contains: {"url": "https://grafana.yourdomain.com/dashboard/snapshot/..."}
+
+// 3. HTTP Request Node - Render dashboard as image
+Method: GET
+URL: http://grafana:3000/render/d-solo/DASHBOARD_UID/dashboard-name
+Authentication: Use Grafana API credentials
+Query Parameters:
+  orgId: 1
+  from: now-7d
+  to: now
+  panelId: 2
+  width: 1000
+  height: 500
+  theme: light
+Options:
+  Response Format: File
+
+// 4. Code Node - Prepare email content
+const snapshotUrl = $('HTTP Request').json.url;
+const dashboardUrl = 'https://grafana.yourdomain.com/d/YOUR_DASHBOARD_UID';
+
+return {
+  json: {
+    subject: `📊 Weekly Dashboard Report - ${new Date().toLocaleDateString()}`,
+    body: `
+      <h2>Weekly Dashboard Snapshot</h2>
+      <p>Here's your automated weekly report from Grafana:</p>
+      <p><strong>Report Period:</strong> Last 7 days</p>
+      <p><strong>Live Dashboard:</strong> <a href="${dashboardUrl}">View in Grafana</a></p>
+      <p><strong>Snapshot Link:</strong> <a href="${snapshotUrl}">View Snapshot (expires in 7 days)</a></p>
+      <h3>Key Metrics Overview:</h3>
+      <p>See attached dashboard image for full details.</p>
+    `
+  }
+};
+
+// 5. Send Email Node
+To: team@yourdomain.com, executives@yourdomain.com
+Subject: {{ $json.subject }}
+Body (HTML): {{ $json.body }}
+Attachments: Use file from HTTP Request (step 3)
+
+// 6. Slack Node - Post notification
+Channel: #reports
+Message: |
+  📊 *Weekly Grafana Report Published*
+  
+  📅 Report Date: {{ $now.format('MMMM D, YYYY') }}
+  🔗 Dashboard: {{ dashboardUrl }}
+  📸 Snapshot: {{ snapshotUrl }}
+  
+  Full report sent via email.
+```
+
+#### Example 3: Dynamic Dashboard Creation from Workflow Data
+
+Automatically create Grafana dashboards from n8n workflow execution metrics:
+
+```javascript
+// n8n Workflow: Create Custom Workflow Performance Dashboard
+
+// 1. Webhook Trigger - Receive workflow completion event
+
+// 2. Code Node - Aggregate last 30 days of workflow data
+// Query your n8n database or use n8n API to get execution stats
+
+const workflowMetrics = {
+  workflow_id: $json.workflowId,
+  workflow_name: $json.workflowName,
+  total_executions: 1250,
+  success_rate: 94.5,
+  avg_duration: 2.3,
+  error_count: 69
+};
+
+// Define dashboard JSON
+const dashboard = {
+  "dashboard": {
+    "title": `Workflow Performance: ${workflowMetrics.workflow_name}`,
+    "tags": ["workflow", "automation", "performance"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Execution Count (Last 30 Days)",
+        "type": "stat",
+        "targets": [
+          {
+            "datasource": "Prometheus",
+            "expr": `sum(n8n_workflow_executions_total{workflow_id="${workflowMetrics.workflow_id}"})`
+          }
+        ],
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2,
+        "title": "Success Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "datasource": "Prometheus",
+            "expr": `(sum(n8n_workflow_executions_total{status="success"}) / sum(n8n_workflow_executions_total)) * 100`
+          }
+        ],
+        "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 }
+      },
+      {
+        "id": 3,
+        "title": "Average Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "datasource": "Prometheus",
+            "expr": `avg(n8n_workflow_execution_duration_seconds{workflow_id="${workflowMetrics.workflow_id}"})`
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+      }
+    ]
+  },
+  "folderId": 0,
+  "overwrite": true
+};
+
+return { json: dashboard };
+
+// 3. HTTP Request Node - Create dashboard in Grafana
+Method: POST
+URL: http://grafana:3000/api/dashboards/db
+Authentication: Use Grafana API credentials
+Body (JSON): {{ $json }}
+
+// 4. Code Node - Extract dashboard URL
+const response = $input.first().json;
+const dashboardUrl = `https://grafana.yourdomain.com${response.url}`;
+
+return {
+  json: {
+    dashboardUrl: dashboardUrl,
+    dashboardId: response.id,
+    message: `Dashboard created successfully for workflow: ${workflowMetrics.workflow_name}`
+  }
+};
+
+// 5. Slack Node - Notify team
+Channel: #automation
+Message: |
+  ✅ *New Grafana Dashboard Created*
+  
+  📊 Workflow: {{ $('Code Node').first().json.workflow_name }}
+  🔗 Dashboard: {{ $json.dashboardUrl }}
+  
+  Automated performance tracking is now live!
+```
+
+#### Example 4: Monitor & Auto-Scale Based on Metrics
+
+Query Grafana metrics and trigger scaling actions:
+
+```javascript
+// n8n Workflow: Auto-Scale Based on CPU Metrics
+
+// 1. Schedule Trigger - Every 2 minutes
+
+// 2. HTTP Request Node - Query current CPU usage from Prometheus
+Method: GET
+URL: http://grafana:3000/api/datasources/proxy/1/api/v1/query
+Authentication: Use Grafana API credentials
+Query Parameters:
+  query: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+// 3. Code Node - Evaluate scaling decision
+const cpuData = $input.first().json.data.result;
+
+// Calculate average CPU across all instances
+let totalCpu = 0;
+let instanceCount = 0;
+
+cpuData.forEach(instance => {
+  totalCpu += parseFloat(instance.value[1]);
+  instanceCount++;
+});
+
+const avgCpu = totalCpu / instanceCount;
+const scaleUpThreshold = 80;
+const scaleDownThreshold = 30;
+
+let action = 'none';
+if (avgCpu > scaleUpThreshold) {
+  action = 'scale_up';
+} else if (avgCpu < scaleDownThreshold) {
+  action = 'scale_down';
+}
+
+return {
+  json: {
+    avgCpu: avgCpu.toFixed(2),
+    action: action,
+    instanceCount: instanceCount,
+    timestamp: new Date().toISOString()
+  }
+};
+
+// 4. Switch Node - Route based on action
+// Mode: Expression
+// Output: {{ $json.action }}
+
+// 5a. HTTP Request (Scale Up) - Call your infrastructure API
+Method: POST
+URL: https://your-cloud-provider.com/api/scale
+Body: { "action": "scale_up", "instances": 1 }
+
+// 5b. HTTP Request (Scale Down) - Call your infrastructure API
+Method: POST
+URL: https://your-cloud-provider.com/api/scale
+Body: { "action": "scale_down", "instances": 1 }
+
+// 5c. Do Nothing
+
+// 6. HTTP Request Node - Create annotation in Grafana
+Method: POST
+URL: http://grafana:3000/api/annotations
+Authentication: Use Grafana API credentials
+Body (JSON):
+{
+  "dashboardId": 1,
+  "time": {{ $now.toUnixInteger() * 1000 }},
+  "tags": ["autoscaling", "{{ $json.action }}"],
+  "text": "Auto-scaling action: {{ $json.action }} (CPU: {{ $json.avgCpu }}%)"
+}
+
+// 7. Send Email (if scaled)
+IF Node: {{ $json.action }} !== 'none'
+To: devops@yourdomain.com
+Subject: Auto-scaling event triggered
+Body: |
+  CPU Utilization: {{ $json.avgCpu }}%
+  Action Taken: {{ $json.action }}
+  Instance Count: {{ $json.instanceCount }}
+```
+
+### Alerting with Grafana & n8n
+
+**Set up Grafana Alerts to trigger n8n webhooks:**
+
+1. **In n8n - Create Webhook:**
+   - Add Webhook node to new workflow
+   - Set to `GET` or `POST`
+   - Copy webhook URL: `https://n8n.yourdomain.com/webhook/grafana-alert`
+
+2. **In Grafana - Configure Contact Point:**
+   - Go to **Alerting** → **Contact points**
+   - Click **New contact point**
+   - Select **Webhook** as type
+   - Enter n8n webhook URL
+   - Add custom headers if needed (for authentication)
+
+3. **Create Alert Rule:**
+   - Go to **Alerting** → **Alert rules**
+   - Click **Create alert rule**
+   - Select data source and write PromQL query
+   - Define threshold conditions
+   - Set evaluation interval
+   - Select your n8n contact point
+
+4. **Process in n8n:**
+   ```javascript
+   // n8n Webhook receives alert payload
+   const alert = $json;
+   
+   // Alert payload structure:
+   {
+     "state": "alerting",  // or "ok"
+     "evalMatches": [...],
+     "message": "Alert message",
+     "ruleId": 1,
+     "ruleName": "High CPU Alert",
+     "tags": {...}
+   }
+   
+   // Take action based on alert state
+   if (alert.state === 'alerting') {
+     // Send to Slack, PagerDuty, create ticket, etc.
+   }
+   ```
+
+### Advanced Grafana Features for n8n Integration
+
+#### Variables & Templating
+
+Create dynamic dashboards that n8n can manipulate:
+
+```javascript
+// HTTP Request - Update dashboard variable
+Method: POST
+URL: http://grafana:3000/api/dashboards/db
+Body (JSON):
+{
+  "dashboard": {
+    "title": "Dynamic Dashboard",
+    "templating": {
+      "list": [
+        {
+          "type": "query",
+          "name": "server",
+          "query": "label_values(up, instance)",
+          "current": {
+            "text": "{{ $json.selectedServer }}",
+            "value": "{{ $json.selectedServer }}"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+#### Annotations
+
+Add context to your dashboards programmatically:
+
+```javascript
+// Mark deployments, incidents, or events
+Method: POST
+URL: http://grafana:3000/api/annotations
+Body (JSON):
+{
+  "dashboardId": 1,
+  "panelId": 2,  // Optional: specific panel
+  "time": {{ $now.toUnixInteger() * 1000 }},
+  "timeEnd": {{ $now.plus(1, 'hour').toUnixInteger() * 1000 }},  // Optional: for range
+  "tags": ["deployment", "production", "v2.1.0"],
+  "text": "Deployed version 2.1.0 to production",
+  "dashboardUID": "dashboard-uid"  // Alternative to dashboardId
+}
+```
+
+#### Playlist Automation
+
+Control dashboard playlists for display screens:
+
+```javascript
+// Create a playlist
+Method: POST
+URL: http://grafana:3000/api/playlists
+Body (JSON):
+{
+  "name": "Office Dashboard Rotation",
+  "interval": "30s",
+  "items": [
+    {"type": "dashboard_by_id", "value": "1"},
+    {"type": "dashboard_by_id", "value": "2"},
+    {"type": "dashboard_by_id", "value": "5"}
+  ]
+}
+
+// Start a playlist
+Method: GET
+URL: http://grafana:3000/api/playlists/1/start
+```
+
+### Best Practices
+
+1. **Use Service Accounts** - Create dedicated service accounts with minimal permissions for n8n integrations
+2. **Internal URLs** - From n8n, always use `http://grafana:3000`, never the external domain
+3. **Cache Queries** - Store frequently queried data in n8n variables to reduce API calls
+4. **Error Handling** - Always wrap Grafana API calls in try-catch blocks and handle rate limits
+5. **Dashboard as Code** - Export dashboard JSON and version control it alongside your workflows
+6. **Annotations for Audit** - Create Grafana annotations when n8n workflows make infrastructure changes
+7. **Alert De-duplication** - Implement cooldown periods in n8n to prevent alert spam
+8. **Secure API Keys** - Rotate API tokens regularly and use short-lived tokens when possible
+9. **Testing Dashboards** - Create test dashboards in separate folders before promoting to production
+10. **Monitor Grafana Itself** - Set up self-monitoring dashboards to track Grafana's own performance
+
+### Troubleshooting
+
+#### Grafana Container Won't Start
+
+```bash
+# Check logs
+docker logs grafana --tail 100
+
+# Common issue: Permissions on grafana data volume
+docker exec grafana ls -la /var/lib/grafana
+# Should be owned by user 472 (grafana user)
+
+# Fix permissions if needed
+docker exec -u root grafana chown -R 472:472 /var/lib/grafana
+
+# Restart container
+docker restart grafana
+```
+
+#### Cannot Connect to Data Sources
+
+```bash
+# Test internal connectivity from Grafana container
+docker exec grafana curl -v http://prometheus:9090
+docker exec grafana curl -v http://postgres:5432
+
+# If connection fails, check Docker network
+docker network inspect ai-launchkit_default
+
+# Ensure services are on same network
+docker inspect grafana | grep NetworkMode
+docker inspect prometheus | grep NetworkMode
+```
+
+#### n8n Cannot Authenticate with Grafana
+
+```bash
+# 1. Verify API token is valid
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  http://grafana:3000/api/org
+
+# Should return organization info, not 401
+
+# 2. Check token permissions
+# In Grafana UI: Configuration → API Keys
+# Ensure role is Editor or Admin
+
+# 3. For service accounts (Grafana 9+)
+# Administration → Service accounts → Check token expiry
+```
+
+#### Slow Dashboard Performance
+
+```bash
+# 1. Check query performance in Grafana UI
+# Open panel → Query Inspector → Check query execution time
+
+# 2. Optimize Prometheus queries
+# Use recording rules for frequently computed metrics
+
+# 3. Increase Grafana resources in docker-compose.yml
+environment:
+  - GF_SERVER_ROOT_URL=https://grafana.yourdomain.com
+  - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/home.json
+  - GF_DATABASE_MAX_OPEN_CONN=300  # Increase from default 0
+  - GF_DATABASE_MAX_IDLE_CONN=100  # Increase from default 2
+
+# 4. Enable query caching
+# Settings → Data Sources → Your data source → Cache Settings
+# Set cache timeout: 60s for frequently changing data
+```
+
+#### Alerts Not Triggering n8n Webhooks
+
+```bash
+# 1. Check Grafana alert state
+# Alerting → Alert rules → View rule state
+
+# 2. Test contact point manually
+# Alerting → Contact points → Select your webhook → Test
+
+# 3. Check n8n webhook logs
+# In n8n: Workflow → Executions → Find webhook trigger
+
+# 4. Verify webhook URL is accessible from Grafana
+docker exec grafana curl -v https://n8n.yourdomain.com/webhook/test
+
+# 5. Check Grafana logs for delivery errors
+docker logs grafana --tail 50 | grep -i "webhook\|alert"
+```
+
+#### Dashboard Not Saving via API
+
+```bash
+# Check if dashboard JSON is valid
+# Test with curl:
+curl -X POST http://grafana:3000/api/dashboards/db \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"dashboard": {...}, "folderId": 0, "overwrite": true}' \
+  --verbose
+
+# Common errors:
+# - Missing "dashboard" wrapper object
+# - Invalid panel ID references
+# - Duplicate dashboard UID (set "overwrite": true)
+# - Insufficient token permissions (use Editor or Admin role)
+```
+
+### Resources
+
+- **Documentation:** [https://grafana.com/docs/grafana/latest/](https://grafana.com/docs/grafana/latest/)
+- **Dashboard Library:** [https://grafana.com/grafana/dashboards/](https://grafana.com/grafana/dashboards/) (1000+ pre-built dashboards)
+- **API Reference:** [https://grafana.com/docs/grafana/latest/developers/http_api/](https://grafana.com/docs/grafana/latest/developers/http_api/)
+- **Plugin Catalog:** [https://grafana.com/grafana/plugins/](https://grafana.com/grafana/plugins/)
+- **GitHub:** [https://github.com/grafana/grafana](https://github.com/grafana/grafana)
+- **Community Forum:** [https://community.grafana.com/](https://community.grafana.com/)
+- **Grafana University:** [https://grafana.com/tutorials/](https://grafana.com/tutorials/) (Free tutorials and courses)
+- **n8n Grafana Node:** [https://n8n.io/integrations/grafana/](https://n8n.io/integrations/grafana/)
 
 </details>
 
 <details>
-<summary><b>📈 Prometheus - Monitoring</b></summary>
+<summary><b>📈 Prometheus - Time-Series Metrics & Monitoring System</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Prometheus?
+
+Prometheus is an open-source systems monitoring and alerting toolkit that collects and stores metrics as time-series data. Originally built at SoundCloud, it's now a graduated CNCF project and the de-facto standard for cloud-native monitoring. Prometheus uses a pull-based model to scrape metrics from targets at regular intervals, stores them efficiently, and provides a powerful query language (PromQL) for analysis.
+
+### Features
+
+- **Pull-Based Metrics Collection** - Scrapes HTTP endpoints at configured intervals instead of requiring applications to push data
+- **Powerful Query Language (PromQL)** - Flexible queries for filtering, aggregating, and analyzing time-series data in real-time
+- **Multi-Dimensional Data Model** - Metrics identified by name and key-value labels for flexible querying and aggregation
+- **Service Discovery** - Automatically discovers targets via Kubernetes, Consul, DNS, file-based configs, and more
+- **Built-in Alerting** - Define alert rules in PromQL that trigger when conditions are met, integrated with Alertmanager
+- **Local Storage & Optional Remote Write** - Efficient on-disk storage with optional integration to remote systems like Grafana Mimir
+
+### Initial Setup
+
+**Access Prometheus Web UI:**
+
+1. Navigate to `http://prometheus.yourdomain.com` (if exposed externally)
+   - Or internally: `http://prometheus:9090`
+2. No authentication required by default (internal service)
+3. Explore the interface:
+   - **Graph** - Execute PromQL queries and visualize results
+   - **Alerts** - View active alerts and their states
+   - **Status** → **Targets** - See all scrape targets and their health
+   - **Status** → **Configuration** - View current Prometheus config
+
+**Verify Prometheus is Scraping Metrics:**
+
+1. Go to **Status** → **Targets**
+2. Check that targets show as **UP** (green)
+3. Common targets in AI LaunchKit:
+   - `prometheus` - Prometheus itself
+   - `node-exporter` - System metrics (if installed)
+   - `cadvisor` - Container metrics (if installed)
+   - `n8n` - n8n metrics (if enabled with `N8N_METRICS=true`)
+
+**Execute Your First PromQL Query:**
+
+1. Go to **Graph** tab
+2. Try these example queries:
+   ```promql
+   # Current CPU usage
+   100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+   
+   # Memory usage percentage
+   (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+   
+   # HTTP request rate
+   rate(http_requests_total[5m])
+   
+   # n8n workflow executions (if N8N_METRICS enabled)
+   sum(n8n_workflow_executions_total)
+   ```
+3. Click **Execute** and view results in table or graph format
+
+**Configure Alertmanager (Optional but Recommended):**
+
+Alertmanager handles alerts sent by Prometheus, including deduplication, grouping, and routing to receivers like email, Slack, PagerDuty, or n8n webhooks.
+
+1. Edit `prometheus.yml` to add alert rules:
+   ```yaml
+   rule_files:
+     - /etc/prometheus/alert.rules.yml
+   
+   alerting:
+     alertmanagers:
+       - static_configs:
+           - targets:
+               - alertmanager:9093
+   ```
+
+2. Create `/etc/prometheus/alert.rules.yml`:
+   ```yaml
+   groups:
+     - name: system_alerts
+       interval: 30s
+       rules:
+         - alert: HighCPUUsage
+           expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+           for: 5m
+           labels:
+             severity: warning
+           annotations:
+             summary: "High CPU usage detected on {{ $labels.instance }}"
+             description: "CPU usage is {{ $value }}%"
+   ```
+
+3. Reload Prometheus config:
+   ```bash
+   docker exec prometheus kill -HUP 1
+   # Or restart container
+   docker restart prometheus
+   ```
+
+### n8n Integration Setup
+
+**Internal URL for n8n:** `http://prometheus:9090`
+
+Prometheus doesn't have traditional "credentials" - it's typically accessed internally without authentication. Integration with n8n is done via:
+1. **HTTP Request Node** - Query Prometheus API for metrics
+2. **Webhook Trigger** - Receive alerts from Alertmanager
+
+#### Method 1: Query Prometheus API from n8n
+
+**HTTP Request Node Configuration:**
+
+```javascript
+// No credentials needed for internal access
+Method: GET
+URL: http://prometheus:9090/api/v1/query
+Query Parameters:
+  query: up{job="prometheus"}  // Your PromQL query
+  time: {{ $now.toUnixInteger() }}  // Optional: specific timestamp
+
+// Alternative: Range query for time-series data
+Method: GET
+URL: http://prometheus:9090/api/v1/query_range
+Query Parameters:
+  query: rate(http_requests_total[5m])
+  start: {{ $now.minus(1, 'hour').toUnixInteger() }}
+  end: {{ $now.toUnixInteger() }}
+  step: 60  // Resolution in seconds
+```
+
+**Response Structure:**
+```json
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "__name__": "up",
+          "job": "prometheus",
+          "instance": "localhost:9090"
+        },
+        "value": [1634567890, "1"]
+      }
+    ]
+  }
+}
+```
+
+#### Method 2: Receive Alerts via Alertmanager Webhook
+
+**Configure Alertmanager to Send to n8n:**
+
+1. **In n8n - Create Webhook Trigger:**
+   - Add Webhook node to new workflow
+   - Set HTTP Method: `POST`
+   - Copy webhook URL: `https://n8n.yourdomain.com/webhook/prometheus-alerts`
+
+2. **In Alertmanager - Edit `/etc/alertmanager/alertmanager.yml`:**
+   ```yaml
+   global:
+     resolve_timeout: 5m
+   
+   route:
+     receiver: 'n8n-webhook'
+     group_by: ['alertname', 'instance']
+     group_wait: 30s
+     group_interval: 1m
+     repeat_interval: 30m
+     routes:
+       - match:
+           severity: critical
+         receiver: 'n8n-critical'
+         continue: true
+       - match:
+           severity: warning
+         receiver: 'n8n-webhook'
+   
+   receivers:
+     - name: 'n8n-webhook'
+       webhook_configs:
+         - url: 'http://n8n:5678/webhook/prometheus-alerts'
+           send_resolved: true
+           http_config:
+             follow_redirects: true
+   
+     - name: 'n8n-critical'
+       webhook_configs:
+         - url: 'http://n8n:5678/webhook/prometheus-critical'
+           send_resolved: true
+   ```
+
+3. **Reload Alertmanager:**
+   ```bash
+   docker exec alertmanager kill -HUP 1
+   ```
+
+**Webhook Payload Structure:**
+```json
+{
+  "receiver": "n8n-webhook",
+  "status": "firing",  // or "resolved"
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "HighCPUUsage",
+        "instance": "server-01",
+        "severity": "warning"
+      },
+      "annotations": {
+        "summary": "High CPU usage detected",
+        "description": "CPU usage is 85%"
+      },
+      "startsAt": "2024-10-19T10:30:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://prometheus:9090/graph?..."
+    }
+  ],
+  "groupLabels": {
+    "alertname": "HighCPUUsage"
+  },
+  "commonLabels": {
+    "severity": "warning"
+  },
+  "externalURL": "http://alertmanager:9093"
+}
+```
+
+### Example Workflows
+
+#### Example 1: Automated Incident Response System
+
+Receive Prometheus alerts via Alertmanager and auto-remediate or escalate:
+
+```javascript
+// n8n Workflow: Intelligent Alert Handler
+
+// 1. Webhook Trigger - Receive alert from Alertmanager
+// Webhook URL: /webhook/prometheus-alerts
+// HTTP Method: POST
+
+// 2. Code Node - Parse and analyze alert
+const alert = $input.first().json.alerts[0];
+const isBusinessHours = () => {
+  const now = new Date();
+  const hour = now.getHours();
+  const day = now.getDay();
+  return day >= 1 && day <= 5 && hour >= 9 && hour < 17;
+};
+
+const severity = alert.labels.severity || 'info';
+const alertName = alert.labels.alertname;
+const instance = alert.labels.instance;
+const status = alert.status;  // 'firing' or 'resolved'
+
+// Calculate alert duration if firing
+let duration = null;
+if (status === 'firing') {
+  const startTime = new Date(alert.startsAt);
+  const now = new Date();
+  duration = Math.floor((now - startTime) / 1000 / 60);  // minutes
+}
+
+return {
+  json: {
+    severity: severity,
+    alertName: alertName,
+    instance: instance,
+    status: status,
+    duration: duration,
+    isBusinessHours: isBusinessHours(),
+    description: alert.annotations.description || alert.annotations.summary,
+    dashboardUrl: alert.generatorURL,
+    canAutoRemediate: ['HighMemoryUsage', 'ContainerRestart'].includes(alertName)
+  }
+};
+
+// 3. Switch Node - Route based on severity and status
+// Mode: Expression
+// Output 0: {{ $json.status === 'resolved' }}
+// Output 1: {{ $json.severity === 'critical' }}
+// Output 2: {{ $json.severity === 'warning' && $json.canAutoRemediate }}
+// Output 3: {{ $json.severity === 'warning' }}
+
+// 4a. Resolved Alert - Log and notify
+// Code Node - Log resolution
+const alert = $input.first().json;
+return {
+  json: {
+    message: `✅ RESOLVED: ${alert.alertName} on ${alert.instance}`,
+    slackMessage: {
+      text: "Alert Resolved",
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*✅ Alert Resolved*\n*Alert:* ${alert.alertName}\n*Instance:* ${alert.instance}\n*Description:* ${alert.description}`
+          }
+        }
+      ]
+    }
+  }
+};
+
+// Slack Node - Notify resolution
+Channel: #monitoring
+Message: {{ $json.slackMessage }}
+
+// 4b. Critical Alert - Immediate escalation
+// Code Node - Prepare critical notification
+const alert = $input.first().json;
+const oncallTeam = alert.isBusinessHours ? '@devops-team' : '@oncall-sre';
+
+return {
+  json: {
+    subject: `🚨 CRITICAL: ${alert.alertName}`,
+    message: `Critical alert requires immediate attention!\n\nAlert: ${alert.alertName}\nInstance: ${alert.instance}\nDescription: ${alert.description}\nDuration: ${alert.duration} minutes\n\nDashboard: ${alert.dashboardUrl}`,
+    slackMessage: {
+      text: "🚨 CRITICAL ALERT",
+      blocks: [
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: "🚨 CRITICAL ALERT"
+          }
+        },
+        {
+          type: "section",
+          fields: [
+            {
+              type: "mrkdwn",
+              text: `*Alert:*\n${alert.alertName}`
+            },
+            {
+              type: "mrkdwn",
+              text: `*Instance:*\n${alert.instance}`
+            },
+            {
+              type: "mrkdwn",
+              text: `*Duration:*\n${alert.duration} minutes`
+            },
+            {
+              type: "mrkdwn",
+              text: `*Oncall:*\n${oncallTeam}`
+            }
+          ]
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*Description:*\n${alert.description}`
+          }
+        },
+        {
+          type: "actions",
+          elements: [
+            {
+              type: "button",
+              text: {
+                type: "plain_text",
+                text: "View Dashboard"
+              },
+              url: alert.dashboardUrl
+            }
+          ]
+        }
+      ]
+    },
+    pagerdutyPayload: {
+      routing_key: "YOUR_PAGERDUTY_KEY",
+      event_action: "trigger",
+      payload: {
+        summary: `${alert.alertName} on ${alert.instance}`,
+        severity: "critical",
+        source: alert.instance,
+        custom_details: {
+          description: alert.description,
+          duration: `${alert.duration} minutes`
+        }
+      }
+    }
+  }
+};
+
+// Slack Node - Post to emergency channel
+Channel: #incidents
+Message: {{ $json.slackMessage }}
+
+// HTTP Request Node - Trigger PagerDuty
+Method: POST
+URL: https://events.pagerduty.com/v2/enqueue
+Body (JSON): {{ $json.pagerdutyPayload }}
+
+// Send Email Node - Email oncall team
+To: oncall@yourdomain.com
+Subject: {{ $json.subject }}
+Priority: High
+Body: {{ $json.message }}
+
+// 4c. Auto-Remediation Path - Attempt automated fix
+// Code Node - Determine remediation action
+const alert = $input.first().json;
+
+const remediationActions = {
+  'HighMemoryUsage': {
+    action: 'restart_container',
+    container: alert.instance,
+    command: `docker restart ${alert.instance}`
+  },
+  'ContainerRestart': {
+    action: 'check_logs',
+    container: alert.instance,
+    command: `docker logs --tail 100 ${alert.instance}`
+  }
+};
+
+const remediation = remediationActions[alert.alertName];
+
+return {
+  json: {
+    ...alert,
+    remediation: remediation,
+    shouldExecute: remediation !== undefined
+  }
+};
+
+// IF Node - Check if remediation available
+Condition: {{ $json.shouldExecute }} === true
+
+// SSH Node - Execute remediation command
+Host: server.yourdomain.com
+Command: {{ $json.remediation.command }}
+
+// Code Node - Evaluate remediation result
+const sshOutput = $input.first().json;
+const alert = $('Code Node1').first().json;
+
+// Wait 2 minutes and query Prometheus to check if alert cleared
+return {
+  json: {
+    alert: alert,
+    remediationExecuted: true,
+    willVerify: true
+  }
+};
+
+// Wait Node - 2 minutes
+Amount: 2
+Unit: minutes
+
+// HTTP Request Node - Check if alert still firing
+Method: GET
+URL: http://prometheus:9090/api/v1/query
+Query Parameters:
+  query: ALERTS{alertname="{{ $('Code Node1').first().json.alertName }}",alertstate="firing"}
+
+// Code Node - Check if remediation worked
+const prometheusResult = $input.first().json.data.result;
+const remediationSucceeded = prometheusResult.length === 0;
+
+return {
+  json: {
+    remediationSucceeded: remediationSucceeded,
+    message: remediationSucceeded 
+      ? `✅ Auto-remediation successful for ${$('Code Node1').first().json.alertName}`
+      : `⚠️ Auto-remediation failed, escalating ${$('Code Node1').first().json.alertName}`
+  }
+};
+
+// IF Node - Escalate if remediation failed
+Condition: {{ $json.remediationSucceeded }} === false
+// If failed, route to critical alert path (4b)
+
+// Slack Node - Notify remediation result
+Channel: #monitoring
+Message: {{ $json.message }}
+
+// 4d. Warning Alert - Standard notification
+// Slack Node
+Channel: #alerts
+Message: |
+  ⚠️ *Warning Alert*
+  
+  *Alert:* {{ $('Code Node').first().json.alertName }}
+  *Instance:* {{ $('Code Node').first().json.instance }}
+  *Description:* {{ $('Code Node').first().json.description }}
+  *Duration:* {{ $('Code Node').first().json.duration }} minutes
+  
+  <{{ $('Code Node').first().json.dashboardUrl }}|View Dashboard>
+
+// 5. PostgreSQL Node - Log all alerts to database
+Operation: Insert
+Table: prometheus_alerts
+Columns:
+  alert_name: {{ $('Code Node').first().json.alertName }}
+  instance: {{ $('Code Node').first().json.instance }}
+  severity: {{ $('Code Node').first().json.severity }}
+  status: {{ $('Code Node').first().json.status }}
+  description: {{ $('Code Node').first().json.description }}
+  duration_minutes: {{ $('Code Node').first().json.duration }}
+  timestamp: {{ $now.toISO() }}
+  remediation_attempted: {{ $json.remediationExecuted || false }}
+```
+
+#### Example 2: Proactive System Health Monitoring
+
+Query Prometheus metrics on schedule to detect issues before they become critical:
+
+```javascript
+// n8n Workflow: Proactive Health Checks
+
+// 1. Schedule Trigger - Every 5 minutes
+
+// 2. HTTP Request Node - Query CPU usage
+Method: GET
+URL: http://prometheus:9090/api/v1/query
+Query Parameters:
+  query: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+// 3. HTTP Request Node - Query memory usage
+Method: GET
+URL: http://prometheus:9090/api/v1/query
+Query Parameters:
+  query: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+
+// 4. HTTP Request Node - Query disk usage
+Method: GET
+URL: http://prometheus:9090/api/v1/query
+Query Parameters:
+  query: (node_filesystem_size_bytes{fstype!="tmpfs"} - node_filesystem_free_bytes{fstype!="tmpfs"}) / node_filesystem_size_bytes{fstype!="tmpfs"} * 100
+
+// 5. HTTP Request Node - Query container health
+Method: GET
+URL: http://prometheus:9090/api/v1/query
+Query Parameters:
+  query: up{job=~".*"}
+
+// 6. Code Node - Aggregate and analyze health metrics
+const cpuData = $('HTTP Request').all()[0].json.data.result;
+const memoryData = $('HTTP Request1').all()[0].json.data.result;
+const diskData = $('HTTP Request2').all()[0].json.data.result;
+const containerData = $('HTTP Request3').all()[0].json.data.result;
+
+// Analyze CPU
+const cpuIssues = cpuData.filter(m => parseFloat(m.value[1]) > 70);
+
+// Analyze Memory
+const memoryIssues = memoryData.filter(m => parseFloat(m.value[1]) > 80);
+
+// Analyze Disk
+const diskIssues = diskData.filter(m => parseFloat(m.value[1]) > 85);
+
+// Analyze Container Health
+const downContainers = containerData.filter(m => m.value[1] !== "1");
+
+// Create health report
+const healthReport = {
+  timestamp: new Date().toISOString(),
+  overall_health: cpuIssues.length === 0 && memoryIssues.length === 0 && 
+                  diskIssues.length === 0 && downContainers.length === 0 ? 'healthy' : 'degraded',
+  cpu: {
+    total_instances: cpuData.length,
+    high_usage_count: cpuIssues.length,
+    details: cpuIssues.map(m => ({
+      instance: m.metric.instance,
+      usage: parseFloat(m.value[1]).toFixed(2) + '%'
+    }))
+  },
+  memory: {
+    total_instances: memoryData.length,
+    high_usage_count: memoryIssues.length,
+    details: memoryIssues.map(m => ({
+      instance: m.metric.instance,
+      usage: parseFloat(m.value[1]).toFixed(2) + '%'
+    }))
+  },
+  disk: {
+    total_instances: diskData.length,
+    high_usage_count: diskIssues.length,
+    details: diskIssues.map(m => ({
+      instance: m.metric.instance,
+      mountpoint: m.metric.mountpoint,
+      usage: parseFloat(m.value[1]).toFixed(2) + '%'
+    }))
+  },
+  containers: {
+    total: containerData.length,
+    down: downContainers.length,
+    details: downContainers.map(m => ({
+      job: m.metric.job,
+      instance: m.metric.instance
+    }))
+  }
+};
+
+return { json: healthReport };
+
+// 7. IF Node - Check if issues detected
+Condition: {{ $json.overall_health }} === 'degraded'
+
+// 8a. Slack Node (if issues) - Send warning
+Channel: #monitoring
+Message: |
+  ⚠️ *System Health Degraded*
+  
+  *CPU Issues:* {{ $json.cpu.high_usage_count }} instance(s)
+  {{ $json.cpu.details.map(d => `  • ${d.instance}: ${d.usage}`).join('\n') }}
+  
+  *Memory Issues:* {{ $json.memory.high_usage_count }} instance(s)
+  {{ $json.memory.details.map(d => `  • ${d.instance}: ${d.usage}`).join('\n') }}
+  
+  *Disk Issues:* {{ $json.disk.high_usage_count }} instance(s)
+  {{ $json.disk.details.map(d => `  • ${d.instance} (${d.mountpoint}): ${d.usage}`).join('\n') }}
+  
+  *Containers Down:* {{ $json.containers.down }}
+  {{ $json.containers.details.map(d => `  • ${d.job} on ${d.instance}`).join('\n') }}
+
+// 8b. Do Nothing (if healthy)
+
+// 9. PostgreSQL Node - Store health snapshot
+Operation: Insert
+Table: system_health_snapshots
+Data: {{ $json }}
+```
+
+#### Example 3: Custom Metrics Collection from n8n Workflows
+
+Push custom metrics to Prometheus from your n8n workflows:
+
+```javascript
+// n8n Workflow: Business Metrics to Prometheus
+
+// Enable Prometheus Pushgateway in docker-compose.yml first!
+
+// 1. Schedule Trigger or Webhook - Your business process
+
+// 2. Code Node - Calculate business metrics
+// Example: Calculate daily order metrics
+
+const orders = $json.orders || [];
+
+const metrics = {
+  total_orders: orders.length,
+  total_revenue: orders.reduce((sum, o) => sum + o.amount, 0),
+  avg_order_value: orders.reduce((sum, o) => sum + o.amount, 0) / orders.length,
+  orders_by_status: {
+    pending: orders.filter(o => o.status === 'pending').length,
+    completed: orders.filter(o => o.status === 'completed').length,
+    cancelled: orders.filter(o => o.status === 'cancelled').length
+  }
+};
+
+return { json: metrics };
+
+// 3. Code Node - Format metrics for Pushgateway
+const metrics = $input.first().json;
+
+// Prometheus metrics format
+const metricsText = `
+# HELP business_orders_total Total number of orders
+# TYPE business_orders_total counter
+business_orders_total ${metrics.total_orders}
+
+# HELP business_revenue_total Total revenue
+# TYPE business_revenue_total counter
+business_revenue_total ${metrics.total_revenue}
+
+# HELP business_order_value_avg Average order value
+# TYPE business_order_value_avg gauge
+business_order_value_avg ${metrics.avg_order_value}
+
+# HELP business_orders_by_status Orders by status
+# TYPE business_orders_by_status gauge
+business_orders_by_status{status="pending"} ${metrics.orders_by_status.pending}
+business_orders_by_status{status="completed"} ${metrics.orders_by_status.completed}
+business_orders_by_status{status="cancelled"} ${metrics.orders_by_status.cancelled}
+`;
+
+return { json: { metrics: metricsText } };
+
+// 4. HTTP Request Node - Push to Pushgateway
+Method: POST
+URL: http://pushgateway:9091/metrics/job/n8n_business_metrics/instance/workflow_{{ $workflow.id }}
+Headers:
+  Content-Type: text/plain
+Body (Raw): {{ $json.metrics }}
+
+// 5. Slack Node - Confirm metrics pushed
+Channel: #metrics
+Message: |
+  📊 Business metrics updated in Prometheus
+  
+  • Total Orders: {{ $('Code Node').first().json.total_orders }}
+  • Total Revenue: ${{ $('Code Node').first().json.total_revenue.toFixed(2) }}
+  • Avg Order Value: ${{ $('Code Node').first().json.avg_order_value.toFixed(2) }}
+```
+
+#### Example 4: SLA Monitoring & Reporting
+
+Monitor service level agreements and generate compliance reports:
+
+```javascript
+// n8n Workflow: SLA Compliance Monitoring
+
+// 1. Schedule Trigger - Daily at 8 AM
+
+// 2. Set Variable - Define SLA thresholds
+Name: sla_targets
+Value:
+{
+  "uptime_percentage": 99.9,
+  "response_time_ms": 200,
+  "error_rate_percentage": 0.1
+}
+
+// 3. HTTP Request - Query uptime (last 24h)
+Method: GET
+URL: http://prometheus:9090/api/v1/query
+Query Parameters:
+  query: avg_over_time(up{job="production"}[24h]) * 100
+
+// 4. HTTP Request - Query response time (p95)
+Method: GET
+URL: http://prometheus:9090/api/v1/query
+Query Parameters:
+  query: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[24h])) * 1000
+
+// 5. HTTP Request - Query error rate
+Method: GET
+URL: http://prometheus:9090/api/v1/query
+Query Parameters:
+  query: sum(rate(http_requests_total{status=~"5.."}[24h])) / sum(rate(http_requests_total[24h])) * 100
+
+// 6. Code Node - Calculate SLA compliance
+const slaTargets = $('Set Variable').first().json;
+const uptime = parseFloat($('HTTP Request').first().json.data.result[0]?.value[1] || 0);
+const responseTime = parseFloat($('HTTP Request1').first().json.data.result[0]?.value[1] || 0);
+const errorRate = parseFloat($('HTTP Request2').first().json.data.result[0]?.value[1] || 0);
+
+const uptimeCompliant = uptime >= slaTargets.uptime_percentage;
+const responseTimeCompliant = responseTime <= slaTargets.response_time_ms;
+const errorRateCompliant = errorRate <= slaTargets.error_rate_percentage;
+
+const overallCompliant = uptimeCompliant && responseTimeCompliant && errorRateCompliant;
+
+return {
+  json: {
+    date: new Date().toISOString().split('T')[0],
+    compliant: overallCompliant,
+    metrics: {
+      uptime: {
+        actual: uptime.toFixed(3) + '%',
+        target: slaTargets.uptime_percentage + '%',
+        compliant: uptimeCompliant
+      },
+      response_time: {
+        actual: responseTime.toFixed(2) + 'ms',
+        target: slaTargets.response_time_ms + 'ms',
+        compliant: responseTimeCompliant
+      },
+      error_rate: {
+        actual: errorRate.toFixed(3) + '%',
+        target: slaTargets.error_rate_percentage + '%',
+        compliant: errorRateCompliant
+      }
+    },
+    summary: overallCompliant ? '✅ SLA Met' : '❌ SLA Violation'
+  }
+};
+
+// 7. Google Sheets Node - Log to SLA tracking sheet
+Operation: Append
+Spreadsheet: SLA Compliance Reports
+Sheet: Daily Metrics
+Data: {{ $json }}
+
+// 8. IF Node - Check compliance
+Condition: {{ $json.compliant }} === false
+
+// 9a. Email (if violated) - Alert stakeholders
+To: management@yourdomain.com, sre@yourdomain.com
+Subject: ⚠️ SLA Violation - {{ $json.date }}
+Body: |
+  SLA Violation Detected
+  
+  Date: {{ $json.date }}
+  
+  Metrics:
+  • Uptime: {{ $json.metrics.uptime.actual }} (Target: {{ $json.metrics.uptime.target }}) {{ $json.metrics.uptime.compliant ? '✅' : '❌' }}
+  • Response Time: {{ $json.metrics.response_time.actual }} (Target: {{ $json.metrics.response_time.target }}) {{ $json.metrics.response_time.compliant ? '✅' : '❌' }}
+  • Error Rate: {{ $json.metrics.error_rate.actual }} (Target: {{ $json.metrics.error_rate.target }}) {{ $json.metrics.error_rate.compliant ? '✅' : '❌' }}
+  
+  Please review the metrics in Prometheus and Grafana.
+
+// 9b. Slack (if compliant) - Post success
+Channel: #sre
+Message: |
+  ✅ *SLA Compliance - {{ $json.date }}*
+  
+  All targets met!
+  • Uptime: {{ $json.metrics.uptime.actual }}
+  • Response Time: {{ $json.metrics.response_time.actual }}
+  • Error Rate: {{ $json.metrics.error_rate.actual }}
+```
+
+### PromQL Tips for n8n Workflows
+
+**Common Queries for Automation:**
+
+```promql
+# Is a service up?
+up{job="my-service"}
+
+# Request rate (last 5 minutes)
+rate(http_requests_total[5m])
+
+# CPU usage across all instances
+100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+# Available memory in GB
+node_memory_MemAvailable_bytes / 1024 / 1024 / 1024
+
+# Container restart count
+changes(container_last_seen[1h])
+
+# Active alerts (use in workflows to check alert state)
+ALERTS{alertstate="firing"}
+
+# Error rate (percentage)
+sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100
+
+# P95 response time
+histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+
+# Instances with high disk usage
+(node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 80
+```
+
+### Best Practices
+
+1. **Scrape Intervals** - Keep scrape intervals reasonable (10-60s). Shorter intervals increase load and storage
+2. **Label Cardinality** - Avoid high-cardinality labels (e.g., user IDs, timestamps) as they explode storage and memory
+3. **Retention Policy** - Set appropriate retention (default 15 days). Use remote storage for long-term metrics
+4. **Alert Fatigue** - Use `for` duration in alerts to avoid transient noise (e.g., `for: 5m`)
+5. **Recording Rules** - Pre-compute expensive queries as recording rules for dashboard performance
+6. **Service Discovery** - Use service discovery instead of static configs for dynamic environments
+7. **Exporters** - Use official exporters (node_exporter, blackbox_exporter) for standard metrics
+8. **Alertmanager Grouping** - Group related alerts to avoid notification storms
+9. **Internal Access** - Keep Prometheus internal-only; expose via Grafana for users
+10. **n8n Metrics** - Enable n8n metrics (`N8N_METRICS=true`) to monitor workflow performance
+
+### Troubleshooting
+
+#### Prometheus Container Won't Start
+
+```bash
+# Check logs
+docker logs prometheus --tail 100
+
+# Common issue: Invalid config syntax
+docker exec prometheus promtool check config /etc/prometheus/prometheus.yml
+
+# Fix permissions on data directory
+docker exec -u root prometheus chown -R nobody:nobody /prometheus
+
+# Restart container
+docker restart prometheus
+```
+
+#### Targets Showing as DOWN
+
+```bash
+# Check target status in Prometheus UI
+# Go to: http://prometheus:9090/targets
+
+# Test connectivity from Prometheus container
+docker exec prometheus wget -O- http://node-exporter:9100/metrics
+docker exec prometheus wget -O- http://cadvisor:8080/metrics
+
+# Common issues:
+# 1. Target not in same Docker network
+docker network inspect ai-launchkit_default
+
+# 2. Target port not exposed internally
+docker ps | grep node-exporter
+
+# 3. Wrong job configuration in prometheus.yml
+docker exec prometheus cat /etc/prometheus/prometheus.yml
+```
+
+#### High Memory Usage
+
+```bash
+# Check Prometheus memory usage
+docker stats prometheus
+
+# Reduce retention time in docker-compose.yml:
+command:
+  - '--storage.tsdb.retention.time=7d'  # Reduce from 15d
+
+# Reduce scrape frequency for non-critical targets
+# In prometheus.yml, set longer scrape_interval
+
+# Identify high-cardinality metrics
+# In Prometheus UI, query:
+topk(10, count by (__name__)({__name__=~".+"}))
+
+# Consider using recording rules for expensive queries
+```
+
+#### Alerts Not Reaching n8n
+
+```bash
+# 1. Test Alertmanager is receiving alerts
+docker exec prometheus curl http://alertmanager:9093/api/v2/alerts
+
+# 2. Check Alertmanager routing
+docker exec alertmanager cat /etc/alertmanager/alertmanager.yml
+
+# 3. Test webhook manually
+docker exec alertmanager curl -X POST http://n8n:5678/webhook/prometheus-alerts \
+  -H "Content-Type: application/json" \
+  -d '{"status":"firing","alerts":[{"labels":{"alertname":"test"}}]}'
+
+# 4. Check Alertmanager logs
+docker logs alertmanager --tail 50
+
+# 5. Verify n8n webhook is active
+# In n8n UI: Check workflow is active and webhook is listening
+```
+
+#### PromQL Query Returns No Data
+
+```bash
+# 1. Check if metric exists
+# In Prometheus UI: http://prometheus:9090/graph
+# Type metric name and autocomplete should show it
+
+# 2. Check label matchers
+# Verify labels exist:
+up{job="nonexistent"}  # Returns nothing
+up{job="prometheus"}   # Should return data
+
+# 3. Check time range
+# Data may be outside retention period
+
+# 4. Verify target is being scraped
+# Status → Targets → Check "Last Scrape" timestamp
+
+# 5. Check for typos in metric names
+# Use Prometheus autocomplete feature
+```
+
+#### n8n HTTP Request to Prometheus Fails
+
+```bash
+# 1. Verify internal URL is correct
+# From n8n, should use: http://prometheus:9090
+# NOT: https://prometheus.yourdomain.com
+
+# 2. Test connectivity from n8n container
+docker exec n8n curl http://prometheus:9090/api/v1/query?query=up
+
+# 3. Check if services are on same network
+docker network inspect ai-launchkit_default | grep -E "n8n|prometheus"
+
+# 4. Verify PromQL syntax
+# Test query in Prometheus UI first before using in n8n
+
+# 5. Check n8n HTTP Request node response format
+# Set "Response Format" to "JSON" for API endpoints
+```
+
+### Resources
+
+- **Documentation:** [https://prometheus.io/docs/](https://prometheus.io/docs/)
+- **Getting Started:** [https://prometheus.io/docs/prometheus/latest/getting_started/](https://prometheus.io/docs/prometheus/latest/getting_started/)
+- **PromQL Guide:** [https://prometheus.io/docs/prometheus/latest/querying/basics/](https://prometheus.io/docs/prometheus/latest/querying/basics/)
+- **Alerting Rules:** [https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/)
+- **Exporters List:** [https://prometheus.io/docs/instrumenting/exporters/](https://prometheus.io/docs/instrumenting/exporters/)
+- **Alertmanager Config:** [https://prometheus.io/docs/alerting/latest/configuration/](https://prometheus.io/docs/alerting/latest/configuration/)
+- **Best Practices:** [https://prometheus.io/docs/practices/naming/](https://prometheus.io/docs/practices/naming/)
+- **GitHub:** [https://github.com/prometheus/prometheus](https://github.com/prometheus/prometheus)
+- **Community Forum:** [https://prometheus.io/community/](https://prometheus.io/community/)
+- **n8n + Prometheus Integration:** [https://medium.com/@b0ld8/automated-incident-response-workflows-with-n8n-and-prometheus-0fbffdabc92f](https://medium.com/@b0ld8/automated-incident-response-workflows-with-n8n-and-prometheus-0fbffdabc92f)
 
 </details>
 
 <details>
-<summary><b>🐳 Portainer - Container Management</b></summary>
+<summary><b>🐳 Portainer - Docker Container Management UI</b></summary>
 
-<!-- TODO: Content will be added in Phase 2 -->
+### What is Portainer?
+
+Portainer is a lightweight, open-source container management platform that provides an intuitive web-based interface for managing Docker containers, images, volumes, networks, and stacks. It simplifies container operations that would otherwise require complex CLI commands, making Docker accessible to both beginners and enterprise teams. Portainer can manage local Docker environments, remote Docker hosts, Docker Swarm clusters, and even Kubernetes.
+
+### Features
+
+- **Visual Container Management** - Start, stop, restart, and monitor containers with a simple click interface
+- **Stack Deployment** - Deploy multi-container applications using Docker Compose files directly from the UI
+- **Multi-Environment Support** - Manage multiple Docker hosts, Swarm clusters, and Kubernetes from a single dashboard
+- **Resource Monitoring** - Real-time CPU, memory, and network usage statistics for containers and hosts
+- **Role-Based Access Control (RBAC)** - Define user roles and permissions (Business Edition feature)
+- **App Templates** - Pre-configured templates for popular applications like WordPress, MySQL, Nginx, and more
+
+### Initial Setup
+
+**First Login to Portainer:**
+
+1. Navigate to `https://portainer.yourdomain.com`
+2. **Create Admin Account** (first-time setup):
+   ```
+   Username: admin
+   Password: [Choose a strong password - at least 12 characters]
+   ```
+3. Click **Create user**
+4. **Connect to Docker Environment:**
+   - Select **Get Started** or **Docker**
+   - Portainer auto-detects local Docker via `/var/run/docker.sock`
+   - Click **Connect**
+
+**Explore the Dashboard:**
+
+1. **Home** - Overview of all environments and quick stats
+2. **Containers** - List and manage running/stopped containers
+3. **Images** - Browse, pull, and delete Docker images
+4. **Volumes** - Manage persistent data volumes
+5. **Networks** - View and configure Docker networks
+6. **Stacks** - Deploy and manage Docker Compose applications
+7. **App Templates** - Quick-deploy popular applications
+
+**Deploy Your First Stack:**
+
+1. Go to **Stacks** → **Add stack**
+2. Name: `test-nginx`
+3. Choose **Web editor**
+4. Paste this example:
+   ```yaml
+   version: '3.8'
+   services:
+     nginx:
+       image: nginx:alpine
+       ports:
+         - "8080:80"
+       restart: unless-stopped
+   ```
+5. Click **Deploy the stack**
+6. Access at `http://your-server-ip:8080`
+
+### n8n Integration Setup
+
+**Internal URL for n8n:** `http://portainer:9000`
+
+Portainer provides a comprehensive REST API that n8n can use to automate container management tasks. Authentication is done via API access tokens.
+
+#### Generate API Access Token
+
+**Method 1: Via Portainer UI (Recommended)**
+
+1. In Portainer, go to **User Settings** (click your username in top-right)
+2. Select **Access tokens**
+3. Click **Add access token**
+4. Configure:
+   ```
+   Description: n8n-automation
+   Expiry: Never (or set custom expiry)
+   ```
+5. Click **Add**
+6. **Copy the token immediately** - it won't be shown again!
+7. Store securely in n8n credentials or `.env` file
+
+**Method 2: Via API**
+
+```bash
+# First login to get JWT token
+curl -X POST http://portainer:9000/api/auth \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"your_password"}'
+
+# Response: {"jwt":"eyJhbGci..."}
+
+# Create access token
+curl -X POST http://portainer:9000/api/users/1/tokens \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"description":"n8n-automation"}'
+
+# Response: {"rawAPIKey":"ptr_YOUR_ACCESS_TOKEN"}
+```
+
+**Create HTTP Request Credentials in n8n:**
+
+1. In n8n, go to **Credentials** → **Create New**
+2. Search for **Header Auth**
+3. Configure:
+   ```
+   Name: Portainer API
+   Header Name: X-API-Key
+   Header Value: ptr_YOUR_ACCESS_TOKEN_HERE
+   ```
+4. Test and save
+
+### Example Workflows
+
+#### Example 1: Monitor Container Health & Auto-Restart Failed Containers
+
+Automatically detect and restart containers that have exited unexpectedly:
+
+```javascript
+// n8n Workflow: Container Health Monitor
+
+// 1. Schedule Trigger - Every 5 minutes
+
+// 2. HTTP Request Node - Get all containers
+Method: GET
+URL: http://portainer:9000/api/endpoints/1/docker/containers/json
+Authentication: Use Portainer API credentials
+Query Parameters:
+  all: true
+
+// Response: Array of container objects
+
+// 3. Code Node - Filter for failed containers
+const containers = $input.first().json;
+
+// Find containers that exited unexpectedly (not manually stopped)
+const failedContainers = containers.filter(container => {
+  const state = container.State;
+  const status = container.Status;
+  
+  // Container is stopped but has restart policy
+  const hasRestartPolicy = container.HostConfig?.RestartPolicy?.Name !== 'no';
+  const isExited = state === 'exited';
+  const recentlyExited = status.includes('Exited') && 
+    !status.includes('hours ago') && 
+    !status.includes('days ago');
+  
+  return isExited && recentlyExited && hasRestartPolicy;
+});
+
+// Return container details
+return failedContainers.map(container => ({
+  json: {
+    id: container.Id,
+    name: container.Names[0].replace('/', ''),
+    image: container.Image,
+    status: container.Status,
+    exitCode: container.State,
+    created: new Date(container.Created * 1000).toISOString()
+  }
+}));
+
+// 4. IF Node - Check if failed containers exist
+Condition: {{ $json.id }} is not empty
+
+// 5a. Loop Node - Process each failed container
+Items: {{ $input.all() }}
+
+// 6. HTTP Request Node - Get container details
+Method: GET
+URL: http://portainer:9000/api/endpoints/1/docker/containers/{{ $json.id }}/json
+Authentication: Use Portainer API credentials
+
+// 7. Code Node - Analyze failure
+const container = $input.first().json;
+const restartCount = container.RestartCount || 0;
+const maxRestarts = 3;
+
+// Check if container is in restart loop
+const shouldRestart = restartCount < maxRestarts;
+
+return {
+  json: {
+    id: container.Id,
+    name: container.Name.replace('/', ''),
+    image: container.Config.Image,
+    restartCount: restartCount,
+    shouldRestart: shouldRestart,
+    exitCode: container.State.ExitCode,
+    error: container.State.Error || 'Unknown error',
+    finishedAt: container.State.FinishedAt
+  }
+};
+
+// 8. IF Node - Should restart?
+Condition: {{ $json.shouldRestart }} === true
+
+// 9a. HTTP Request Node - Restart container
+Method: POST
+URL: http://portainer:9000/api/endpoints/1/docker/containers/{{ $json.id }}/restart
+Authentication: Use Portainer API credentials
+
+// 10. Code Node - Prepare notification
+const container = $('Code Node1').first().json;
+const restarted = $('HTTP Request2').first().json;
+
+return {
+  json: {
+    message: `🔄 Auto-restarted container: ${container.name}`,
+    details: {
+      container: container.name,
+      image: container.image,
+      exitCode: container.exitCode,
+      error: container.error,
+      restartCount: container.restartCount,
+      timestamp: new Date().toISOString()
+    }
+  }
+};
+
+// 11. Slack Node - Notify success
+Channel: #infrastructure
+Message: |
+  {{ $json.message }}
+  
+  *Details:*
+  • Container: `{{ $json.details.container }}`
+  • Image: `{{ $json.details.image }}`
+  • Exit Code: {{ $json.details.exitCode }}
+  • Error: {{ $json.details.error }}
+  • Restart #{{ $json.details.restartCount }}
+
+// 9b. Code Node - Prepare alert (if max restarts exceeded)
+const container = $('Code Node1').first().json;
+
+return {
+  json: {
+    severity: 'critical',
+    message: `🚨 Container restart loop detected: ${container.name}`,
+    details: {
+      container: container.name,
+      image: container.image,
+      restartCount: container.restartCount,
+      exitCode: container.exitCode,
+      error: container.error,
+      action: 'Manual intervention required'
+    }
+  }
+};
+
+// 12. Slack Node - Alert ops team
+Channel: #incidents
+Message: |
+  {{ $json.message }}
+  
+  Container has exceeded maximum auto-restart attempts ({{ $json.details.restartCount }}).
+  
+  *Details:*
+  • Container: `{{ $json.details.container }}`
+  • Image: `{{ $json.details.image }}`
+  • Exit Code: {{ $json.details.exitCode }}
+  • Error: {{ $json.details.error }}
+  
+  ⚠️ Action Required: Investigate and manually fix
+
+// 13. Email Node - Send to on-call engineer
+To: oncall@yourdomain.com
+Subject: [CRITICAL] Container Failure: {{ $json.details.container }}
+Priority: High
+Body: {{ $json.message }}
+
+// 5b. Do Nothing (if no failed containers)
+```
+
+#### Example 2: Automated Stack Updates via Webhook
+
+Trigger stack updates from external CI/CD pipelines or GitHub webhooks:
+
+```javascript
+// n8n Workflow: Automated Stack Deployment
+
+// 1. Webhook Trigger
+// URL: /webhook/deploy-stack
+// Method: POST
+// Expected payload: { "stack_name": "myapp", "compose_file": "..." }
+
+// 2. Code Node - Validate webhook payload
+const payload = $input.first().json;
+
+if (!payload.stack_name || !payload.compose_file) {
+  throw new Error('Missing required fields: stack_name and compose_file');
+}
+
+return {
+  json: {
+    stackName: payload.stack_name,
+    composeFile: payload.compose_file,
+    environment: payload.environment || 'production',
+    pullImages: payload.pull_images !== false,
+    branch: payload.branch || 'main',
+    commit: payload.commit_sha || 'unknown'
+  }
+};
+
+// 3. HTTP Request Node - Get existing stacks
+Method: GET
+URL: http://portainer:9000/api/stacks
+Authentication: Use Portainer API credentials
+
+// 4. Code Node - Check if stack exists
+const stacks = $input.first().json;
+const webhookData = $('Code Node').first().json;
+const stackName = webhookData.stackName;
+
+const existingStack = stacks.find(s => s.Name === stackName);
+
+return {
+  json: {
+    ...webhookData,
+    stackExists: !!existingStack,
+    stackId: existingStack?.Id || null,
+    endpoint: existingStack?.EndpointId || 1
+  }
+};
+
+// 5. Switch Node - Route based on stack existence
+// Mode: Expression
+// Output 0: {{ $json.stackExists }} === true
+// Output 1: {{ $json.stackExists }} === false
+
+// 6a. HTTP Request Node - Update existing stack
+Method: PUT
+URL: http://portainer:9000/api/stacks/{{ $json.stackId }}
+Authentication: Use Portainer API credentials
+Query Parameters:
+  endpointId: {{ $json.endpoint }}
+Body (JSON):
+{
+  "stackFileContent": "{{ $json.composeFile }}",
+  "prune": true,
+  "pullImage": {{ $json.pullImages }}
+}
+
+// 6b. HTTP Request Node - Create new stack
+Method: POST
+URL: http://portainer:9000/api/stacks
+Authentication: Use Portainer API credentials
+Query Parameters:
+  type: 2
+  method: string
+  endpointId: 1
+Body (JSON):
+{
+  "name": "{{ $json.stackName }}",
+  "stackFileContent": "{{ $json.composeFile }}"
+}
+
+// 7. Wait Node - Give stack time to deploy
+Amount: 10
+Unit: seconds
+
+// 8. HTTP Request Node - Get stack status
+Method: GET
+URL: http://portainer:9000/api/stacks/{{ $('Switch Node').first().json.stackId || $('HTTP Request1').first().json.Id }}
+Authentication: Use Portainer API credentials
+
+// 9. Code Node - Verify deployment
+const stack = $input.first().json;
+const webhookData = $('Code Node').first().json;
+
+// Get container count and status
+const containerCount = stack.ResourceControl?.ResourceCount || 0;
+
+return {
+  json: {
+    success: true,
+    stackName: stack.Name,
+    stackId: stack.Id,
+    containers: containerCount,
+    environment: webhookData.environment,
+    branch: webhookData.branch,
+    commit: webhookData.commit,
+    deployedAt: new Date().toISOString(),
+    url: `https://portainer.yourdomain.com/#!/stacks/${stack.Id}`
+  }
+};
+
+// 10. Slack Node - Notify deployment success
+Channel: #deployments
+Message: |
+  ✅ *Deployment Successful*
+  
+  *Stack:* {{ $json.stackName }}
+  *Environment:* {{ $json.environment }}
+  *Containers:* {{ $json.containers }}
+  *Branch:* {{ $json.branch }}
+  *Commit:* {{ $json.commit }}
+  
+  🔗 <{{ $json.url }}|View in Portainer>
+
+// 11. HTTP Request Node - Trigger health check (optional)
+Method: POST
+URL: https://your-monitoring-service.com/api/healthcheck
+Body (JSON):
+{
+  "stack": "{{ $json.stackName }}",
+  "environment": "{{ $json.environment }}",
+  "timestamp": "{{ $json.deployedAt }}"
+}
+
+// 12. Respond to Webhook - Success
+Response Code: 200
+Response Body:
+{
+  "status": "success",
+  "message": "Stack deployed successfully",
+  "stack_id": {{ $json.stackId }},
+  "containers": {{ $json.containers }}
+}
+```
+
+#### Example 3: Resource Usage Monitoring & Alerts
+
+Monitor container resource consumption and alert when thresholds are exceeded:
+
+```javascript
+// n8n Workflow: Container Resource Monitoring
+
+// 1. Schedule Trigger - Every 10 minutes
+
+// 2. HTTP Request Node - Get running containers
+Method: GET
+URL: http://portainer:9000/api/endpoints/1/docker/containers/json
+Authentication: Use Portainer API credentials
+Query Parameters:
+  filters: {"status":["running"]}
+
+// 3. Code Node - Extract container IDs
+const containers = $input.first().json;
+return containers.map(c => ({ json: { id: c.Id, name: c.Names[0].replace('/', '') } }));
+
+// 4. Loop Node - Process each container
+Items: {{ $input.all() }}
+
+// 5. HTTP Request Node - Get container stats
+Method: GET
+URL: http://portainer:9000/api/endpoints/1/docker/containers/{{ $json.id }}/stats
+Authentication: Use Portainer API credentials
+Query Parameters:
+  stream: false
+
+// 6. Code Node - Calculate resource usage
+const stats = $input.first().json;
+const containerInfo = $('Loop Node').first().json;
+
+// Calculate CPU percentage
+const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - 
+                 stats.precpu_stats.cpu_usage.total_usage;
+const systemDelta = stats.cpu_stats.system_cpu_usage - 
+                    stats.precpu_stats.system_cpu_usage;
+const cpuPercent = (cpuDelta / systemDelta) * 
+                   stats.cpu_stats.online_cpus * 100;
+
+// Calculate memory usage
+const memoryUsage = stats.memory_stats.usage;
+const memoryLimit = stats.memory_stats.limit;
+const memoryPercent = (memoryUsage / memoryLimit) * 100;
+
+// Calculate network I/O
+let networkRx = 0;
+let networkTx = 0;
+if (stats.networks) {
+  Object.values(stats.networks).forEach(net => {
+    networkRx += net.rx_bytes;
+    networkTx += net.tx_bytes;
+  });
+}
+
+// Thresholds
+const cpuThreshold = 80;
+const memoryThreshold = 85;
+
+const alerts = [];
+if (cpuPercent > cpuThreshold) {
+  alerts.push(`CPU: ${cpuPercent.toFixed(1)}% (threshold: ${cpuThreshold}%)`);
+}
+if (memoryPercent > memoryThreshold) {
+  alerts.push(`Memory: ${memoryPercent.toFixed(1)}% (threshold: ${memoryThreshold}%)`);
+}
+
+return {
+  json: {
+    container: containerInfo.name,
+    containerId: containerInfo.id,
+    cpu_percent: parseFloat(cpuPercent.toFixed(2)),
+    memory_usage_mb: parseFloat((memoryUsage / 1024 / 1024).toFixed(2)),
+    memory_limit_mb: parseFloat((memoryLimit / 1024 / 1024).toFixed(2)),
+    memory_percent: parseFloat(memoryPercent.toFixed(2)),
+    network_rx_mb: parseFloat((networkRx / 1024 / 1024).toFixed(2)),
+    network_tx_mb: parseFloat((networkTx / 1024 / 1024).toFixed(2)),
+    has_alerts: alerts.length > 0,
+    alerts: alerts
+  }
+};
+
+// 7. Aggregate Node - Collect all stats
+Mode: Append All
+
+// 8. Code Node - Generate report
+const allStats = $input.all().map(item => item.json);
+
+// Sort by CPU usage
+const topCPU = [...allStats].sort((a, b) => b.cpu_percent - a.cpu_percent).slice(0, 5);
+
+// Sort by memory usage
+const topMemory = [...allStats].sort((a, b) => b.memory_percent - a.memory_percent).slice(0, 5);
+
+// Containers with alerts
+const alertingContainers = allStats.filter(s => s.has_alerts);
+
+return {
+  json: {
+    total_containers: allStats.length,
+    alerting_containers: alertingContainers.length,
+    top_cpu: topCPU,
+    top_memory: topMemory,
+    alerts: alertingContainers,
+    timestamp: new Date().toISOString()
+  }
+};
+
+// 9. IF Node - Check for alerts
+Condition: {{ $json.alerting_containers }} > 0
+
+// 10a. Slack Node - Send alert
+Channel: #infrastructure-alerts
+Message: |
+  ⚠️ *Container Resource Alert*
+  
+  {{ $json.alerting_containers }} container(s) exceeding thresholds:
+  
+  {{ $json.alerts.map(a => `*${a.container}:*\n${a.alerts.join('\n')}`).join('\n\n') }}
+  
+  *Top CPU Consumers:*
+  {{ $json.top_cpu.slice(0,3).map(c => `• ${c.container}: ${c.cpu_percent}%`).join('\n') }}
+  
+  *Top Memory Consumers:*
+  {{ $json.top_memory.slice(0,3).map(c => `• ${c.container}: ${c.memory_percent}%`).join('\n') }}
+
+// 10b. Do Nothing (if no alerts)
+
+// 11. PostgreSQL Node - Log metrics
+Operation: Insert
+Table: container_metrics
+Data: {{ $json }}
+```
+
+#### Example 4: Image Update Scanner
+
+Scan for outdated container images and notify about available updates:
+
+```javascript
+// n8n Workflow: Container Image Update Scanner
+
+// 1. Schedule Trigger - Daily at 3 AM
+
+// 2. HTTP Request Node - Get all containers
+Method: GET
+URL: http://portainer:9000/api/endpoints/1/docker/containers/json
+Authentication: Use Portainer API credentials
+Query Parameters:
+  all: true
+
+// 3. Code Node - Extract unique images
+const containers = $input.first().json;
+
+// Get unique images in use
+const imagesInUse = {};
+containers.forEach(container => {
+  const image = container.Image;
+  const imageTag = container.ImageID;
+  
+  if (!imagesInUse[image]) {
+    imagesInUse[image] = {
+      image: image,
+      imageId: imageTag,
+      containers: []
+    };
+  }
+  
+  imagesInUse[image].containers.push(container.Names[0].replace('/', ''));
+});
+
+return Object.values(imagesInUse).map(img => ({ json: img }));
+
+// 4. Loop Node - Check each image
+Items: {{ $input.all() }}
+
+// 5. Code Node - Parse image name and tag
+const imageInfo = $input.first().json;
+const imageParts = imageInfo.image.split(':');
+const imageName = imageParts[0];
+const currentTag = imageParts[1] || 'latest';
+
+return {
+  json: {
+    ...imageInfo,
+    imageName: imageName,
+    currentTag: currentTag
+  }
+};
+
+// 6. HTTP Request Node - Pull latest image info from Docker Hub
+Method: GET
+URL: https://hub.docker.com/v2/repositories/{{ $json.imageName.replace('library/', '') }}/tags/{{ $json.currentTag }}
+// Note: For official images, remove 'library/' prefix
+
+// 7. Code Node - Compare digest
+const dockerHubInfo = $input.first().json;
+const localInfo = $('Code Node1').first().json;
+
+// Compare image digests
+const localDigest = localInfo.imageId.split(':')[1]?.substring(0, 12) || '';
+const remoteDigest = dockerHubInfo.images?.[0]?.digest?.split(':')[1]?.substring(0, 12) || '';
+
+const updateAvailable = localDigest !== remoteDigest && remoteDigest !== '';
+
+return {
+  json: {
+    image: localInfo.image,
+    containers: localInfo.containers,
+    currentDigest: localDigest,
+    latestDigest: remoteDigest,
+    updateAvailable: updateAvailable,
+    lastUpdated: dockerHubInfo.last_updated
+  }
+};
+
+// 8. Aggregate Node - Collect results
+
+// 9. Code Node - Filter images with updates
+const allImages = $input.all().map(item => item.json);
+const updatesAvailable = allImages.filter(img => img.updateAvailable);
+
+return {
+  json: {
+    total_images: allImages.length,
+    updates_available: updatesAvailable.length,
+    outdated_images: updatesAvailable,
+    timestamp: new Date().toISOString()
+  }
+};
+
+// 10. IF Node - Updates available?
+Condition: {{ $json.updates_available }} > 0
+
+// 11a. Slack Node - Notify about updates
+Channel: #infrastructure
+Message: |
+  📦 *Container Image Updates Available*
+  
+  {{ $json.updates_available }} image(s) have updates:
+  
+  {{ $json.outdated_images.map(img => 
+    `*${img.image}*\nUsed by: ${img.containers.join(', ')}\nLast updated: ${new Date(img.lastUpdated).toLocaleDateString()}`
+  ).join('\n\n') }}
+  
+  Update containers in Portainer or via CI/CD.
+
+// 11b. Do Nothing (if up to date)
+```
+
+### Best Practices
+
+1. **API Token Security** - Store Portainer API tokens securely in n8n credentials, never in workflow code
+2. **Use Endpoint IDs** - Always specify endpoint ID in API calls (default: 1 for local Docker)
+3. **Error Handling** - Wrap Portainer API calls in try-catch blocks to handle connection failures
+4. **Rate Limiting** - Add delays between bulk operations to avoid overloading Portainer
+5. **Container Labels** - Use Docker labels to categorize containers for easier n8n automation
+6. **Stack Management** - Prefer stacks over individual containers for better organization and updates
+7. **Backup Volumes** - Regularly backup Portainer data volume (`portainer_data`) to preserve configurations
+8. **RBAC Planning** - Use Portainer Business for team environments requiring role-based access
+9. **Webhook Security** - Validate webhook payloads and use HMAC signatures for production deployments
+10. **Monitor Portainer** - Set up health checks for the Portainer container itself in n8n workflows
+
+### Troubleshooting
+
+#### Portainer Container Won't Start
+
+```bash
+# Check logs
+docker logs portainer --tail 100
+
+# Common issue: Port 9000 or 9443 already in use
+sudo lsof -i :9000
+sudo lsof -i :9443
+
+# Kill conflicting process or change port in docker-compose.yml
+
+# Verify Docker socket is mounted
+docker inspect portainer | grep -A5 "Mounts"
+# Should show: /var/run/docker.sock
+
+# Restart Portainer
+docker restart portainer
+```
+
+#### Cannot Access Portainer UI
+
+```bash
+# 1. Check if container is running
+docker ps | grep portainer
+
+# 2. Verify port mapping
+docker port portainer
+
+# 3. Test local connectivity
+curl -k https://localhost:9443
+
+# 4. Check firewall rules
+sudo ufw status
+sudo ufw allow 9443/tcp  # If needed
+
+# 5. Check Caddy reverse proxy config
+docker logs caddy | grep portainer
+```
+
+#### API Authentication Failed (401 Unauthorized)
+
+```bash
+# 1. Verify API token is valid
+curl -k -H "X-API-Key: YOUR_TOKEN" \
+  https://localhost:9443/api/status
+
+# Should return Portainer version info, not 401
+
+# 2. Check if token expired (if you set expiry)
+# Login to Portainer UI → User → Access tokens
+
+# 3. Generate new token if needed
+curl -k -X POST https://localhost:9443/api/auth \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"your_password"}'
+
+# 4. In n8n, update Header Auth credential with new token
+```
+
+#### n8n Cannot Connect to Portainer
+
+```bash
+# 1. Test internal connectivity from n8n container
+docker exec n8n curl -k http://portainer:9000/api/status
+
+# Should return: {"Version":"..."}
+
+# 2. Verify services are on same Docker network
+docker network inspect ai-launchkit_default | grep -E "n8n|portainer"
+
+# 3. Check if Portainer is exposed internally
+docker inspect portainer | grep "IPAddress"
+
+# 4. Test with correct internal URL
+# From n8n: http://portainer:9000
+# NOT: https://portainer.yourdomain.com
+```
+
+#### Stack Deployment Fails via API
+
+```bash
+# 1. Validate Docker Compose syntax
+# Copy compose file content and test locally:
+docker-compose -f test-compose.yml config
+
+# 2. Check Portainer logs for specific error
+docker logs portainer --tail 50 | grep -i error
+
+# Common errors:
+# - Invalid YAML syntax
+# - Missing image registry credentials
+# - Port conflicts with existing containers
+# - Invalid volume paths
+
+# 3. Test stack creation manually in UI first
+# Then export working stack to get correct API payload
+
+# 4. Verify endpoint ID exists
+curl -k -H "X-API-Key: YOUR_TOKEN" \
+  https://localhost:9443/api/endpoints
+```
+
+#### Container Stats Not Available
+
+```bash
+# 1. Check if container is running
+docker ps | grep CONTAINER_ID
+
+# 2. Verify Docker API access
+curl --unix-socket /var/run/docker.sock \
+  http://localhost/containers/CONTAINER_ID/stats?stream=false
+
+# 3. Check Portainer permissions
+docker exec portainer ls -la /var/run/docker.sock
+
+# Should be accessible (socket mounted correctly)
+
+# 4. For remote Docker hosts, ensure Docker API is exposed
+# Check docker-compose.yml for DOCKER_HOST environment variable
+```
+
+#### High Memory Usage by Portainer
+
+```bash
+# Check Portainer resource usage
+docker stats portainer --no-stream
+
+# If high, check number of managed containers
+docker ps -a | wc -l
+
+# Portainer memory scales with managed resources
+
+# Increase memory limit if needed (docker-compose.yml):
+deploy:
+  resources:
+    limits:
+      memory: 512M  # Increase from default
+
+# Restart Portainer
+docker-compose up -d portainer
+```
+
+### Resources
+
+- **Documentation:** [https://docs.portainer.io/](https://docs.portainer.io/)
+- **API Documentation:** [https://docs.portainer.io/api/docs](https://docs.portainer.io/api/docs)
+- **API Examples:** [https://docs.portainer.io/api/examples](https://docs.portainer.io/api/examples)
+- **GitHub:** [https://github.com/portainer/portainer](https://github.com/portainer/portainer)
+- **Community Forum:** [https://community.portainer.io/](https://community.portainer.io/)
+- **App Templates:** [https://github.com/portainer/templates](https://github.com/portainer/templates)
+- **YouTube Tutorials:** [https://www.youtube.com/c/Portainer](https://www.youtube.com/c/Portainer)
+- **n8n + Portainer Workflows:** [https://n8n.io/workflows/?search=portainer](https://n8n.io/workflows/?search=portainer)
 
 </details>
 

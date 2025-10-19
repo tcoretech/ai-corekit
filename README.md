@@ -10,7 +10,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/freddy-schuetz/ai-launchkit?style=social)](https://github.com/freddy-schuetz/ai-launchkit)
 [![Based on](https://img.shields.io/badge/Based%20on-n8n--installer-green)](https://github.com/kossakovsky/n8n-installer)
 
-[Installation](#-installation) • [Features](#-whats-included) • [Documentation](#-documentation) • [Support](#-support)
+[Installation](#-quick-start) • [Features](#-whats-included) • [Documentation](#-services) • [Support](#support--faq)
 
 </div>
 

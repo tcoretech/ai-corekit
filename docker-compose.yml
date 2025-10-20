@@ -265,7 +265,7 @@ services:
   # ============================================================================
   # N8N PYTHON TASK RUNNER - Native Python Execution
   # ============================================================================
-  
+
   n8n-runner:
     image: n8nio/runners:${N8N_RUNNERS_VERSION}
     container_name: n8n-runner
@@ -286,6 +286,7 @@ services:
     depends_on:
       n8n:
         condition: service_started
+    deploy:
       resources:
         limits:
           memory: 4G

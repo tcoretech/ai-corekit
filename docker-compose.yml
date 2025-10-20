@@ -267,7 +267,7 @@ services:
   # ============================================================================
   
   n8n-runner:
-    image: docker.n8n.io/n8nio/n8n:latest
+    image: n8nio/runners:${N8N_RUNNERS_VERSION}
     container_name: n8n-runner
     profiles: ["n8n"]
     restart: unless-stopped

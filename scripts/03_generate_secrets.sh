@@ -1143,6 +1143,23 @@ if [[ -z "${generated_values[METABASE_ENCRYPTION_KEY]}" ]]; then
     _update_or_add_env_var "METABASE_ENCRYPTION_KEY" "$ENCRYPTION_KEY"
 fi
 
+# N8N Task Runner Version - Auto-detect latest stable
+log_info "Detecting latest n8n task runner version..."
+RUNNERS_VERSION=$(curl -s https://hub.docker.com/v2/repositories/n8nio/runners/tags | \
+  grep -o '"name":"[0-9]\+\.[0-9]\+\.[0-9]\+"' | \
+  grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | \
+  sort -V | \
+  tail -1)
+
+if [[ -z "$RUNNERS_VERSION" ]]; then
+    log_error "Could not detect runners version. Check internet connection."
+    exit 1
+fi
+
+log_success "Detected latest runners version: $RUNNERS_VERSION"
+generated_values["N8N_RUNNERS_VERSION"]="$RUNNERS_VERSION"
+_update_or_add_env_var "N8N_RUNNERS_VERSION" "$RUNNERS_VERSION"
+
 # Ensure DOMAIN is written to .env for backward compatibility
 if [[ -n "${generated_values[DOMAIN]}" ]]; then
     _update_or_add_env_var "DOMAIN" "${generated_values[DOMAIN]}"

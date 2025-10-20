@@ -267,36 +267,36 @@ services:
   # ============================================================================
   
   n8n-runner:
-  image: docker.n8n.io/n8nio/n8n:latest
-  container_name: n8n-runner
-  profiles: ["n8n"]
-  restart: unless-stopped
-  command: ["/usr/local/bin/task-runner-launcher", "javascript"]
-  environment:
-    - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}
-    - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679
-    - N8N_RUNNERS_MAX_CONCURRENCY=5
-    - N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT=15
-    - NODE_OPTIONS=--max-old-space-size=512
-    - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-Europe/Berlin}
-  volumes:
-    - ./shared:/data/shared
-  depends_on:
-    n8n:
-      condition: service_started
-  deploy:
-    replicas: ${N8N_WORKER_COUNT:-1}
-    resources:
-      limits:
-        memory: 4G
-      reservations:
-        memory: 1G
-  healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:5680/healthz"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
-    start_period: 10s
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n-runner
+    profiles: ["n8n"]
+    restart: unless-stopped
+    command: ["/usr/local/bin/task-runner-launcher", "javascript"]
+    environment:
+      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679
+      - N8N_RUNNERS_MAX_CONCURRENCY=5
+      - N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT=15
+      - NODE_OPTIONS=--max-old-space-size=512
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-Europe/Berlin}
+    volumes:
+      - ./shared:/data/shared
+    depends_on:
+      n8n:
+        condition: service_started
+    deploy:
+      replicas: ${N8N_WORKER_COUNT:-1}
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5680/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   qdrant:
     image: qdrant/qdrant

@@ -968,6 +968,38 @@ Message: |
   Social posts scheduled ✅
 ```
 
+### ⚠️ BREAKING CHANGES - Migration Required
+
+**If you have existing Python Code Nodes**, they need to be updated:
+
+**OLD (Pyodide - no longer works):**
+```python
+# Dot notation
+name = item.json.customer.name
+for item in items:  # items variable
+```
+
+**NEW (Native Python - required):**
+```python
+# Bracket notation
+name = item["json"]["customer"]["name"]
+for item in _items:  # _items variable (underscore!)
+```
+
+**Why this change?**
+- n8n switched from Pyodide (WebAssembly) to native Python
+- Native Python is 10-20x faster and supports all Python packages
+- Pyodide accepted non-standard syntax that native Python doesn't
+
+**Migration Steps:**
+1. Open each Python Code Node in your workflows
+2. Replace `item.json` with `item["json"]`
+3. Replace `items` with `_items`
+4. Test the workflow
+5. See full migration guide below
+
+---
+
 ### Troubleshooting
 
 **Workflows not executing:**

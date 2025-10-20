@@ -1950,6 +1950,63 @@ Nachricht: |
   Social Posts geplant ✅
 ```
 
+### n8n Native Python Task Runner (Beta)
+
+**⚠️ BREAKING CHANGES von Pyodide**
+
+AI LaunchKit nutzt jetzt n8n's **Native Python Task Runner** statt der alten Pyodide (WebAssembly) Implementierung. Das bietet:
+
+- ✅ **10-20x schneller** Python-Ausführung
+- ✅ **Volle Python-Paket-Unterstützung** (pandas, numpy, scikit-learn, etc.)
+- ✅ **Native CPython 3.11** (kein WebAssembly)
+- ⚠️ **Breaking Syntax-Änderungen** - bestehende Python Code Nodes müssen angepasst werden
+
+#### Syntax-Migration erforderlich
+
+**ALT (Pyodide - funktioniert nicht mehr):**
+```python
+# Dot-Notation
+name = item.json.customer.name
+for item in items:  # "items" Variable
+```
+
+**NEU (Native Python - erforderlich):**
+```python
+# Bracket-Notation
+name = item["json"]["customer"]["name"]
+for item in _items:  # "_items" Variable (Unterstrich!)
+```
+
+#### Wie es funktioniert
+```
+n8n Container ←→ n8n-runner Container (n8nio/runners:latest)
+(Workflow)        (Native Python Ausführung)
+```
+
+Der `n8n-runner` Container startet automatisch mit dem `n8n` Profil und führt alle Python Code Node Ausführungen über WebSocket aus.
+
+#### Überprüfen ob es funktioniert
+```bash
+# n8n-runner Container prüfen
+docker ps | grep n8n-runner
+
+# In n8n testen
+# 1. Workflow mit Manual Trigger + Code Node erstellen
+# 2. Python Sprache wählen
+# 3. Ausführen: return [{"json": {"test": "Native Python funktioniert!"}}]
+```
+
+#### Python-Pakete installieren
+
+Standardmäßig ist nur die Python-Standardbibliothek verfügbar. Um Pakete wie pandas oder numpy zu nutzen, musst du ein eigenes `n8nio/runners` Image bauen:
+
+**Siehe:** [n8n Task Runners Dokumentation](https://docs.n8n.io/hosting/configuration/task-runners/) für detaillierte Anleitungen zum Hinzufügen von Paketen.
+
+**Ressourcen:**
+- [n8n Task Runners Docs](https://docs.n8n.io/hosting/configuration/task-runners/)
+- [Python-Pakete hinzufügen](https://docs.n8n.io/hosting/configuration/task-runners/#adding-extra-dependencies)
+- [Code Node Dokumentation](https://docs.n8n.io/code/code-node/)
+
 ### Fehlerbehebung
 
 **Workflows werden nicht ausgeführt:**

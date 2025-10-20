@@ -112,6 +112,7 @@ declare -A VARS_TO_GENERATE=(
     ["N8N_MCP_TOKEN"]="apikey:32"
     ["N8N_API_KEY"]="apikey:32"
     ["GPTR_PASSWORD"]="password:32"
+    ["N8N_RUNNERS_AUTH_TOKEN"]="secret:64"
     ["MAILPIT_PASSWORD"]="password:32"
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"

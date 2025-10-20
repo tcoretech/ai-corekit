@@ -12,6 +12,8 @@
 
 [Installation](#-quick-start) • [Features](#-whats-included) • [Documentation](#-services) • [Support](#common-issues)
 
+German version: [German README](https://github.com/freddy-schuetz/ai-launchkit/blob/main/README_GERMAN.md)
+
 </div>
 
 ---

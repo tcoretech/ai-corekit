@@ -25,7 +25,7 @@ Ursprünglich als Fork von [n8n-installer](https://github.com/kossakovsky/n8n-in
 ### 🎬 Schnell-Demo
 
 ```bash
-# Ein Befehl, sie alle zu regieren
+# Ein Befehl, volle Installation
 git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && sudo bash ./scripts/install.sh
 ```
 

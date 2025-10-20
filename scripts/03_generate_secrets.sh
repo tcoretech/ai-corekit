@@ -1143,20 +1143,31 @@ if [[ -z "${generated_values[METABASE_ENCRYPTION_KEY]}" ]]; then
     _update_or_add_env_var "METABASE_ENCRYPTION_KEY" "$ENCRYPTION_KEY"
 fi
 
-# N8N Task Runner Version - Auto-detect latest stable
-log_info "Detecting latest n8n task runner version..."
-RUNNERS_VERSION=$(curl -s https://hub.docker.com/v2/repositories/n8nio/runners/tags | \
-  grep -o '"name":"[0-9]\+\.[0-9]\+\.[0-9]\+"' | \
-  grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | \
-  sort -V | \
-  tail -1)
+# --- N8N TASK RUNNER VERSION ---
+# Auto-detect stable n8n version by matching digest with "stable" tag
+log_info "Detecting stable n8n version..."
 
-if [[ -z "$RUNNERS_VERSION" ]]; then
-    log_error "Could not detect runners version. Check internet connection."
+# Get digest of "stable" tag
+STABLE_DIGEST=$(curl -s 'https://hub.docker.com/v2/repositories/n8nio/n8n/tags/stable' | \
+  jq -r '.images[0].digest' 2>/dev/null)
+
+if [[ -z "$STABLE_DIGEST" || "$STABLE_DIGEST" == "null" ]]; then
+    log_error "Could not fetch n8n stable digest. Check internet connection."
     exit 1
 fi
 
-log_success "Detected latest runners version: $RUNNERS_VERSION"
+# Find version tag that matches this digest
+RUNNERS_VERSION=$(curl -s 'https://hub.docker.com/v2/repositories/n8nio/n8n/tags?page_size=100' | \
+  jq -r --arg digest "$STABLE_DIGEST" \
+  '.results[] | select(.images[0].digest == $digest) | select(.name | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | .name' | \
+  head -1)
+
+if [[ -z "$RUNNERS_VERSION" ]]; then
+    log_error "Could not find version matching stable digest."
+    exit 1
+fi
+
+log_success "Detected stable n8n/runners version: $RUNNERS_VERSION"
 generated_values["N8N_RUNNERS_VERSION"]="$RUNNERS_VERSION"
 _update_or_add_env_var "N8N_RUNNERS_VERSION" "$RUNNERS_VERSION"
 

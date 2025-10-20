@@ -271,7 +271,6 @@ services:
     container_name: n8n-runner
     profiles: ["n8n"]
     restart: unless-stopped
-    command: ["/usr/local/bin/task-runner-launcher", "javascript"]
     environment:
       - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}
       - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679
@@ -279,6 +278,9 @@ services:
       - N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT=15
       - NODE_OPTIONS=--max-old-space-size=512
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-Europe/Berlin}
+      - N8N_RUNNERS_PYTHON_ALLOW_BUILTIN=*
+      - N8N_RUNNERS_PYTHON_ALLOW_EXTERNAL=
+      - ./n8n-task-runners.json:/etc/n8n-task-runners.json:ro
     volumes:
       - ./shared:/data/shared
     depends_on:

@@ -80,6 +80,13 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 - Teste UDP-Konnektivität vor Produktiv-Nutzung
 - Alternative: Nutze externe Dienste (Zoom, Google Meet) mit Cal.com
 
+### 📁 Datei- & Dokumentenverwaltung
+
+| Tool | Beschreibung | Anwendungsfälle | Zugriff |
+|------|--------------|-----------------|---------|
+| **[Seafile](https://www.seafile.com)** | Datei-Sync & Share Plattform | Team-Kollaboration, Dateiversionierung, WebDAV, Mobile Sync | `files.deinedomain.com` |
+| **[Paperless-ngx](https://docs.paperless-ngx.com)** | Intelligentes Dokumentenmanagement mit OCR | Dokumentenarchivierung, KI-Auto-Tagging, DSGVO-Konformität, Volltextsuche | `docs.deinedomain.com` |
+
 ### 💼 Business & Produktivität
 
 | Tool | Beschreibung | Anwendungsfälle | Zugriff |
@@ -3898,6 +3905,571 @@ Jitsi-Config bearbeiten, um anzupassen:
 - Überwache Server-Ressourcen während großer Meetings
 - Halte IT-Support-Kontakt bereit
 - Dokumentiere Setup für Team-Mitglieder
+
+</details>
+
+### 📁 Datei- & Dokumentenverwaltung
+
+<details>
+<summary><b>🌊 Seafile - Professionelle Datei-Synchronisation & Freigabe</b></summary>
+
+### Was ist Seafile?
+
+Seafile ist eine professionelle Open-Source-Plattform für Dateisynchronisation und -freigabe, die eine selbst gehostete Alternative zu Dropbox, Google Drive und OneDrive bietet. Sie bietet zuverlässige Dateisynchronisation, Team-Kollaborationsfunktionen, Versionskontrolle und Verschlüsselung, was sie perfekt für Unternehmen macht, die volle Kontrolle über ihre Daten benötigen. Mit Desktop- und Mobile-Clients, WebDAV-Unterstützung und umfangreicher API integriert sich Seafile nahtlos in jeden Workflow.
+
+### Funktionen
+
+- **Datei-Sync** - Echtzeit-Synchronisation über alle Geräte mit selektiver Synchronisation
+- **Versionskontrolle** - Vollständiger Dateiverlauf mit einfachem Rollback zu vorherigen Versionen
+- **Team-Bibliotheken** - Gemeinsame Ordner mit granularer Rechteverwaltung
+- **Datei-Sperrung** - Verhindert Bearbeitungskonflikte mit automatischer Dateisperrung
+- **WebDAV-Unterstützung** - Als Netzlaufwerk unter Windows/Mac/Linux einbinden
+- **Mobile Apps** - iOS und Android Apps mit Offline-Zugriff und Auto-Upload
+- **Ende-zu-Ende-Verschlüsselung** - Client-seitige Verschlüsselung für sensible Daten
+- **Office-Integration** - Online-Bearbeitung von Dokumenten mit OnlyOffice/Collabora
+- **Volltextsuche** - Suche in Dokumenten, PDFs und Office-Dateien
+- **Aktivitäts-Stream** - Verfolge alle Dateiänderungen und Team-Aktivitäten
+
+### Erste Einrichtung
+
+**Erste Anmeldung bei Seafile:**
+
+1. Navigiere zu `https://files.deinedomain.com`
+2. Anmeldung mit:
+   - **E-Mail:** Deine konfigurierte Admin-E-Mail
+   - **Passwort:** Prüfe deine `.env` Datei für `SEAFILE_ADMIN_PASSWORD`
+3. Vervollständige das Ersteinrichtungs-Setup:
+   - Erstelle deine erste Bibliothek (Ordner)
+   - Installiere den Desktop-Client vom Dashboard
+   - Konfiguriere Sync-Ordner
+
+**Desktop-Client-Einrichtung:**
+
+1. Download von `https://www.seafile.com/en/download/`
+2. Account hinzufügen:
+   - **Server:** `https://files.deinedomain.com`
+   - **E-Mail:** Deine Admin-E-Mail
+   - **Passwort:** Dein Admin-Passwort
+3. Wähle Bibliotheken zur Synchronisation
+4. Wähle lokale Ordner für die Synchronisation
+
+**API-Token für n8n generieren:**
+
+1. Gehe zu **Avatar** → **Einstellungen**
+2. Navigiere zu **Web API** → **Auth Token**
+3. Klicke auf **Generieren**
+4. Kopiere und sichere den Token
+
+### n8n-Integration einrichten
+
+**Seafile Community Node installieren:**
+
+1. In n8n, gehe zu **Einstellungen** → **Community Nodes**
+2. Installiere: `n8n-nodes-seafile`
+3. n8n neu starten: `docker compose restart n8n`
+
+**Seafile-Anmeldedaten konfigurieren:**
+
+1. Füge **Seafile**-Node zum Workflow hinzu
+2. Neue Anmeldedaten erstellen:
+   - **Server URL:** `http://seafile:80` (intern)
+   - **API Token:** Dein generierter Token
+   - Anmeldedaten speichern
+
+### Beispiel-Workflows
+
+#### Beispiel 1: Automatisches Dokument-Backup
+```javascript
+// Tägliches Backup wichtiger Dokumente zu Seafile
+
+// 1. Schedule Trigger - Täglich um 2 Uhr
+Cron Expression: 0 2 * * *
+
+// 2. Read Binary Files - Dokumente aus lokalem Ordner holen
+File Path: /data/shared/documents/*.pdf
+
+// 3. Seafile Node - In Backup-Bibliothek hochladen
+Operation: Upload File
+Library: Backups
+Path: /{{$now.format('YYYY-MM-DD')}}/
+File: {{$binary}}
+
+// 4. Seafile Node - Freigabe-Link erstellen
+Operation: Create Share Link
+Path: /{{$now.format('YYYY-MM-DD')}}/
+Expiration: 30 Tage
+
+// 5. Send Email - Backup-Bestätigung
+An: admin@firma.com
+Betreff: Tägliches Backup abgeschlossen
+Nachricht: |
+  Backup erfolgreich abgeschlossen!
+  Dateien: {{$items.length}} Dokumente
+  Speicherort: {{$json.share_link}}
+```
+
+#### Beispiel 2: Paperless Integration Bridge
+```javascript
+// Dokumente von Seafile zu Paperless für OCR-Verarbeitung verschieben
+
+// 1. Seafile Node - Neue Dateien auflisten
+Operation: List Directory
+Library: Eingang
+Path: /scans/
+
+// 2. Loop Over Items
+// Für jede Datei im Verzeichnis
+
+// 3. Seafile Node - Datei herunterladen
+Operation: Download File
+File ID: {{$json.id}}
+
+// 4. Move Binary Data
+// Für Paperless vorbereiten
+
+// 5. HTTP Request - An Paperless senden
+Method: POST
+URL: http://paperless:8000/api/documents/post_document/
+Headers:
+  Authorization: Token {{$credentials.paperless_token}}
+Body: Binärdatei
+
+// 6. Seafile Node - Verarbeitete Datei verschieben
+Operation: Move File
+Source: /scans/{{$json.name}}
+Destination: /verarbeitet/{{$now.format('YYYY-MM')}}/
+```
+
+#### Beispiel 3: Team-Kollaborations-Automatisierung
+```javascript
+// Automatisch Projektordner mit Vorlagen erstellen
+
+// 1. Webhook Trigger - Neues Projekt erstellt
+// Von deinem Projektmanagementsystem
+
+// 2. Seafile Node - Bibliothek erstellen
+Operation: Create Library
+Name: Projekt-{{$json.projekt_name}}
+Description: {{$json.projekt_beschreibung}}
+
+// 3. Seafile Node - Ordnerstruktur erstellen
+Paths: [
+  "/Dokumente",
+  "/Designs",
+  "/Meeting-Notizen",
+  "/Ressourcen"
+]
+
+// 4. Seafile Node - Vorlagen-Dateien kopieren
+Source Library: Vorlagen
+Destination: Projekt-{{$json.projekt_name}}
+
+// 5. Seafile Node - Mit Team teilen
+Operation: Share Library
+Users: {{$json.team_mitglieder}}
+Permission: rw
+
+// 6. Benachrichtigungen an Team senden
+// Via E-Mail/Slack
+```
+
+### Mobile & WebDAV-Zugriff
+
+**Mobile Apps:**
+- **iOS:** [Seafile Pro](https://apps.apple.com/app/seafile-pro/id639202512)
+- **Android:** [Seafile](https://play.google.com/store/apps/details?id=com.seafile.seadroid2)
+
+**WebDAV-Konfiguration:**
+
+Windows:
+```
+URL: https://files.deinedomain.com/seafdav
+Benutzername: deine-email@domain.com
+Passwort: dein-passwort
+```
+
+Mac Finder:
+```
+Gehe zu → Mit Server verbinden
+Server: https://files.deinedomain.com/seafdav
+```
+
+Linux:
+```bash
+# davfs2 installieren
+sudo apt-get install davfs2
+
+# Einbinden
+sudo mount -t davfs https://files.deinedomain.com/seafdav /mnt/seafile
+```
+
+### Fehlerbehebung
+
+**Kann mich nicht anmelden:**
+```bash
+# Prüfen ob Seafile läuft
+docker ps | grep seafile
+
+# Logs auf Fehler prüfen
+docker logs seafile --tail 100
+
+# Admin-Passwort zurücksetzen
+docker exec -it seafile /opt/seafile/seafile-server-latest/reset-admin.sh
+```
+
+**Sync-Probleme:**
+```bash
+# Seafile-Service-Status prüfen
+docker exec seafile /opt/seafile/seafile-server-latest/seafile.sh status
+
+# Services neu starten
+docker compose restart seafile seafile-db
+
+# Datenbankverbindung prüfen
+docker logs seafile-mariadb --tail 50
+```
+
+**Speicherplatz:**
+```bash
+# Genutzten Speicher prüfen
+docker exec seafile df -h /shared
+
+# Gelöschte Dateien aufräumen (Garbage Collection)
+docker exec seafile /opt/seafile/seafile-server-latest/seaf-gc.sh
+```
+
+### Performance-Optimierung
+
+**Für große Deployments:**
+- Memcached für bessere Performance aktivieren
+- Nginx für statische Dateien konfigurieren
+- S3/MinIO für Object Storage Backend verwenden
+- Elasticsearch für Volltextsuche aktivieren
+
+**Backup Best Practices:**
+- Regelmäßige Datenbank-Backups (MariaDB)
+- Daten-Verzeichnis zu externem Speicher synchronisieren
+- Wiederherstellungsverfahren vierteljährlich testen
+
+### Ressourcen
+
+- **Offizielle Dokumentation:** https://manual.seafile.com/
+- **API-Dokumentation:** https://manual.seafile.com/develop/web_api_v2.1/
+- **Community-Forum:** https://forum.seafile.com/
+- **GitHub:** https://github.com/haiwen/seafile
+- **Desktop-Clients:** https://www.seafile.com/en/download/
+- **n8n Community Node:** https://www.npmjs.com/package/n8n-nodes-seafile
+
+</details>
+
+<details>
+<summary><b>📄 Paperless-ngx - Intelligentes Dokumentenmanagement-System</b></summary>
+
+### Was ist Paperless-ngx?
+
+Paperless-ngx ist ein leistungsfähiges Dokumentenmanagement-System, das deine physischen Dokumente in ein durchsuchbares Online-Archiv verwandelt. Es führt automatisch OCR bei gescannten Dokumenten durch, verwendet KI zum Taggen und Kategorisieren und bietet eine saubere Web-Oberfläche zur Verwaltung deiner digitalen Unterlagen. Mit Unterstützung für mehrere Sprachen, automatischen Matching-Algorithmen und DSGVO-konformem Speicher ist es die perfekte Lösung für papierloses Arbeiten bei voller Kontrolle über deine Daten.
+
+### Funktionen
+
+- **OCR-Verarbeitung** - Automatische Texterkennung in 100+ Sprachen (konfiguriert für Deutsch + Englisch)
+- **KI Auto-Tagging** - Machine Learning kategorisiert Dokumente automatisch
+- **Smart Matching** - Lernt aus deinem Verhalten zur Verbesserung der Dokumentenklassifizierung
+- **Volltextsuche** - Suche in allen Dokumenten, sogar gescannten PDFs
+- **Dokumenttypen** - Automatische Erkennung von Rechnungen, Verträgen, Briefen, etc.
+- **Korrespondenten-Erkennung** - Identifiziert Absender/Firmen automatisch
+- **Archiv-Versionen** - Behält Original + durchsuchbare PDF/A Archiv-Version
+- **Mobile Apps** - iOS und Android Apps zum Scannen und Zugriff
+- **E-Mail-Import** - Dokumente aus E-Mail-Anhängen verarbeiten
+- **Barcode-Unterstützung** - Verwende Barcodes für Dokumententrennung und Tagging
+
+### Erste Einrichtung
+
+**Erste Anmeldung bei Paperless-ngx:**
+
+1. Navigiere zu `https://docs.deinedomain.com`
+2. Anmeldung mit:
+   - **Benutzername:** Deine konfigurierte E-Mail
+   - **Passwort:** Prüfe `.env` Datei für `PAPERLESS_ADMIN_PASSWORD`
+3. Erstkonfiguration:
+   - Setze deine bevorzugte Sprache
+   - Konfiguriere Datumsformat
+   - Aktiviere/Deaktiviere Auto-Tagging
+
+**Dokumentstruktur erstellen:**
+
+1. **Tags** → Kategorien erstellen:
+   - `Rechnung`, `Vertrag`, `Beleg`, `Persönlich`, `Arbeit`
+2. **Korrespondenten** → Häufige Absender hinzufügen:
+   - Firmen mit denen du regelmäßig zu tun hast
+3. **Dokumenttypen** → Typen definieren:
+   - `Rechnung`, `Brief`, `Bericht`, `Formular`
+
+**API-Token generieren:**
+
+1. Gehe zu **Einstellungen** → **Benutzer & Gruppen**
+2. Klicke auf deinen Benutzernamen
+3. Unter **Auth Token**, klicke **Generieren**
+4. Kopiere und sichere den Token
+
+### Consume-Ordner-Einrichtung
+
+**Automatischer Dokumenten-Import:**
+
+Der Consume-Ordner (`./shared`) wird auf neue Dokumente überwacht:
+```bash
+# Dokumente hochladen via:
+# 1. Direktes Kopieren zum Server
+scp rechnung.pdf user@server:~/ai-launchkit/shared/
+
+# 2. Via Seafile (wenn installiert)
+# Upload zu Seafile → paperless-bridge Ordner
+
+# 3. Via n8n Workflow
+# HTTP-Endpunkt → In Consume-Ordner speichern
+```
+
+**Ordnerstruktur für Auto-Tagging:**
+```
+./shared/
+├── rechnungen/    # Auto-getaggt als "Rechnung"
+├── vertraege/     # Auto-getaggt als "Vertrag"  
+├── belege/        # Auto-getaggt als "Beleg"
+└── eingang/       # Allgemeine Dokumente
+```
+
+### n8n-Integration
+
+#### Beispiel 1: E-Mail-Anhänge verarbeiten
+```javascript
+// E-Mail-Anhänge automatisch verarbeiten
+
+// 1. Email Trigger (IMAP) - Auf neue E-Mails prüfen
+Account: Deine E-Mail-Anmeldedaten
+Ordner: INBOX
+Filter: Hat Anhänge
+
+// 2. Loop - Für jeden Anhang
+
+// 3. IF Node - Prüfe ob PDF oder Bild
+Bedingung: {{$binary.attachment.mimeType}} enthält "pdf" ODER "image"
+
+// 4. HTTP Request - Zu Paperless hochladen
+Method: POST
+URL: http://paperless:8000/api/documents/post_document/
+Headers:
+  Authorization: Token {{$credentials.paperless_token}}
+Body: Binärer Anhang
+Zusätzliche Felder:
+  title: E-Mail von {{$json.from}} - {{$json.subject}}
+  correspondent: {{$json.from}}
+  tags: email,eingang
+
+// 5. E-Mail in verarbeiteten Ordner verschieben
+Operation: Move Message
+Ordner: Verarbeitet
+```
+
+#### Beispiel 2: Rechnungsverarbeitungs-Workflow
+```javascript
+// Daten aus Rechnungen extrahieren und Buchhaltungseinträge erstellen
+
+// 1. Paperless Webhook - Dokument hinzugefügt
+// Webhook in Paperless-Einstellungen konfigurieren
+
+// 2. HTTP Request - Dokumentdetails abrufen
+Method: GET
+URL: http://paperless:8000/api/documents/{{$json.document_id}}/
+Headers:
+  Authorization: Token {{$credentials.paperless_token}}
+
+// 3. IF Node - Prüfe ob Rechnung
+Bedingung: {{$json.document_type}} == "Rechnung"
+
+// 4. HTTP Request - Dokumentinhalt abrufen
+Method: GET  
+URL: http://paperless:8000/api/documents/{{$json.id}}/download/
+Headers:
+  Authorization: Token {{$credentials.paperless_token}}
+
+// 5. OpenAI Node - Rechnungsdaten extrahieren
+Prompt: |
+  Extrahiere folgendes aus dieser Rechnung:
+  - Rechnungsnummer
+  - Datum
+  - Gesamtbetrag
+  - MwSt-Betrag
+  - Lieferantenname
+  Als JSON zurückgeben.
+
+// 6. Google Sheets Node - Zur Buchhaltung hinzufügen
+Operation: Append
+Sheet: Rechnungen 2024
+Werte: Extrahierte Daten
+
+// 7. Benachrichtigung senden
+Kanal: #buchhaltung
+Nachricht: Neue Rechnung verarbeitet: {{$json.rechnungsnummer}}
+```
+
+#### Beispiel 3: Dokument-Aufbewahrungsrichtlinie
+```javascript
+// Alte Dokumente automatisch archivieren
+
+// 1. Schedule Trigger - Monatlich
+Cron: 0 0 1 * *
+
+// 2. HTTP Request - Alte Dokumente abrufen
+Method: GET
+URL: http://paperless:8000/api/documents/
+Query Parameter:
+  created__lt: {{$now.minus(7, 'years').format('YYYY-MM-DD')}}
+  
+// 3. Loop - Für jedes Dokument
+
+// 4. HTTP Request - Archiv-Tag hinzufügen
+Method: PATCH
+URL: http://paperless:8000/api/documents/{{$json.id}}/
+Body:
+  tags: [...existing_tags, "archiviert"]
+  
+// 5. Backup zu Cold Storage
+// Zu S3/Backblaze/externer Festplatte verschieben
+```
+
+### Mobiles Scannen
+
+**Mobile Apps:**
+- **iOS:** [Paperless Mobile](https://apps.apple.com/app/paperless-mobile/id1556098941)
+- **Android:** [Paperless Mobile](https://play.google.com/store/apps/details?id=de.astubenbord.paperless_mobile)
+
+**App-Konfiguration:**
+1. Server-URL: `https://docs.deinedomain.com`
+2. Benutzername: Deine E-Mail
+3. Passwort: Dein Passwort
+
+**Scan-Workflow:**
+1. Mobile App öffnen
+2. Kamera-Symbol antippen
+3. Dokument scannen (Auto-Crop und Verbesserung)
+4. Tags/Korrespondent hinzufügen (optional)
+5. Upload → Automatische OCR-Verarbeitung
+
+### Erweiterte Funktionen
+
+**Benutzerdefinierte Matching-Regeln:**
+
+Erstelle Regeln für automatische Dokumentenverarbeitung:
+
+1. **Einstellungen** → **Matching**
+2. Regel hinzufügen:
+   - **Muster:** "Rechnungs-Nr."
+   - **Dokumenttyp:** Rechnung
+   - **Tags:** "Zahlung-erforderlich" hinzufügen
+
+**E-Mail-Verarbeitungsregeln:**
+
+E-Mail-Import konfigurieren:
+
+1. **Einstellungen** → **Mail**
+2. IMAP-Konto hinzufügen
+3. Regeln setzen:
+   - Von `amazon@email.amazon.com` → Tag "Amazon", "Beleg"
+   - Betreff enthält "Rechnung" → Dokumenttyp "Rechnung"
+
+### Fehlerbehebung
+
+**OCR funktioniert nicht:**
+```bash
+# Prüfen ob OCR-Sprachen installiert sind
+docker exec paperless-ngx ls /usr/share/tesseract-ocr/*/
+
+# Sprachpakete neu installieren
+docker exec paperless-ngx apt-get update
+docker exec paperless-ngx apt-get install tesseract-ocr-deu tesseract-ocr-eng
+
+# Service neu starten
+docker compose restart paperless
+```
+
+**Kann Dokumente nicht hochladen:**
+```bash
+# Berechtigungen am Consume-Ordner prüfen
+ls -la ./shared/
+
+# Berechtigungen korrigieren
+sudo chown -R 1000:1000 ./shared/
+
+# Paperless Logs prüfen
+docker logs paperless-ngx --tail 100 | grep ERROR
+```
+
+**Datenbank-Probleme:**
+```bash
+# PostgreSQL-Status prüfen
+docker ps | grep paperless-postgres
+
+# Datenbank-Logs prüfen
+docker logs paperless-postgres --tail 50
+
+# Datenbank-Migrationen ausführen
+docker exec paperless-ngx python manage.py migrate
+```
+
+**Suche funktioniert nicht:**
+```bash
+# Suchindex neu aufbauen
+docker exec paperless-ngx python manage.py document_index reindex
+
+# Redis-Verbindung prüfen
+docker exec paperless-ngx python manage.py shell
+>>> from django.core.cache import cache
+>>> cache.set('test', 'value')
+>>> cache.get('test')
+```
+
+### Backup & Migration
+
+**Dokumente sichern:**
+```bash
+# Alle Dokumente mit Metadaten exportieren
+docker exec paperless-ngx python manage.py document_exporter ../export
+
+# Backup-Speicherort: ./export/
+# Beinhaltet: Dokumente, Metadaten, Datenbank-Dump
+```
+
+**Dokumente wiederherstellen:**
+```bash
+# Aus Backup importieren
+docker exec paperless-ngx python manage.py document_importer ../export
+```
+
+### Performance-Tipps
+
+- **OCR-Einstellungen:** `skip`-Modus für bereits OCR-bearbeitete PDFs verwenden
+- **Parallele Verarbeitung:** `PAPERLESS_TASK_WORKERS` erhöhen für schnellere Verarbeitung
+- **Thumbnail-Generierung:** Für reine Text-Dokumente deaktivieren
+- **Datenbank:** PostgreSQL performt besser als SQLite für große Archive
+- **Speicher:** SSD für Media-Verzeichnis für bessere Performance verwenden
+
+### DSGVO-Konformität
+
+Paperless-ngx hilft bei DSGVO-Compliance:
+
+- **Aufbewahrungsrichtlinien:** Automatische Dokument-Löschung nach X Jahren
+- **Zugriffsprotokolle:** Verfolgen wer auf welche Dokumente zugegriffen hat
+- **Verschlüsselung:** Optionale GPG-Verschlüsselung für sensible Dokumente
+- **Datenexport:** Alle Daten für Datenportabilität exportieren
+- **Recht auf Löschung:** Massenlöschung nach Korrespondent
+
+### Ressourcen
+
+- **Offizielle Dokumentation:** https://docs.paperless-ngx.com/
+- **API-Dokumentation:** https://docs.paperless-ngx.com/api/
+- **GitHub:** https://github.com/paperless-ngx/paperless-ngx
+- **Community-Forum:** https://github.com/paperless-ngx/paperless-ngx/discussions
+- **Mobile Apps:** https://github.com/astubenbord/paperless-mobile
+- **Backup-Strategie:** https://docs.paperless-ngx.com/administration/#backup
 
 </details>
 

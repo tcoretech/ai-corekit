@@ -2771,17 +2771,20 @@ services:
       - DB_NAME=seafile_db
       - DB_USER=seafile
       - DB_PASSWORD=${SEAFILE_DB_PASSWORD}
+      - SEAFILE_SERVER_LETSENCRYPT=false
       - SEAFILE_ADMIN_EMAIL=${SEAFILE_ADMIN_EMAIL}
       - SEAFILE_ADMIN_PASSWORD=${SEAFILE_ADMIN_PASSWORD}
       - SEAFILE_SERVER_HOSTNAME=${SEAFILE_HOSTNAME}
       - TIME_ZONE=Europe/Berlin
+      - FORCE_HTTPS_IN_CONF=true
     volumes:
       - seafile_data:/shared
       - ./shared:/shared/paperless-bridge
+      - ./scripts/seafile-init.sh:/init-fix.sh:ro
     depends_on:
       - seafile-db
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      test: ["CMD-SHELL", "bash /init-fix.sh && curl -f http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 5

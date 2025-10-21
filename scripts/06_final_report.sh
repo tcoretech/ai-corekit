@@ -453,7 +453,7 @@ if is_profile_active "seafile"; then
   echo "================================= Seafile ============================"
   echo
   echo "Host: ${SEAFILE_HOSTNAME:-<hostname_not_set>}"
-  echo "Admin Email: ${USER_EMAIL}"
+  echo "Admin Email: ${SEAFILE_ADMIN_EMAIL}"
   echo "Admin Password: ${SEAFILE_ADMIN_PASSWORD:-<not_set>}"
   echo
   echo "Access: https://${SEAFILE_HOSTNAME:-<hostname_not_set>}"
@@ -476,7 +476,7 @@ if is_profile_active "paperless"; then
   echo "========================== Paperless-ngx ============================"
   echo
   echo "Host: ${PAPERLESS_HOSTNAME:-<hostname_not_set>}"
-  echo "Admin User: ${USER_EMAIL}"
+  echo "Admin User: ${PAPERLESS_ADMIN_EMAIL}"
   echo "Admin Password: ${PAPERLESS_ADMIN_PASSWORD:-<not_set>}"
   echo
   echo "Access: https://${PAPERLESS_HOSTNAME:-<hostname_not_set>}"

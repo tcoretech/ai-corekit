@@ -637,6 +637,8 @@ generated_values["KOPIA_UI_USERNAME"]="admin"  # Kopia uses 'admin' by default
 generated_values["KIMAI_ADMIN_EMAIL"]="$USER_EMAIL"
 generated_values["INVOICENINJA_ADMIN_EMAIL"]="$USER_EMAIL"
 generated_values["GPTR_USERNAME"]="$USER_EMAIL"
+generated_values["SEAFILE_ADMIN_EMAIL"]="$USER_EMAIL"
+generated_values["PAPERLESS_ADMIN_EMAIL"]="$USER_EMAIL"
 generated_values["MAILPIT_USERNAME"]="$USER_EMAIL"  # Set Mailpit username for Caddy
 
 if [[ -n "$OPENAI_API_KEY" ]]; then

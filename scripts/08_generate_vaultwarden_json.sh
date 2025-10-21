@@ -362,7 +362,7 @@ EOF
     if is_profile_active "seafile"; then
         add_login_item \
             "Seafile - File Sync & Share" \
-            "${USER_EMAIL}" \
+            "${SEAFILE_ADMIN_EMAIL}" \
             "${SEAFILE_ADMIN_PASSWORD}" \
             "https://${SEAFILE_HOSTNAME}" \
             "Professional file sync and share platform (Dropbox alternative). Desktop/mobile apps available at seafile.com/download. WebDAV: https://${SEAFILE_HOSTNAME}/seafdav. Community n8n node: n8n-nodes-seafile. Internal API: http://seafile:80"
@@ -372,7 +372,7 @@ EOF
     if is_profile_active "paperless"; then
         add_login_item \
             "Paperless-ngx - Document Management" \
-            "${USER_EMAIL}" \
+            "${PAPERLESS_ADMIN_EMAIL}" \
             "${PAPERLESS_ADMIN_PASSWORD}" \
             "https://${PAPERLESS_HOSTNAME}" \
             "Intelligent document management with OCR and AI tagging. Supports German & English OCR. Mobile apps: 'Paperless Mobile' on iOS/Android. Consume folder: ./shared. Internal API: http://paperless:8000/api/. Generate API token in user settings for n8n integration."

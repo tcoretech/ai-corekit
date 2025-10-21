@@ -173,8 +173,6 @@ if grep -q "calcom" .env 2>/dev/null && [ -f "$SCRIPT_DIR/setup_calcom_google.sh
 fi
 
 log_info "========== STEP 6: Generating Final Report =========="
-
-log_info "========== STEP 6: Generating Final Report =========="
 # --- Installation Summary ---
 log_info "Installation Summary. The following steps were performed by the scripts:"
 log_success "- System updated and basic utilities installed"
@@ -200,6 +198,34 @@ if grep -q "libretranslate" .env 2>/dev/null || docker ps -a | grep -q libretran
     sudo docker compose -p localai stop libretranslate 2>/dev/null || true
     sudo docker compose -p localai rm -f libretranslate 2>/dev/null || true
     sudo docker compose -p localai --profile libretranslate up -d libretranslate 2>/dev/null || true
+fi
+
+# Workaround: Fix Seafile HTTPS/CSRF issue if selected
+if grep -q "seafile" .env 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"seafile"* ]]; then
+    if docker ps | grep -q seafile; then
+        log_info "Fixing Seafile HTTPS/CSRF configuration..."
+        sleep 10  # Wait for Seafile to initialize
+        
+        # Run the fix script
+        if [ -f "$SCRIPT_DIR/seafile-init.sh" ]; then
+            docker exec seafile bash /init-fix.sh 2>/dev/null || true
+        else
+            # Direct fix if script not available
+            docker exec seafile sed -i 's|SERVICE_URL = "http://|SERVICE_URL = "https://|g' /shared/seafile/conf/seahub_settings.py 2>/dev/null || true
+            HOSTNAME=$(docker exec seafile grep "SERVICE_URL" /shared/seafile/conf/seahub_settings.py | sed 's/.*https:\/\/\([^"]*\).*/\1/' 2>/dev/null || echo "")
+            if [ -n "$HOSTNAME" ]; then
+                docker exec seafile bash -c "echo \"CSRF_TRUSTED_ORIGINS = ['https://$HOSTNAME']\" >> /shared/seafile/conf/seahub_settings.py" 2>/dev/null || true
+            fi
+        fi
+        
+        # Restart Seafile to apply changes
+        docker compose -p localai restart seafile 2>/dev/null || true
+        log_success "Seafile HTTPS/CSRF configuration fixed"
+    else
+        log_warning "Seafile container not running - skipping CSRF fix"
+    fi
+else
+    log_info "Seafile not selected, skipping"
 fi
 
 # Generate Vaultwarden import file if Vaultwarden is active

@@ -79,6 +79,12 @@ volumes:
   gpt_researcher_data:
   ldr_data:
   n8n-runners-data:
+  seafile_mysql:
+  seafile_data:
+  paperless_postgresql:
+  paperless_redis:
+  paperless_data:
+  paperless_media:
 
 x-n8n: &service-n8n
   build:
@@ -429,6 +435,8 @@ services:
       - LDR_HOSTNAME=${LDR_HOSTNAME}
       - LDR_USERNAME=${LDR_USERNAME}
       - LDR_PASSWORD_HASH=${LDR_PASSWORD_HASH}
+      - SEAFILE_HOSTNAME=${SEAFILE_HOSTNAME}
+      - PAPERLESS_HOSTNAME=${PAPERLESS_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}
@@ -2732,3 +2740,114 @@ services:
       start_period: 60s
     depends_on:
       - searxng
+
+  # ========== SEAFILE STACK ==========
+  seafile-db:
+    image: mariadb:10.11
+    container_name: seafile-mariadb
+    profiles: ["seafile"]
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${SEAFILE_DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=seafile_db
+      - MYSQL_USER=seafile
+      - MYSQL_PASSWORD=${SEAFILE_DB_PASSWORD}
+    volumes:
+      - seafile_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  seafile:
+    image: seafileltd/seafile-mc:latest
+    container_name: seafile
+    profiles: ["seafile"]
+    restart: unless-stopped
+    environment:
+      - DB_HOST=seafile-db
+      - DB_ROOT_PASSWD=${SEAFILE_DB_ROOT_PASSWORD}
+      - DB_NAME=seafile_db
+      - DB_USER=seafile
+      - DB_PASSWORD=${SEAFILE_DB_PASSWORD}
+      - SEAFILE_ADMIN_EMAIL=${USER_EMAIL}
+      - SEAFILE_ADMIN_PASSWORD=${SEAFILE_ADMIN_PASSWORD}
+      - SEAFILE_SERVER_HOSTNAME=${SEAFILE_HOSTNAME}
+      - TIME_ZONE=Europe/Berlin
+    volumes:
+      - seafile_data:/shared
+      - ./shared:/shared/paperless-bridge
+    depends_on:
+      - seafile-db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ========== PAPERLESS-NGX STACK ==========
+  paperless-redis:
+    image: redis:7-alpine
+    container_name: paperless-redis
+    profiles: ["paperless"]
+    restart: unless-stopped
+    volumes:
+      - paperless_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  paperless-db:
+    image: postgres:17-alpine
+    container_name: paperless-postgres
+    profiles: ["paperless"]
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=paperless
+      - POSTGRES_USER=paperless
+      - POSTGRES_PASSWORD=${PAPERLESS_DB_PASSWORD}
+    volumes:
+      - paperless_postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperless"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless-ngx
+    profiles: ["paperless"]
+    restart: unless-stopped
+    environment:
+      - PAPERLESS_REDIS=redis://paperless-redis:6379
+      - PAPERLESS_DBENGINE=postgresql
+      - PAPERLESS_DBHOST=paperless-db
+      - PAPERLESS_DBNAME=paperless
+      - PAPERLESS_DBUSER=paperless
+      - PAPERLESS_DBPASS=${PAPERLESS_DB_PASSWORD}
+      - PAPERLESS_SECRET_KEY=${PAPERLESS_SECRET_KEY}
+      - PAPERLESS_TIME_ZONE=Europe/Berlin
+      - PAPERLESS_OCR_LANGUAGE=deu+eng
+      - PAPERLESS_ADMIN_USER=${USER_EMAIL}
+      - PAPERLESS_ADMIN_PASSWORD=${PAPERLESS_ADMIN_PASSWORD}
+      - PAPERLESS_ADMIN_MAIL=${USER_EMAIL}
+      - PAPERLESS_URL=https://${PAPERLESS_HOSTNAME}
+      - PAPERLESS_FILENAME_FORMAT={created_year}/{correspondent}/{created_date}_{title}
+      - PAPERLESS_CONSUMER_RECURSIVE=true
+      - PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS=true
+    volumes:
+      - paperless_data:/usr/src/paperless/data
+      - paperless_media:/usr/src/paperless/media
+      - ./shared:/usr/src/paperless/consume/seafile
+    depends_on:
+      - paperless-db
+      - paperless-redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

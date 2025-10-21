@@ -66,6 +66,8 @@ base_services_data=(
     "mautic" "Mautic 6.0 - Marketing Automation Platform (Email, Leads, Campaigns)"
     "baserow" "Baserow (Airtable Alternative)"
     "nocodb" "NocoDB (Open-source Airtable alternative, smart spreadsheet UI)"
+    "seafile" "Seafile (File sync & share like Dropbox/Google Drive/OneDrive)"
+    "paperless" "Paperless-ngx (Document management with OCR & AI tagging)"
     "vikunja" "Vikunja (Modern Task Management - Todoist/TickTick alternative)"
     "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
     "calcom" "Cal.com (Open Source Scheduling Platform)"

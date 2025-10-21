@@ -2895,6 +2895,579 @@ Edit Jitsi config to customize:
 
 </details>
 
+### 📁 File & Document Management
+
+<details>
+<summary><b>🌊 Seafile - Professional File Sync & Share Platform</b></summary>
+
+### What is Seafile?
+
+Seafile is a professional open-source file sync and share platform that provides a self-hosted alternative to Dropbox, Google Drive, and OneDrive. It offers reliable file synchronization, team collaboration features, version control, and encryption, making it perfect for businesses that need full control over their data. With desktop and mobile clients, WebDAV support, and extensive API, Seafile seamlessly integrates into any workflow.
+
+### Features
+
+- **File Sync** - Real-time synchronization across all devices with selective sync
+- **Version Control** - Complete file history with easy rollback to previous versions
+- **Team Libraries** - Shared folders with granular permission management
+- **File Locking** - Prevent editing conflicts with automatic file locking
+- **WebDAV Support** - Mount as network drive on Windows/Mac/Linux
+- **Mobile Apps** - iOS and Android apps with offline access and auto-upload
+- **End-to-End Encryption** - Client-side encryption for sensitive data
+- **Office Integration** - Edit documents online with OnlyOffice/Collabora
+- **Full-Text Search** - Search inside documents, PDFs, and Office files
+- **Activity Stream** - Track all file changes and team activities
+
+### Initial Setup
+
+**First Login to Seafile:**
+
+1. Navigate to `https://files.yourdomain.com`
+2. Login with:
+   - **Email:** Your configured admin email
+   - **Password:** Check your `.env` file for `SEAFILE_ADMIN_PASSWORD`
+3. Complete first-time setup:
+   - Create your first library (folder)
+   - Install desktop client from dashboard
+   - Configure sync folders
+
+**Desktop Client Setup:**
+
+1. Download from `https://www.seafile.com/en/download/`
+2. Add account:
+   - **Server:** `https://files.yourdomain.com`
+   - **Email:** Your admin email
+   - **Password:** Your admin password
+3. Select libraries to sync
+4. Choose local folders for synchronization
+
+**Generate API Token for n8n:**
+
+1. Go to **Avatar** → **Settings**
+2. Navigate to **Web API** → **Auth Token**
+3. Click **Generate**
+4. Copy and save the token securely
+
+### n8n Integration Setup
+
+**Install Seafile Community Node:**
+
+1. In n8n, go to **Settings** → **Community Nodes**
+2. Install: `n8n-nodes-seafile`
+3. Restart n8n: `docker compose restart n8n`
+
+**Configure Seafile Credentials:**
+
+1. Add **Seafile** node to workflow
+2. Create new credentials:
+   - **Server URL:** `http://seafile:80` (internal)
+   - **API Token:** Your generated token
+   - Save credentials
+
+### Example Workflows
+
+#### Example 1: Automatic Document Backup
+
+```javascript
+// Daily backup of important documents to Seafile
+
+// 1. Schedule Trigger - Daily at 2 AM
+Cron Expression: 0 2 * * *
+
+// 2. Read Binary Files - Get documents from local folder
+File Path: /data/shared/documents/*.pdf
+
+// 3. Seafile Node - Upload to backup library
+Operation: Upload File
+Library: Backups
+Path: /{{$now.format('YYYY-MM-DD')}}/
+File: {{$binary}}
+
+// 4. Seafile Node - Create sharing link
+Operation: Create Share Link
+Path: /{{$now.format('YYYY-MM-DD')}}/
+Expiration: 30 days
+
+// 5. Send Email - Backup confirmation
+To: admin@company.com
+Subject: Daily Backup Complete
+Body: |
+  Backup completed successfully!
+  Files: {{$items.length}} documents
+  Location: {{$json.share_link}}
+```
+
+#### Example 2: Paperless Integration Bridge
+
+```javascript
+// Move documents from Seafile to Paperless for OCR processing
+
+// 1. Seafile Node - List new files
+Operation: List Directory
+Library: Inbox
+Path: /scans/
+
+// 2. Loop Over Items
+// For each file in the directory
+
+// 3. Seafile Node - Download file
+Operation: Download File
+File ID: {{$json.id}}
+
+// 4. Move Binary Data
+// Prepare for Paperless
+
+// 5. HTTP Request - Send to Paperless
+Method: POST
+URL: http://paperless:8000/api/documents/post_document/
+Headers:
+  Authorization: Token {{$credentials.paperless_token}}
+Body: Binary file
+
+// 6. Seafile Node - Move processed file
+Operation: Move File
+Source: /scans/{{$json.name}}
+Destination: /processed/{{$now.format('YYYY-MM')}}/
+```
+
+#### Example 3: Team Collaboration Automation
+
+```javascript
+// Auto-create project folders with templates
+
+// 1. Webhook Trigger - New project created
+// From your project management system
+
+// 2. Seafile Node - Create library
+Operation: Create Library
+Name: Project-{{$json.project_name}}
+Description: {{$json.project_description}}
+
+// 3. Seafile Node - Create folder structure
+Paths: [
+  "/Documents",
+  "/Designs",
+  "/Meeting Notes",
+  "/Resources"
+]
+
+// 4. Seafile Node - Copy template files
+Source Library: Templates
+Destination: Project-{{$json.project_name}}
+
+// 5. Seafile Node - Share with team
+Operation: Share Library
+Users: {{$json.team_members}}
+Permission: rw
+
+// 6. Send notifications to team
+// Via email/Slack
+```
+
+### Mobile & WebDAV Access
+
+**Mobile Apps:**
+- **iOS:** [Seafile Pro](https://apps.apple.com/app/seafile-pro/id639202512)
+- **Android:** [Seafile](https://play.google.com/store/apps/details?id=com.seafile.seadroid2)
+
+**WebDAV Configuration:**
+
+Windows:
+```
+URL: https://files.yourdomain.com/seafdav
+Username: your-email@domain.com
+Password: your-password
+```
+
+Mac Finder:
+```
+Go → Connect to Server
+Server: https://files.yourdomain.com/seafdav
+```
+
+Linux:
+```bash
+# Install davfs2
+sudo apt-get install davfs2
+
+# Mount
+sudo mount -t davfs https://files.yourdomain.com/seafdav /mnt/seafile
+```
+
+### Troubleshooting
+
+**Cannot Login:**
+```bash
+# Check if Seafile is running
+docker ps | grep seafile
+
+# Check logs for errors
+docker logs seafile --tail 100
+
+# Reset admin password
+docker exec -it seafile /opt/seafile/seafile-server-latest/reset-admin.sh
+```
+
+**Sync Issues:**
+```bash
+# Check seafile service status
+docker exec seafile /opt/seafile/seafile-server-latest/seafile.sh status
+
+# Restart services
+docker compose restart seafile seafile-db
+
+# Check database connection
+docker logs seafile-mariadb --tail 50
+```
+
+**Storage Space:**
+```bash
+# Check used space
+docker exec seafile df -h /shared
+
+# Clean up deleted files (garbage collection)
+docker exec seafile /opt/seafile/seafile-server-latest/seaf-gc.sh
+```
+
+### Performance Optimization
+
+**For Large Deployments:**
+- Enable memcached for better performance
+- Configure Nginx for static file serving
+- Use S3/MinIO for object storage backend
+- Enable Elasticsearch for full-text search
+
+**Backup Best Practices:**
+- Regular database backups (MariaDB)
+- Sync data directory to external storage
+- Test restore procedures quarterly
+
+### Resources
+
+- **Official Documentation:** https://manual.seafile.com/
+- **API Documentation:** https://manual.seafile.com/develop/web_api_v2.1/
+- **Community Forum:** https://forum.seafile.com/
+- **GitHub:** https://github.com/haiwen/seafile
+- **Desktop Clients:** https://www.seafile.com/en/download/
+- **n8n Community Node:** https://www.npmjs.com/package/n8n-nodes-seafile
+
+</details>
+
+<details>
+<summary><b>📄 Paperless-ngx - Intelligent Document Management System</b></summary>
+
+### What is Paperless-ngx?
+
+Paperless-ngx is a powerful document management system that transforms your physical documents into a searchable online archive. It automatically performs OCR on scanned documents, uses AI to tag and categorize them, and provides a clean web interface for managing your digital paperwork. With support for multiple languages, automatic matching algorithms, and GDPR-compliant storage, it's the perfect solution for going paperless while maintaining full control over your data.
+
+### Features
+
+- **OCR Processing** - Automatic text recognition in 100+ languages (configured for German + English)
+- **AI Auto-Tagging** - Machine learning automatically categorizes documents
+- **Smart Matching** - Learns from your behavior to improve document classification
+- **Full-Text Search** - Search inside all documents, even scanned PDFs
+- **Document Types** - Automatic detection of invoices, contracts, letters, etc.
+- **Correspondent Detection** - Identifies senders/companies automatically
+- **Archive Versions** - Keeps original + searchable PDF/A archive version
+- **Mobile Apps** - iOS and Android apps for scanning and access
+- **Email Import** - Process documents from email attachments
+- **Barcode Support** - Use barcodes for document separation and tagging
+
+### Initial Setup
+
+**First Login to Paperless-ngx:**
+
+1. Navigate to `https://docs.yourdomain.com`
+2. Login with:
+   - **Username:** Your configured email
+   - **Password:** Check `.env` file for `PAPERLESS_ADMIN_PASSWORD`
+3. Initial configuration:
+   - Set your preferred language
+   - Configure date format
+   - Enable/disable auto-tagging
+
+**Create Document Structure:**
+
+1. **Tags** → Create categories:
+   - `Invoice`, `Contract`, `Receipt`, `Personal`, `Work`
+2. **Correspondents** → Add common senders:
+   - Companies you deal with regularly
+3. **Document Types** → Define types:
+   - `Bill`, `Letter`, `Report`, `Form`
+
+**Generate API Token:**
+
+1. Go to **Settings** → **Users & Groups**
+2. Click on your username
+3. Under **Auth Token**, click **Generate**
+4. Copy and save the token
+
+### Consume Folder Setup
+
+**Automatic Document Import:**
+
+The consume folder (`./shared`) is monitored for new documents:
+
+```bash
+# Upload documents via:
+# 1. Direct copy to server
+scp invoice.pdf user@server:~/ai-launchkit/shared/
+
+# 2. Via Seafile (if installed)
+# Upload to Seafile → paperless-bridge folder
+
+# 3. Via n8n workflow
+# HTTP endpoint → Save to consume folder
+```
+
+**Folder Structure for Auto-Tagging:**
+
+```
+./shared/
+├── invoices/     # Auto-tagged as "Invoice"
+├── contracts/    # Auto-tagged as "Contract"  
+├── receipts/     # Auto-tagged as "Receipt"
+└── incoming/     # General documents
+```
+
+### n8n Integration
+
+#### Example 1: Email Attachment Processing
+
+```javascript
+// Process email attachments automatically
+
+// 1. Email Trigger (IMAP) - Check for new emails
+Account: Your email credentials
+Folder: INBOX
+Filters: Has attachments
+
+// 2. Loop - For each attachment
+
+// 3. IF Node - Check if PDF or image
+Condition: {{$binary.attachment.mimeType}} contains "pdf" OR "image"
+
+// 4. HTTP Request - Upload to Paperless
+Method: POST
+URL: http://paperless:8000/api/documents/post_document/
+Headers:
+  Authorization: Token {{$credentials.paperless_token}}
+Body: Binary attachment
+Additional Fields:
+  title: Email from {{$json.from}} - {{$json.subject}}
+  correspondent: {{$json.from}}
+  tags: email,inbox
+
+// 5. Move email to processed folder
+Operation: Move Message
+Folder: Processed
+```
+
+#### Example 2: Invoice Processing Workflow
+
+```javascript
+// Extract data from invoices and create accounting entries
+
+// 1. Paperless Webhook - Document added
+// Configure webhook in Paperless settings
+
+// 2. HTTP Request - Get document details
+Method: GET
+URL: http://paperless:8000/api/documents/{{$json.document_id}}/
+Headers:
+  Authorization: Token {{$credentials.paperless_token}}
+
+// 3. IF Node - Check if invoice
+Condition: {{$json.document_type}} == "Invoice"
+
+// 4. HTTP Request - Get document content
+Method: GET  
+URL: http://paperless:8000/api/documents/{{$json.id}}/download/
+Headers:
+  Authorization: Token {{$credentials.paperless_token}}
+
+// 5. OpenAI Node - Extract invoice data
+Prompt: |
+  Extract the following from this invoice:
+  - Invoice number
+  - Date
+  - Total amount
+  - VAT amount
+  - Supplier name
+  Return as JSON.
+
+// 6. Google Sheets Node - Add to accounting
+Operation: Append
+Sheet: Invoices 2024
+Values: Extracted data
+
+// 7. Send notification
+Channel: #accounting
+Message: New invoice processed: {{$json.invoice_number}}
+```
+
+#### Example 3: Document Retention Policy
+
+```javascript
+// Automatically archive old documents
+
+// 1. Schedule Trigger - Monthly
+Cron: 0 0 1 * *
+
+// 2. HTTP Request - Get old documents
+Method: GET
+URL: http://paperless:8000/api/documents/
+Query Parameters:
+  created__lt: {{$now.minus(7, 'years').format('YYYY-MM-DD')}}
+  
+// 3. Loop - For each document
+
+// 4. HTTP Request - Add archive tag
+Method: PATCH
+URL: http://paperless:8000/api/documents/{{$json.id}}/
+Body:
+  tags: [...existing_tags, "archived"]
+  
+// 5. Backup to cold storage
+// Move to S3/Backblaze/external drive
+```
+
+### Mobile Scanning
+
+**Mobile Apps:**
+- **iOS:** [Paperless Mobile](https://apps.apple.com/app/paperless-mobile/id1556098941)
+- **Android:** [Paperless Mobile](https://play.google.com/store/apps/details?id=de.astubenbord.paperless_mobile)
+
+**App Configuration:**
+1. Server URL: `https://docs.yourdomain.com`
+2. Username: Your email
+3. Password: Your password
+
+**Scanning Workflow:**
+1. Open mobile app
+2. Tap camera icon
+3. Scan document (auto-crop and enhance)
+4. Add tags/correspondent (optional)
+5. Upload → Automatic OCR processing
+
+### Advanced Features
+
+**Custom Matching Rules:**
+
+Create rules for automatic document processing:
+
+1. **Settings** → **Matching**
+2. Add rule:
+   - **Pattern:** "Invoice No."
+   - **Document Type:** Invoice
+   - **Tags:** Add "needs-payment"
+
+**Email Processing Rules:**
+
+Configure email import:
+
+1. **Settings** → **Mail**
+2. Add IMAP account
+3. Set rules:
+   - From `amazon@email.amazon.com` → Tag "Amazon", "Receipt"
+   - Subject contains "Invoice" → Document type "Invoice"
+
+### Troubleshooting
+
+**OCR Not Working:**
+```bash
+# Check if OCR languages are installed
+docker exec paperless-ngx ls /usr/share/tesseract-ocr/*/
+
+# Reinstall language packs
+docker exec paperless-ngx apt-get update
+docker exec paperless-ngx apt-get install tesseract-ocr-deu tesseract-ocr-eng
+
+# Restart service
+docker compose restart paperless
+```
+
+**Cannot Upload Documents:**
+```bash
+# Check permissions on consume folder
+ls -la ./shared/
+
+# Fix permissions
+sudo chown -R 1000:1000 ./shared/
+
+# Check Paperless logs
+docker logs paperless-ngx --tail 100 | grep ERROR
+```
+
+**Database Issues:**
+```bash
+# Check PostgreSQL status
+docker ps | grep paperless-postgres
+
+# Check database logs
+docker logs paperless-postgres --tail 50
+
+# Run database migrations
+docker exec paperless-ngx python manage.py migrate
+```
+
+**Search Not Working:**
+```bash
+# Rebuild search index
+docker exec paperless-ngx python manage.py document_index reindex
+
+# Check Redis connection
+docker exec paperless-ngx python manage.py shell
+>>> from django.core.cache import cache
+>>> cache.set('test', 'value')
+>>> cache.get('test')
+```
+
+### Backup & Migration
+
+**Backup Documents:**
+```bash
+# Export all documents with metadata
+docker exec paperless-ngx python manage.py document_exporter ../export
+
+# Backup location: ./export/
+# Includes: Documents, metadata, database dump
+```
+
+**Restore Documents:**
+```bash
+# Import from backup
+docker exec paperless-ngx python manage.py document_importer ../export
+```
+
+### Performance Tips
+
+- **OCR Settings:** Use `skip` mode for already-OCR'd PDFs
+- **Parallel Processing:** Increase `PAPERLESS_TASK_WORKERS` for faster processing
+- **Thumbnail Generation:** Disable for text-only documents
+- **Database:** PostgreSQL performs better than SQLite for large archives
+- **Storage:** Use SSD for media directory for better performance
+
+### GDPR Compliance
+
+Paperless-ngx helps with GDPR compliance:
+
+- **Retention Policies:** Automatic document deletion after X years
+- **Access Logs:** Track who accessed which documents
+- **Encryption:** Optional GPG encryption for sensitive documents
+- **Data Export:** Export all data for data portability
+- **Right to Delete:** Bulk delete by correspondent
+
+### Resources
+
+- **Official Documentation:** https://docs.paperless-ngx.com/
+- **API Documentation:** https://docs.paperless-ngx.com/api/
+- **GitHub:** https://github.com/paperless-ngx/paperless-ngx
+- **Community Forum:** https://github.com/paperless-ngx/paperless-ngx/discussions
+- **Mobile Apps:** https://github.com/astubenbord/paperless-mobile
+- **Backup Strategy:** https://docs.paperless-ngx.com/administration/#backup
+
+</details>
+
 ### Business & Productivity
 
 <details>

@@ -581,4 +581,20 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
+# ============================================================================
+# DOCUMENT MANAGEMENT & FILE SHARING
+# ============================================================================
+
+# Seafile - File Sync & Share Platform
+{$SEAFILE_HOSTNAME} {
+    reverse_proxy seafile:80
+}
+
+# Paperless-ngx - Document Management with OCR
+{$PAPERLESS_HOSTNAME} {
+    reverse_proxy paperless:8000 {
+        flush_interval -1
+    }
+}
+
 import /etc/caddy/addons/*.conf

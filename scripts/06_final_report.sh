@@ -448,6 +448,54 @@ if is_profile_active "nocodb"; then
   echo "Community: https://discord.gg/5RgZmkW"
 fi
 
+if is_profile_active "seafile"; then
+  echo
+  echo "================================= Seafile ============================"
+  echo
+  echo "Host: ${SEAFILE_HOSTNAME:-<hostname_not_set>}"
+  echo "Admin Email: ${USER_EMAIL}"
+  echo "Admin Password: ${SEAFILE_ADMIN_PASSWORD:-<not_set>}"
+  echo
+  echo "Access: https://${SEAFILE_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo
+  echo "n8n Integration:"
+  echo "  Install community node: n8n-nodes-seafile"
+  echo "  Internal URL: http://seafile:80"
+  echo "  API Docs: https://manual.seafile.com/develop/web_api_v2.1/"
+  echo
+  echo "Desktop/Mobile Apps:"
+  echo "  Download: https://www.seafile.com/en/download/"
+  echo
+  echo "Documentation: https://manual.seafile.com/"
+fi
+
+if is_profile_active "paperless"; then
+  echo
+  echo "========================== Paperless-ngx ============================"
+  echo
+  echo "Host: ${PAPERLESS_HOSTNAME:-<hostname_not_set>}"
+  echo "Admin User: ${USER_EMAIL}"
+  echo "Admin Password: ${PAPERLESS_ADMIN_PASSWORD:-<not_set>}"
+  echo
+  echo "Access: https://${PAPERLESS_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo
+  echo "Integration:"
+  echo "  - Consume folder: ./shared (accessible from Seafile)"
+  echo "  - API URL: http://paperless:8000/api/"
+  echo "  - API Token: Generate in user settings"
+  echo
+  echo "Mobile Apps:"
+  echo "  - iOS: 'Paperless Mobile'"
+  echo "  - Android: 'Paperless Mobile'"
+  echo
+  echo "Documentation: https://docs.paperless-ngx.com/"
+  echo "Community: https://github.com/paperless-ngx/paperless-ngx/discussions"
+fi
+
 if is_profile_active "formbricks"; then
   echo
   echo "================================= Formbricks Surveys ==================="

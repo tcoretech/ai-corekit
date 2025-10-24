@@ -14,10 +14,15 @@ fi
 
 cd calcom-docker
 
-# Update submodule (Cal.com source)
-echo "Updating Cal.com source code..."
+# Update submodule (Cal.com source) - PINNED to v5.8.2
+echo "Updating Cal.com source code (pinned to v5.8.2)..."
 git pull
 git submodule update --init
+cd calcom
+git fetch --tags
+git checkout v5.8.2
+cd ..
+echo "  -> Cal.com version locked to v5.8.2 (last working version before Prisma 6.16.0 issue)"
 
 # --- Patch Dockerfile automatically ---
 echo "Patching Dockerfile for Google Calendar integration..."

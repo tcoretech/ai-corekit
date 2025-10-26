@@ -24,6 +24,41 @@ AI LaunchKit is a comprehensive, self-hosted AI development environment that dep
 
 Originally forked from [n8n-installer](https://github.com/kossakovsky/n8n-installer), AI LaunchKit has evolved into a complete AI development platform, maintained by [Friedemann Schuetz](https://www.linkedin.com/in/friedemann-schuetz).
 
+### 🔒 Privacy-First & GDPR Compliant by Design
+
+AI LaunchKit was built with **European data protection regulations** at its core. Unlike cloud AI services that send your data to US servers, everything runs on your infrastructure.
+
+#### Why Self-Hosted AI Matters
+
+| Challenge | Cloud AI Services | AI LaunchKit |
+|-----------|-------------------|--------------|
+| **Data Location** | USA, third-party servers | Your infrastructure, your country |
+| **GDPR Compliance** | Complex DPAs, risk assessment | Compliant by design ✅ |
+| **Costs** | €100-500+/month usage fees | €20-50/month (server only) |
+| **API Limits** | Rate limits, token costs | Unlimited usage |
+| **Vendor Lock-in** | Proprietary APIs | Open source, portable |
+| **Offline Usage** | Internet required | Works offline ✅ |
+| **Data Breaches** | Your data at risk | Air-gapped if needed |
+
+#### 🇪🇺 Built for European Data Protection
+
+| Regulation | How AI LaunchKit Helps |
+|------------|------------------------|
+| **GDPR Art. 5** (Data Minimization) | No data collection, no external storage |
+| **GDPR Art. 25** (Privacy by Design) | Self-hosted architecture, no cloud dependencies |
+| **GDPR Art. 32** (Security) | Full control over encryption, access, backups |
+| **Schrems II** (Third-Country Transfers) | No US data transfers - host in EU |
+| **BDSG** (German Federal Law) | Meets all German data protection requirements |
+
+#### Perfect For
+
+- 🏥 **Healthcare** - HIPAA/GDPR-compliant patient data processing
+- 🏦 **Finance** - Sensitive financial data analysis without cloud exposure
+- ⚖️ **Legal** - Attorney-client privilege with zero third-party access
+- 🏛️ **Government** - Classified information processing on-premises
+- 🇪🇺 **EU SMBs** - Privacy-first AI without expensive compliance consultants
+- 🔐 **Privacy-Conscious** - Anyone who doesn't trust big tech with their data
+
 ### 🎬 Quick Demo
 
 ```bash

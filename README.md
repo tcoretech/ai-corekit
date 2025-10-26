@@ -15,7 +15,7 @@
 [![GDPR Compliant](https://img.shields.io/badge/GDPR-Compliant-00A67E?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTEyIDFMMyA1djZjMCA1LjU1IDMuODQgMTAuNzQgOSAxMiA1LjE2LTEuMjYgOS02LjQ1IDktMTJWNWwtOS00eiIvPjwvc3ZnPg==)](https://gdpr.eu/)
 [![Self Hosted](https://img.shields.io/badge/Self--Hosted-Yes-brightgreen)](https://github.com/freddy-schuetz/ai-launchkit)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Made in Europe](https://img.shields.io/badge/Made_in-🇪🇺_Europe-003399)](https://github.com/freddy-schuetz/ai-launchkit)
+[![Made in Europe](https://img.shields.io/badge/Made_in-Europe-003399)](https://github.com/freddy-schuetz/ai-launchkit)
 
 [![Based on](https://img.shields.io/badge/Based%20on-n8n--installer-green)](https://github.com/kossakovsky/n8n-installer)
 

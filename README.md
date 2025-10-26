@@ -8,6 +8,15 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/freddy-schuetz/ai-launchkit?style=social)](https://github.com/freddy-schuetz/ai-launchkit)
+[![Repository Views](https://komarev.com/ghpvc/?username=freddy-schuetz&repo=ai-launchkit&label=Views&color=brightgreen)](https://github.com/freddy-schuetz/ai-launchkit)
+[![GitHub last commit](https://img.shields.io/github/last-commit/freddy-schuetz/ai-launchkit)](https://github.com/freddy-schuetz/ai-launchkit/commits/main)
+[![Contributors](https://img.shields.io/github/contributors/freddy-schuetz/ai-launchkit)](https://github.com/freddy-schuetz/ai-launchkit/graphs/contributors)
+
+[![GDPR Compliant](https://img.shields.io/badge/GDPR-Compliant-00A67E?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTEyIDFMMyA1djZjMCA1LjU1IDMuODQgMTAuNzQgOSAxMiA1LjE2LTEuMjYgOS02LjQ1IDktMTJWNWwtOS00eiIvPjwvc3ZnPg==)](https://gdpr.eu/)
+[![Self Hosted](https://img.shields.io/badge/Self--Hosted-Yes-brightgreen)](https://github.com/freddy-schuetz/ai-launchkit)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Made in Europe](https://img.shields.io/badge/Made_in-🇪🇺_Europe-003399)](https://github.com/freddy-schuetz/ai-launchkit)
+
 [![Based on](https://img.shields.io/badge/Based%20on-n8n--installer-green)](https://github.com/kossakovsky/n8n-installer)
 
 [Installation](#-quick-start) • [Features](#-whats-included) • [Documentation](#-services) • [Support](#common-issues)

@@ -85,6 +85,8 @@ volumes:
   paperless_redis:
   paperless_data:
   paperless_media:
+  opennotebook_data:
+  opennotebook_surreal:
 
 x-n8n: &service-n8n
   build:
@@ -437,6 +439,7 @@ services:
       - LDR_PASSWORD_HASH=${LDR_PASSWORD_HASH}
       - SEAFILE_HOSTNAME=${SEAFILE_HOSTNAME}
       - PAPERLESS_HOSTNAME=${PAPERLESS_HOSTNAME}
+      - OPENNOTEBOOK_HOSTNAME=${OPENNOTEBOOK_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}
@@ -2854,3 +2857,40 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+  # ============================================================================
+  # OPEN NOTEBOOK - Privacy-First Alternative zu Google NotebookLM
+  # ============================================================================
+  
+  # Open Notebook - AI-Powered Knowledge Management & Research Platform
+  opennotebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    container_name: opennotebook
+    profiles: ["opennotebook"]
+    restart: unless-stopped
+    environment:
+      # AI Provider Keys (mindestens einer erforderlich)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      
+      # SurrealDB Connection (Embedded Database)
+      - SURREAL_URL=ws://localhost:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=open_notebook
+      - SURREAL_DATABASE=production
+      
+      # Authentication (Native Open Notebook Password)
+      - OPEN_NOTEBOOK_PASSWORD=${OPENNOTEBOOK_PASSWORD}
+      
+    volumes:
+      - ./opennotebook/notebook_data:/app/data
+      - ./opennotebook/surreal_data:/mydata
+      - ./shared:/app/shared
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8502 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

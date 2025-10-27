@@ -119,6 +119,7 @@ declare -A VARS_TO_GENERATE=(
     ["PAPERLESS_SECRET_KEY"]="password:64"
     ["PAPERLESS_ADMIN_PASSWORD"]="password:16"
     ["LDR_PASSWORD"]="password:32"
+    ["OPENNOTEBOOK_PASSWORD"]="password:32"
     ["N8N_RUNNERS_AUTH_TOKEN"]="secret:64"
     ["MAILPIT_PASSWORD"]="password:32"
     ["SMTP_PASS"]="password:16"

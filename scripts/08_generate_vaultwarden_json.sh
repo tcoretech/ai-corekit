@@ -405,6 +405,13 @@ EOF
             "GPT Researcher:\\n- Search: ${GPTR_RETRIEVER:-searx} via SearXNG\\n- LLM: ${GPTR_LLM_PROVIDER:-ollama}\\n- Model: ${OLLAMA_MODEL:-qwen2.5:7b-instruct-q4_K_M}\\n- Report Length: ${GPTR_TOTAL_WORDS:-2000} words\\n- Format: ${GPTR_REPORT_FORMAT:-APA}\\n\\nLocal Deep Research:\\n- Search: ${LDR_SEARCH_API:-searxng}\\n- LLM: ${LDR_LLM_PROVIDER:-ollama}\\n- Model: ${LDR_LOCAL_MODEL:-qwen2.5:7b-instruct-q4_K_M}\\n- Research Loops: ${LDR_MAX_LOOPS:-5}\\n\\nn8n Integration:\\nGPT Researcher: POST http://gpt-researcher:8000/api/research\\nLocal Deep Research: POST http://local-deep-research:2024/api/research\\n\\nBoth tools use your existing Ollama (http://ollama:11434) and SearXNG installations!"
     fi
 
+    # Open Notebook
+    if is_profile_active "opennotebook"; then
+        add_secure_note \
+            "Open Notebook - AI Knowledge Management" \
+            "URL: https://${OPENNOTEBOOK_HOSTNAME}\\nPassword: ${OPENNOTEBOOK_PASSWORD}\\n\\nPrivacy-First Alternative zu Google NotebookLM\\n\\nAuthentication:\\n- Native Open Notebook password system\\n- Enter password on first visit\\n- No separate username required\\n\\nFeatures:\\n- Multi-Modal Content: PDFs, videos, audio, web pages, Office docs\\n- 16+ AI Providers: OpenAI, Anthropic, Ollama, Google, Groq, etc.\\n- Podcast Generation: 1-4 custom speakers\\n- Smart Search: Full-text + vector search\\n- Context-Aware Chat: AI conversations with your research\\n\\nn8n Integration (Internal API):\\nBase URL: http://opennotebook:5055\\nAPI Docs: http://opennotebook:5055/docs\\nNo auth required (internal Docker network)\\n\\nEndpoints:\\n- GET /api/notebooks\\n- POST /api/notebooks\\n- POST /api/sources\\n- POST /api/chat\\n\\nData Storage:\\n- Notebooks: ./opennotebook/notebook_data\\n- Database: ./opennotebook/surreal_data\\n- Shared: ./shared\\n\\nAI Configuration:\\nUsing shared keys: OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY\\nConfigure models in Settings → Models (Web UI)\\nSupports Ollama: http://ollama:11434\\n\\nDocumentation: https://www.open-notebook.ai\\nGitHub: https://github.com/lfnovo/open-notebook"
+    fi
+
     # LiveKit
     if is_profile_active "livekit"; then
         add_secure_note \

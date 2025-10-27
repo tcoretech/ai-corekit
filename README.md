@@ -207,6 +207,7 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 | **[Crawl4Ai](https://github.com/unclecode/crawl4ai)** | AI-optimized web crawler | Web scraping, data extraction, site monitoring | Internal API |
 | **[GPT Researcher](https://github.com/assafelovic/gpt-researcher)** | Autonomous research agent (2000+ word reports) | Comprehensive research reports, multi-source analysis, citations | `research.yourdomain.com` |
 | **[Local Deep Research](https://github.com/langchain-ai/local-deep-researcher)** | LangChain's iterative deep research (~95% accuracy) | Fact-checking, detailed analysis, research loops with reflection | Internal API |
+| **[Open Notebook](https://github.com/lfnovo/open-notebook)** | AI-powered knowledge management & research platform | NotebookLM alternative, multi-modal content, podcast generation, 16+ AI models | `notebook.yourdomain.com` |
 
 ### 🧠 Knowledge Graphs
 

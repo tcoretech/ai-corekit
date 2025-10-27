@@ -71,6 +71,7 @@ volumes:
   scriberr_data:
   chatterbox_models:
   perplexica_data:
+  perplexica_uploads:
   livekit_data:
   skyvern-artifacts:
   skyvern_postgres_data:
@@ -1580,9 +1581,7 @@ services:
       start_period: 60s
 
   perplexica:
-    build:
-      context: ./perplexica
-      dockerfile: app.dockerfile
+    image: itzcrazykns1337/perplexica:latest
     container_name: perplexica
     profiles: ["perplexica"]
     restart: unless-stopped
@@ -1593,8 +1592,7 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     volumes:
       - perplexica_data:/home/perplexica/data
-      - ./perplexica/uploads:/home/perplexica/uploads
-      - ./perplexica/config.toml:/home/perplexica/config.toml
+      - perplexica_uploads:/home/perplexica/uploads
       - ./shared:/data/shared
     extra_hosts:
       - "host.docker.internal:host-gateway"

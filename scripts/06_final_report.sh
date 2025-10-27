@@ -172,16 +172,16 @@ if is_profile_active "perplexica"; then
   echo
   echo "Access:"
   echo "  External (HTTPS): https://${PERPLEXICA_HOSTNAME:-<hostname_not_set>}"
-  echo "  Internal API: http://perplexica-backend:3001"
+  echo "  Internal API: http://perplexica:3000"
   echo
   echo "n8n Integration:"
-  echo "  API Endpoint: http://perplexica-backend:3001/api/search"
+  echo "  API Endpoint: http://perplexica:3000/api/search"
   echo "  Method: POST"
-  echo "  Body: {\"query\": \"your search\", \"mode\": \"all\"}"
+  echo "  Body: {\"query\": \"your search\", \"focusMode\": \"webSearch\", \"chatHistory\": []}"
   echo
   echo "Documentation: https://github.com/ItzCrazyKns/Perplexica"
   echo
-  echo "Note: First start takes ~5-10 minutes to build the containers"
+  echo "Note: Configure AI providers (OpenAI, Ollama, etc.) via Web UI after first login"
 fi
 
 if is_profile_active "research" || is_profile_active "gpt-researcher"; then

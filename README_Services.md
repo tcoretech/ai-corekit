@@ -23890,20 +23890,19 @@ Perplexica is an open-source AI-powered search engine that provides Perplexity A
 
 **Configure LLM Backend:**
 
-Perplexica is pre-configured to use Ollama (local) by default. You can also use OpenAI or other providers:
+Configure AI providers via the Web UI after first login:
 
-```bash
-# Check current configuration
-cd ~/ai-launchkit
-cat perplexica-config.toml
+1. Click the **Settings icon** (⚙️) in the bottom left
+2. Go to **Providers** tab
+3. Choose your AI provider:
+   - **Ollama** (local, private): Use `http://ollama:11434`
+   - **OpenAI**: Enter your API key
+   - **Anthropic Claude**: Enter your API key
+   - **Groq**: Enter your API key
+4. Select your preferred **Chat Model** and **Embedding Model**
+5. Click **Save** - settings apply immediately
 
-# Default uses Ollama with llama3.2
-# To use OpenAI, edit config and add API key
-nano perplexica-config.toml
-
-# Restart Perplexica
-docker compose restart perplexica
-```
+No config files or container restarts needed!
 
 ### n8n Integration Setup
 
@@ -24431,7 +24430,7 @@ docker exec perplexica curl http://searxng:8080/
 
 ```bash
 # Check which LLM backend is configured
-docker exec perplexica cat /app/config.toml | grep -A5 "CHAT"
+# Via Web UI: Settings → Providers → View current configuration
 
 # If using Ollama, check model is downloaded
 docker exec ollama ollama list
@@ -24511,33 +24510,27 @@ docker network inspect localai | grep -E "perplexica|n8n"
 
 **Model Selection:**
 
-Edit `~/ai-launchkit/perplexica-config.toml`:
+All configuration is done via the Web UI at `https://perplexica.yourdomain.com`:
 
-```toml
-[CHAT]
-# Use Ollama (local, private)
-provider = "ollama"
-model = "llama3.2"  # or: llama3.2:3b, mistral, etc.
+1. **Settings** → **Providers**:
+   - Select AI provider (Ollama, OpenAI, Claude, Groq)
+   - Choose chat model and embedding model
+   - Configure API keys if needed
 
-# Or use OpenAI (faster, but external)
-# provider = "openai"
-# model = "gpt-4o-mini"
-# api_key = "your-api-key"
+2. **Settings** → **General**:
+   - Set default focus mode
+   - Configure search depth
+   - Adjust UI preferences
+
+**Environment Variables (docker-compose.yml):**
+```yaml
+environment:
+  - SEARXNG_API_URL=http://searxng:8080  # Your SearXNG instance
+  - OPENAI_API_KEY=${OPENAI_API_KEY:-}   # Optional pre-configuration
+  - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
 ```
 
-**Search Configuration:**
-
-```toml
-[SEARXNG]
-# SearXNG instance URL
-url = "http://searxng:8080"
-
-# Maximum number of search results
-max_results = 10
-
-# Search timeout (seconds)
-timeout = 30
-```
+Configuration persists in the `perplexica_data` Docker volume.
 
 ### Resources
 

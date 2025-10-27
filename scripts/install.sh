@@ -97,10 +97,6 @@ log_info "========== STEP 4: Running Service Selection Wizard =========="
 bash "$SCRIPT_DIR/04_wizard.sh" || { log_error "Service Selection Wizard failed"; exit 1; }
 log_success "Service Selection Wizard complete!"
 
-log_info "========== STEP 4a: Setting up Perplexica (if selected) =========="
-bash "$SCRIPT_DIR/04a_setup_perplexica.sh" || { log_error "Perplexica setup failed"; exit 1; }
-log_success "Perplexica setup complete!"
-
 log_info "========== STEP 4b: Setting up Vexa (if selected) =========="
 bash "$SCRIPT_DIR/04a_setup_vexa.sh" || { log_error "Vexa setup failed"; exit 1; }
 log_success "Vexa setup complete!"

@@ -603,17 +603,38 @@ https://{$NEO4J_HOSTNAME}:7687 {
 
 # Open Notebook - Privacy-First Alternative zu Google NotebookLM
 {$OPENNOTEBOOK_HOSTNAME} {
-    reverse_proxy opennotebook:8502 {
-        # For large file uploads (PDFs, videos, etc.)
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
+    # CORS Headers for API access
+    @api {
+        path /api/* /docs*
+    }
+    
+    handle @api {
+        # CORS Headers
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        header Access-Control-Allow-Headers "Content-Type, Authorization"
         
-        # Increase timeouts for AI processing
-        transport http {
-            read_timeout 300s
-            write_timeout 300s
+        # Handle OPTIONS preflight
+        @options {
+            method OPTIONS
         }
+        respond @options 204
+        
+        # Proxy to Backend (Port 5055)
+        reverse_proxy opennotebook:5055 {
+            header_up X-Real-IP {remote_host}
+            
+            # Increase timeouts for AI processing
+            transport http {
+                read_timeout 300s
+                write_timeout 300s
+            }
+        }
+    }
+    
+    # Frontend (Port 8502) - Default handler
+    handle {
+        reverse_proxy opennotebook:8502
     }
     
     # File upload size for research documents

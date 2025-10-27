@@ -2881,6 +2881,9 @@ services:
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=production
       
+      # API_URL for the frontend
+      - API_URL=https://${OPENNOTEBOOK_HOSTNAME}
+
       # Authentication (Native Open Notebook Password)
       - OPEN_NOTEBOOK_PASSWORD=${OPENNOTEBOOK_PASSWORD}
       

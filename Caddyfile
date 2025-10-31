@@ -643,4 +643,41 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
+# ============================================================================
+# WEBHOOK TESTING SUITE
+# ============================================================================
+
+# Webhook Tester - Debug incoming webhooks (PROTECTED!)
+{$WEBHOOK_TESTER_HOSTNAME} {
+    basic_auth {
+        {$WEBHOOK_TESTER_USERNAME} {$WEBHOOK_TESTER_PASSWORD_HASH}
+    }
+    reverse_proxy webhook-tester:8080
+}
+
+# Hoppscotch - API Testing Platform (has own auth!)
+{$HOPPSCOTCH_HOSTNAME} {
+    # All services on different ports (AIO image)
+    handle /admin* {
+        reverse_proxy hoppscotch:3100
+    }
+    
+    handle /backend* {
+        reverse_proxy hoppscotch:3170
+    }
+    
+    handle {
+        reverse_proxy hoppscotch:3000
+    }
+    
+    # WebSocket support for realtime features
+    @websocket {
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    handle @websocket {
+        reverse_proxy hoppscotch:3000
+    }
+}
+
 import /etc/caddy/addons/*.conf

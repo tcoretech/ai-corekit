@@ -104,6 +104,8 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 |------|-------------|-----------|--------|
 | **[n8n](https://github.com/n8n-io/n8n)** | Visual workflow automation platform | API integrations, data pipelines, business automation | `n8n.yourdomain.com` |
 | **[n8n-MCP](https://github.com/czlonkowski/n8n-mcp)** | AI workflow generator for n8n | Claude/Cursor integration, 525+ node docs, workflow validation | `n8nmcp.yourdomain.com` |
+| **[Webhook Tester](https://github.com/tarampampam/webhook-tester)** | Webhook debugging tool | Receive & inspect webhooks, debug n8n integrations, test external services | `webhook-test.yourdomain.com` |
+| **[Hoppscotch](https://github.com/hoppscotch/hoppscotch)** | API testing platform | Test n8n webhook triggers, REST/GraphQL/WebSocket, team collaboration | `api-test.yourdomain.com` |
 | **300+ Workflows** | Pre-built n8n templates | Email automation, social media, data sync, AI workflows | Imported on install |
 
 ### 🎯 User Interfaces

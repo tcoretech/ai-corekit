@@ -88,6 +88,8 @@ volumes:
   paperless_media:
   opennotebook_data:
   opennotebook_surreal:
+  webhook_tester_redis:
+  hoppscotch_postgres:
 
 x-n8n: &service-n8n
   build:
@@ -441,6 +443,10 @@ services:
       - SEAFILE_HOSTNAME=${SEAFILE_HOSTNAME}
       - PAPERLESS_HOSTNAME=${PAPERLESS_HOSTNAME}
       - OPENNOTEBOOK_HOSTNAME=${OPENNOTEBOOK_HOSTNAME}
+      - WEBHOOK_TESTER_HOSTNAME=${WEBHOOK_TESTER_HOSTNAME}
+      - WEBHOOK_TESTER_USERNAME=${WEBHOOK_TESTER_USERNAME}
+      - WEBHOOK_TESTER_PASSWORD_HASH=${WEBHOOK_TESTER_PASSWORD_HASH}
+      - HOPPSCOTCH_HOSTNAME=${HOPPSCOTCH_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}
@@ -2895,3 +2901,116 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+
+  # ============================================================================
+  # WEBHOOK TESTING SUITE - Testing & Debugging Webhooks
+  # ============================================================================
+  
+  # Dedicated Redis for Webhook Tester
+  webhook-tester-redis:
+    image: redis:7-alpine
+    container_name: webhook-tester-redis
+    profiles: ["webhook-testing"]
+    restart: unless-stopped
+    volumes:
+      - webhook_tester_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Webhook Tester - Receive and Debug Webhooks
+  webhook-tester:
+    image: ghcr.io/tarampampam/webhook-tester:2
+    container_name: webhook-tester
+    profiles: ["webhook-testing"]
+    restart: unless-stopped
+    environment:
+      - AUTO_CREATE_SESSIONS=true
+      - STORAGE_DRIVER=redis
+      - PUBSUB_DRIVER=redis
+      - REDIS_DSN=redis://webhook-tester-redis:6379/0
+      - MAX_REQUESTS=100
+      - IGNORE_HEADER_PREFIX=X-Forwarded-
+      - IGNORE_HEADER_PREFIX=X-Real-
+    depends_on:
+      webhook-tester-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/bin/app", "healthcheck", "http", "--port", "8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Hoppscotch PostgreSQL Database
+  hoppscotch-db:
+    image: postgres:17-alpine
+    container_name: hoppscotch-db
+    profiles: ["webhook-testing"]
+    restart: unless-stopped
+    volumes:
+      - hoppscotch_postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=hoppscotch
+      - POSTGRES_USER=hoppscotch
+      - POSTGRES_PASSWORD=${HOPPSCOTCH_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hoppscotch"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Hoppscotch - API Testing Platform (All-in-One)
+  hoppscotch:
+    image: hoppscotch/hoppscotch:latest
+    container_name: hoppscotch
+    profiles: ["webhook-testing"]
+    restart: unless-stopped
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql://hoppscotch:${HOPPSCOTCH_DB_PASSWORD}@hoppscotch-db:5432/hoppscotch
+      - ENABLE_SUBPATH_BASED_ACCESS=false
+      
+      # Security & Secrets
+      - JWT_SECRET=${HOPPSCOTCH_JWT_SECRET}
+      - SESSION_SECRET=${HOPPSCOTCH_SESSION_SECRET}
+      - REFRESH_TOKEN_SECRET=${HOPPSCOTCH_REFRESH_TOKEN_SECRET}
+      - DATA_ENCRYPTION_KEY=${HOPPSCOTCH_DATA_ENCRYPTION_KEY}
+      
+      # URLs
+      - REDIRECT_URL=https://${HOPPSCOTCH_HOSTNAME}
+      - WHITELISTED_ORIGINS=https://${HOPPSCOTCH_HOSTNAME}
+      - VITE_BASE_URL=https://${HOPPSCOTCH_HOSTNAME}
+      - VITE_SHORTCODE_BASE_URL=https://${HOPPSCOTCH_HOSTNAME}
+      - VITE_ADMIN_URL=https://${HOPPSCOTCH_HOSTNAME}
+      
+      # Mail Configuration (nutzt Mailpit)
+      - MAILER_SMTP_ENABLE=true
+      - MAILER_USE_CUSTOM_CONFIGS=true
+      - MAILER_SMTP_HOST=mailpit
+      - MAILER_SMTP_PORT=1025
+      - MAILER_SMTP_SECURE=false
+      - MAILER_SMTP_AUTH=false
+      - MAILER_ADDRESS_FROM=hoppscotch@${BASE_DOMAIN}
+      
+      # Features
+      - RATE_LIMIT_TTL=60
+      - RATE_LIMIT_MAX=100
+      - VITE_ALLOWED_AUTH_PROVIDERS=EMAIL
+      
+    volumes:
+      - ./shared:/data/shared
+    depends_on:
+      hoppscotch-db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health || curl -fsS http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

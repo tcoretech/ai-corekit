@@ -52,6 +52,7 @@ current_profiles_for_matching=",$CURRENT_PROFILES_VALUE,"
 base_services_data=(
     "n8n" "n8n, n8n-worker, n8n-import (Workflow Automation)"
     "n8n-mcp" "n8n-MCP (AI workflow generation for Claude/Cursor)"
+    "webhook-testing" "Webhook Tester + Hoppscotch (API & Webhook Testing/Debugging Suite)"
     "dify" "Dify (AI Application Development Platform with LLMOps)"
     "flowise" "Flowise (AI Agent Builder)"
     "bolt" "bolt.diy (AI Web Development)"

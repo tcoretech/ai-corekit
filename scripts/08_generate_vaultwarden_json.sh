@@ -177,6 +177,23 @@ EOF
             "Main workflow automation platform. Create admin account on first access."
     fi
 
+    # Webhook Tester
+    if is_profile_active "webhook-testing"; then
+        add_login_item \
+            "Webhook Tester - Debug Incoming Webhooks" \
+            "${WEBHOOK_TESTER_USERNAME}" \
+            "${WEBHOOK_TESTER_PASSWORD}" \
+            "https://${WEBHOOK_TESTER_HOSTNAME}" \
+            "Webhook debugging tool for receiving and inspecting webhooks. Protected with Basic Auth."
+        
+        add_login_item \
+            "Hoppscotch - API Testing Platform" \
+            "CreateAccountFirst@example.com" \
+            "ChooseYourPassword123!" \
+            "https://${HOPPSCOTCH_HOSTNAME}" \
+            "API testing platform with REST/GraphQL/WebSocket support. Create account on first access. Admin dashboard at /admin (first user becomes admin)."
+    fi
+
     # Flowise
     if is_profile_active "flowise"; then
         add_login_item \

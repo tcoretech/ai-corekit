@@ -2963,6 +2963,19 @@ services:
       retries: 5
       start_period: 30s
 
+  # Hoppscotch Database Migration
+  hoppscotch-migrate:
+    image: hoppscotch/hoppscotch:latest
+    container_name: hoppscotch-migrate
+    profiles: ["webhook-testing"]
+    environment:
+      - DATABASE_URL=postgresql://hoppscotch:${HOPPSCOTCH_DB_PASSWORD}@hoppscotch-db:5432/hoppscotch
+    depends_on:
+      hoppscotch-db:
+        condition: service_healthy
+    command: sh -c "pnpx prisma migrate deploy --schema /dist/backend/prisma/schema.prisma"
+    restart: "no"
+
   # Hoppscotch - API Testing Platform (All-in-One)
   hoppscotch:
     image: hoppscotch/hoppscotch:latest
@@ -3006,6 +3019,8 @@ services:
     depends_on:
       hoppscotch-db:
         condition: service_healthy
+      hoppscotch-migrate:
+        condition: service_completed_successfully
       mailpit:
         condition: service_started
     healthcheck:

@@ -1009,6 +1009,18 @@ if [[ -z "$FINAL_BOLT_HASH" && -n "$BOLT_PLAIN_PASS" ]]; then
 fi
 _update_or_add_env_var "BOLT_PASSWORD_HASH" "$FINAL_BOLT_HASH"
 
+# --- WEBHOOK_TESTER ---
+WEBHOOK_TESTER_PLAIN_PASS="${generated_values["WEBHOOK_TESTER_PASSWORD"]}"
+FINAL_WEBHOOK_TESTER_HASH="${generated_values[WEBHOOK_TESTER_PASSWORD_HASH]}"
+if [[ -z "$FINAL_WEBHOOK_TESTER_HASH" && -n "$WEBHOOK_TESTER_PLAIN_PASS" ]]; then
+    NEW_HASH=$(_generate_and_get_hash "$WEBHOOK_TESTER_PLAIN_PASS")
+    if [[ -n "$NEW_HASH" ]]; then
+        FINAL_WEBHOOK_TESTER_HASH="$NEW_HASH"
+        generated_values["WEBHOOK_TESTER_PASSWORD_HASH"]="$NEW_HASH"
+    fi
+fi
+_update_or_add_env_var "WEBHOOK_TESTER_PASSWORD_HASH" "$FINAL_WEBHOOK_TESTER_HASH"
+
 # --- RAGAPP ---
 RAGAPP_PLAIN_PASS="${generated_values["RAGAPP_PASSWORD"]}"
 FINAL_RAGAPP_HASH="${generated_values[RAGAPP_PASSWORD_HASH]}"

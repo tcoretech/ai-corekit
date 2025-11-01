@@ -131,7 +131,6 @@ echo "⏱️  This may take 15-30 minutes depending on your internet connection.
 echo ""
 
 if abctl local install \
-    --host 0.0.0.0 \
     --port 8000 \
     --values "$AIRBYTE_VALUES_FILE" 2>&1 | tee /tmp/airbyte-install.log; then
     

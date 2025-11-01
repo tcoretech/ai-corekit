@@ -91,6 +91,7 @@ volumes:
   webhook_tester_redis:
   hoppscotch_postgres:
   uptime-kuma_data:
+  airbyte_postgres_data:
 
 x-n8n: &service-n8n
   build:
@@ -449,6 +450,7 @@ services:
       - WEBHOOK_TESTER_PASSWORD_HASH=${WEBHOOK_TESTER_PASSWORD_HASH}
       - HOPPSCOTCH_HOSTNAME=${HOPPSCOTCH_HOSTNAME}
       - UPTIME_KUMA_HOSTNAME=${UPTIME_KUMA_HOSTNAME}
+      - AIRBYTE_HOSTNAME=${AIRBYTE_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}
@@ -3052,3 +3054,33 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  # ============================================================================
+  # AIRBYTE - Data Integration Platform (PostgreSQL Database)
+  # ============================================================================
+  
+  # Airbyte PostgreSQL - Dedicated database instance
+  # Contains two databases:
+  # 1. "airbyte" - Airbyte metadata (connections, jobs, state)
+  # 2. "marketing_data" - Synced marketing data (for Metabase)
+  airbyte_postgres:
+    image: postgres:17-alpine
+    container_name: airbyte_postgres
+    profiles: ["airbyte"]
+    restart: unless-stopped
+    volumes:
+      - airbyte_postgres_data:/var/lib/postgresql/data
+      - ./scripts/airbyte_init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      - POSTGRES_USER=airbyte
+      - POSTGRES_PASSWORD=${AIRBYTE_POSTGRES_PASSWORD}
+      - POSTGRES_DB=airbyte
+    ports:
+      - "127.0.0.1:5433:5432"  # Exposed to host for abctl access
+    networks:
+      - localai
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airbyte"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

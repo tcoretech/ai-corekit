@@ -77,6 +77,7 @@ base_services_data=(
     "invoiceninja" "Invoice Ninja - Professional invoicing platform"
     "formbricks" "Formbricks - Privacy-first surveys & forms (Typeform alternative)"
     "metabase" "Metabase - Business intelligence (No-code dashboards, groups, ETL-ready)"
+    "airbyte" "Airbyte (Data Integration - Sync from 600+ sources like Google Ads, Meta, TikTok)"
     "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
     "livekit" "LiveKit (Real-time voice & video - WebRTC, REQUIRES UDP 50000-50100!)"
     "vaultwarden" "Vaultwarden (Self-hosted Bitwarden-compatible password manager)"

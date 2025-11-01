@@ -127,6 +127,8 @@ declare -A VARS_TO_GENERATE=(
     ["HOPPSCOTCH_SESSION_SECRET"]="secret:64"
     ["HOPPSCOTCH_REFRESH_TOKEN_SECRET"]="secret:64"
     ["HOPPSCOTCH_DATA_ENCRYPTION_KEY"]="alphanum:32"
+    ["AIRBYTE_PASSWORD"]="password:32"
+    ["AIRBYTE_POSTGRES_PASSWORD"]="password:32"
     ["MAILPIT_PASSWORD"]="password:32"
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"
@@ -647,6 +649,7 @@ generated_values["GPTR_USERNAME"]="$USER_EMAIL"
 generated_values["SEAFILE_ADMIN_EMAIL"]="$USER_EMAIL"
 generated_values["PAPERLESS_ADMIN_EMAIL"]="$USER_EMAIL"
 generated_values["WEBHOOK_TESTER_USERNAME"]="$USER_EMAIL"
+generated_values["AIRBYTE_USERNAME"]="admin"  # Airbyte uses fixed admin username
 generated_values["MAILPIT_USERNAME"]="$USER_EMAIL"  # Set Mailpit username for Caddy
 
 if [[ -n "$OPENAI_API_KEY" ]]; then

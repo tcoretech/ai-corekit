@@ -158,4 +158,29 @@ else
     log_info "Vexa not selected - skipping"
 fi
 
+# Start Airbyte if selected
+if [[ "$COMPOSE_PROFILES" == *"airbyte"* ]]; then
+    log_info "Starting Airbyte installation..."
+    
+    # Check if init script exists
+    if [ ! -f "./scripts/05a_init_airbyte.sh" ]; then
+        log_error "Airbyte init script not found at ./scripts/05a_init_airbyte.sh"
+        exit 1
+    fi
+    
+    # Make script executable if not already
+    chmod +x ./scripts/05a_init_airbyte.sh
+    
+    # Run Airbyte initialization
+    bash ./scripts/05a_init_airbyte.sh || {
+        log_error "Airbyte installation failed"
+        log_error "Check the installation log at /tmp/airbyte-install.log"
+        exit 1
+    }
+    
+    log_success "Airbyte installation completed successfully"
+else
+    log_info "Airbyte not selected - skipping"
+fi
+
 exit 0

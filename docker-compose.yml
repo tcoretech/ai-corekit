@@ -1959,6 +1959,7 @@ services:
     volumes:
       - uptime-kuma_data:/app/data
       - ./shared:/data/shared
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - TZ=${TZ:-Europe/Berlin}
     healthcheck:

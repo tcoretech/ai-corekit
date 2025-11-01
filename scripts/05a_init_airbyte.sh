@@ -55,7 +55,7 @@ echo "🚀 Installing Airbyte..."
 echo "⏱️  This may take 15-30 minutes depending on your internet connection."
 echo ""
 
-if abctl local install --port 8000 2>&1 | tee /tmp/airbyte-install.log; then
+if abctl local install --port 8001 2>&1 | tee /tmp/airbyte-install.log; then
     echo ""
     echo "✓ Airbyte installation completed"
 else
@@ -83,7 +83,7 @@ MAX_WAIT=120
 COUNTER=0
 
 while [ $COUNTER -lt $MAX_WAIT ]; do
-    if curl -sf http://localhost:8000/api/v1/health &>/dev/null; then
+    if curl -sf http://localhost:8001/api/v1/health &>/dev/null; then
         echo "✓ Airbyte is healthy and responding"
         break
     fi
@@ -131,7 +131,7 @@ echo "  3. Create destination: PostgreSQL (use above credentials)"
 echo "  4. Connect Metabase to marketing_data database"
 echo ""
 echo "Integration (n8n):"
-echo "  API: http://localhost:8000/api/v1/"
+echo "  API: http://localhost:8001/api/v1/"
 echo ""
 echo "============================================"
 echo ""

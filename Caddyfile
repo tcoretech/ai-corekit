@@ -709,7 +709,7 @@ https://{$NEO4J_HOSTNAME}:7687 {
 # Note: Airbyte has built-in authentication via abctl
 # No Caddy Basic Auth needed here!
 {$AIRBYTE_HOSTNAME} {
-    reverse_proxy localhost:8000
+    reverse_proxy localhost:8001
 }
 
 import /etc/caddy/addons/*.conf

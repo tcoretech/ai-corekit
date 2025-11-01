@@ -1,12 +1,8 @@
--- Airbyte Database Initialization Script
--- This script creates the second database for synced marketing data
--- Executed automatically by PostgreSQL on first container start
+-- Airbyte Destination Database Initialization
+-- This database stores all synced marketing data from Airbyte sources
+-- Connect Metabase to this database for analytics
 
--- Create marketing_data database for synced data
-CREATE DATABASE marketing_data;
+-- Database is already created by POSTGRES_DB env variable
+-- This file can be used for future extensions (e.g., custom schemas)
 
--- Grant all privileges to airbyte user
-GRANT ALL PRIVILEGES ON DATABASE marketing_data TO airbyte;
-
--- Log successful creation
-\echo 'Successfully created marketing_data database for Airbyte synced data'
+\echo 'Airbyte destination database initialized successfully'

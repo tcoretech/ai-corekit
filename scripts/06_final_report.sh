@@ -680,66 +680,38 @@ fi
 
 if is_profile_active "airbyte"; then
   echo
-  echo "================================= Airbyte ============================="
+  echo "================================= Airbyte =============================="
   echo
-  echo "Host: ${AIRBYTE_HOSTNAME:-<hostname_not_set>}"
+  echo "Web UI Access:"
+  echo "  URL:      https://${AIRBYTE_HOSTNAME}"
+  echo "  Username: admin"
+  echo "  Password: ${AIRBYTE_PASSWORD}"
   echo
-  echo "Access Credentials:"
-  echo "  External (HTTPS): https://${AIRBYTE_HOSTNAME:-<hostname_not_set>}"
-  echo "  Username: ${AIRBYTE_USERNAME:-admin}"
-  echo "  Password: ${AIRBYTE_PASSWORD:-<password_not_set>}"
+  echo "Destination Database (for synced data):"
+  echo "  Host:     airbyte_destination_db"
+  echo "  Port:     5432"
+  echo "  Database: marketing_data"
+  echo "  User:     airbyte"
+  echo "  Password: ${AIRBYTE_DESTINATION_DB_PASSWORD}"
   echo
-  echo "PostgreSQL Databases (for Metabase integration):"
-  echo "  Host: airbyte_postgres (internal) or localhost:5433 (from host)"
-  echo "  User: airbyte"
-  echo "  Password: ${AIRBYTE_POSTGRES_PASSWORD:-<password_not_set>}"
-  echo
-  echo "  1. Metadata DB: airbyte"
-  echo "     - Contains Airbyte connections, jobs, and sync state"
-  echo "     - Internal use only"
-  echo
-  echo "  2. Marketing Data: marketing_data"
-  echo "     - Contains your synced data (Google Ads, Meta, TikTok, etc.)"
-  echo "     - Connect Metabase here for analytics dashboards"
-  echo
-  echo "First Steps:"
-  echo "  1. Visit https://${AIRBYTE_HOSTNAME:-<hostname_not_set>}"
-  echo "  2. Log in with credentials above"
-  echo "  3. Add your first source (e.g., Google Ads, Meta Ads)"
-  echo "  4. Configure destination → PostgreSQL:"
-  echo "     - Host: airbyte_postgres"
+  echo "Setup Steps:"
+  echo "  1. Log into Airbyte UI (credentials above)"
+  echo "  2. Add your data sources (Google Ads, Meta, TikTok, etc.)"
+  echo "  3. Create destination: PostgreSQL"
+  echo "     - Host: airbyte_destination_db"
   echo "     - Port: 5432"
   echo "     - Database: marketing_data"
-  echo "     - User: airbyte"
-  echo "     - Password: ${AIRBYTE_POSTGRES_PASSWORD:-<password_not_set>}"
-  echo "  5. Create and run your first sync"
+  echo "     - Username: airbyte"
+  echo "     - Password: ${AIRBYTE_DESTINATION_DB_PASSWORD}"
+  echo "  4. Create connections (source → destination)"
   echo
   echo "Metabase Integration:"
-  echo "  1. Open Metabase → Add Database"
-  echo "  2. Type: PostgreSQL"
-  echo "  3. Host: airbyte_postgres"
-  echo "  4. Port: 5432"
-  echo "  5. Database: marketing_data"
-  echo "  6. User: airbyte"
-  echo "  7. Password: ${AIRBYTE_POSTGRES_PASSWORD:-<password_not_set>}"
-  echo "  8. Create dashboards with your synced marketing data"
+  echo "  Connect Metabase to the destination database above"
+  echo "  to create dashboards on your synced marketing data."
   echo
   echo "n8n Integration:"
-  echo "  API Base URL: http://localhost:8000/api/v1/"
-  echo "  Use HTTP Request node to:"
-  echo "    - Trigger syncs programmatically"
-  echo "    - Check connection status"
-  echo "    - Get sync statistics"
-  echo "  Authentication: Use Airbyte credentials in Basic Auth"
+  echo "  Trigger syncs via: http://localhost:8000/api/v1/"
   echo
-  echo "600+ Connectors Available:"
-  echo "  Marketing: Google Ads, Meta Ads, TikTok, LinkedIn Ads"
-  echo "  Analytics: Google Analytics, Mixpanel, Amplitude"
-  echo "  CRM: Salesforce, HubSpot, Pipedrive"
-  echo "  E-Commerce: Shopify, WooCommerce, Stripe"
-  echo "  And many more..."
-  echo
-  echo "Documentation: https://docs.airbyte.com"
 fi
 
 if is_profile_active "vikunja"; then

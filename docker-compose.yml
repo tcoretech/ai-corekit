@@ -91,7 +91,7 @@ volumes:
   webhook_tester_redis:
   hoppscotch_postgres:
   uptime-kuma_data:
-  airbyte_postgres_data:
+  airbyte_destination_data:
 
 x-n8n: &service-n8n
   build:
@@ -3056,27 +3056,23 @@ services:
       start_period: 60s
 
   # ============================================================================
-  # AIRBYTE - Data Integration Platform (PostgreSQL Database)
+  # AIRBYTE DESTINATION - PostgreSQL for synced marketing data
   # ============================================================================
   
-  # Airbyte PostgreSQL - Dedicated database instance
-  # Contains two databases:
-  # 1. "airbyte" - Airbyte metadata (connections, jobs, state)
-  # 2. "marketing_data" - Synced marketing data (for Metabase)
-  airbyte_postgres:
+  # Destination database for Airbyte synced data
+  # Connect Metabase here for analytics dashboards
+  airbyte_destination_db:
     image: postgres:17-alpine
-    container_name: airbyte_postgres
+    container_name: airbyte_destination_db
     profiles: ["airbyte"]
     restart: unless-stopped
     volumes:
-      - airbyte_postgres_data:/var/lib/postgresql/data
+      - airbyte_destination_data:/var/lib/postgresql/data
       - ./scripts/airbyte_init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     environment:
       - POSTGRES_USER=airbyte
-      - POSTGRES_PASSWORD=${AIRBYTE_POSTGRES_PASSWORD}
-      - POSTGRES_DB=airbyte
-    ports:
-      - "5433:5432"
+      - POSTGRES_PASSWORD=${AIRBYTE_DESTINATION_DB_PASSWORD}
+      - POSTGRES_DB=marketing_data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U airbyte"]
       interval: 10s

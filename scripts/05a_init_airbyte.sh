@@ -99,22 +99,25 @@ echo "📝 Creating Airbyte configuration..."
 
 AIRBYTE_VALUES_FILE="/tmp/airbyte-values-$$.yaml"
 
-# Detect host IP address for Kubernetes to access Docker PostgreSQL
-echo "🔍 Detecting host IP address..."
-HOST_IP=$(ip route get 1.1.1.1 | awk '{print $7; exit}')
+# Detect Docker bridge IP for Kubernetes to access PostgreSQL
+echo "🔍 Detecting Docker network IP..."
 
-if [[ -z "$HOST_IP" ]]; then
-    echo "⚠️  Could not auto-detect host IP, trying alternative method..."
-    HOST_IP=$(hostname -I | awk '{print $1}')
+# Get the docker0 bridge IP (gateway for containers to reach host)
+DOCKER_BRIDGE_IP=$(ip -4 addr show docker0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "")
+
+if [[ -z "$DOCKER_BRIDGE_IP" ]]; then
+    echo "⚠️  docker0 bridge not found, trying alternative..."
+    # Fallback: Get IP from docker network inspect
+    DOCKER_BRIDGE_IP=$(docker network inspect bridge --format='{{(index .IPAM.Config 0).Gateway}}' 2>/dev/null || echo "")
 fi
 
-if [[ -z "$HOST_IP" ]]; then
-    echo "❌ Could not determine host IP address"
-    echo "Please set it manually in values.yaml"
+if [[ -z "$DOCKER_BRIDGE_IP" ]]; then
+    echo "❌ Could not determine Docker bridge IP"
+    echo "Manually check: ip addr show docker0 or docker network inspect bridge"
     exit 1
 fi
 
-echo "✓ Using host IP: $HOST_IP for database connection"
+echo "✓ Using Docker bridge IP: $DOCKER_BRIDGE_IP for database connection"
 
 cat > "$AIRBYTE_VALUES_FILE" << EOF
 # Airbyte Configuration with External PostgreSQL
@@ -128,7 +131,7 @@ postgresql:
 global:
   database:
     type: external
-    host: ${HOST_IP}
+    host: ${DOCKER_BRIDGE_IP}
     port: 5433
     database: airbyte
     user: airbyte
@@ -165,7 +168,7 @@ echo ""
 echo "🔐 Configuring authentication..."
 
 # Wait a moment for Airbyte to fully initialize
-sleep 60
+sleep 5
 
 if abctl local credentials --password "${AIRBYTE_PASSWORD}" &>/dev/null; then
     echo "✓ Custom password configured"

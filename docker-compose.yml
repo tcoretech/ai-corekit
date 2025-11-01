@@ -3076,7 +3076,7 @@ services:
       - POSTGRES_PASSWORD=${AIRBYTE_POSTGRES_PASSWORD}
       - POSTGRES_DB=airbyte
     ports:
-      - "127.0.0.1:5433:5432"  # Exposed to host for abctl access
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U airbyte"]
       interval: 10s

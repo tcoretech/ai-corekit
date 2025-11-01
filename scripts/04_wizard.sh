@@ -58,6 +58,7 @@ base_services_data=(
     "bolt" "bolt.diy (AI Web Development)"
     "openui" "OpenUI (AI Frontend/UI Generator - EXPERIMENTAL, best with Claude/GPT-4)"
     "monitoring" "Monitoring Suite (Prometheus, Grafana, cAdvisor, Node-Exporter)"
+    "uptime-kuma" "Uptime Kuma (Uptime Monitoring & Status Pages)"
     "portainer" "Portainer (Docker management UI)"
     "cloudflare-tunnel" "Cloudflare Tunnel (Zero-Trust Secure Access)"
     "postiz" "Postiz (Social publishing platform)"

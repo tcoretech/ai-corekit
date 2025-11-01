@@ -680,4 +680,27 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
+# Uptime Kuma - Beautiful Uptime Monitoring (has own auth!)
+{$UPTIME_KUMA_HOSTNAME} {
+    reverse_proxy uptime-kuma:3001 {
+        # WebSocket support for live monitor updates
+        header_up Connection {http.request.header.Connection}
+        header_up Upgrade {http.request.header.Upgrade}
+        # Send real IP for logging
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    # Security headers
+    header {
+        # Enable HSTS
+        Strict-Transport-Security max-age=31536000;
+        # Prevent clickjacking
+        X-Frame-Options SAMEORIGIN
+        # Prevent content-type sniffing
+        X-Content-Type-Options nosniff
+    }
+}
+
 import /etc/caddy/addons/*.conf

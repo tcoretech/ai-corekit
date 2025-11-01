@@ -250,6 +250,7 @@ Pre-installed in the n8n container for seamless media manipulation:
 | **[Python Runner](https://github.com/n8n-io/n8n)** | Isolated Python environment | Execute Python scripts from n8n workflows | Internal only |
 | **[Grafana](https://github.com/grafana/grafana)** | Metrics visualization platform | System monitoring, performance dashboards, alerting | `grafana.yourdomain.com` |
 | **[Prometheus](https://github.com/prometheus/prometheus)** | Metrics collection & alerting | Time-series database, service monitoring, resource tracking | Internal only |
+| **[Uptime Kuma](https://github.com/louislam/uptime-kuma)** | Uptime monitoring & status pages | Service uptime tracking, public status pages, multi-protocol monitoring, 90+ notifications | `status.yourdomain.com` |
 | **[Portainer](https://github.com/portainer/portainer)** | Docker management interface | Container monitoring, logs, restart services | `portainer.yourdomain.com` |
 
 ### 🧰 AI Support Tools

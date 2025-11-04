@@ -287,7 +287,7 @@ else
     case $EXPORT_CHOICE in
         1)
             log_info "Generating Vaultwarden JSON export..."
-            bash "$SCRIPT_DIR/08_generate_vaultwarden_json.sh"
+            bash "$SCRIPT_DIR/08_generate_vaultwarden_json.sh" -d
             ;;
         2)
             log_info "Generating Credentials TXT export..."
@@ -295,7 +295,7 @@ else
             ;;
         3)
             log_info "Step 1/2: Generating Vaultwarden JSON export..."
-            bash "$SCRIPT_DIR/08_generate_vaultwarden_json.sh"
+            bash "$SCRIPT_DIR/08_generate_vaultwarden_json.sh" -d
             echo
             log_info "Step 2/2: Generating Credentials TXT export..."
             echo "⏱️  Starting in 5 seconds..."

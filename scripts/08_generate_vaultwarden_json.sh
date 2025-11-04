@@ -1,5 +1,26 @@
 #!/bin/bash
 
+# ============================================================================
+# Generate Vaultwarden JSON & Download Script
+# ============================================================================
+# This script generates a Vaultwarden-compatible JSON import file
+# with all AI LaunchKit service credentials and optionally provides
+# a download link.
+#
+# Usage:
+#   sudo bash ./scripts/08_generate_vaultwarden_json.sh           # Generate only
+#   sudo bash ./scripts/08_generate_vaultwarden_json.sh -d        # Generate + Download
+#   sudo bash ./scripts/08_generate_vaultwarden_json.sh --download # Generate + Download
+#
+# Note: File is automatically deleted after successful download
+# ============================================================================
+
+# Parse command line arguments for download option
+AUTO_DOWNLOAD=false
+if [[ "$1" == "-d" ]] || [[ "$1" == "--download" ]]; then
+    AUTO_DOWNLOAD=true
+fi
+
 # Source utilities
 source "$(dirname "$0")/utils.sh"
 
@@ -517,78 +538,112 @@ AI LAUNCHKIT VAULTWARDEN IMPORT INSTRUCTIONS
 Your credentials file has been generated:
   📁 ai-launchkit-credentials.json
 
-HOW TO DOWNLOAD THE FILE FROM YOUR VPS:
-----------------------------------------
-
-Option 1: Using SCP (from your local computer):
-  scp username@your-server:/home/username/ai-launchkit/ai-launchkit-credentials.json ./
-
-Option 2: Using Python HTTP Server (temporary):
-  # On VPS:
-  cd ~/ai-launchkit
-  python3 -m http.server 8888
-  
-  # On local computer:
-  wget http://your-server-ip:8888/ai-launchkit-credentials.json
-  # Then immediately stop the Python server (Ctrl+C)
-
-Option 3: Using cat and copy-paste (for small files):
-  # On VPS:
-  cat ~/ai-launchkit/ai-launchkit-credentials.json
-  # Copy the output and save to a local file
-
-Option 4: Using secure file transfer with nc (netcat):
-  # On local computer (receiving):
-  nc -l 9999 > ai-launchkit-credentials.json
-  
-  # On VPS (sending):
-  nc your-local-ip 9999 < ~/ai-launchkit/ai-launchkit-credentials.json
-
 HOW TO IMPORT INTO VAULTWARDEN:
 --------------------------------
 
-1. Open Vaultwarden: https://your-vault-domain
-2. Login to your account
-3. Go to: Tools → Import Data
-4. Select Format: "Bitwarden (json)"
-5. Choose File: ai-launchkit-credentials.json
-6. Click: Import Data
+1. Download the file (see download options below)
+2. Open Vaultwarden: https://your-vault-domain
+3. Login to your account
+4. Go to: Tools → Import Data
+5. Select Format: "Bitwarden (json)"
+6. Choose File: ai-launchkit-credentials.json
+7. Click: Import Data
 
 All credentials will be imported into the "AI LaunchKit Services" folder.
 
 SECURITY NOTES:
 ---------------
-⚠️  DELETE the JSON file from both VPS and local computer after import!
+⚠️  DELETE the JSON file after import!
 ⚠️  This file contains ALL your passwords in plain text!
-
-To delete:
-  # On VPS:
-  rm ~/ai-launchkit/ai-launchkit-credentials.json
-  
-  # On local computer:
-  rm ./ai-launchkit-credentials.json
 EOF
 
     log_success "✅ Vaultwarden import file generated: $json_file"
     echo
     log_info "📋 Import Instructions saved to: VAULTWARDEN_IMPORT.txt"
     echo
-    echo "🚀 EASY DOWNLOAD:"
-    echo "    Run this command for automatic secure download:"
-    echo
-    echo "    bash ~/ai-launchkit/scripts/download_credentials.sh"
-    echo
-    echo "    This will:"
-    echo "    • Open a temporary web server (60 seconds)"
-    echo "    • Show you a download link"
-    echo "    • Automatically delete the file after download"
-    echo
-    echo "📝 MANUAL DOWNLOAD (if needed):"
-    echo "    scp $(whoami)@${USER_DOMAIN_NAME}:~/ai-launchkit/ai-launchkit-credentials.json ./"
-    echo
-    echo "⚠️  SECURITY: The JSON file contains ALL passwords in plain text!"
-    echo "    The download script automatically deletes it after 60 seconds."
-    echo
+    
+    # ============================================================================
+    # Download Option
+    # ============================================================================
+    
+    OFFER_DOWNLOAD=false
+    
+    # Auto-download if flag was provided
+    if [ "$AUTO_DOWNLOAD" = true ]; then
+        OFFER_DOWNLOAD=true
+    else
+        # Ask user if they want to download
+        echo
+        read -p "📥 Do you want to download the Vaultwarden JSON file? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            OFFER_DOWNLOAD=true
+        fi
+    fi
+    
+    # ============================================================================
+    # Provide Download Link
+    # ============================================================================
+    
+    if [ "$OFFER_DOWNLOAD" = true ]; then
+        echo
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📥 DOWNLOAD VAULTWARDEN JSON"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo
+        
+        # Port for temporary HTTP server
+        DOWNLOAD_PORT=8889
+        DOWNLOAD_FILENAME="ai-launchkit-credentials.json"
+        
+        # Get server IPv4 address
+        echo "🔍 Detecting server IP address..."
+        IP=$(curl -4 -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
+        
+        # Open firewall port temporarily
+        echo "🔓 Opening firewall port $DOWNLOAD_PORT..."
+        sudo ufw allow $DOWNLOAD_PORT/tcp >/dev/null 2>&1 || true
+        
+        echo
+        echo "👇 Open this link in your browser:"
+        echo
+        echo "   http://$IP:$DOWNLOAD_PORT/$DOWNLOAD_FILENAME"
+        echo
+        echo "⏱️  Link expires in 60 seconds!"
+        echo
+        echo "💡 Tip: Right-click → 'Save Link As' to download"
+        echo
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo
+        echo "🌐 Starting temporary download server..."
+        echo "   (Server will auto-stop after 60 seconds)"
+        echo
+        
+        cd "$PROJECT_ROOT"
+        timeout 60 python3 -m http.server $DOWNLOAD_PORT >/dev/null 2>&1 || true
+        
+        echo
+        echo "🧹 Cleaning up..."
+        
+        # Close firewall port
+        sudo ufw delete allow $DOWNLOAD_PORT/tcp >/dev/null 2>&1 || true
+        
+        # Delete the credentials file after download
+        rm -f "$json_file"
+        
+        echo
+        echo "✅ Download link expired."
+        echo "🗑️  Vaultwarden JSON file deleted for security."
+        echo
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    else
+        echo
+        echo "💾 Vaultwarden JSON file saved. Remember to delete it after import:"
+        echo "   rm $json_file"
+        echo
+        echo "Or use the download script:"
+        echo "   bash ./scripts/download_credentials.sh"
+    fi
     
     return 0
 }

@@ -9178,7 +9178,54 @@ sudo sysctl -p
 
 # Restart Docker
 sudo systemctl restart docker
+
+# Clean up any leftover state from failed attempts
+sudo abctl local uninstall --persisted
+sudo rm -rf /root/.airbyte
+sudo docker rm -f $(sudo docker ps -aq --filter "name=airbyte") 2>/dev/null || true
+
+# Retry installation
+sudo bash scripts/update.sh
 ```
+
+#### Installation Fails: "pod airbyte-abctl-bootloader failed"
+```bash
+# Check installation status
+sudo abctl local status
+
+# If you see: Status: failed
+# This is a known abctl v0.30.2 bug with service name resolution
+```
+
+**Root Cause:** The Helm chart creates a service named `airbyte-db-svc` but the bootloader tries to connect to `airbyte-db`, causing a DNS resolution failure.
+
+**Fix:**
+```bash
+# 1. Create service alias
+cat <<EOF | sudo docker exec -i airbyte-abctl-control-plane kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: airbyte-db
+  namespace: airbyte-abctl
+spec:
+  type: ExternalName
+  externalName: airbyte-db-svc.airbyte-abctl.svc.cluster.local
+EOF
+
+# 2. Verify DNS works
+sudo docker exec airbyte-abctl-control-plane kubectl exec -n airbyte-abctl airbyte-db-0 -- nslookup airbyte-db
+# Should resolve to: airbyte-db-svc.airbyte-abctl.svc.cluster.local
+
+# 3. Retry installation
+sudo abctl local install --port 8001
+
+# 4. Verify success
+sudo abctl local status
+# Should show: Status: deployed
+```
+
+**This is a race condition bug in abctl that occurs intermittently.** The service alias workaround forces correct DNS resolution.
 
 **Minimum Resources:**
 - 8GB RAM (16GB recommended for production)

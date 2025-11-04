@@ -9189,6 +9189,9 @@ sudo bash scripts/update.sh
 ```
 
 #### Installation Fails: "pod airbyte-abctl-bootloader failed"
+
+**This is a known intermittent bug in abctl v0.30.2 - see [GitHub Discussion #45458](https://github.com/airbytehq/airbyte/discussions/45458) for the official tracking of this "pod airbyte-abctl-bootloader failed" error.**
+
 ```bash
 # Check installation status
 sudo abctl local status

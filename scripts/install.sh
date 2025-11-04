@@ -212,20 +212,116 @@ if grep -q "seafile" "$PROJECT_ROOT/.env" 2>/dev/null || sudo docker ps | grep -
     log_success "Seafile HTTPS/CSRF configuration fixed"
 fi
 
-# Generate Vaultwarden import file if Vaultwarden is active
-if [ -f "$SCRIPT_DIR/08_generate_vaultwarden_json.sh" ]; then
-    # Load environment variables from .env
-    if [ -f "$PROJECT_ROOT/.env" ]; then
-        set -a
-        source "$PROJECT_ROOT/.env"
-        set +a
+# ============================================================================
+# Export Options
+# ============================================================================
+
+# Load environment variables from .env
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    set -a
+    source "$PROJECT_ROOT/.env"
+    set +a
+fi
+
+# Function to check if a profile is active (from 06_final_report.sh)
+is_profile_active() {
+    local profile_to_check="$1"
+    if [ -z "$COMPOSE_PROFILES" ]; then
+        return 1
+    fi
+    if [[ ",$COMPOSE_PROFILES," == *",$profile_to_check,"* ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log_info "📋 CREDENTIALS EXPORT"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo
+
+# Check if Vaultwarden is installed/active
+VAULTWARDEN_AVAILABLE=false
+if is_profile_active "vaultwarden"; then
+    VAULTWARDEN_AVAILABLE=true
+fi
+
+# ============================================================================
+# If Vaultwarden is NOT available: Simple prompt
+# ============================================================================
+
+if [ "$VAULTWARDEN_AVAILABLE" = false ]; then
+    echo "All credentials were displayed above."
+    echo
+    read -p "📥 Do you want to export credentials to file for download? (y/N): " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        bash "$SCRIPT_DIR/export_credentials.sh" -d
+    else
+        echo
+        echo "You can export credentials later anytime with:"
+        echo "  sudo bash ./scripts/export_credentials.sh"
+        echo
     fi
 
-    # Export COMPOSE_PROFILES explicitly
-    export COMPOSE_PROFILES
+# ============================================================================
+# If Vaultwarden IS available: Full menu
+# ============================================================================
 
-    # Run the script with bash to ensure it executes
-    bash "$SCRIPT_DIR/08_generate_vaultwarden_json.sh"
+else
+    echo "Available exports:"
+    echo
+    echo "  1) Vaultwarden JSON (password manager import)"
+    echo "  2) All Credentials TXT (readable text file)"
+    echo "  3) Both (recommended)"
+    echo "  4) Skip exports"
+    echo
+    
+    read -p "Select option (1-4): " -n 1 -r EXPORT_CHOICE
+    echo
+    echo
+    
+    case $EXPORT_CHOICE in
+        1)
+            log_info "Generating Vaultwarden JSON export..."
+            bash "$SCRIPT_DIR/08_generate_vaultwarden_json.sh"
+            ;;
+        2)
+            log_info "Generating Credentials TXT export..."
+            bash "$SCRIPT_DIR/export_credentials.sh" -d
+            ;;
+        3)
+            log_info "Step 1/2: Generating Vaultwarden JSON export..."
+            bash "$SCRIPT_DIR/08_generate_vaultwarden_json.sh"
+            echo
+            log_info "Step 2/2: Generating Credentials TXT export..."
+            echo "⏱️  Starting in 5 seconds..."
+            sleep 5
+            bash "$SCRIPT_DIR/export_credentials.sh" -d
+            ;;
+        4)
+            echo
+            log_info "Exports skipped. You can run them later:"
+            echo "  • Vaultwarden: sudo bash ./scripts/08_generate_vaultwarden_json.sh"
+            echo "  • Credentials: sudo bash ./scripts/export_credentials.sh"
+            echo
+            ;;
+        *)
+            echo
+            log_warning "Invalid selection. Skipping exports."
+            echo
+            log_info "You can run exports later:"
+            echo "  • Vaultwarden: sudo bash ./scripts/08_generate_vaultwarden_json.sh"
+            echo "  • Credentials: sudo bash ./scripts/export_credentials.sh"
+            echo
+            ;;
+    esac
 fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo
 
 exit 0

@@ -42,3 +42,4 @@ website/
 vexa/
 volumes/
 opennotebook/
+credentials.*.txt

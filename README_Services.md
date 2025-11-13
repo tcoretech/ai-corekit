@@ -3876,6 +3876,61 @@ The Paperless AI Extensions are two complementary tools that supercharge your Pa
 
 Together, they transform Paperless-ngx from a document archive into an intelligent document assistant that can answer questions like "What was my electricity bill last month?" or "Show me all contracts expiring this year."
 
+### ⚠️ CRITICAL Setup Requirements
+
+**This suite requires manual configuration after installation. Follow these steps EXACTLY:**
+
+#### Step 1: Generate API Token with Full Permissions
+1. Open Paperless-ngx → Settings → Django Admin Panel
+2. Click on "Auth tokens" → "Add"
+3. Select your user and save
+4. Click the pencil icon to edit the token
+5. In the popup under "Permissions" click "Choose all permissions"
+6. Save and copy the token
+
+#### Step 2: Configure Environment
+1. Add token to `.env` file:
+```bash
+   nano .env
+   # Add/update: PAPERLESS_API_TOKEN=your_token_here
+```
+
+2. **CRITICAL: Full restart required for token to load:**
+```bash
+   docker compose -p localai down
+   docker compose -p localai up -d
+```
+   ⚠️ Simple restart is NOT enough - must use `down` then `up -d`!
+
+#### Step 3: Configure paperless-gpt
+- Access: `https://paperless-gpt.yourdomain.com`
+- Login with Basic Auth (username/password from .env)
+- Should now connect successfully to Paperless
+
+#### Step 4: Configure paperless-ai
+1. Access: `https://paperless-ai.yourdomain.com`
+2. First visit shows setup wizard
+3. Create your own username/password (remember them!)
+4. Enter configuration:
+   - Paperless URL: `http://paperless-ngx:8000`
+   - API Token: (paste the token from Step 1)
+   - Ollama URL: `http://ollama:11434` (if using)
+
+#### Step 5: Fix RAG Chat (REQUIRED)
+```bash
+# This fixes a bug where paperless-ai uses different ENV variable names
+docker exec paperless-ai sh -c "echo 'PAPERLESS_URL=http://paperless-ngx:8000' >> /app/data/.env"
+docker compose -p localai restart paperless-ai
+```
+
+### Known Issues & Workarounds
+
+| Issue | Impact | Workaround |
+|-------|---------|-----------|
+| **paperless-gpt: Documents need tags** | Can't update documents without at least one tag | Add a default tag like "inbox" to all documents |
+| **paperless-ai: Inconsistent ENV names** | RAG chat shows "your-paperless-instance" error | Apply Step 5 fix above |
+| **Token not loading after update** | Services show "401 Unauthorized" | Use full restart with `docker compose -p localai down` then `up -d` |
+
 ### Features Comparison
 
 | Feature | paperless-gpt | paperless-ai |
@@ -3887,405 +3942,79 @@ Together, they transform Paperless-ngx from a document archive into an intellige
 | **Semantic Search** | ❌ | ✅ "Find similar" |
 | **Batch Processing** | ✅ Queue system | ❌ |
 | **Multi-language** | ✅ Configurable | ✅ Auto-detect |
+| **Authentication** | Basic Auth (Caddy) | Own system |
 
-#### ⚠️ IMPORTANT Setup Requirements:
+### Configuration Options
 
-This suite requires manual configuration after installation:
-
-1. **Generate API Token with Full Permissions:**
-   - Open Paperless-ngx → Settings → Django Admin Panel
-   - Auth Tokens → Add → Select user → Save
-   - Edit token (pencil icon) → Permissions → "Choose all permissions"
-   - Copy token and add to `.env` as `PAPERLESS_API_TOKEN`
-
-2. **Fix for paperless-ai RAG (Required):**
-```bash
-   docker exec paperless-ai sh -c "echo 'PAPERLESS_URL=http://paperless-ngx:8000' >> /app/data/.env"
-   docker compose -p localai restart paperless-ai
-```
-
-3. **Known Issues:**
-   - paperless-gpt: Documents need at least one tag for updates to work
-   - paperless-ai: Uses inconsistent ENV variable names (fixed with step 2)
-
-#### Configuration:
-- Default: Uses OpenAI API for best quality on CPU-only VPS
-- Alternative: Configure for Ollama in `.env` (see comments in file)
-- paperless-gpt uses Basic Auth via Caddy
-- paperless-ai has its own authentication system
-
-#### Resources:
-- RAM: ~1GB additional
-- Disk: ~500MB for vector databases
-- CPU: Moderate usage during OCR/indexing
-
-#### Documentation:
-- paperless-gpt: https://github.com/icereed/paperless-gpt
-- paperless-ai: https://github.com/clusterzx/paperless-ai
-
-### Initial Setup
-
-**Prerequisites:**
-
-1. Paperless-ngx must be running and configured
-2. Admin access to Paperless-ngx
-3. OpenAI API key (or Ollama for local processing)
-
-**Step 1: Generate Paperless API Token**
-```bash
-# Access Paperless admin panel
-https://docs.yourdomain.com/admin
-
-# Navigate to: Auth Tokens → Add Token
-# Select your user and save
-# Copy the token to .env file:
-PAPERLESS_API_TOKEN=your_token_here
-```
-
-**Step 2: Configure Environment**
-```bash
-# Edit .env file
-nano .env
-
-# For OpenAI (default, CPU-friendly):
+**Default (CPU-friendly, using OpenAI):**
+```yaml
 PAPERLESS_GPT_LLM_PROVIDER=openai
 PAPERLESS_GPT_LLM_MODEL=gpt-4o-mini
 PAPERLESS_GPT_VISION_MODEL=gpt-4o-mini
-
-# For Ollama (local, needs more resources):
-# PAPERLESS_GPT_LLM_PROVIDER=ollama
-# PAPERLESS_GPT_LLM_MODEL=qwen2.5:7b
-# PAPERLESS_GPT_VISION_MODEL=minicpm-v
-
-# Save and restart
-docker compose restart paperless-gpt paperless-ai
 ```
 
-**Step 3: Access Web Interfaces**
-
-**paperless-gpt (Basic Auth required):**
-- URL: `https://paperless-gpt.yourdomain.com`
-- Username: Your email (from installation)
-- Password: Check `.env` for `PAPERLESS_GPT_PASSWORD`
-
-**paperless-ai (Own authentication):**
-- URL: `https://paperless-ai.yourdomain.com`
-- First access: Setup wizard appears
-- Create your own username/password (remember them!)
-- Configure connection to Paperless
-
-### Paperless-GPT Usage
-
-#### Manual OCR Processing
-
-1. Navigate to `https://paperless-gpt.yourdomain.com/manual`
-2. Documents with tag `paperless-gpt` appear
-3. Click "Process" for OCR with Vision LLM
-4. Review and confirm extracted text
-5. Document is updated in Paperless
-
-#### Automatic OCR Pipeline
-
-**Create Auto-Processing Workflow:**
-
-1. In Paperless, create tags:
-   - `paperless-gpt-ocr-auto` - Triggers OCR
-   - `paperless-gpt-auto` - Triggers tagging
-   - `paperless-gpt-complete` - Marks as processed
-
-2. Create Paperless workflow:
-   - Trigger: Document added
-   - Action: Add tag `paperless-gpt-ocr-auto`
-   - paperless-gpt processes automatically
-
-#### Custom Prompts for German Documents
-
-Create `./prompts/title_prompt.tmpl`:
-```
-Du bist ein deutscher Dokumentenexperte.
-Erstelle einen präzisen Titel für dieses Dokument.
-
-Format: [Typ] Firma - Beschreibung (Datum)
-Beispiel: [Rechnung] Stadtwerke - Strom Januar 2025
-
-Dokument:
-{{.Content}}
+**Local Processing (using Ollama):**
+```yaml
+PAPERLESS_GPT_LLM_PROVIDER=ollama
+PAPERLESS_GPT_LLM_MODEL=qwen2.5:7b
+PAPERLESS_GPT_VISION_MODEL=minicpm-v
 ```
 
-### Paperless-AI Usage
+### Usage Examples
 
-#### First-Time Configuration
+#### paperless-gpt OCR Processing
+1. Tag document with `paperless-gpt` for manual processing
+2. Tag with `paperless-gpt-ocr-auto` for automatic OCR
+3. Access web UI at `/manual` to review and confirm
+4. Check status at `/ocr` tab
 
-1. Access `https://paperless-ai.yourdomain.com`
-2. Setup wizard appears:
-   - **Username:** Choose your own
-   - **Password:** Choose strong password
-   - **Paperless URL:** `http://paperless-ngx:8000`
-   - **API Token:** From Step 1
-   - **LLM Provider:** OpenAI or Ollama
-   - **Model:** gpt-4o-mini or local model
-
-3. Save and restart for index creation:
-```bash
-docker compose restart paperless-ai
-```
-
-#### Natural Language Search
-
-**Example Queries:**
+#### paperless-ai Natural Language Search
 - "Show me all invoices from last month"
-- "What was my total spending on electricity in 2024?"
-- "Find all contracts expiring soon"
-- "Which documents mention GDPR compliance?"
-- "Summarize my insurance policies"
-
-#### Document Q&A
-
-1. Select a document or folder
-2. Ask questions about content:
-   - "What are the payment terms?"
-   - "When does this contract expire?"
-   - "What is covered by this insurance?"
-3. Get AI-powered answers with sources
-
-### n8n Integration
-
-#### Example 1: Enhanced OCR Pipeline
-```javascript
-// Process poor quality scans with Vision LLM
-
-// 1. Monitor folder trigger
-Path: /data/shared/scans
-Events: File created
-
-// 2. HTTP Request - Send to paperless-gpt
-Method: POST
-URL: http://paperless-gpt:8080/api/process
-Headers:
-  Content-Type: application/json
-Body:
-{
-  "file_path": "{{$json.path}}",
-  "process_mode": "ocr",
-  "vision_model": "gpt-4o-mini"
-}
-
-// 3. Wait for processing
-Wait: 30 seconds
-
-// 4. Get enhanced document
-Method: GET
-URL: http://paperless-ngx:8000/api/documents/
-Query: title={{$json.filename}}
-
-// 5. Notify completion
-Message: OCR complete with {{$json.confidence}}% confidence
-```
-
-#### Example 2: RAG-Powered Document Assistant
-```javascript
-// Answer questions about documents via chat
-
-// 1. Webhook trigger - Slack/Teams/Discord
-Path: /webhook/doc-assistant
-
-// 2. Extract question
-Question: {{$json.text}}
-
-// 3. HTTP Request - Query paperless-ai
-Method: POST
-URL: http://paperless-ai:3000/api/chat
-Headers:
-  Content-Type: application/json
-Body:
-{
-  "query": "{{$json.question}}",
-  "context_size": 10,
-  "include_sources": true
-}
-
-// 4. Format response
-Answer: {{$json.response}}
-Sources: {{$json.sources}}
-
-// 5. Send back to chat
-Channel: {{$json.channel}}
-Message: Formatted answer with sources
-```
-
-#### Example 3: Automated Document Analysis
-```javascript
-// Analyze new documents and create summaries
-
-// 1. Paperless webhook - Document added
-Event: document_added
-
-// 2. Wait for OCR completion
-Wait: 60 seconds
-
-// 3. Get document content
-Method: GET
-URL: http://paperless-ngx:8000/api/documents/{{$json.id}}/
-
-// 4. Analyze with paperless-ai
-Method: POST
-URL: http://paperless-ai:3000/api/analyze
-Body:
-{
-  "document_id": "{{$json.id}}",
-  "analysis_type": "summary",
-  "extract": ["dates", "amounts", "parties", "obligations"]
-}
-
-// 5. Store analysis
-Operation: Create document
-Collection: document_analysis
-Data: Analysis results
-
-// 6. Create task if action needed
-If: {{$json.requires_action}} == true
-Create task in project management
-```
-
-### Advanced Configuration
-
-#### Vision Model Selection
-
-**For Different Document Types:**
-```yaml
-# High-quality scans (text-heavy)
-PAPERLESS_GPT_VISION_MODEL=gpt-4o-mini  # Fast, cheap
-
-# Poor quality/handwritten
-PAPERLESS_GPT_VISION_MODEL=gpt-4o        # Best accuracy
-
-# Local processing (no cloud)
-PAPERLESS_GPT_VISION_PROVIDER=ollama
-PAPERLESS_GPT_VISION_MODEL=llava:13b     # Good quality
-```
-
-#### Performance Tuning
-```yaml
-# paperless-gpt optimization
-PAPERLESS_GPT_OCR_LIMIT=10       # Max pages per document
-PAPERLESS_GPT_TOKEN_LIMIT=4000   # Max tokens per request
-TOKEN_LIMIT=0                     # 0 = no limit
-
-# paperless-ai optimization
-PAPERLESS_AI_CHUNK_SIZE=1000     # Text chunk size
-PAPERLESS_AI_OVERLAP=200         # Chunk overlap
-PAPERLESS_AI_TOP_K=5             # Results to return
-```
+- "What was my electricity bill in January?"
+- "Find contracts expiring this year"
+- "Which documents mention GDPR?"
 
 ### Troubleshooting
 
-**paperless-gpt Issues:**
+**Token Issues:**
 ```bash
-# Check connection to Paperless
-docker exec paperless-gpt curl -H "Authorization: Token $PAPERLESS_API_TOKEN" \
-  http://paperless-ngx:8000/api/documents/
+# Verify token in .env
+grep PAPERLESS_API_TOKEN .env
 
-# View processing queue
-docker logs paperless-gpt --tail 50 | grep QUEUE
+# Check if token loads in container
+docker exec paperless-gpt env | grep PAPERLESS_API_TOKEN
 
-# Reset stuck documents
-docker exec paperless-gpt python reset_queue.py
-
-# Check OpenAI API key
-docker exec paperless-gpt env | grep OPENAI
+# If missing, full restart required:
+docker compose -p localai down
+docker compose -p localai up -d
 ```
 
-**paperless-ai Issues:**
+**RAG Not Working:**
 ```bash
-# RAG index not created
-docker logs paperless-ai | grep -i index
-docker compose restart paperless-ai
+# Check for "your-paperless-instance" error
+docker logs paperless-ai | grep "your-paperless"
 
-# Chat not responding
-# Check LLM connection
-docker exec paperless-ai curl http://ollama:11434/api/tags
-
-# Reset database (WARNING: loses chat history)
-docker compose stop paperless-ai
-docker volume rm ai-launchkit_paperless-ai-data
-docker compose up -d paperless-ai
+# Apply fix:
+docker exec paperless-ai sh -c "echo 'PAPERLESS_URL=http://paperless-ngx:8000' >> /app/data/.env"
+docker compose -p localai restart paperless-ai
 ```
 
-**Authentication Problems:**
+**Reset paperless-ai (loses settings):**
 ```bash
-# paperless-gpt (Basic Auth via Caddy)
-# Regenerate password hash
-docker run --rm caddy:alpine caddy hash-password --plaintext "newpassword"
-# Update .env with new hash
-# Restart Caddy
-docker compose restart caddy
-
-# paperless-ai (Own auth system)
-# Password reset not possible without data loss
-# Must recreate container and volume
+docker compose -p localai stop paperless-ai
+docker volume rm localai_paperless-ai-data
+docker compose -p localai up -d paperless-ai
 ```
-
-### Workflow Patterns
-
-#### Pattern 1: Quality Control Pipeline
-
-1. Document uploaded to Paperless
-2. Standard OCR attempts processing
-3. If confidence < 80%, tag with `needs-review`
-4. paperless-gpt processes with Vision LLM
-5. Human reviews via `/manual` interface
-6. Document updated with verified text
-
-#### Pattern 2: Intelligent Filing
-
-1. Document arrives via email/scan
-2. paperless-gpt extracts text with Vision
-3. paperless-ai analyzes content
-4. Auto-assigns:
-   - Correspondent (company/sender)
-   - Document type (invoice/contract/letter)
-   - Tags (urgent/payment-due/action-required)
-   - Custom fields (amount/date/reference)
-
-#### Pattern 3: Compliance Assistant
-
-1. Upload regulatory documents
-2. paperless-ai indexes for RAG
-3. Query: "Are we GDPR compliant for X?"
-4. Get answers with source citations
-5. Generate compliance reports
-
-### Cost Optimization
-
-**OpenAI API Usage:**
-
-- GPT-4o-mini: ~$0.001 per page
-- GPT-4o: ~$0.01 per page
-- Budget ~$10/month: ~10,000 pages with mini
-
-**Ollama (Free, Local):**
-
-- Requires 8GB+ RAM
-- Slower processing (10-30s per page)
-- No API costs
-- Privacy: Data stays local
-
-**Hybrid Approach:**
-
-1. Use Ollama for regular documents
-2. Use OpenAI for poor quality/critical docs
-3. Switch via tags:
-   - Tag `high-quality-ocr` → Use GPT-4o
-   - Default → Use Ollama
 
 ### Resources
+- **RAM:** ~1GB additional for both services
+- **Disk:** ~500MB for vector databases
+- **API Costs:** ~$0.001 per page with GPT-4o-mini
 
-- **paperless-gpt GitHub:** https://github.com/icereed/paperless-gpt
-- **paperless-ai GitHub:** https://github.com/clusterzx/paperless-ai
-- **OpenAI Pricing:** https://openai.com/pricing
-- **Ollama Models:** https://ollama.ai/library
-- **Vision Models Comparison:** https://github.com/icereed/paperless-gpt/wiki/Vision-Models
-- **RAG Concepts:** https://www.pinecone.io/learn/retrieval-augmented-generation/
+### Documentation
+- **paperless-gpt:** https://github.com/icereed/paperless-gpt
+- **paperless-ai:** https://github.com/clusterzx/paperless-ai
+- **Installation Guide:** See final report after running `bash scripts/06_final_report.sh`
 
 </details>
 

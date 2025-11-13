@@ -92,6 +92,8 @@ volumes:
   hoppscotch_postgres:
   uptime-kuma_data:
   airbyte_destination_data:
+  paperless-gpt-prompts:
+  paperless-ai-data:
 
 x-n8n: &service-n8n
   build:
@@ -451,6 +453,10 @@ services:
       - HOPPSCOTCH_HOSTNAME=${HOPPSCOTCH_HOSTNAME}
       - UPTIME_KUMA_HOSTNAME=${UPTIME_KUMA_HOSTNAME}
       - AIRBYTE_HOSTNAME=${AIRBYTE_HOSTNAME}
+      - PAPERLESS_GPT_HOSTNAME=${PAPERLESS_GPT_HOSTNAME}
+      - PAPERLESS_GPT_USERNAME=${PAPERLESS_GPT_USERNAME}
+      - PAPERLESS_GPT_PASSWORD_HASH=${PAPERLESS_GPT_PASSWORD_HASH}
+      - PAPERLESS_AI_HOSTNAME=${PAPERLESS_AI_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}
@@ -2883,6 +2889,102 @@ services:
       - paperless-redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ===========================================
+  # PAPERLESS-GPT - Superior OCR with Vision LLMs
+  # ===========================================
+  paperless-gpt:
+    image: ghcr.io/icereed/paperless-gpt:latest
+    container_name: paperless-gpt
+    profiles: ["paperless-ai"]
+    restart: unless-stopped
+    environment:
+      # Paperless Connection
+      - PAPERLESS_BASE_URL=http://paperless-ngx:8000
+      - PAPERLESS_API_TOKEN=${PAPERLESS_API_TOKEN}
+      - PAPERLESS_PUBLIC_URL=https://${PAPERLESS_HOSTNAME}
+      
+      # Tags Configuration
+      - MANUAL_TAG=paperless-gpt
+      - AUTO_TAG=paperless-gpt-auto
+      - AUTO_OCR_TAG=paperless-gpt-ocr-auto
+      
+      # ===== DEFAULT: OpenAI Configuration (for CPU VPS) =====
+      - LLM_PROVIDER=${PAPERLESS_GPT_LLM_PROVIDER:-openai}
+      - LLM_MODEL=${PAPERLESS_GPT_LLM_MODEL:-gpt-4o-mini}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LLM_LANGUAGE=${PAPERLESS_GPT_LANGUAGE:-German}
+      
+      # ===== ALTERNATIVE: Ollama Configuration (uncomment if using Ollama) =====
+      # - LLM_PROVIDER=${PAPERLESS_GPT_LLM_PROVIDER:-ollama}
+      # - LLM_MODEL=${PAPERLESS_GPT_LLM_MODEL:-qwen2.5:7b}
+      # - OLLAMA_HOST=http://ollama:11434
+      
+      # Vision LLM for OCR (OpenAI by default)
+      - OCR_PROVIDER=llm
+      - VISION_LLM_PROVIDER=${PAPERLESS_GPT_VISION_PROVIDER:-openai}
+      - VISION_LLM_MODEL=${PAPERLESS_GPT_VISION_MODEL:-gpt-4o-mini}
+      
+      # ===== ALTERNATIVE: Ollama Vision (uncomment if using Ollama) =====
+      # - VISION_LLM_PROVIDER=${PAPERLESS_GPT_VISION_PROVIDER:-ollama}
+      # - VISION_LLM_MODEL=${PAPERLESS_GPT_VISION_MODEL:-minicpm-v}
+      
+      - OCR_PROCESS_MODE=image
+      - OCR_LIMIT_PAGES=${PAPERLESS_GPT_OCR_LIMIT:-0}
+      
+      # Auto-generation settings
+      - AUTO_GENERATE_TITLE=true
+      - AUTO_GENERATE_TAGS=true
+      - AUTO_GENERATE_CORRESPONDENTS=true
+      - AUTO_GENERATE_CREATED_DATE=true
+      
+      # Performance
+      - TOKEN_LIMIT=${PAPERLESS_GPT_TOKEN_LIMIT:-0}
+      - LOG_LEVEL=info
+      - LISTEN_INTERFACE=8080
+    volumes:
+      - paperless-gpt-prompts:/app/prompts
+      - ./shared:/data/shared
+    networks:
+      - default
+    depends_on:
+      - paperless-ngx
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ===========================================
+  # PAPERLESS-AI - RAG Chat & Semantic Search
+  # ===========================================
+  paperless-ai:
+    image: clusterzx/paperless-ai:latest
+    container_name: paperless-ai
+    profiles: ["paperless-ai"]
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges=true
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - PAPERLESS_AI_PORT=${PAPERLESS_AI_PORT:-3000}
+      - RAG_SERVICE_URL=http://paperless-ai:8000
+      - RAG_SERVICE_ENABLED=true
+    volumes:
+      - paperless-ai-data:/app/data
+      - ./shared:/data/shared
+    networks:
+      - default
+    depends_on:
+      - paperless-ngx
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

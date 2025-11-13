@@ -416,6 +416,19 @@ EOF
             "Intelligent document management with OCR and AI tagging. Supports German & English OCR. Mobile apps: 'Paperless Mobile' on iOS/Android. Consume folder: ./shared. Internal API: http://paperless:8000/api/. Generate API token in user settings for n8n integration."
     fi
 
+    # Paperless-GPT (OCR Enhancement)
+    if is_profile_active "paperless-ai"; then
+        add_login_item \
+            "Paperless-GPT - LLM-powered OCR" \
+            "${PAPERLESS_GPT_USERNAME}" \
+            "${PAPERLESS_GPT_PASSWORD}" \
+            "https://${PAPERLESS_GPT_HOSTNAME}" \
+            "Superior OCR with Vision LLMs for Paperless-ngx. Uses OpenAI GPT-4o or local Ollama models. Manual review at /manual, OCR status at /ocr. Protected with Basic Auth via Caddy. Internal API: http://paperless-gpt:8080"
+    fi
+    
+    # Note: Paperless-AI not included here as it has its own authentication system
+    # Users must set up credentials on first access to paperless-ai
+
     # Perplexica
     if is_profile_active "perplexica"; then
         add_login_item \

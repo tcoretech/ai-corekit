@@ -70,6 +70,7 @@ base_services_data=(
     "nocodb" "NocoDB (Open-source Airtable alternative, smart spreadsheet UI)"
     "seafile" "Seafile (File sync & share like Dropbox/Google Drive/OneDrive)"
     "paperless" "Paperless-ngx (Document management with OCR & AI tagging)"
+    "paperless-ai" "Paperless AI Suite (GPT+AI - Superior OCR & RAG Chat for documents)"
     "vikunja" "Vikunja (Modern Task Management - Todoist/TickTick alternative)"
     "leantime" "Leantime - Full project management suite (Asana/Monday alternative)"
     "calcom" "Cal.com (Open Source Scheduling Platform)"

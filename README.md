@@ -134,6 +134,8 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 |------|-------------|-----------|--------|
 | **[Seafile](https://github.com/haiwen/seafile)** | Professional file sync & share platform | Team collaboration, file versioning, WebDAV, mobile sync | `files.yourdomain.com` |
 | **[Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx)** | Intelligent document management with OCR | Document archiving, AI auto-tagging, GDPR compliance, full-text search | `docs.yourdomain.com` |
+| **[paperless-gpt](https://github.com/icereed/paperless-gpt)** | LLM-powered OCR for paperless-ngx | Superior text extraction, vision models, searchable PDFs, auto-tagging | `paperless-gpt.yourdomain.com` |
+| **[paperless-ai](https://github.com/clusterzx/paperless-ai)** | RAG Chat & semantic search for paperless-ngx | Natural language queries, document Q&A, intelligent search | `paperless-ai.yourdomain.com` |
 
 ### 💼 Business & Productivity
 

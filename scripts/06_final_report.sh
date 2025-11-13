@@ -611,6 +611,55 @@ if is_profile_active "paperless"; then
   echo "Community: https://github.com/paperless-ngx/paperless-ngx/discussions"
 fi
 
+if is_profile_active "paperless-ai"; then
+  echo
+  echo "==================== Paperless AI Extensions ========================"
+  echo
+  echo "🔍 Paperless-GPT (Superior OCR with Vision LLMs)"
+  echo "Host: ${PAPERLESS_GPT_HOSTNAME:-<hostname_not_set>}"
+  echo "Access: https://${PAPERLESS_GPT_HOSTNAME:-<hostname_not_set>}"
+  echo "User: ${PAPERLESS_GPT_USERNAME:-<not_set_in_env>}"
+  echo "Password: ${PAPERLESS_GPT_PASSWORD:-<not_set_in_env>}"
+  echo
+  echo "Features:"
+  echo "  - LLM-powered OCR with ${PAPERLESS_GPT_VISION_MODEL:-gpt-4o-mini}"
+  echo "  - Auto-tagging with ${PAPERLESS_GPT_LLM_MODEL:-gpt-4o-mini}"
+  echo "  - Manual review at /manual"
+  echo "  - OCR status at /ocr"
+  echo
+  echo "💬 Paperless-AI (RAG Chat & Semantic Search)"
+  echo "Host: ${PAPERLESS_AI_HOSTNAME:-<hostname_not_set>}"
+  echo "Access: https://${PAPERLESS_AI_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "⚠️  IMPORTANT for Paperless-AI:"
+  echo "  - On FIRST access: Setup page appears"
+  echo "  - Create your own username/password!"
+  echo "  - Remember these credentials (no reset possible)"
+  echo
+  echo "📝 SETUP STEPS:"
+  echo "1. Generate Paperless API Token:"
+  echo "   - Go to https://${PAPERLESS_HOSTNAME}/admin"
+  echo "   - Click 'Auth Tokens' → 'Add'"
+  echo "   - Select your user and save"
+  echo "   - Copy token and add to .env as PAPERLESS_API_TOKEN"
+  echo
+  echo "2. Restart containers:"
+  echo "   docker compose restart paperless-gpt paperless-ai"
+  echo
+  echo "3. Configure tools:"
+  echo "   - paperless-gpt: https://${PAPERLESS_GPT_HOSTNAME} (Basic Auth)"
+  echo "   - paperless-ai: https://${PAPERLESS_AI_HOSTNAME} (own login)"
+  echo
+  echo "Integration:"
+  echo "  - Both tools use existing Paperless-ngx installation"
+  echo "  - paperless-gpt uses OpenAI API by default (CPU-friendly)"
+  echo "  - Switch to Ollama in .env if preferred"
+  echo
+  echo "Documentation:"
+  echo "  - paperless-gpt: https://github.com/icereed/paperless-gpt"
+  echo "  - paperless-ai: https://github.com/clusterzx/paperless-ai"
+fi
+
 if is_profile_active "formbricks"; then
   echo
   echo "================================= Formbricks Surveys ==================="

@@ -597,6 +597,19 @@ https://{$NEO4J_HOSTNAME}:7687 {
     }
 }
 
+# Paperless-GPT - OCR Enhancement (WITH Basic Auth)
+{$PAPERLESS_GPT_HOSTNAME} {
+    basic_auth {
+        {$PAPERLESS_GPT_USERNAME} {$PAPERLESS_GPT_PASSWORD_HASH}
+    }
+    reverse_proxy paperless-gpt:8080
+}
+
+# Paperless-AI - RAG Chat & Semantic Search (NO Basic Auth - has own login!)
+{$PAPERLESS_AI_HOSTNAME} {
+    reverse_proxy paperless-ai:3000
+}
+
 # ============================================================================
 # OPEN NOTEBOOK - AI-Powered Knowledge Management & Research
 # ============================================================================

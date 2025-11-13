@@ -2944,7 +2944,7 @@ services:
       # Performance
       - TOKEN_LIMIT=${PAPERLESS_GPT_TOKEN_LIMIT:-0}
       - LOG_LEVEL=info
-      - LISTEN_INTERFACE=8080
+      # - LISTEN_INTERFACE=0.0.0.0:8080
     volumes:
       - paperless-gpt-prompts:/app/prompts
       - ./shared:/data/shared

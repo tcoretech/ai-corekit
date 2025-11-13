@@ -3888,6 +3888,41 @@ Together, they transform Paperless-ngx from a document archive into an intellige
 | **Batch Processing** | ✅ Queue system | ❌ |
 | **Multi-language** | ✅ Configurable | ✅ Auto-detect |
 
+#### ⚠️ IMPORTANT Setup Requirements:
+
+This suite requires manual configuration after installation:
+
+1. **Generate API Token with Full Permissions:**
+   - Open Paperless-ngx → Settings → Django Admin Panel
+   - Auth Tokens → Add → Select user → Save
+   - Edit token (pencil icon) → Permissions → "Choose all permissions"
+   - Copy token and add to `.env` as `PAPERLESS_API_TOKEN`
+
+2. **Fix for paperless-ai RAG (Required):**
+```bash
+   docker exec paperless-ai sh -c "echo 'PAPERLESS_URL=http://paperless-ngx:8000' >> /app/data/.env"
+   docker compose -p localai restart paperless-ai
+```
+
+3. **Known Issues:**
+   - paperless-gpt: Documents need at least one tag for updates to work
+   - paperless-ai: Uses inconsistent ENV variable names (fixed with step 2)
+
+#### Configuration:
+- Default: Uses OpenAI API for best quality on CPU-only VPS
+- Alternative: Configure for Ollama in `.env` (see comments in file)
+- paperless-gpt uses Basic Auth via Caddy
+- paperless-ai has its own authentication system
+
+#### Resources:
+- RAM: ~1GB additional
+- Disk: ~500MB for vector databases
+- CPU: Moderate usage during OCR/indexing
+
+#### Documentation:
+- paperless-gpt: https://github.com/icereed/paperless-gpt
+- paperless-ai: https://github.com/clusterzx/paperless-ai
+
 ### Initial Setup
 
 **Prerequisites:**

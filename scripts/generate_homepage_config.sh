@@ -101,6 +101,12 @@ cat > "$PROJECT_ROOT/homepage_config/widgets.yaml" << 'EOF'
     target: _blank
 EOF
 
+# Fix permissions for Homepage (needs user 1000)
+log_info "Setting correct permissions for Homepage..."
+sudo chown -R 1000:1000 "$PROJECT_ROOT/homepage_config/"
+sudo mkdir -p "$PROJECT_ROOT/homepage_config/logs"
+sudo chown 1000:1000 "$PROJECT_ROOT/homepage_config/logs"
+
 log_success "Homepage configuration generated successfully!"
 
 # Restart Homepage if it's running

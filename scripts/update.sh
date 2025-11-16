@@ -77,6 +77,14 @@ fi
 # This includes: 03_generate_secrets.sh --update, 04_wizard.sh, 05_run_services.sh
 bash "$APPLY_UPDATE_SCRIPT"
 
+# Generate Homepage configuration if Homepage is running
+if docker ps | grep -q homepage; then
+    log_info "Updating Homepage dashboard configuration..."
+    if [ -f "$SCRIPT_DIR/generate_homepage_config.sh" ]; then
+        bash "$SCRIPT_DIR/generate_homepage_config.sh" || log_warning "Homepage config generation failed - continuing..."
+    fi
+fi
+
 # Workaround: Setup and initialize Vexa if selected
 if grep -q "vexa" "$PROJECT_ROOT/.env" 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"vexa"* ]]; then
     log_info "Vexa detected - running setup and initialization..."

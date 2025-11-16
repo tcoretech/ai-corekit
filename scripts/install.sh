@@ -133,6 +133,10 @@ log_info "========== STEP 5: Running Services =========="
 bash "$SCRIPT_DIR/05_run_services.sh" || { log_error "Running Services failed"; exit 1; }
 log_success "Running Services complete!"
 
+if docker ps | grep -q homepage; then
+    bash "$SCRIPT_DIR/generate_homepage_config.sh" || true
+fi
+
 log_info "========== STEP 5a: Initializing Vexa (if selected) =========="
 bash "$SCRIPT_DIR/05a_init_vexa.sh" || { log_error "Vexa initialization failed"; exit 1; }
 log_success "Vexa initialization complete!"

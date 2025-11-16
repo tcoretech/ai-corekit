@@ -87,6 +87,60 @@ if is_profile_active "webhook-testing"; then
   echo "Documentation: https://docs.hoppscotch.io"
 fi
 
+if is_profile_active "gitea"; then
+  echo
+  echo "================================= Gitea Git Server ===================="
+  echo
+  echo "Host: ${GITEA_HOSTNAME:-<hostname_not_set>}"
+  echo "SSH Port: ${GITEA_SSH_PORT:-2222}"
+  echo
+  echo "Access:"
+  echo "  Web UI: https://${GITEA_HOSTNAME:-<hostname_not_set>}"
+  echo "  SSH: ssh://git@${GITEA_HOSTNAME}:${GITEA_SSH_PORT}"
+  echo "  Internal: http://gitea:3000"
+  echo
+  echo "Initial Setup:"
+  echo "  1. Visit https://${GITEA_HOSTNAME}/install"
+  echo "  2. Database is pre-configured (PostgreSQL)"
+  echo "  3. Set Site Title and your domain"
+  echo "  4. Create admin account (first user = admin)"
+  echo
+  echo "SSH Clone Example:"
+  echo "  git clone ssh://git@${GITEA_HOSTNAME}:${GITEA_SSH_PORT}/username/repo.git"
+  echo
+  echo "n8n Integration:"
+  echo "  Webhooks: http://n8n:5678/webhook/gitea"
+  echo "  API: http://gitea:3000/api/v1"
+  echo
+  echo "Documentation: https://docs.gitea.com"
+fi
+
+if is_profile_active "homepage"; then
+  echo
+  echo "================================= Homepage Dashboard =================="
+  echo
+  echo "Host: ${HOMEPAGE_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "Access:"
+  echo "  External (HTTPS): https://${HOMEPAGE_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal (Docker): http://homepage:3000"
+  echo
+  echo "⚠️  Note: Homepage has NO authentication by design!"
+  echo "  It's meant as a public dashboard for your services"
+  echo
+  echo "Configuration:"
+  echo "  Config Directory: ./homepage_config/"
+  echo "  Services: Edit homepage_config/services.yaml"
+  echo "  Bookmarks: Edit homepage_config/bookmarks.yaml"
+  echo "  Settings: Edit homepage_config/settings.yaml"
+  echo
+  echo "Docker Integration:"
+  echo "  Homepage can show container status"
+  echo "  Docker socket is mounted read-only"
+  echo
+  echo "Documentation: https://gethomepage.dev"
+fi
+
 if is_profile_active "open-webui"; then
   echo
   echo "================================= WebUI ==============================="
@@ -561,6 +615,33 @@ if is_profile_active "nocodb"; then
   echo
   echo "Documentation: https://docs.nocodb.com"
   echo "Community: https://discord.gg/5RgZmkW"
+fi
+
+if is_profile_active "outline"; then
+  echo
+  echo "================================= Outline Wiki ========================"
+  echo
+  echo "Host: ${OUTLINE_HOSTNAME:-<hostname_not_set>}"
+  echo "S3 Storage: ${OUTLINE_S3_HOSTNAME:-<hostname_not_set>}"
+  echo "S3 Admin: ${OUTLINE_S3_ADMIN_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "⚠️  CRITICAL: Slack/Google Authentication Required!"
+  echo
+  echo "Setup Steps:"
+  echo "  1. Create Slack App: https://api.slack.com/apps"
+  echo "  2. Add OAuth redirect: https://${OUTLINE_HOSTNAME}/auth/slack.callback"
+  echo "  3. Update .env with credentials:"
+  echo "     OUTLINE_SLACK_CLIENT_ID=your_id"
+  echo "     OUTLINE_SLACK_CLIENT_SECRET=your_secret"
+  echo "  4. Restart: docker compose -p localai restart outline"
+  echo
+  echo "S3 Storage Setup:"
+  echo "  1. Access MinIO: https://${OUTLINE_S3_ADMIN_HOSTNAME}"
+  echo "  2. Login: minio / ${OUTLINE_MINIO_ROOT_PASSWORD:-<not_set>}"
+  echo "  3. Create bucket named: outline"
+  echo "  4. Set bucket policy to public"
+  echo
+  echo "Documentation: https://docs.getoutline.com"
 fi
 
 if is_profile_active "seafile"; then
@@ -1440,6 +1521,29 @@ if is_profile_active "stirling-pdf"; then
   echo
   echo "Documentation: https://docs.stirlingpdf.com"
   echo "GitHub: https://github.com/Stirling-Tools/Stirling-PDF"
+fi
+
+if is_profile_active "docuseal"; then
+  echo
+  echo "================================= DocuSeal E-Signatures =============="
+  echo
+  echo "Host: ${DOCUSEAL_HOSTNAME:-<hostname_not_set>}"
+  echo
+  echo "Access:"
+  echo "  External (HTTPS): https://${DOCUSEAL_HOSTNAME:-<hostname_not_set>}"
+  echo "  Internal (Docker): http://docuseal:3000"
+  echo
+  echo "Initial Setup:"
+  echo "  1. Visit https://${DOCUSEAL_HOSTNAME:-<hostname_not_set>}"
+  echo "  2. Complete setup wizard"
+  echo "  3. Create admin account"
+  echo "  4. Configure SMTP for notifications (optional)"
+  echo
+  echo "n8n Integration:"
+  echo "  API Base: http://docuseal:3000/api"
+  echo "  Webhooks: Configure in DocuSeal settings"
+  echo
+  echo "Documentation: https://docs.docuseal.co"
 fi
 
 if is_profile_active "libretranslate"; then

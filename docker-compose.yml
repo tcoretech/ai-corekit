@@ -94,6 +94,15 @@ volumes:
   airbyte_destination_data:
   paperless-gpt-prompts:
   paperless-ai-data:
+  homepage_config:
+  outline_redis_data:
+  outline_postgres_data:
+  outline_minio_data:
+  outline_data:
+  gitea_postgres_data:
+  gitea_data:
+  docuseal_postgres_data:
+  docuseal_data:
 
 x-n8n: &service-n8n
   build:
@@ -457,6 +466,12 @@ services:
       - PAPERLESS_GPT_USERNAME=${PAPERLESS_GPT_USERNAME}
       - PAPERLESS_GPT_PASSWORD_HASH=${PAPERLESS_GPT_PASSWORD_HASH}
       - PAPERLESS_AI_HOSTNAME=${PAPERLESS_AI_HOSTNAME}
+      - HOMEPAGE_HOSTNAME=${HOMEPAGE_HOSTNAME}
+      - OUTLINE_HOSTNAME=${OUTLINE_HOSTNAME}
+      - OUTLINE_S3_HOSTNAME=${OUTLINE_S3_HOSTNAME}
+      - OUTLINE_S3_ADMIN_HOSTNAME=${OUTLINE_S3_ADMIN_HOSTNAME}
+      - GITEA_HOSTNAME=${GITEA_HOSTNAME}
+      - DOCUSEAL_HOSTNAME=${DOCUSEAL_HOSTNAME}
       # Mail Services
       - MAILPIT_HOSTNAME=${MAILPIT_HOSTNAME}
       - MAILPIT_USERNAME=${MAILPIT_USERNAME}
@@ -3182,3 +3197,187 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ============================================
+  # Homepage - Dashboard
+  # ============================================
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    profiles: ["homepage"]
+    restart: unless-stopped
+    volumes:
+      - homepage_config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PUID=1000
+      - PGID=1000
+    networks:
+      - default
+
+  # ============================================
+  # Outline - Wiki/Dokumentation
+  # ============================================
+  outline-redis:
+    image: redis:7-alpine
+    container_name: outline-redis
+    profiles: ["outline"]
+    restart: unless-stopped
+    volumes:
+      - outline_redis_data:/data
+    networks:
+      - default
+
+  outline-postgres:
+    image: postgres:17-alpine
+    container_name: outline-postgres
+    profiles: ["outline"]
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=outline
+      - POSTGRES_PASSWORD=outline
+      - POSTGRES_DB=outline
+    volumes:
+      - outline_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U outline"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - default
+
+  outline-minio:
+    image: minio/minio:latest
+    container_name: outline-minio
+    profiles: ["outline"]
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${OUTLINE_MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${OUTLINE_MINIO_ROOT_PASSWORD}
+      - MINIO_BROWSER_REDIRECT_URL=https://${OUTLINE_S3_ADMIN_HOSTNAME}
+    volumes:
+      - outline_minio_data:/data
+    networks:
+      - default
+
+  outline:
+    image: docker.getoutline.com/outlinewiki/outline:latest
+    container_name: outline
+    profiles: ["outline"]
+    restart: unless-stopped
+    command: sh -c "yarn sequelize:migrate --env=production-ssl-disabled && yarn start --env=production-ssl-disabled"
+    depends_on:
+      - outline-postgres
+      - outline-redis
+      - outline-minio
+    environment:
+      - NODE_ENV=production
+      - SECRET_KEY=${OUTLINE_SECRET_KEY}
+      - UTILS_SECRET=${OUTLINE_UTILS_SECRET}
+      - DATABASE_URL=postgres://outline:outline@outline-postgres:5432/outline
+      - DATABASE_CONNECTION_POOL_MIN=5
+      - DATABASE_CONNECTION_POOL_MAX=100
+      - REDIS_URL=redis://outline-redis:6379
+      - URL=https://${OUTLINE_HOSTNAME}
+      - PORT=3000
+      - FILE_STORAGE=s3
+      - FILE_STORAGE_UPLOAD_MAX_SIZE=26214400
+      - AWS_ACCESS_KEY_ID=${OUTLINE_MINIO_ROOT_USER}
+      - AWS_SECRET_ACCESS_KEY=${OUTLINE_MINIO_ROOT_PASSWORD}
+      - AWS_REGION=us-east-1
+      - AWS_S3_UPLOAD_BUCKET_URL=https://${OUTLINE_S3_HOSTNAME}
+      - AWS_S3_UPLOAD_BUCKET_NAME=outline
+      - AWS_S3_FORCE_PATH_STYLE=true
+      - AWS_S3_ACL=private
+      - SLACK_CLIENT_ID=${OUTLINE_SLACK_CLIENT_ID}
+      - SLACK_CLIENT_SECRET=${OUTLINE_SLACK_CLIENT_SECRET}
+      - FORCE_HTTPS=false
+    volumes:
+      - outline_data:/var/lib/outline/data
+    networks:
+      - default
+
+  # ============================================
+  # Gitea - Git Hosting
+  # ============================================
+  gitea-db:
+    image: postgres:17-alpine
+    container_name: gitea-db
+    profiles: ["gitea"]
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=gitea
+      - POSTGRES_PASSWORD=gitea
+      - POSTGRES_DB=gitea
+    volumes:
+      - gitea_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gitea"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - default
+
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    profiles: ["gitea"]
+    restart: unless-stopped
+    depends_on:
+      - gitea-db
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=gitea-db:5432
+      - GITEA__database__NAME=gitea
+      - GITEA__database__USER=gitea
+      - GITEA__database__PASSWD=gitea
+    ports:
+      - "${GITEA_SSH_PORT:-2222}:22"
+    volumes:
+      - gitea_data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - default
+
+  # ============================================
+  # DocuSeal - E-Signatures
+  # ============================================
+  docuseal-db:
+    image: postgres:17-alpine
+    container_name: docuseal-db
+    profiles: ["docuseal"]
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=docuseal
+      - POSTGRES_PASSWORD=${DOCUSEAL_DB_PASSWORD}
+      - POSTGRES_DB=docuseal
+    volumes:
+      - docuseal_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docuseal"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - default
+
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: docuseal
+    profiles: ["docuseal"]
+    restart: unless-stopped
+    depends_on:
+      - docuseal-db
+    environment:
+      - DATABASE_URL=postgresql://docuseal:${DOCUSEAL_DB_PASSWORD}@docuseal-db:5432/docuseal
+      - FORCE_SSL=false
+    volumes:
+      - docuseal_data:/data
+    networks:
+      - default

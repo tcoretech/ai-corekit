@@ -106,12 +106,14 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 | **[n8n-MCP](https://github.com/czlonkowski/n8n-mcp)** | AI workflow generator for n8n | Claude/Cursor integration, 525+ node docs, workflow validation | `n8nmcp.yourdomain.com` |
 | **[Webhook Tester](https://github.com/tarampampam/webhook-tester)** | Webhook debugging tool | Receive & inspect webhooks, debug n8n integrations, test external services | `webhook-test.yourdomain.com` |
 | **[Hoppscotch](https://github.com/hoppscotch/hoppscotch)** | API testing platform | Test n8n webhook triggers, REST/GraphQL/WebSocket, team collaboration | `api-test.yourdomain.com` |
+| **[Gitea](https://github.com/go-gitea/gitea)** | Lightweight self-hosted Git service | Source code management, issue tracking, CI/CD, GitHub alternative | `git.yourdomain.com` |
 | **300+ Workflows** | Pre-built n8n templates | Email automation, social media, data sync, AI workflows | Imported on install |
 
 ### 🎯 User Interfaces
 
 | Tool | Description | Use Cases | Access |
 |------|-------------|-----------|--------|
+| **[Homepage](https://github.com/gethomepage/homepage)** | Customizable dashboard for all your services | Service overview, Docker integration, quick access | `dashboard.yourdomain.com` |
 | **[Open WebUI](https://github.com/open-webui/open-webui)** | ChatGPT-like interface for LLMs | AI chat, model switching, conversation management | `webui.yourdomain.com` |
 | **[Postiz](https://github.com/gitroomhq/postiz-app)** | Social media management platform | Content scheduling, analytics, multi-platform posting | `postiz.yourdomain.com` |
 
@@ -155,6 +157,7 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 | **[Twenty CRM](https://github.com/twentyhq/twenty)** | Modern Notion-like CRM | Customer pipelines, GraphQL API, team collaboration, lightweight CRM for startups | `twenty.yourdomain.com` |
 | **[EspoCRM](https://github.com/espocrm/espocrm)** | Full-featured CRM platform | Email campaigns, workflow automation, advanced reporting, role-based access | `espocrm.yourdomain.com` |
 | **[Mautic](https://github.com/mautic/mautic)** | Marketing automation platform | Lead scoring, email campaigns, landing pages, multi-channel marketing, automation workflows | `mautic.yourdomain.com` |
+| **[Outline](https://github.com/outline/outline)** | Modern wiki platform with real-time collaboration | Team documentation, knowledge base, Notion-like editor | `outline.yourdomain.com` |
 
 ### 🎨 AI Content Generation
 
@@ -264,6 +267,7 @@ Pre-installed in the n8n container for seamless media manipulation:
 | **[Ollama](https://github.com/ollama/ollama)** | Local LLM runtime | Run Llama, Mistral, Phi locally, API-compatible | `ollama.yourdomain.com` |
 | **[Gotenberg](https://github.com/gotenberg/gotenberg)** | Universal document converter | HTML/Markdown → PDF, Office → PDF, merge PDFs | Internal API |
 | **[Stirling-PDF](https://github.com/Stirling-Tools/Stirling-PDF)** | PDF toolkit | Split, merge, compress, OCR, sign PDFs | `pdf.yourdomain.com` |
+| **[DocuSeal](https://github.com/docusealco/docuseal)** | Open-source e-signature platform | Document signing, contract workflows, DocuSign alternative | `sign.yourdomain.com` |
 
 ### 🛡️ AI Security & Compliance
 

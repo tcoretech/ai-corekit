@@ -725,4 +725,44 @@ https://{$NEO4J_HOSTNAME}:7687 {
     reverse_proxy 172.18.0.1:8001
 }
 
+# ============================================
+# Homepage - Dashboard
+# ============================================
+{$HOMEPAGE_HOSTNAME} {
+    reverse_proxy homepage:3000
+}
+
+# ============================================
+# Outline - Wiki
+# ============================================
+{$OUTLINE_HOSTNAME} {
+    reverse_proxy outline:3000 {
+        flush_interval -1
+    }
+}
+
+# Outline S3 Storage
+{$OUTLINE_S3_HOSTNAME} {
+    reverse_proxy outline-minio:9000
+}
+
+# Outline S3 Admin
+{$OUTLINE_S3_ADMIN_HOSTNAME} {
+    reverse_proxy outline-minio:9001
+}
+
+# ============================================
+# Gitea - Git Hosting
+# ============================================
+{$GITEA_HOSTNAME} {
+    reverse_proxy gitea:3000
+}
+
+# ============================================
+# DocuSeal - E-Signatures
+# ============================================
+{$DOCUSEAL_HOSTNAME} {
+    reverse_proxy docuseal:3000
+}
+
 import /etc/caddy/addons/*.conf

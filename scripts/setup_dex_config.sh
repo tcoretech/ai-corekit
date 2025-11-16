@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 set -e
@@ -31,6 +32,7 @@ log_info "Generating Dex configuration..."
 cp "$PROJECT_ROOT/dex/config-template.yaml" "$PROJECT_ROOT/dex/config.yaml"
 
 # Replace placeholders
+sed -i "s|DEX_HOSTNAME_PLACEHOLDER|${DEX_HOSTNAME}|g" "$PROJECT_ROOT/dex/config.yaml"
 sed -i "s|OUTLINE_HOSTNAME_PLACEHOLDER|${OUTLINE_HOSTNAME}|g" "$PROJECT_ROOT/dex/config.yaml"
 sed -i "s|OUTLINE_OIDC_CLIENT_SECRET_PLACEHOLDER|${OUTLINE_OIDC_CLIENT_SECRET}|g" "$PROJECT_ROOT/dex/config.yaml"
 sed -i "s|ADMIN_EMAIL_PLACEHOLDER|${DEX_ADMIN_EMAIL}|g" "$PROJECT_ROOT/dex/config.yaml"

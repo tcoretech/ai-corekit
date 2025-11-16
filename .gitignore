@@ -48,3 +48,4 @@ homepage_config/logs/
 homepage_config/services.yaml
 homepage_config/docker.yaml
 homepage_config/widgets.yaml
+.env.backup

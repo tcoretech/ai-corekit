@@ -1,4 +1,4 @@
-issuer: https://OUTLINE_HOSTNAME_PLACEHOLDER/dex
+issuer: https://DEX_HOSTNAME_PLACEHOLDER
 
 storage:
   type: sqlite3

@@ -130,8 +130,8 @@ declare -A VARS_TO_GENERATE=(
     ["HOPPSCOTCH_DATA_ENCRYPTION_KEY"]="alphanum:32"
     ["AIRBYTE_PASSWORD"]="password:32"
     ["AIRBYTE_DESTINATION_DB_PASSWORD"]="password:32"
-    ["OUTLINE_SECRET_KEY"]="secret:64"
-    ["OUTLINE_UTILS_SECRET"]="secret:64"
+    ["OUTLINE_SECRET_KEY"]="hex:32"
+    ["OUTLINE_UTILS_SECRET"]="hex:32"
     ["OUTLINE_MINIO_ROOT_PASSWORD"]="password:32"
     ["OUTLINE_OIDC_CLIENT_SECRET"]="apikey:32"
     ["DEX_ADMIN_PASSWORD"]="password:20"
@@ -458,6 +458,12 @@ gen_base64() {
     # So, we need length * 3 / 4 bytes. Use ceil division.
     local bytes=$(( (length * 3 + 3) / 4 ))
     openssl rand -base64 "$bytes" | head -c "$length" # Truncate just in case
+}
+
+# Generate hex string (for Outline - needs 32 bytes = 64 hex chars)
+gen_hex() {
+    local bytes=$1
+    openssl rand -hex "$bytes"
 }
 
 # Function to update or add a variable to the .env file

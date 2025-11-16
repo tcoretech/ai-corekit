@@ -1923,7 +1923,546 @@ docker exec webhook-tester-redis redis-cli FLUSHDB
 
 </details>
 
+<details>
+<summary><b>🔧 Gitea - Git Server</b></summary>
+
+### What is Gitea?
+
+Gitea is a lightweight, self-hosted Git service similar to GitHub or GitLab but with minimal resource requirements. It provides a complete DevOps platform with built-in CI/CD (Gitea Actions), package registry, project management tools, and code review features. Perfect for teams wanting full control over their code without external dependencies.
+
+### Features
+
+- **Git Hosting:** Full Git server with SSH and HTTPS support
+- **Web UI:** Clean, responsive interface similar to GitHub
+- **CI/CD:** Built-in Gitea Actions (GitHub Actions compatible)
+- **Package Registry:** Host Docker, npm, PyPI, Maven packages
+- **Code Review:** Pull requests with review tools
+- **Issue Tracking:** Built-in issue tracker with labels and milestones
+- **Wiki:** Project documentation support
+- **Organizations:** Team and permission management
+- **Webhooks:** Integration with external services
+- **API:** Comprehensive REST API
+- **2FA:** Two-factor authentication support
+- **LFS:** Git Large File Storage support
+
+### Initial Setup
+
+**First Login to Gitea:**
+
+1. Navigate to `https://git.yourdomain.com`
+2. Initial setup wizard appears on first visit
+3. Database settings are pre-configured - don't change
+4. Modify these settings:
+   - **Site Title:** Your Company Git
+   - **SSH Server Port:** 2222 (important!)
+   - **Gitea Base URL:** https://git.yourdomain.com
+   - **Admin Account:** Create admin user (optional but recommended)
+5. Click "Install Gitea"
+
+**Post-Installation:**
+```bash
+# Add SSH key to your account
+# Profile → Settings → SSH/GPG Keys → Add Key
+
+# Clone via SSH (note port 2222)
+git clone ssh://git@git.yourdomain.com:2222/username/repo.git
+
+# Clone via HTTPS
+git clone https://git.yourdomain.com/username/repo.git
+```
+
+### n8n Integration
+
+**Create Gitea Webhook in Repository:**
+
+1. Go to Repository → Settings → Webhooks
+2. Add Webhook → Gitea
+3. Target URL: `https://n8n.yourdomain.com/webhook/gitea`
+4. Trigger Events: Choose what triggers the webhook
+5. Active: ✓
+
+**n8n Webhook Setup:**
+```javascript
+// Webhook Trigger
+// Webhook URL: https://n8n.yourdomain.com/webhook/gitea
+
+// Received data structure:
+{
+  "ref": "refs/heads/main",
+  "commits": [...],
+  "repository": {
+    "name": "repo-name",
+    "full_name": "user/repo-name",
+    "clone_url": "..."
+  },
+  "pusher": {
+    "email": "user@example.com",
+    "username": "username"
+  }
+}
+```
+
+### Example Workflows
+
+#### Example 1: Auto-Deploy on Push
+```javascript
+// Auto-deploy when code is pushed to main branch
+
+// 1. Webhook Trigger - Gitea webhook
+
+// 2. IF Node - Check if main branch
+{{ $json.ref === 'refs/heads/main' }}
+
+// 3. SSH Node - Pull and deploy
+ssh user@server << 'EOF'
+  cd /var/www/project
+  git pull origin main
+  docker compose up -d --build
+  echo "Deployment complete"
+EOF
+
+// 4. Gitea API - Create deployment status
+Method: POST
+URL: https://git.yourdomain.com/api/v1/repos/{{$json.repository.full_name}}/statuses/{{$json.after}}
+Headers:
+  Authorization: token YOUR_GITEA_TOKEN
+Body:
+{
+  "state": "success",
+  "target_url": "https://app.yourdomain.com",
+  "description": "Deployed successfully",
+  "context": "continuous-deployment"
+}
+
+// 5. Slack Notification
+Message: |
+  ✅ Deployment Successful
+  Repository: {{$json.repository.full_name}}
+  Branch: main
+  Deployed by: {{$json.pusher.username}}
+```
+
+#### Example 2: Issue Management Automation
+```javascript
+// Auto-assign issues and notify team
+
+// 1. Webhook Trigger - Issue opened
+
+// 2. Code Node - Determine assignee
+const labels = $json.issue.labels;
+let assignee = 'default-user';
+
+if (labels.some(l => l.name === 'bug')) {
+  assignee = 'qa-team';
+} else if (labels.some(l => l.name === 'feature')) {
+  assignee = 'dev-team';
+} else if (labels.some(l => l.name === 'docs')) {
+  assignee = 'docs-team';
+}
+
+return { assignee };
+
+// 3. Gitea API - Assign issue
+Method: PATCH
+URL: https://git.yourdomain.com/api/v1/repos/{{$json.repository.full_name}}/issues/{{$json.issue.number}}
+Headers:
+  Authorization: token YOUR_GITEA_TOKEN
+Body:
+{
+  "assignees": ["{{$node['Determine Assignee'].json.assignee}}"]
+}
+
+// 4. Send to Linear/Jira
+// Create corresponding ticket in project management tool
+
+// 5. Discord/Slack Notification
+Channel: #issues
+Message: |
+  🐛 New Issue: {{$json.issue.title}}
+  Repository: {{$json.repository.full_name}}
+  Assigned to: {{$node['Determine Assignee'].json.assignee}}
+  Link: {{$json.issue.html_url}}
+```
+
+#### Example 3: Release Automation
+```javascript
+// Automate release process with changelog
+
+// 1. Webhook Trigger - Tag created
+
+// 2. Gitea API - Get commits since last tag
+Method: GET
+URL: https://git.yourdomain.com/api/v1/repos/{{$json.repository.full_name}}/commits
+Query Parameters:
+  since: {{$json.previous_tag_date}}
+
+// 3. Code Node - Generate changelog
+const commits = $input.all();
+let changelog = '# Release ' + $json.ref.replace('refs/tags/', '') + '\n\n';
+
+const features = commits.filter(c => c.json.commit.message.startsWith('feat:'));
+const fixes = commits.filter(c => c.json.commit.message.startsWith('fix:'));
+
+if (features.length > 0) {
+  changelog += '## Features\n';
+  features.forEach(f => {
+    changelog += `- ${f.json.commit.message.replace('feat: ', '')}\n`;
+  });
+}
+
+if (fixes.length > 0) {
+  changelog += '\n## Bug Fixes\n';
+  fixes.forEach(f => {
+    changelog += `- ${f.json.commit.message.replace('fix: ', '')}\n`;
+  });
+}
+
+return { changelog };
+
+// 4. Gitea API - Create release
+Method: POST
+URL: https://git.yourdomain.com/api/v1/repos/{{$json.repository.full_name}}/releases
+Body:
+{
+  "tag_name": "{{$json.ref.replace('refs/tags/', '')}}",
+  "name": "Release {{$json.ref.replace('refs/tags/', '')}}",
+  "body": "{{$node['Generate Changelog'].json.changelog}}",
+  "draft": false,
+  "prerelease": false
+}
+
+// 5. Trigger Docker build
+// Webhook to CI/CD system or Docker Hub
+```
+
+### Gitea Actions (CI/CD)
+
+Enable in `app.ini`:
+```ini
+[actions]
+ENABLED = true
+```
+
+Example `.gitea/workflows/ci.yml`:
+```yaml
+name: CI Pipeline
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: |
+          npm install
+          npm test
+      
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Docker image
+        run: |
+          docker build -t myapp:${{ github.sha }} .
+          docker push myapp:${{ github.sha }}
+```
+
+### API Examples
+```javascript
+// Get user repositories
+Method: GET
+URL: https://git.yourdomain.com/api/v1/user/repos
+Headers:
+  Authorization: token YOUR_TOKEN
+
+// Create repository
+Method: POST
+URL: https://git.yourdomain.com/api/v1/user/repos
+Body:
+{
+  "name": "new-repo",
+  "description": "Repository description",
+  "private": false,
+  "auto_init": true,
+  "gitignores": "Node",
+  "license": "MIT"
+}
+
+// Create issue
+Method: POST
+URL: https://git.yourdomain.com/api/v1/repos/owner/repo/issues
+Body:
+{
+  "title": "Issue title",
+  "body": "Issue description",
+  "labels": [1, 2],
+  "assignees": ["username"]
+}
+```
+
+### Backup Strategy
+```bash
+# Backup script
+#!/bin/bash
+BACKUP_DIR="/backup/gitea/$(date +%Y%m%d)"
+mkdir -p $BACKUP_DIR
+
+# Database backup
+docker exec gitea-db pg_dump -U gitea gitea > $BACKUP_DIR/gitea-db.sql
+
+# Repository backup
+docker exec gitea gitea dump -c /data/gitea/conf/app.ini -w /tmp
+docker cp gitea:/tmp/gitea-dump-*.zip $BACKUP_DIR/
+
+# Clean old backups (keep 30 days)
+find /backup/gitea -type d -mtime +30 -exec rm -rf {} +
+```
+
+### Troubleshooting
+
+#### SSH Connection Refused
+```bash
+# Check SSH port binding
+docker ps | grep gitea
+# Should show 0.0.0.0:2222->22/tcp
+
+# Test SSH
+ssh -T -p 2222 git@git.yourdomain.com
+
+# Fix: Ensure using port 2222
+git remote set-url origin ssh://git@git.yourdomain.com:2222/user/repo.git
+```
+
+#### Slow Performance
+```bash
+# Increase cache in app.ini
+docker exec -it gitea vi /data/gitea/conf/app.ini
+
+[cache]
+ENABLED = true
+ADAPTER = redis
+HOST = redis:6379
+
+# Restart
+docker compose restart gitea
+```
+
+### Tips
+
+1. **SSH Port:** Always use 2222 for SSH to avoid conflicts
+2. **Backup:** Regular backups of database and repositories
+3. **Actions:** Enable Gitea Actions for CI/CD
+4. **Mirrors:** Can mirror from GitHub/GitLab automatically
+5. **LFS:** Enable for large file support
+6. **API Token:** Create tokens for automation
+7. **Templates:** Create repo templates for consistency
+
+### Resources
+
+- **Documentation:** https://docs.gitea.com
+- **API Reference:** https://docs.gitea.com/api/v1
+- **Actions:** https://docs.gitea.com/usage/actions/overview
+- **GitHub:** https://github.com/go-gitea/gitea
+- **Community:** https://discourse.gitea.io
+
+</details>
+
 ### User Interfaces
+
+<details>
+<summary><b>🏠 Homepage - Service Dashboard</b></summary>
+
+### What is Homepage?
+
+Homepage is a modern, fully customizable dashboard that provides a unified view of all your services, Docker containers, and system resources. Unlike traditional dashboards that require authentication, Homepage is designed as a public-facing or internal dashboard that automatically discovers and displays your running services with real-time status updates, making it perfect for quick system overviews and service monitoring.
+
+### Features
+
+- **Automatic Service Discovery:** Detects running Docker containers
+- **Real-time Status Monitoring:** Shows service health and availability
+- **Resource Widgets:** CPU, RAM, disk usage at a glance
+- **Docker Integration:** Container stats and management
+- **Customizable Layout:** Organize services by categories
+- **Search Integration:** Built-in search with SearXNG support
+- **Weather Widget:** Local weather information
+- **No Authentication:** Designed for quick access (use behind VPN if needed)
+- **Responsive Design:** Works on mobile and desktop
+- **Custom CSS/JS:** Full customization support
+
+### Initial Setup
+
+**First Access to Homepage:**
+
+1. Navigate to `https://dashboard.yourdomain.com`
+2. No login required - dashboard is publicly accessible
+3. Services are auto-populated by `generate_homepage_config.sh`
+4. Customize layout by editing config files
+
+**Manual Service Configuration:**
+```bash
+# Edit services configuration
+nano homepage_config/services.yaml
+
+# Edit general settings
+nano homepage_config/settings.yaml
+
+# Edit widgets
+nano homepage_config/widgets.yaml
+
+# Restart to apply changes
+docker compose -p localai restart homepage
+```
+
+### Configuration Files
+
+#### services.yaml Structure
+```yaml
+- Category Name:
+    - Service Name:
+        href: https://service.yourdomain.com
+        icon: service-icon.svg
+        description: Service description
+        widget:
+          type: docker
+          container: container-name
+          
+    - Another Service:
+        href: https://another.yourdomain.com
+        icon: si-github
+        description: Another description
+```
+
+#### widgets.yaml Configuration
+```yaml
+# System Resources
+- resources:
+    cpu: true
+    memory: true
+    disk: /
+    uptime: true
+
+# Docker Stats
+- docker:
+    type: docker
+    socket: /var/run/docker.sock
+
+# Search Widget
+- search:
+    provider: searxng
+    url: http://searxng:8080
+    target: _blank
+
+# Weather (optional)
+- weather:
+    latitude: 51.5074
+    longitude: -0.1278
+    units: metric
+```
+
+#### settings.yaml Options
+```yaml
+title: AI LaunchKit Dashboard
+theme: dark
+color: slate
+layout: grid
+headerStyle: boxed
+
+providers:
+  searxng:
+    url: http://searxng:8080
+
+hideVersion: true
+disableCollapse: false
+```
+
+### Auto-Configuration Script
+
+The `generate_homepage_config.sh` script automatically:
+- Detects all running containers
+- Creates service entries with correct URLs
+- Groups services by category
+- Updates on every run
+```bash
+# Regenerate configuration
+sudo bash scripts/generate_homepage_config.sh
+
+# Run after adding new services
+sudo bash scripts/update.sh
+```
+
+### Custom Icons
+
+Homepage supports multiple icon sources:
+
+1. **Simple Icons:** Use `si-` prefix (e.g., `si-github`)
+2. **Material Design Icons:** Use `mdi-` prefix
+3. **Custom SVG:** Place in `homepage_config/icons/`
+4. **Service Icons:** Built-in icons for popular services
+
+### Docker Integration
+```yaml
+# In services.yaml - add widget to show container stats
+- Service Name:
+    widget:
+      type: docker
+      container: container-name
+      server: docker-socket  # defined in docker.yaml
+```
+
+### Troubleshooting
+
+#### Services Not Showing
+```bash
+# Regenerate configuration
+sudo bash scripts/generate_homepage_config.sh
+
+# Check if service is running
+docker ps | grep service-name
+
+# Check Homepage logs
+docker logs homepage --tail 50
+```
+
+#### Host Validation Error
+```bash
+# Already fixed in docker-compose.yml with:
+HOMEPAGE_ALLOWED_HOSTS=*
+
+# If still issues, check Caddy
+docker logs caddy | grep dashboard
+```
+
+#### Docker Stats Not Working
+```bash
+# Verify socket mount
+docker exec homepage ls -la /var/run/docker.sock
+
+# Check docker.yaml config
+cat homepage_config/docker.yaml
+```
+
+### Tips
+
+1. **Security:** Since no auth, use behind VPN or add basic auth in Caddy
+2. **Categories:** Organize services logically for better overview
+3. **Icons:** Use Simple Icons for consistent look
+4. **Updates:** Run generate script after adding services
+5. **Custom CSS:** Add custom styles in `custom.css`
+
+### Resources
+
+- **Documentation:** https://gethomepage.dev/latest/
+- **Icons:** https://github.com/walkxcode/dashboard-icons
+- **GitHub:** https://github.com/gethomepage/homepage
+- **Simple Icons:** https://simpleicons.org/
+
+</details>
 
 <details>
 <summary><b>💬 Open WebUI - ChatGPT Interface</b></summary>
@@ -13341,6 +13880,447 @@ On request: Delete contact + anonymize activity logs
 5. **Webhooks over polling** - Use webhooks for real-time updates instead of polling API
 6. **Cache data** - Cache frequently accessed data (segments, campaigns) in n8n
 7. **Logging** - Log all API calls for debugging and audit trails
+
+</details>
+
+<details>
+<summary><b>📚 Outline - Team Wiki</b></summary>
+
+### What is Outline?
+
+Outline is a modern, fast, and collaborative wiki and knowledge base for teams. It features a beautiful editor, real-time collaboration, powerful search, and integrations with Slack and other tools. With our self-hosted setup, it includes Dex as the identity provider, making it completely independent of external authentication services.
+
+### Features
+
+- **Real-time Collaboration:** Multiple users can edit simultaneously
+- **Markdown Support:** Write in Markdown with live preview
+- **Slash Commands:** Quick formatting with / commands
+- **Collections:** Organize documents in nested structures
+- **Search:** Full-text search across all documents
+- **Permissions:** Granular access control
+- **Templates:** Document templates for consistency
+- **API Access:** Complete REST API
+- **Export:** PDF, Markdown, HTML export
+- **Dark Mode:** Built-in dark theme
+- **Mobile Apps:** iOS and Android apps available
+- **Self-hosted Auth:** Using Dex identity provider
+
+### Initial Setup
+
+**First Login to Outline:**
+
+1. Navigate to `https://outline.yourdomain.com`
+2. Click "Continue with Login"
+3. You'll be redirected to Dex login page
+4. Login with admin credentials:
+   - Email: Check `DEX_ADMIN_EMAIL` in `.env`
+   - Password: Check `DEX_ADMIN_PASSWORD` in `.env`
+5. After first login, create your workspace:
+   - Workspace name
+   - Workspace URL (subdomain)
+
+**Create Your First Collection:**
+
+1. Click "New Collection"
+2. Name your collection (e.g., "Engineering", "Product")
+3. Set permissions (Private/Public)
+4. Start creating documents
+
+### User Management with Dex
+
+**Add New Users:**
+
+1. Edit Dex configuration:
+```bash
+nano dex/config.yaml
+```
+
+2. Add user to staticPasswords:
+```yaml
+staticPasswords:
+- email: "admin@example.com"
+  hash: "$2a$10$..."  # existing admin
+  username: "admin"
+  userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+- email: "newuser@example.com"
+  hash: "$2a$10$..."  # generate with: htpasswd -bnBC 10 "" password | tr -d ':\n'
+  username: "newuser"
+  userID: "generate-uuid-here"
+```
+
+3. Restart Dex:
+```bash
+docker compose -p localai restart dex
+```
+
+### n8n Integration
+
+**Generate API Token:**
+
+1. Click on your avatar → Settings
+2. Go to API Tokens
+3. Create New Token
+4. Name: "n8n Integration"
+5. Copy token
+
+**n8n HTTP Request Setup:**
+```javascript
+// Base configuration for all Outline API calls
+Method: GET/POST/PATCH
+URL: http://outline:3000/api/[endpoint]
+Headers:
+  Authorization: Bearer YOUR_TOKEN
+  Content-Type: application/json
+```
+
+### Example Workflows
+
+#### Example 1: Auto-Documentation from Issues
+```javascript
+// Create documentation from resolved GitHub/Gitea issues
+
+// 1. Trigger - Issue closed with 'documented' label
+
+// 2. HTTP Request - Search if doc exists
+Method: POST
+URL: http://outline:3000/api/documents.search
+Headers:
+  Authorization: Bearer YOUR_TOKEN
+Body:
+{
+  "query": "{{$json.issue.title}}"
+}
+
+// 3. IF - Check if document exists
+{{ $json.data.length === 0 }}
+
+// 4. HTTP Request - Create document
+Method: POST
+URL: http://outline:3000/api/documents.create
+Body:
+{
+  "collectionId": "your-collection-id",
+  "title": "{{$json.issue.title}}",
+  "text": "# {{$json.issue.title}}\n\n## Problem\n{{$json.issue.body}}\n\n## Solution\n{{$json.issue.solution}}\n\n## References\n- Issue: #{{$json.issue.number}}\n- Author: {{$json.issue.user.login}}\n- Date: {{$now.format('yyyy-MM-dd')}}",
+  "publish": true
+}
+
+// 5. HTTP Request - Add to correct collection
+Method: POST
+URL: http://outline:3000/api/documents.move
+Body:
+{
+  "id": "{{$node['Create Document'].json.data.id}}",
+  "collectionId": "{{$json.issue.labels.includes('bug') ? 'bugs-collection-id' : 'features-collection-id'}}"
+}
+
+// 6. Comment on Issue
+Method: POST
+URL: your-git-server/api/issues/{{$json.issue.number}}/comments
+Body:
+{
+  "body": "📚 Documentation created: {{$node['Create Document'].json.data.url}}"
+}
+```
+
+#### Example 2: Knowledge Base Sync
+```javascript
+// Sync Outline with external knowledge base
+
+// 1. Schedule Trigger - Daily at 2 AM
+
+// 2. HTTP Request - Get all collections
+Method: GET
+URL: http://outline:3000/api/collections.list
+Headers:
+  Authorization: Bearer YOUR_TOKEN
+
+// 3. Loop through collections
+
+// 4. HTTP Request - Get documents in collection
+Method: POST
+URL: http://outline:3000/api/documents.list
+Body:
+{
+  "collectionId": "{{$json.id}}",
+  "limit": 100
+}
+
+// 5. Loop through documents
+
+// 6. Code Node - Check for updates
+const lastSync = new Date($json.lastSyncedAt || 0);
+const lastUpdate = new Date($json.updatedAt);
+
+if (lastUpdate > lastSync) {
+  return {
+    json: {
+      ...$json,
+      needsSync: true
+    }
+  };
+}
+
+// 7. HTTP Request - Export document
+Method: POST
+URL: http://outline:3000/api/documents.export
+Body:
+{
+  "id": "{{$json.id}}",
+  "format": "markdown"
+}
+
+// 8. Upload to external system
+// GitHub, GitLab, Confluence, etc.
+
+// 9. HTTP Request - Update sync timestamp
+Method: POST
+URL: http://outline:3000/api/documents.update
+Body:
+{
+  "id": "{{$json.id}}",
+  "lastSyncedAt": "{{$now.toISO()}}"
+}
+```
+
+#### Example 3: AI-Enhanced Documentation
+```javascript
+// Use AI to improve and expand documentation
+
+// 1. Trigger - Document created or updated
+
+// 2. HTTP Request - Get document content
+Method: POST
+URL: http://outline:3000/api/documents.info
+Body:
+{
+  "id": "{{$json.documentId}}"
+}
+
+// 3. OpenAI Node - Analyze and suggest improvements
+Prompt: |
+  Analyze this documentation and suggest improvements:
+  
+  {{$json.data.text}}
+  
+  Provide:
+  1. Missing sections
+  2. Clarity improvements
+  3. Additional examples
+  4. Related topics
+
+// 4. Code Node - Parse AI suggestions
+const suggestions = $json.choices[0].message.content;
+const sections = suggestions.split('\n\n');
+
+return {
+  json: {
+    documentId: $('Get Document').json.data.id,
+    suggestions: sections,
+    improvementScore: calculateScore(suggestions)
+  }
+};
+
+// 5. IF - Significant improvements available
+{{ $json.improvementScore > 0.7 }}
+
+// 6. HTTP Request - Create draft with improvements
+Method: POST
+URL: http://outline:3000/api/documents.create
+Body:
+{
+  "collectionId": "{{$('Get Document').json.data.collectionId}}",
+  "parentDocumentId": "{{$('Get Document').json.data.id}}",
+  "title": "{{$('Get Document').json.data.title}} (AI Enhanced)",
+  "text": "{{$node['Format Improvements'].json.enhancedText}}",
+  "publish": false
+}
+
+// 7. Notification
+Send notification to document author about AI suggestions
+```
+
+### API Examples
+
+#### Document Operations
+```javascript
+// List documents
+Method: POST
+URL: http://outline:3000/api/documents.list
+Body:
+{
+  "collectionId": "collection-id",
+  "limit": 25,
+  "offset": 0
+}
+
+// Create document
+Method: POST
+URL: http://outline:3000/api/documents.create
+Body:
+{
+  "collectionId": "collection-id",
+  "title": "Document Title",
+  "text": "# Document Content\n\nMarkdown content here",
+  "publish": true
+}
+
+// Update document
+Method: POST
+URL: http://outline:3000/api/documents.update
+Body:
+{
+  "id": "document-id",
+  "title": "Updated Title",
+  "text": "Updated content"
+}
+
+// Search documents
+Method: POST
+URL: http://outline:3000/api/documents.search
+Body:
+{
+  "query": "search terms",
+  "collectionId": "optional-collection-id",
+  "limit": 10
+}
+```
+
+#### Collection Management
+```javascript
+// Create collection
+Method: POST
+URL: http://outline:3000/api/collections.create
+Body:
+{
+  "name": "New Collection",
+  "description": "Collection description",
+  "color": "#4285F4",
+  "private": false
+}
+
+// Update permissions
+Method: POST
+URL: http://outline:3000/api/collections.update
+Body:
+{
+  "id": "collection-id",
+  "permission": "read_write"  // or "read"
+}
+```
+
+### Backup and Export
+```bash
+#!/bin/bash
+# Backup Outline data
+
+# Export all documents via API
+TOKEN="your-outline-token"
+BACKUP_DIR="/backup/outline/$(date +%Y%m%d)"
+mkdir -p $BACKUP_DIR
+
+# Get all collections
+curl -H "Authorization: Bearer $TOKEN" \
+  http://outline:3000/api/collections.list \
+  -o $BACKUP_DIR/collections.json
+
+# Export each collection
+for collection_id in $(jq -r '.data[].id' $BACKUP_DIR/collections.json); do
+  curl -X POST \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"collectionId\": \"$collection_id\", \"format\": \"markdown\"}" \
+    http://outline:3000/api/collections.export \
+    -o $BACKUP_DIR/collection_$collection_id.zip
+done
+
+# Backup PostgreSQL
+docker exec outline-postgres pg_dump -U outline outline \
+  > $BACKUP_DIR/outline-db.sql
+
+# Backup MinIO data
+docker run --rm \
+  -v localai_outline_minio_data:/data \
+  -v $BACKUP_DIR:/backup \
+  alpine tar czf /backup/minio-data.tar.gz /data
+```
+
+### Troubleshooting
+
+#### Authentication Failed
+```bash
+# Check Dex is running
+docker ps | grep dex
+
+# Check Dex logs
+docker logs dex --tail 50
+
+# Verify redirect URLs in Dex config
+grep redirectURIs dex/config.yaml
+
+# Test Dex discovery
+curl https://auth.yourdomain.com/.well-known/openid-configuration
+```
+
+#### Secret Key Error
+```bash
+# Ensure SECRET_KEY is 64 hex characters
+grep OUTLINE_SECRET_KEY .env | cut -d'"' -f2 | wc -c
+# Should output 65 (64 chars + newline)
+
+# Regenerate if needed
+sed -i "s/^OUTLINE_SECRET_KEY=.*/OUTLINE_SECRET_KEY=\"$(openssl rand -hex 32)\"/" .env
+sed -i "s/^OUTLINE_UTILS_SECRET=.*/OUTLINE_UTILS_SECRET=\"$(openssl rand -hex 32)\"/" .env
+
+# Restart Outline
+docker compose -p localai restart outline
+```
+
+#### Database Connection Issues
+```bash
+# Check PostgreSQL is running
+docker ps | grep outline-postgres
+
+# Test connection
+docker exec outline-postgres psql -U outline -d outline -c "SELECT 1;"
+
+# Check Outline env
+docker exec outline printenv | grep DATABASE_URL
+```
+
+#### MinIO S3 Storage Issues
+```bash
+# Access MinIO admin
+# https://outline-s3-admin.yourdomain.com
+# Username: minio
+# Password: check OUTLINE_MINIO_ROOT_PASSWORD in .env
+
+# Check if bucket exists
+docker exec outline-minio mc ls local/outline
+
+# Create bucket if missing
+docker exec outline-minio mc mb local/outline
+```
+
+### Tips
+
+1. **Collections:** Organize by team or topic
+2. **Templates:** Create templates for consistent documentation
+3. **Permissions:** Use groups for easier permission management
+4. **Search:** Use quotes for exact matches
+5. **Markdown:** Learn keyboard shortcuts for faster editing
+6. **API:** Use API for automation and integrations
+7. **Export:** Regular exports for backup
+8. **Slash Commands:** Type / for quick formatting options
+
+### Resources
+
+- **Documentation:** https://docs.getoutline.com
+- **API Reference:** https://docs.getoutline.com/developers
+- **GitHub:** https://github.com/outline/outline
+- **Community:** https://github.com/outline/outline/discussions
+- **Keyboard Shortcuts:** https://docs.getoutline.com/s/doc/keyboard-shortcuts
+- **Dex Documentation:** https://dexidp.io/docs
 
 </details>
 
@@ -40851,6 +41831,397 @@ stirling-pdf:
 - Extract invoice data from PDF uploads
 - Auto-populate invoice fields
 - Archive paid invoices with watermarks
+
+</details>
+
+<details>
+<summary><b>✍️ DocuSeal - E-Signature Platform</b></summary>
+
+### What is DocuSeal?
+
+DocuSeal is an open-source alternative to DocuSign, providing a complete electronic signature platform with document templates, form building, and signature workflows. It offers legally binding e-signatures, audit trails, and API access for automation, making it perfect for contracts, agreements, and any document requiring signatures.
+
+### Features
+
+- **E-Signatures:** Legally binding electronic signatures
+- **Document Templates:** Create reusable templates
+- **Form Builder:** Drag-and-drop form creation
+- **Multiple Signers:** Sequential or parallel signing workflows
+- **Audit Trail:** Complete signature history and timestamps
+- **PDF Generation:** Auto-generate PDFs from templates
+- **API Access:** REST API for automation
+- **Webhooks:** Real-time notifications
+- **Branding:** Custom branding options
+- **Mobile Support:** Sign on any device
+- **Bulk Send:** Send documents to multiple recipients
+- **Cloud Storage:** Integration with S3/Google Drive
+
+### Initial Setup
+
+**First Login to DocuSeal:**
+
+1. Navigate to `https://sign.yourdomain.com`
+2. Click "Sign Up" to create admin account
+3. Enter admin email and password
+4. Configure organization settings:
+   - Company name
+   - Logo upload
+   - Signature appearance
+5. Create first template or upload document
+
+**API Key Generation:**
+
+1. Go to Settings → API
+2. Click "Generate API Key"
+3. Copy key for n8n integration
+4. Set webhook URL: `https://n8n.yourdomain.com/webhook/docuseal`
+
+### n8n Integration
+
+**Create DocuSeal Credentials:**
+```javascript
+// HTTP Header Auth
+Name: DocuSeal API
+Header Name: X-Api-Key
+Header Value: your-api-key
+```
+
+**Webhook Configuration:**
+```javascript
+// In DocuSeal: Settings → Webhooks
+URL: https://n8n.yourdomain.com/webhook/docuseal
+Events: All events
+Secret: your-webhook-secret
+```
+
+### Example Workflows
+
+#### Example 1: Contract Automation
+```javascript
+// Automate contract sending and tracking
+
+// 1. Trigger - New customer in CRM
+
+// 2. HTTP Request - Create document from template
+Method: POST
+URL: https://sign.yourdomain.com/api/v1/submissions
+Headers:
+  X-Api-Key: your-api-key
+Body:
+{
+  "template_id": "contract-template-id",
+  "send_email": true,
+  "submitters": [
+    {
+      "email": "{{$json.customer_email}}",
+      "name": "{{$json.customer_name}}",
+      "role": "Customer",
+      "fields": [
+        {
+          "name": "company_name",
+          "value": "{{$json.company}}"
+        },
+        {
+          "name": "contract_value",
+          "value": "{{$json.deal_amount}}"
+        },
+        {
+          "name": "start_date",
+          "value": "{{$now.format('yyyy-MM-dd')}}"
+        }
+      ]
+    },
+    {
+      "email": "sales@company.com",
+      "name": "Sales Manager",
+      "role": "Company"
+    }
+  ],
+  "message": "Please review and sign the attached contract."
+}
+
+// 3. Store submission ID in database
+// Save to your CRM or database for tracking
+
+// 4. Slack Notification
+Channel: #sales
+Message: |
+  📄 Contract sent for signature
+  Customer: {{$json.customer_name}}
+  Company: {{$json.company}}
+  Value: ${{$json.deal_amount}}
+  DocuSeal ID: {{$('Create Document').json.submission.id}}
+```
+
+#### Example 2: Signature Completion Handler
+```javascript
+// Process completed signatures
+
+// 1. Webhook Trigger - DocuSeal webhook
+// Event: submission.completed
+
+// 2. HTTP Request - Download signed document
+Method: GET
+URL: https://sign.yourdomain.com/api/v1/submissions/{{$json.submission_id}}/download
+Headers:
+  X-Api-Key: your-api-key
+Response Format: File
+
+// 3. Upload to Cloud Storage
+// Google Drive, S3, or internal storage
+
+// 4. Update CRM
+Method: PATCH
+URL: your-crm-api/deals/{{$json.metadata.deal_id}}
+Body:
+{
+  "contract_status": "signed",
+  "contract_signed_date": "{{$now.toISO()}}",
+  "contract_url": "{{$node['Upload'].json.url}}"
+}
+
+// 5. Email Notification
+To: {{$json.submitters[0].email}}
+Subject: Contract Signed - Thank You!
+Attachments: {{$node['Download'].json}}
+Body: |
+  Dear {{$json.submitters[0].name}},
+  
+  Your contract has been fully executed.
+  A copy is attached for your records.
+  
+  Thank you for your business!
+```
+
+#### Example 3: HR Onboarding Documents
+```javascript
+// Automate employee onboarding paperwork
+
+// 1. Trigger - New employee in HR system
+
+// 2. Code Node - Prepare document batch
+const documents = [
+  { template: 'employment-agreement', order: 1 },
+  { template: 'nda', order: 2 },
+  { template: 'tax-forms', order: 3 },
+  { template: 'benefits-enrollment', order: 4 }
+];
+
+return documents.map(doc => ({
+  json: {
+    ...doc,
+    employee: $input.first().json
+  }
+}));
+
+// 3. Loop - Send each document
+
+// 4. HTTP Request - Create submission
+Method: POST
+URL: https://sign.yourdomain.com/api/v1/submissions
+Body:
+{
+  "template_id": "{{$json.template}}",
+  "submitters": [
+    {
+      "email": "{{$json.employee.email}}",
+      "name": "{{$json.employee.name}}",
+      "fields": [
+        {
+          "name": "employee_name",
+          "value": "{{$json.employee.name}}"
+        },
+        {
+          "name": "start_date",
+          "value": "{{$json.employee.start_date}}"
+        },
+        {
+          "name": "position",
+          "value": "{{$json.employee.position}}"
+        },
+        {
+          "name": "salary",
+          "value": "{{$json.employee.salary}}"
+        }
+      ]
+    },
+    {
+      "email": "hr@company.com",
+      "name": "HR Manager",
+      "role": "Company"
+    }
+  ],
+  "metadata": {
+    "employee_id": "{{$json.employee.id}}",
+    "document_type": "{{$json.template}}"
+  }
+}
+
+// 5. Wait Node - 1 hour between documents
+// Avoid overwhelming new employee
+
+// 6. Check completion status
+Method: GET
+URL: https://sign.yourdomain.com/api/v1/submissions/{{$json.submission_id}}
+
+// 7. Update HR system
+// Mark onboarding documents as complete
+```
+
+### Template Management
+```javascript
+// Create template via API
+Method: POST
+URL: https://sign.yourdomain.com/api/v1/templates
+Headers:
+  X-Api-Key: your-api-key
+  Content-Type: multipart/form-data
+Body:
+  name: "Service Agreement"
+  file: [PDF file]
+  fields: [
+    {
+      "name": "customer_name",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "signature",
+      "type": "signature",
+      "required": true
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "required": true
+    }
+  ]
+
+// List templates
+Method: GET
+URL: https://sign.yourdomain.com/api/v1/templates
+
+// Get template details
+Method: GET
+URL: https://sign.yourdomain.com/api/v1/templates/{template_id}
+```
+
+### Webhook Events
+
+DocuSeal sends these webhook events:
+```javascript
+// Submission created
+{
+  "event": "submission.created",
+  "submission_id": "123",
+  "template_id": "abc",
+  "submitters": [...]
+}
+
+// Document viewed
+{
+  "event": "submission.viewed",
+  "submission_id": "123",
+  "submitter_email": "user@example.com",
+  "viewed_at": "2024-01-01T10:00:00Z"
+}
+
+// Document signed by one party
+{
+  "event": "submitter.completed",
+  "submission_id": "123",
+  "submitter_email": "user@example.com",
+  "signed_at": "2024-01-01T10:30:00Z"
+}
+
+// All signatures complete
+{
+  "event": "submission.completed",
+  "submission_id": "123",
+  "completed_at": "2024-01-01T11:00:00Z",
+  "download_url": "https://..."
+}
+```
+
+### Bulk Operations
+```javascript
+// Send document to multiple recipients
+Method: POST
+URL: https://sign.yourdomain.com/api/v1/submissions/bulk
+Body:
+{
+  "template_id": "template-123",
+  "submitters": [
+    {
+      "email": "user1@example.com",
+      "name": "User 1"
+    },
+    {
+      "email": "user2@example.com",
+      "name": "User 2"
+    }
+  ]
+}
+
+// Check bulk status
+Method: GET
+URL: https://sign.yourdomain.com/api/v1/submissions/bulk/{bulk_id}
+```
+
+### Troubleshooting
+
+#### Emails Not Sending
+```bash
+# Check email configuration
+docker exec docuseal env | grep SMTP
+
+# Test email
+docker exec docuseal rails console
+> ActionMailer::Base.mail(to: "test@example.com", subject: "Test", body: "Test").deliver_now
+
+# Check logs
+docker logs docuseal --tail 100 | grep -i mail
+```
+
+#### API Authentication Failed
+```bash
+# Verify API key
+curl -H "X-Api-Key: your-key" \
+  https://sign.yourdomain.com/api/v1/templates
+
+# Regenerate key if needed
+# Settings → API → Regenerate
+```
+
+#### Webhook Not Triggering
+```bash
+# Test webhook manually
+curl -X POST https://n8n.yourdomain.com/webhook/docuseal \
+  -H "Content-Type: application/json" \
+  -d '{"event":"test","data":"test"}'
+
+# Check DocuSeal webhook logs
+# Settings → Webhooks → View Logs
+```
+
+### Tips
+
+1. **Templates:** Create reusable templates for common documents
+2. **Fields:** Use conditional fields for dynamic forms
+3. **Branding:** Customize with your logo and colors
+4. **Reminders:** Set automatic reminder emails
+5. **Expiry:** Set document expiry dates
+6. **Audit Trail:** Download audit logs for compliance
+7. **Bulk Send:** Use CSV upload for mass sending
+8. **API Limits:** 1000 requests per hour by default
+
+### Resources
+
+- **Documentation:** https://www.docuseal.co/docs
+- **API Reference:** https://www.docuseal.co/docs/api
+- **GitHub:** https://github.com/docusealco/docuseal
+- **Templates:** https://www.docuseal.co/templates
+- **Support:** https://github.com/docusealco/docuseal/discussions
 
 </details>
 

@@ -14302,6 +14302,46 @@ docker exec outline-minio mc ls local/outline
 docker exec outline-minio mc mb local/outline
 ```
 
+#### Dex Config File is a Directory Instead of File
+
+This can happen after updates or manual interventions. Docker remembers mount points and won't automatically switch between file and directory types.
+
+**Symptoms:**
+```
+error: failed to read /etc/dex/config.yaml: read /etc/dex/config.yaml: is a directory
+```
+
+**Solution:**
+```bash
+# Check if config.yaml is wrongly a directory
+ls -la dex/
+# If config.yaml shows as directory (drwxr-xr-x), fix it:
+
+# Remove the directory
+sudo rm -rf dex/config.yaml
+
+# Regenerate the config file
+sudo bash scripts/setup_dex_config.sh
+
+# Verify it's now a file
+file dex/config.yaml
+# Should output: "dex/config.yaml: ASCII text"
+
+# IMPORTANT: Container must be recreated, not just restarted
+docker compose -p localai stop dex
+docker compose -p localai rm -f dex
+docker compose -p localai up -d dex
+
+# Verify Dex is running
+docker logs dex --tail 10
+```
+
+**Why this happens:**
+- Docker creates directories for missing mount points on first run
+- Accidental trailing slash in copy commands (`cp file destination/`)
+- Manual `mkdir` instead of file creation
+- Docker caches mount point types and requires container recreation to update
+
 ### Tips
 
 1. **Collections:** Organize by team or topic
@@ -14312,6 +14352,7 @@ docker exec outline-minio mc mb local/outline
 6. **API:** Use API for automation and integrations
 7. **Export:** Regular exports for backup
 8. **Slash Commands:** Type / for quick formatting options
+9. **Container Recreation:** When changing mount types (file↔directory), always recreate the container, not just restart
 
 ### Resources
 

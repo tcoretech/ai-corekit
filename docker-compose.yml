@@ -103,6 +103,7 @@ volumes:
   gitea_data:
   docuseal_postgres_data:
   docuseal_data:
+  dex_data:
 
 x-n8n: &service-n8n
   build:
@@ -2565,8 +2566,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
-    networks:
-      - default
 
   # ============================================================================
   # BROWSER AUTOMATION SUITE - Browserless + Skyvern + Browser-use
@@ -2963,8 +2962,6 @@ services:
     volumes:
       - paperless-gpt-prompts:/app/prompts
       - ./shared:/data/shared
-    networks:
-      - default
     depends_on:
       - paperless
     healthcheck:
@@ -2994,8 +2991,6 @@ services:
     volumes:
       - paperless-ai-data:/app/data
       - ./shared:/data/shared
-    networks:
-      - default
     depends_on:
       - paperless
     healthcheck:
@@ -3212,8 +3207,6 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-    networks:
-      - default
 
   # ============================================
   # Outline - Wiki/Dokumentation
@@ -3225,8 +3218,6 @@ services:
     restart: unless-stopped
     volumes:
       - outline_redis_data:/data
-    networks:
-      - default
 
   outline-postgres:
     image: postgres:17-alpine
@@ -3244,8 +3235,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - default
 
   outline-minio:
     image: minio/minio:latest
@@ -3259,8 +3248,6 @@ services:
       - MINIO_BROWSER_REDIRECT_URL=https://${OUTLINE_S3_ADMIN_HOSTNAME}
     volumes:
       - outline_minio_data:/data
-    networks:
-      - default
 
   outline:
     image: docker.getoutline.com/outlinewiki/outline:latest
@@ -3272,6 +3259,7 @@ services:
       - outline-postgres
       - outline-redis
       - outline-minio
+      - dex
     environment:
       - NODE_ENV=production
       - SECRET_KEY=${OUTLINE_SECRET_KEY}
@@ -3291,13 +3279,17 @@ services:
       - AWS_S3_UPLOAD_BUCKET_NAME=outline
       - AWS_S3_FORCE_PATH_STYLE=true
       - AWS_S3_ACL=private
-      - SLACK_CLIENT_ID=${OUTLINE_SLACK_CLIENT_ID}
-      - SLACK_CLIENT_SECRET=${OUTLINE_SLACK_CLIENT_SECRET}
+      # OIDC Configuration with Dex (instead of Slack)
+      - OIDC_CLIENT_ID=outline
+      - OIDC_CLIENT_SECRET=${OUTLINE_OIDC_CLIENT_SECRET}
+      - OIDC_AUTH_URI=https://${OUTLINE_HOSTNAME}/dex/auth
+      - OIDC_TOKEN_URI=http://dex:5556/dex/token
+      - OIDC_USERINFO_URI=http://dex:5556/dex/userinfo
+      - OIDC_DISPLAY_NAME=Login
+      - OIDC_SCOPES=openid profile email
       - FORCE_HTTPS=false
     volumes:
       - outline_data:/var/lib/outline/data
-    networks:
-      - default
 
   # ============================================
   # Gitea - Git Hosting
@@ -3318,8 +3310,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - default
 
   gitea:
     image: gitea/gitea:latest
@@ -3342,8 +3332,6 @@ services:
       - gitea_data:/data
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    networks:
-      - default
 
   # ============================================
   # DocuSeal - E-Signatures
@@ -3364,8 +3352,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - default
 
   docuseal:
     image: docuseal/docuseal:latest
@@ -3379,5 +3365,16 @@ services:
       - FORCE_SSL=false
     volumes:
       - docuseal_data:/data
-    networks:
-      - default
+
+  # Dex - Identity Provider for Outline
+  dex:
+    image: ghcr.io/dexidp/dex:v2.37.0
+    container_name: dex
+    profiles: ["outline"]
+    restart: unless-stopped
+    volumes:
+      - ./dex/config.yaml:/etc/dex/config.yaml:ro
+      - dex_data:/var/dex
+    environment:
+      - DEX_FRONTEND_DIR=/srv/dex/web
+    command: ["dex", "serve", "/etc/dex/config.yaml"]

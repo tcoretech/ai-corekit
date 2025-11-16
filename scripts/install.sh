@@ -115,6 +115,20 @@ else
 fi
 log_success "Cal.com build step complete!"
 
+log_info "========== STEP 4d: Setting up Dex for Outline (if selected) =========="
+# Check if outline profile is in COMPOSE_PROFILES
+if grep -q "outline" .env 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"outline"* ]]; then
+    if [ -f "$SCRIPT_DIR/setup_dex_config.sh" ]; then
+        log_info "Outline selected - generating Dex configuration..."
+        bash "$SCRIPT_DIR/setup_dex_config.sh" || { log_error "Dex configuration failed"; exit 1; }
+    else
+        log_warning "Outline selected but Dex setup script not found"
+    fi
+else
+    log_info "Outline not selected, skipping Dex setup"
+fi
+log_success "Dex setup step complete!"
+
 log_info "========== STEP 5: Running Services =========="
 bash "$SCRIPT_DIR/05_run_services.sh" || { log_error "Running Services failed"; exit 1; }
 log_success "Running Services complete!"

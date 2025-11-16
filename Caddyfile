@@ -736,8 +736,16 @@ https://{$NEO4J_HOSTNAME}:7687 {
 # Outline - Wiki
 # ============================================
 {$OUTLINE_HOSTNAME} {
-    reverse_proxy outline:3000 {
-        flush_interval -1
+    # Dex Auth Provider (unter /dex)
+    handle /dex* {
+        reverse_proxy dex:5556
+    }
+    
+    # Outline Wiki
+    handle {
+        reverse_proxy outline:3000 {
+            flush_interval -1
+        }
     }
 }
 

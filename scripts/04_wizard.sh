@@ -76,7 +76,8 @@ base_services_data=(
     "jitsi" "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)"
     "vaultwarden" "Vaultwarden (Self-hosted Bitwarden-compatible password manager)"
     "kopia" "Kopia (Fast and secure backup with Cloud and WebDAV storage)"
-    "mailserver" "Docker-Mailserver (Production email server for all services)"
+    "mailserver" "Docker-Mailserver (+ Mailgun ingest webhook for inbound mail)"
+    "mail-ingest" "Mailgun ingest forwarder (webhook -> Docker-Mailserver SMTP)"
     "snappymail" "SnappyMail (Modern webmail client for Docker-Mailserver)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"
     "qdrant" "Qdrant (Vector Database)"
@@ -246,6 +247,16 @@ if [[ " ${selected_profiles[@]} " =~ " leantime " ]]; then
         log_info "📦 MySQL 8.4 will be installed automatically for Leantime"
         log_info "   You can use this MySQL instance for other services too (WordPress, Ghost, etc.)"
         sleep 2
+    fi
+fi
+
+# Ensure mail-ingest pulls in mailserver (SMTP target)
+if [[ " ${selected_profiles[@]} " =~ " mail-ingest " ]]; then
+    if [[ ! " ${selected_profiles[@]} " =~ " mailserver " ]]; then
+        selected_profiles+=("mailserver")
+        echo
+        log_info "📧 mail-ingest requires Docker-Mailserver; enabling mailserver profile automatically."
+        sleep 1
     fi
 fi
 

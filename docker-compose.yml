@@ -406,6 +406,7 @@ services:
       - MAILPIT_PASSWORD_HASH=${MAILPIT_PASSWORD_HASH}
       - MAILSERVER_WEBMAIL_HOSTNAME=${MAILSERVER_WEBMAIL_HOSTNAME}
       - SNAPPYMAIL_HOSTNAME=${SNAPPYMAIL_HOSTNAME}
+      - MAIL_INGEST_HOSTNAME=${MAIL_INGEST_HOSTNAME}
     cap_drop:
       - ALL
     cap_add:
@@ -1791,6 +1792,29 @@ services:
     profiles: ["baserow", "calcom", "leantime"]
     restart: unless-stopped
     command: tcp-listen:8025,fork,reuseaddr tcp-connect:mailserver:25
+
+  mail-ingest:
+    build: ./mail-ingest
+    container_name: mail-ingest
+    profiles: ["mailserver"]
+    restart: unless-stopped
+    environment:
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
+      - MAILSERVER_HOST=mailserver
+      - MAILSERVER_PORT=25
+      - MAILSERVER_HELO_DOMAIN=mail-ingest.${BASE_DOMAIN}
+    expose:
+      - "3000"  # internal-only; Caddy/Cloudflare tunnel will proxy
+    depends_on:
+      mailserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - default
 
   # Jitsi Web Frontend
   jitsi-web:

@@ -43,11 +43,13 @@ ATTENTION! The AI LaunchKit is currently in development. It is regularly tested 
 |------|-------------|---------------|---------|----------|
 | **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | `mailpit.yourdomain.com` | Development/Testing - captures all emails |
 | **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production SMTP/IMAP server | ⚡ Optional | `mail.yourdomain.com` | Send/receive real emails |
+| **Mailgun Intake (mail-ingest)** | Mailgun webhook -> Docker-Mailserver forwarder | ⚡ Optional | `mail-ingest.yourdomain.com` | Receive inbound email via Mailgun + Cloudflare tunnel |
 | **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client | ⚡ Optional | `webmail.yourdomain.com` | Web interface for email access |
 
 **Mail Configuration:**
 - **Mailpit:** Always active for development - captures emails from all services
 - **Docker-Mailserver:** Optional production email server with full SMTP/IMAP support
+- **Mailgun Intake:** Optional webhook endpoint that verifies Mailgun signatures and injects inbound mail into Docker-Mailserver over SMTP
 - **SnappyMail:** Optional webmail interface (requires Docker-Mailserver)
 - Each service uses a dedicated hostname for easy management
 

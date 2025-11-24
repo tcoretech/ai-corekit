@@ -290,6 +290,12 @@
     reverse_proxy mailpit:8025
 }
 
+# Mailgun Incoming Webhook -> Docker-Mailserver ingest
+{$MAIL_INGEST_HOSTNAME} {
+    @mailgun path /mailgun/incoming
+    reverse_proxy @mailgun mail-ingest:3000
+}
+
 # SnappyMail Webmail Client
 {$SNAPPYMAIL_HOSTNAME} {
     reverse_proxy snappymail:8888
@@ -502,4 +508,3 @@ import /etc/caddy/addons/*.conf
         header_up Connection "close"
     }
 }
-

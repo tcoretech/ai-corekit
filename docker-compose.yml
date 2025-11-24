@@ -579,8 +579,11 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
+      # Explicit PGDATA needed for Postgres 18+ when a volume is mounted
+      PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      - langfuse_postgres_data:/var/lib/postgresql/data
+      # Mount at /var/lib/postgresql (not .../data) to avoid 18+ entrypoint check
+      - langfuse_postgres_data:/var/lib/postgresql
 
   redis:
     container_name: redis

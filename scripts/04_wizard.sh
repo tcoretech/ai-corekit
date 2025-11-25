@@ -200,11 +200,12 @@ if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
     log_info "═══════════════════════════════════════════════════════════════"
     echo ""
     # Resolve defaults from existing .env if present
-    existing_dns_ip=$(grep "^PRIVATE_DNS_TARGET_IP=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
-    existing_dns_hosts=$(grep "^PRIVATE_DNS_HOSTS=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
-    existing_dns_fwd1=$(grep "^PRIVATE_DNS_FORWARD_1=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
-    existing_dns_fwd2=$(grep "^PRIVATE_DNS_FORWARD_2=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
-    base_domain_val=$(grep "^BASE_DOMAIN=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"
+    existing_dns_ip=$(grep "^PRIVATE_DNS_TARGET_IP=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    existing_dns_hosts=$(grep "^PRIVATE_DNS_HOSTS=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    existing_dns_fwd1=$(grep "^PRIVATE_DNS_FORWARD_1=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    existing_dns_fwd2=$(grep "^PRIVATE_DNS_FORWARD_2=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    base_domain_val=$(grep "^BASE_DOMAIN=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
     default_dns_ip=${existing_dns_ip:-10.255.0.5}
     base_no_tld="${base_domain_val%%.*}"
     default_dns_hosts=${existing_dns_hosts:-"mail.${base_domain_val:-yourdomain.com} ssh.${base_domain_val:-yourdomain.com} ${base_no_tld:-yourdomain}.local"}
@@ -216,10 +217,19 @@ if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
     read -p "Forwarder 1 [${default_fwd1}]: " input_dns_fwd1
     read -p "Forwarder 2 [${default_fwd2}]: " input_dns_fwd2
 
-    dns_ip=${input_dns_ip:-$default_dns_ip}
-    dns_hosts=${input_dns_hosts:-$default_dns_hosts}
-    dns_fwd1=${input_dns_fwd1:-$default_fwd1}
-    dns_fwd2=${input_dns_fwd2:-$default_fwd2}
+    # If all required values already exist, allow skipping prompts
+    if [[ -n "$existing_dns_ip" && -n "$existing_dns_hosts" && -n "$existing_dns_fwd1" && -n "$existing_dns_fwd2" ]]; then
+        echo "Private DNS settings found; reusing existing values."
+        input_dns_ip=""
+        input_dns_hosts=""
+        input_dns_fwd1=""
+        input_dns_fwd2=""
+    else
+        read -p "Bind IP for private DNS [${default_dns_ip}]: " input_dns_ip
+        read -p "Hostnames (space-separated) [${default_dns_hosts}]: " input_dns_hosts
+        read -p "Forwarder 1 [${default_fwd1}]: " input_dns_fwd1
+        read -p "Forwarder 2 [${default_fwd2}]: " input_dns_fwd2
+    fi
 
     # Write into local DNS env file
     DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"

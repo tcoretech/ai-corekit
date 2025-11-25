@@ -85,15 +85,11 @@ def render_private_dns_corefile():
     with open(template_path, "r") as f:
         content = f.read()
 
-    # Simple substitution for ${VAR} and ${VAR:-default}
-    def replace_var(text, key, value):
-        text = text.replace(f"${{{key}}}", value)
-        text = text.replace(f"${{{key}:-", "").replace("}", value)  # coarse fallback
-        return text
-
+    import re
     for k, v in subs.items():
-        content = content.replace(f"${{{k}}}", v)
-        content = content.replace(f"${{{k}:-", "").replace("}", v)
+        # replace ${KEY} and ${KEY:-default}
+        pattern = re.compile(rf"\${{{k}(?:[:-][^}}]*)?}}")
+        content = pattern.sub(v, content)
 
     with open(output_path, "w") as f:
         f.write(content)
@@ -383,9 +379,20 @@ def start_private_dns():
     if not os.path.exists(dns_compose_path):
         print(f"Private DNS compose not found at {dns_compose_path}, skipping.")
         return
+    dns_env_path = os.path.join("host-services", "dns", ".env")
+    if not os.path.exists(dns_env_path):
+        print(f"Private DNS env not found at {dns_env_path}. Run 03_generate_secrets.sh or the wizard first. Skipping DNS start.")
+        return
+
+    # Validate required env
+    dns_env = dotenv_values(dns_env_path)
+    if not dns_env.get("PRIVATE_DNS_TARGET_IP", "").strip():
+        print("PRIVATE_DNS_TARGET_IP is missing in host-services/dns/.env; skipping DNS start to avoid port conflicts.")
+        return
+
     render_private_dns_corefile()
     print("Starting Private DNS (CoreDNS)...")
-    env_file_path = os.path.join("host-services", "dns", ".env")
+    env_file_path = dns_env_path
     run_command([
         "docker", "compose", "-p", "localai-dns",
         "--env-file", env_file_path,

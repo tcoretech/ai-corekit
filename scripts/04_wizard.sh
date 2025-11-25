@@ -212,34 +212,28 @@ if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
     default_fwd1=${existing_dns_fwd1:-1.1.1.1}
     default_fwd2=${existing_dns_fwd2:-1.0.0.1}
 
-    # If all required values already exist, reuse them and skip prompts
-    if [[ -n "$existing_dns_ip" && -n "$existing_dns_hosts" && -n "$existing_dns_fwd1" && -n "$existing_dns_fwd2" ]]; then
-        echo "Private DNS settings found; reusing existing values."
-        dns_ip="$existing_dns_ip"
-        dns_hosts="$existing_dns_hosts"
-        dns_fwd1="$existing_dns_fwd1"
-        dns_fwd2="$existing_dns_fwd2"
-    else
-        read -p "Bind IP for private DNS [${default_dns_ip}]: " input_dns_ip
-        read -p "Hostnames (space-separated) [${default_dns_hosts}]: " input_dns_hosts
-        read -p "Forwarder 1 [${default_fwd1}]: " input_dns_fwd1
-        read -p "Forwarder 2 [${default_fwd2}]: " input_dns_fwd2
-        dns_ip=${input_dns_ip:-$default_dns_ip}
-        dns_hosts=${input_dns_hosts:-$default_dns_hosts}
-        dns_fwd1=${input_dns_fwd1:-$default_fwd1}
-        dns_fwd2=${input_dns_fwd2:-$default_fwd2}
-    fi
+    # Always prompt, with defaults populated from existing values
+    read -p "Bind IP for private DNS [${default_dns_ip}]: " input_dns_ip
+    read -p "Hostnames (space-separated) [${default_dns_hosts}]: " input_dns_hosts
+    read -p "Forwarder 1 [${default_fwd1}]: " input_dns_fwd1
+    read -p "Forwarder 2 [${default_fwd2}]: " input_dns_fwd2
+    dns_ip=${input_dns_ip:-$default_dns_ip}
+    dns_hosts=${input_dns_hosts:-$default_dns_hosts}
+    dns_fwd1=${input_dns_fwd1:-$default_fwd1}
+    dns_fwd2=${input_dns_fwd2:-$default_fwd2}
 
     # Write into local DNS env file
     DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"
     mkdir -p "$(dirname "$DNS_ENV_FILE")"
-    {
-      echo "PRIVATE_BASE_DOMAIN=\"${base_domain_val}\""
-      echo "PRIVATE_DNS_TARGET_IP=\"${dns_ip}\""
-      echo "PRIVATE_DNS_HOSTS=\"${dns_hosts}\""
-      echo "PRIVATE_DNS_FORWARD_1=\"${dns_fwd1}\""
-      echo "PRIVATE_DNS_FORWARD_2=\"${dns_fwd2}\""
-    } > "$DNS_ENV_FILE"
+    # Update existing dns env in-place to preserve comments/order
+    tmp_dns_env=$(mktemp)
+    cp "$DNS_ENV_FILE" "$tmp_dns_env"
+    sed -i "s|^PRIVATE_BASE_DOMAIN=.*|PRIVATE_BASE_DOMAIN=${base_domain_val}|g" "$tmp_dns_env"
+    sed -i "s|^PRIVATE_DNS_TARGET_IP=.*|PRIVATE_DNS_TARGET_IP=${dns_ip}|g" "$tmp_dns_env"
+    sed -i "s|^PRIVATE_DNS_HOSTS=.*|PRIVATE_DNS_HOSTS=\"${dns_hosts}\"|g" "$tmp_dns_env"
+    sed -i "s|^PRIVATE_DNS_FORWARD_1=.*|PRIVATE_DNS_FORWARD_1=${dns_fwd1}|g" "$tmp_dns_env"
+    sed -i "s|^PRIVATE_DNS_FORWARD_2=.*|PRIVATE_DNS_FORWARD_2=${dns_fwd2}|g" "$tmp_dns_env"
+    mv "$tmp_dns_env" "$DNS_ENV_FILE"
 
     echo ""
     log_success "✅ Private DNS settings saved to .env"

@@ -654,14 +654,14 @@ fi
 DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"
 DNS_ENV_EXAMPLE="$PROJECT_ROOT/host-services/dns/.env.example"
 mkdir -p "$(dirname "$DNS_ENV_FILE")"
-# If a DNS env already exists with a base domain, preserve it
+# If DNS env already exists with base domain, keep it as-is
 if [[ -f "$DNS_ENV_FILE" ]] && grep -q "^PRIVATE_BASE_DOMAIN=" "$DNS_ENV_FILE"; then
-    : # keep existing
+    : 
 else
-if [[ -f "$DNS_ENV_EXAMPLE" ]]; then
-    cp "$DNS_ENV_EXAMPLE" "$DNS_ENV_FILE"
-    base_no_tld="${generated_values[BASE_DOMAIN]%%.*}"
-    concrete_hosts="mail.${generated_values[BASE_DOMAIN]} ssh.${generated_values[BASE_DOMAIN]} ${base_no_tld}.local"
+    if [[ -f "$DNS_ENV_EXAMPLE" ]]; then
+        cp "$DNS_ENV_EXAMPLE" "$DNS_ENV_FILE"
+        base_no_tld="${generated_values[BASE_DOMAIN]%%.*}"
+        concrete_hosts="mail.${generated_values[BASE_DOMAIN]} ssh.${generated_values[BASE_DOMAIN]} ${base_no_tld}.local"
     sed -i "s|^PRIVATE_BASE_DOMAIN=.*|PRIVATE_BASE_DOMAIN=${generated_values[BASE_DOMAIN]}|" "$DNS_ENV_FILE"
     sed -i "s|^PRIVATE_DNS_TARGET_IP=.*|PRIVATE_DNS_TARGET_IP=${generated_values[PRIVATE_DNS_TARGET_IP]}|" "$DNS_ENV_FILE"
     sed -i "s|^PRIVATE_DNS_HOSTS=.*|PRIVATE_DNS_HOSTS=\"${concrete_hosts}\"|" "$DNS_ENV_FILE"

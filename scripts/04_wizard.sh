@@ -221,12 +221,13 @@ if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
     dns_fwd2=${input_dns_fwd2:-$default_fwd2}
 
     # Write into main .env (read by host-services/dns compose)
-    for key val in \
-        "PRIVATE_DNS_TARGET_IP" "$dns_ip" \
-        "PRIVATE_DNS_HOSTS" "$dns_hosts" \
-        "PRIVATE_DNS_FORWARD_1" "$dns_fwd1" \
-        "PRIVATE_DNS_FORWARD_2" "$dns_fwd2"
-    do
+    dns_pairs=("PRIVATE_DNS_TARGET_IP" "$dns_ip" \
+               "PRIVATE_DNS_HOSTS" "$dns_hosts" \
+               "PRIVATE_DNS_FORWARD_1" "$dns_fwd1" \
+               "PRIVATE_DNS_FORWARD_2" "$dns_fwd2")
+    for ((i=0; i<${#dns_pairs[@]}; i+=2)); do
+        key=${dns_pairs[i]}
+        val=${dns_pairs[i+1]}
         if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
             sed -i.bak "/^${key}=/d" "$ENV_FILE"
         fi

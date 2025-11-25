@@ -34,7 +34,10 @@ def is_private_dns_enabled():
     env_values = dotenv_values(".env")
     compose_profiles = env_values.get("COMPOSE_PROFILES", "")
     has_profile = "private-dns" in compose_profiles.split(',')
-    has_ip = bool(env_values.get("PRIVATE_DNS_TARGET_IP", "").strip())
+    # also check local dns env if present
+    dns_env_path = os.path.join("host-services", "dns", ".env")
+    dns_env = dotenv_values(dns_env_path) if os.path.exists(dns_env_path) else {}
+    has_ip = bool(dns_env.get("PRIVATE_DNS_TARGET_IP", "").strip())
     return has_profile or has_ip
 
 def get_all_profiles(compose_file):
@@ -57,6 +60,44 @@ def run_command(cmd, cwd=None):
     """Run a shell command and print it."""
     print("Running:", " ".join(cmd))
     subprocess.run(cmd, cwd=cwd, check=True)
+
+def render_private_dns_corefile():
+    """Render Corefile from template using root .env values."""
+    template_path = os.path.join("host-services", "dns", "Corefile.template")
+    output_path = os.path.join("host-services", "dns", "Corefile")
+    if not os.path.exists(template_path):
+        print(f"Private DNS Corefile template not found at {template_path}, skipping render.")
+        return
+    # Load env only from local dns/.env
+    dns_env_path = os.path.join("host-services", "dns", ".env")
+    env = dotenv_values(dns_env_path) if os.path.exists(dns_env_path) else {}
+    base_domain = env.get("BASE_DOMAIN", "example.com")
+    base_no_tld = base_domain.split(".", 1)[0] if "." in base_domain else base_domain
+
+    subs = {
+        "PRIVATE_DNS_TARGET_IP": env.get("PRIVATE_DNS_TARGET_IP", "10.255.0.5"),
+        "PRIVATE_DNS_HOSTS": env.get("PRIVATE_DNS_HOSTS", f"mail.{base_domain} ssh.{base_domain} {base_no_tld}.local"),
+        "PRIVATE_DNS_FORWARD_1": env.get("PRIVATE_DNS_FORWARD_1", "1.1.1.1"),
+        "PRIVATE_DNS_FORWARD_2": env.get("PRIVATE_DNS_FORWARD_2", "1.0.0.1"),
+        "BASE_DOMAIN": base_domain,
+    }
+
+    with open(template_path, "r") as f:
+        content = f.read()
+
+    # Simple substitution for ${VAR} and ${VAR:-default}
+    def replace_var(text, key, value):
+        text = text.replace(f"${{{key}}}", value)
+        text = text.replace(f"${{{key}:-", "").replace("}", value)  # coarse fallback
+        return text
+
+    for k, v in subs.items():
+        content = content.replace(f"${{{k}}}", v)
+        content = content.replace(f"${{{k}:-", "").replace("}", v)
+
+    with open(output_path, "w") as f:
+        f.write(content)
+    print(f"Rendered private DNS Corefile to {output_path}")
 
 def clone_supabase_repo():
     """Clone the Supabase repository using sparse checkout if not already present."""
@@ -342,9 +383,12 @@ def start_private_dns():
     if not os.path.exists(dns_compose_path):
         print(f"Private DNS compose not found at {dns_compose_path}, skipping.")
         return
+    render_private_dns_corefile()
     print("Starting Private DNS (CoreDNS)...")
+    env_file_path = os.path.join("host-services", "dns", ".env")
     run_command([
         "docker", "compose", "-p", "localai-dns",
+        "--env-file", env_file_path,
         "-f", dns_compose_path,
         "up", "-d"
     ])

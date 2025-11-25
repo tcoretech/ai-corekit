@@ -4,11 +4,10 @@ services:
     container_name: coredns-private
     restart: unless-stopped
     env_file:
-      - ../../.env
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["envsubst < /etc/coredns/Corefile.template > /etc/coredns/Corefile && exec /coredns -conf /etc/coredns/Corefile"]
+      - ./.env
+    command: ["-conf", "/etc/coredns/Corefile"]
     volumes:
-      - ./Corefile.template:/etc/coredns/Corefile.template:ro
+      - ./Corefile:/etc/coredns/Corefile:ro
     ports:
       - "${PRIVATE_DNS_TARGET_IP}:53:53/udp"
       - "${PRIVATE_DNS_TARGET_IP}:53:53/tcp"

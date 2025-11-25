@@ -650,6 +650,27 @@ if [[ -z "${generated_values[PRIVATE_DNS_FORWARD_2]}" ]]; then
     generated_values["PRIVATE_DNS_FORWARD_2"]="1.0.0.1"
 fi
 
+# Write DNS vars to host-services/dns/.env (local, not root)
+DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"
+DNS_ENV_EXAMPLE="$PROJECT_ROOT/host-services/dns/.env.example"
+mkdir -p "$(dirname "$DNS_ENV_FILE")"
+if [[ -f "$DNS_ENV_EXAMPLE" ]]; then
+    export BASE_DOMAIN="${generated_values[BASE_DOMAIN]}"
+    export PRIVATE_DNS_TARGET_IP="${generated_values[PRIVATE_DNS_TARGET_IP]}"
+    export PRIVATE_DNS_HOSTS="${generated_values[PRIVATE_DNS_HOSTS]}"
+    export PRIVATE_DNS_FORWARD_1="${generated_values[PRIVATE_DNS_FORWARD_1]}"
+    export PRIVATE_DNS_FORWARD_2="${generated_values[PRIVATE_DNS_FORWARD_2]}"
+    envsubst < "$DNS_ENV_EXAMPLE" > "$DNS_ENV_FILE"
+else
+    {
+      echo "BASE_DOMAIN=\"${generated_values[BASE_DOMAIN]}\""
+      echo "PRIVATE_DNS_TARGET_IP=\"${generated_values[PRIVATE_DNS_TARGET_IP]}\""
+      echo "PRIVATE_DNS_HOSTS=\"${generated_values[PRIVATE_DNS_HOSTS]}\""
+      echo "PRIVATE_DNS_FORWARD_1=\"${generated_values[PRIVATE_DNS_FORWARD_1]}\""
+      echo "PRIVATE_DNS_FORWARD_2=\"${generated_values[PRIVATE_DNS_FORWARD_2]}\""
+    } > "$DNS_ENV_FILE"
+fi
+
 # Set mail service hostnames
 BASE_DOMAIN="${generated_values[BASE_DOMAIN]}"
 if [[ -n "$BASE_DOMAIN" ]]; then

@@ -221,19 +221,16 @@ if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
     dns_fwd1=${input_dns_fwd1:-$default_fwd1}
     dns_fwd2=${input_dns_fwd2:-$default_fwd2}
 
-    # Write into main .env (read by host-services/dns compose)
-    dns_pairs=("PRIVATE_DNS_TARGET_IP" "$dns_ip" \
-               "PRIVATE_DNS_HOSTS" "$dns_hosts" \
-               "PRIVATE_DNS_FORWARD_1" "$dns_fwd1" \
-               "PRIVATE_DNS_FORWARD_2" "$dns_fwd2")
-    for ((i=0; i<${#dns_pairs[@]}; i+=2)); do
-        key=${dns_pairs[i]}
-        val=${dns_pairs[i+1]}
-        if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
-            sed -i.bak "/^${key}=/d" "$ENV_FILE"
-        fi
-        echo "${key}=\"${val}\"" >> "$ENV_FILE"
-    done
+    # Write into local DNS env file
+    DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"
+    mkdir -p "$(dirname "$DNS_ENV_FILE")"
+    {
+      echo "BASE_DOMAIN=\"${base_domain_val}\""
+      echo "PRIVATE_DNS_TARGET_IP=\"${dns_ip}\""
+      echo "PRIVATE_DNS_HOSTS=\"${dns_hosts}\""
+      echo "PRIVATE_DNS_FORWARD_1=\"${dns_fwd1}\""
+      echo "PRIVATE_DNS_FORWARD_2=\"${dns_fwd2}\""
+    } > "$DNS_ENV_FILE"
 
     echo ""
     log_success "✅ Private DNS settings saved to .env"

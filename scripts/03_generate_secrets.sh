@@ -655,12 +655,12 @@ DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"
 DNS_ENV_EXAMPLE="$PROJECT_ROOT/host-services/dns/.env.example"
 mkdir -p "$(dirname "$DNS_ENV_FILE")"
 if [[ -f "$DNS_ENV_EXAMPLE" ]]; then
-    export PRIVATE_BASE_DOMAIN="${generated_values[BASE_DOMAIN]}"
-    export PRIVATE_DNS_TARGET_IP="${generated_values[PRIVATE_DNS_TARGET_IP]}"
-    export PRIVATE_DNS_HOSTS="${generated_values[PRIVATE_DNS_HOSTS]}"
-    export PRIVATE_DNS_FORWARD_1="${generated_values[PRIVATE_DNS_FORWARD_1]}"
-    export PRIVATE_DNS_FORWARD_2="${generated_values[PRIVATE_DNS_FORWARD_2]}"
-    envsubst < "$DNS_ENV_EXAMPLE" > "$DNS_ENV_FILE"
+    cp "$DNS_ENV_EXAMPLE" "$DNS_ENV_FILE"
+    sed -i "s|^PRIVATE_BASE_DOMAIN=.*|PRIVATE_BASE_DOMAIN=${generated_values[BASE_DOMAIN]}|" "$DNS_ENV_FILE"
+    # Keep HOSTS/forwarders as template expressions; do not expand here
+    sed -i "s|^PRIVATE_DNS_TARGET_IP=.*|PRIVATE_DNS_TARGET_IP=${generated_values[PRIVATE_DNS_TARGET_IP]}|" "$DNS_ENV_FILE"
+    sed -i "s|^PRIVATE_DNS_FORWARD_1=.*|PRIVATE_DNS_FORWARD_1=${generated_values[PRIVATE_DNS_FORWARD_1]}|" "$DNS_ENV_FILE"
+    sed -i "s|^PRIVATE_DNS_FORWARD_2=.*|PRIVATE_DNS_FORWARD_2=${generated_values[PRIVATE_DNS_FORWARD_2]}|" "$DNS_ENV_FILE"
 else
     {
       echo "PRIVATE_BASE_DOMAIN=\"${generated_values[BASE_DOMAIN]}\""

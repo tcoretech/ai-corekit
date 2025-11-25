@@ -205,7 +205,7 @@ if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
     existing_dns_hosts=$(grep "^PRIVATE_DNS_HOSTS=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
     existing_dns_fwd1=$(grep "^PRIVATE_DNS_FORWARD_1=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
     existing_dns_fwd2=$(grep "^PRIVATE_DNS_FORWARD_2=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
-    base_domain_val=$(grep "^BASE_DOMAIN=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    base_domain_val=$(grep "^PRIVATE_BASE_DOMAIN=" "$DNS_ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
     default_dns_ip=${existing_dns_ip:-10.255.0.5}
     base_no_tld="${base_domain_val%%.*}"
     default_dns_hosts=${existing_dns_hosts:-"mail.${base_domain_val:-yourdomain.com} ssh.${base_domain_val:-yourdomain.com} ${base_no_tld:-yourdomain}.local"}
@@ -235,7 +235,7 @@ if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
     DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"
     mkdir -p "$(dirname "$DNS_ENV_FILE")"
     {
-      echo "BASE_DOMAIN=\"${base_domain_val}\""
+      echo "PRIVATE_BASE_DOMAIN=\"${base_domain_val}\""
       echo "PRIVATE_DNS_TARGET_IP=\"${dns_ip}\""
       echo "PRIVATE_DNS_HOSTS=\"${dns_hosts}\""
       echo "PRIVATE_DNS_FORWARD_1=\"${dns_fwd1}\""

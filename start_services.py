@@ -71,7 +71,7 @@ def render_private_dns_corefile():
     # Load env only from local dns/.env
     dns_env_path = os.path.join("host-services", "dns", ".env")
     env = dotenv_values(dns_env_path) if os.path.exists(dns_env_path) else {}
-    base_domain = env.get("BASE_DOMAIN", "example.com")
+    base_domain = env.get("PRIVATE_BASE_DOMAIN", "example.com")
     base_no_tld = base_domain.split(".", 1)[0] if "." in base_domain else base_domain
 
     subs = {

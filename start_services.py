@@ -81,9 +81,8 @@ def render_private_dns_corefile():
         "PRIVATE_DNS_FORWARD_2": env.get("PRIVATE_DNS_FORWARD_2", "1.0.0.1"),
         "BASE_DOMAIN": base_domain,
     }
-    # If HOSTS still contains template markers, rebuild from base_domain
-    if "${" in subs["PRIVATE_DNS_HOSTS"]:
-        subs["PRIVATE_DNS_HOSTS"] = f"mail.{base_domain} ssh.{base_domain} {base_no_tld}.local"
+    # Always render hosts concretely
+    subs["PRIVATE_DNS_HOSTS"] = f"mail.{base_domain} ssh.{base_domain} {base_no_tld}.local"
 
     with open(template_path, "r") as f:
         content = f.read()

@@ -29,6 +29,14 @@ def is_dify_enabled():
     compose_profiles = env_values.get("COMPOSE_PROFILES", "")
     return "dify" in compose_profiles.split(',')
 
+def is_private_dns_enabled():
+    """Check if user selected private-dns or provided a target IP."""
+    env_values = dotenv_values(".env")
+    compose_profiles = env_values.get("COMPOSE_PROFILES", "")
+    has_profile = "private-dns" in compose_profiles.split(',')
+    has_ip = bool(env_values.get("PRIVATE_DNS_TARGET_IP", "").strip())
+    return has_profile or has_ip
+
 def get_all_profiles(compose_file):
     """Get all profile names from a docker-compose file."""
     if not os.path.exists(compose_file):
@@ -247,6 +255,11 @@ def stop_existing_containers():
     if os.path.exists(dify_compose_path):
         cmd.extend(["-f", dify_compose_path])
 
+    # Private DNS compose file
+    dns_compose_path = os.path.join("host-services", "dns", "docker-compose.yml")
+    if os.path.exists(dns_compose_path):
+        cmd.extend(["-f", dns_compose_path])
+
     cmd.append("down")
     run_command(cmd)
 
@@ -319,6 +332,22 @@ def start_local_ai():
     print("Starting containers...")
     up_cmd = ["docker", "compose", "-p", "localai", "-f", "docker-compose.yml", "up", "-d"]
     run_command(up_cmd)
+
+def start_private_dns():
+    """Start CoreDNS private resolver if enabled and compose exists."""
+    if not is_private_dns_enabled():
+        print("Private DNS not enabled, skipping.")
+        return
+    dns_compose_path = os.path.join("host-services", "dns", "docker-compose.yml")
+    if not os.path.exists(dns_compose_path):
+        print(f"Private DNS compose not found at {dns_compose_path}, skipping.")
+        return
+    print("Starting Private DNS (CoreDNS)...")
+    run_command([
+        "docker", "compose", "-p", "localai-dns",
+        "-f", dns_compose_path,
+        "up", "-d"
+    ])
 
 def generate_searxng_secret_key():
     """Generate a secret key for SearXNG based on the current platform."""
@@ -494,6 +523,9 @@ def main():
     
     # Then start the local AI services
     start_local_ai()
+
+    # Finally start private DNS if enabled
+    start_private_dns()
 
 if __name__ == "__main__":
     main()

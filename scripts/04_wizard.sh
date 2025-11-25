@@ -212,11 +212,6 @@ if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
     default_fwd1=${existing_dns_fwd1:-1.1.1.1}
     default_fwd2=${existing_dns_fwd2:-1.0.0.1}
 
-    read -p "Bind IP for private DNS [${default_dns_ip}]: " input_dns_ip
-    read -p "Hostnames (space-separated) [${default_dns_hosts}]: " input_dns_hosts
-    read -p "Forwarder 1 [${default_fwd1}]: " input_dns_fwd1
-    read -p "Forwarder 2 [${default_fwd2}]: " input_dns_fwd2
-
     # If all required values already exist, allow skipping prompts
     if [[ -n "$existing_dns_ip" && -n "$existing_dns_hosts" && -n "$existing_dns_fwd1" && -n "$existing_dns_fwd2" ]]; then
         echo "Private DNS settings found; reusing existing values."

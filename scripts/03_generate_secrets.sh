@@ -640,7 +640,8 @@ if [[ -z "${generated_values[PRIVATE_DNS_TARGET_IP]}" ]]; then
     generated_values["PRIVATE_DNS_TARGET_IP"]="10.255.0.5"
 fi
 if [[ -z "${generated_values[PRIVATE_DNS_HOSTS]}" ]] && [[ -n "${generated_values[BASE_DOMAIN]}" ]]; then
-    generated_values["PRIVATE_DNS_HOSTS"]="mail.${generated_values[BASE_DOMAIN]} ssh.${generated_values[BASE_DOMAIN]} ${generated_values[BASE_DOMAIN]}.local"
+    base_no_tld="${generated_values[BASE_DOMAIN]%.*}"
+    generated_values["PRIVATE_DNS_HOSTS"]="mail.${generated_values[BASE_DOMAIN]} ssh.${generated_values[BASE_DOMAIN]} ${base_no_tld}.local"
 fi
 if [[ -z "${generated_values[PRIVATE_DNS_FORWARD_1]}" ]]; then
     generated_values["PRIVATE_DNS_FORWARD_1"]="1.1.1.1"

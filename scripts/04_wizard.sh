@@ -206,7 +206,8 @@ if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
     existing_dns_fwd2=$(grep "^PRIVATE_DNS_FORWARD_2=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
     base_domain_val=$(grep "^BASE_DOMAIN=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
     default_dns_ip=${existing_dns_ip:-10.255.0.5}
-    default_dns_hosts=${existing_dns_hosts:-"mail.${base_domain_val:-yourdomain.com} ssh.${base_domain_val:-yourdomain.com} ${base_domain_val:-yourdomain.com}.local"}
+    base_no_tld="${base_domain_val%.*}"
+    default_dns_hosts=${existing_dns_hosts:-"mail.${base_domain_val:-yourdomain.com} ssh.${base_domain_val:-yourdomain.com} ${base_no_tld:-yourdomain}.local"}
     default_fwd1=${existing_dns_fwd1:-1.1.1.1}
     default_fwd2=${existing_dns_fwd2:-1.0.0.1}
 

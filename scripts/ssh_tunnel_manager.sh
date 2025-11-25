@@ -36,7 +36,7 @@ start_ssh_tunnel() {
             return
         fi
         
-        # Check if CLOUDFLARE_SSH_TUNNEL_TOKEN is set in ssh-tunnel/.env
+        # Check if CLOUDFLARE_SSH_TUNNEL_TOKEN is set in host-services/ssh/.env
         if ! grep -q "^CLOUDFLARE_SSH_TUNNEL_TOKEN=" "$ssh_tunnel_env" || \
            [ -z "$(grep "^CLOUDFLARE_SSH_TUNNEL_TOKEN=" "$ssh_tunnel_env" | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')" ]; then
             log_warning "CLOUDFLARE_SSH_TUNNEL_TOKEN not set in $ssh_tunnel_env - SSH tunnel will not start"

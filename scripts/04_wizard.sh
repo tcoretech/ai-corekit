@@ -192,6 +192,53 @@ if [ -n "$CHOICES" ]; then
     done
 fi
 
+# Private DNS configuration (if selected)
+if [[ " ${selected_profiles[@]} " =~ " private-dns " ]]; then
+    echo ""
+    log_info "═══════════════════════════════════════════════════════════════"
+    log_info "🔎 PRIVATE DNS (CoreDNS) CONFIGURATION"
+    log_info "═══════════════════════════════════════════════════════════════"
+    echo ""
+    # Resolve defaults from existing .env if present
+    existing_dns_ip=$(grep "^PRIVATE_DNS_TARGET_IP=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    existing_dns_hosts=$(grep "^PRIVATE_DNS_HOSTS=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    existing_dns_fwd1=$(grep "^PRIVATE_DNS_FORWARD_1=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    existing_dns_fwd2=$(grep "^PRIVATE_DNS_FORWARD_2=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    base_domain_val=$(grep "^BASE_DOMAIN=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+    default_dns_ip=${existing_dns_ip:-10.255.0.5}
+    default_dns_hosts=${existing_dns_hosts:-"mail.${base_domain_val:-yourdomain.com} ssh.${base_domain_val:-yourdomain.com} ${base_domain_val:-yourdomain.com}.local"}
+    default_fwd1=${existing_dns_fwd1:-1.1.1.1}
+    default_fwd2=${existing_dns_fwd2:-1.0.0.1}
+
+    read -p "Bind IP for private DNS [${default_dns_ip}]: " input_dns_ip
+    read -p "Hostnames (space-separated) [${default_dns_hosts}]: " input_dns_hosts
+    read -p "Forwarder 1 [${default_fwd1}]: " input_dns_fwd1
+    read -p "Forwarder 2 [${default_fwd2}]: " input_dns_fwd2
+
+    dns_ip=${input_dns_ip:-$default_dns_ip}
+    dns_hosts=${input_dns_hosts:-$default_dns_hosts}
+    dns_fwd1=${input_dns_fwd1:-$default_fwd1}
+    dns_fwd2=${input_dns_fwd2:-$default_fwd2}
+
+    # Write into main .env (read by host-services/dns compose)
+    for key val in \
+        "PRIVATE_DNS_TARGET_IP" "$dns_ip" \
+        "PRIVATE_DNS_HOSTS" "$dns_hosts" \
+        "PRIVATE_DNS_FORWARD_1" "$dns_fwd1" \
+        "PRIVATE_DNS_FORWARD_2" "$dns_fwd2"
+    do
+        if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+            sed -i.bak "/^${key}=/d" "$ENV_FILE"
+        fi
+        echo "${key}=\"${val}\"" >> "$ENV_FILE"
+    done
+
+    echo ""
+    log_success "✅ Private DNS settings saved to .env"
+    echo "Remember to ensure the bind IP (${dns_ip}) exists on the host (e.g., ip addr add ${dns_ip}/32 dev lo or interface)."
+    echo ""
+fi
+
 # If Ollama was selected, prompt for the hardware profile
 if [ $ollama_selected -eq 1 ]; then
     # Determine default selected Ollama hardware profile from .env
@@ -363,7 +410,7 @@ if [ $cloudflare_ssh_selected -eq 1 ]; then
     # Ensure ssh-tunnel directory exists
     SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
     PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
-    SSH_TUNNEL_DIR="$PROJECT_ROOT/ssh-tunnel"
+    SSH_TUNNEL_DIR="$PROJECT_ROOT/host-services/ssh"
     SSH_TUNNEL_ENV="$SSH_TUNNEL_DIR/.env"
     
     mkdir -p "$SSH_TUNNEL_DIR"
@@ -374,14 +421,22 @@ if [ $cloudflare_ssh_selected -eq 1 ]; then
     fi
     echo "CLOUDFLARE_SSH_ENABLED=true" >> "$ENV_FILE"
     
-    # Configure SSH tunnel token in ssh-tunnel/.env
+    # Configure SSH tunnel token in host-services/ssh/.env
     existing_ssh_token=""
     if [ -f "$SSH_TUNNEL_ENV" ] && grep -q "^CLOUDFLARE_SSH_TUNNEL_TOKEN=" "$SSH_TUNNEL_ENV"; then
         existing_ssh_token=$(grep "^CLOUDFLARE_SSH_TUNNEL_TOKEN=" "$SSH_TUNNEL_ENV" | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
     fi
+    # Fallback: reuse token from root .env if present
+    if [ -z "$existing_ssh_token" ] && [ -f "$ENV_FILE" ] && grep -q "^CLOUDFLARE_SSH_TUNNEL_TOKEN=" "$ENV_FILE"; then
+        existing_ssh_token=$(grep "^CLOUDFLARE_SSH_TUNNEL_TOKEN=" "$ENV_FILE" | cut -d'=' -f2- | sed 's/^\"//' | sed 's/\"$//')
+        if [ -n "$existing_ssh_token" ]; then
+            sed -i.bak "/^CLOUDFLARE_SSH_TUNNEL_TOKEN=/d" "$SSH_TUNNEL_ENV" 2>/dev/null || true
+            echo "CLOUDFLARE_SSH_TUNNEL_TOKEN=\"$existing_ssh_token\"" >> "$SSH_TUNNEL_ENV"
+        fi
+    fi
     
     if [ -n "$existing_ssh_token" ]; then
-        log_info "✅ SSH Tunnel token found in ssh-tunnel/.env; reusing it."
+        log_info "✅ SSH Tunnel token found; reusing it."
     else
         # SSH tunnel always uses separate tunnel (architectural decision)
         echo ""
@@ -391,20 +446,20 @@ if [ $cloudflare_ssh_selected -eq 1 ]; then
         echo ""
         read -p "Enter your SSH Tunnel Token: " input_ssh_token
         
-        # Write token to ssh-tunnel/.env (create or update)
+        # Write token to host-services/ssh/.env (create or update)
         if [ -f "$SSH_TUNNEL_ENV" ] && grep -q "^CLOUDFLARE_SSH_TUNNEL_TOKEN=" "$SSH_TUNNEL_ENV"; then
             # Update existing token
             sed -i.bak "/^CLOUDFLARE_SSH_TUNNEL_TOKEN=/d" "$SSH_TUNNEL_ENV"
         fi
         
-        # Create or append to ssh-tunnel/.env
+        # Create or append to host-services/ssh/.env
         echo "CLOUDFLARE_SSH_TUNNEL_TOKEN=\"$input_ssh_token\"" >> "$SSH_TUNNEL_ENV"
         
         if [ -n "$input_ssh_token" ]; then
             log_success "✅ SSH Tunnel configured with separate tunnel for enhanced security!"
-            log_info "Token saved to ssh-tunnel/.env"
+            log_info "Token saved to host-services/ssh/.env"
         else
-            log_warning "SSH Tunnel token was left empty. You can set it later in ssh-tunnel/.env."
+            log_warning "SSH Tunnel token was left empty. You can set it later in host-services/ssh/.env."
         fi
     fi
     

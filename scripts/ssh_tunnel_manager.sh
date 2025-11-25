@@ -11,7 +11,7 @@ source "$(dirname "$0")/utils.sh"
 # SSH Tunnel Management Functions
 stop_ssh_tunnel() {
     local project_root="$1"
-    local ssh_tunnel_dir="$project_root/ssh-tunnel"
+    local ssh_tunnel_dir="$project_root/host-services/ssh"
     
     if [ -f "$ssh_tunnel_dir/docker-compose.yml" ]; then
         log_info "Stopping SSH tunnel..."
@@ -26,7 +26,7 @@ stop_ssh_tunnel() {
 start_ssh_tunnel() {
     local project_root="$1"
     local pull_image="${2:-false}"  # Optional parameter to pull image
-    local ssh_tunnel_dir="$project_root/ssh-tunnel"
+    local ssh_tunnel_dir="$project_root/host-services/ssh"
     local ssh_tunnel_env="$ssh_tunnel_dir/.env"
     
     if [ -f "$ssh_tunnel_dir/docker-compose.yml" ]; then
@@ -66,7 +66,7 @@ start_ssh_tunnel() {
 
 restart_ssh_tunnel() {
     local project_root="$1"
-    local ssh_tunnel_dir="$project_root/ssh-tunnel"
+    local ssh_tunnel_dir="$project_root/host-services/ssh"
     
     if [ -f "$ssh_tunnel_dir/docker-compose.yml" ]; then
         log_info "Restarting SSH tunnel with latest image..."
@@ -96,7 +96,7 @@ restart_ssh_tunnel() {
 
 status_ssh_tunnel() {
     local project_root="$1"
-    local ssh_tunnel_dir="$project_root/ssh-tunnel"
+    local ssh_tunnel_dir="$project_root/host-services/ssh"
     
     if [ -f "$ssh_tunnel_dir/docker-compose.yml" ]; then
         log_info "SSH tunnel status:"

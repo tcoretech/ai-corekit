@@ -11,11 +11,11 @@ This folder contains the isolated SSH tunnel service that provides secure SSH ac
 
 ## Configuration
 
-The SSH tunnel token is configured during the initial wizard setup and stored in `ssh-tunnel/.env`.
+The SSH tunnel token is configured during the initial wizard setup and stored in `host-services/ssh/.env`.
 
 ## Management
 
 The SSH tunnel is automatically managed by:
 - `update.sh` - Restarts tunnel at the end of updates
 - `05_run_services.sh` - Starts tunnel after main services
-- `utils.sh` functions: `start_ssh_tunnel()`, `stop_ssh_tunnel()`, `restart_ssh_tunnel()`
+- `ssh_tunnel_manager.sh` functions: `start_ssh_tunnel()`, `stop_ssh_tunnel()`, `restart_ssh_tunnel()`

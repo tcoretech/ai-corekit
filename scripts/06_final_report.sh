@@ -1145,6 +1145,13 @@ if is_profile_active "mailserver"; then
   echo "  Port: 587"
   echo "  Security: STARTTLS"
   echo "  User: noreply@${BASE_DOMAIN}"
+  if [[ -n "${MAILGUN_SMTP_HOST}" ]]; then
+    echo
+    echo "Outbound Relay: Mailgun SMTP"
+    echo "  Relay Host: ${MAILGUN_SMTP_HOST:-<not_set>}"
+    echo "  Relay Port: ${MAILGUN_SMTP_PORT:-587}"
+    echo "  Relay User: ${MAILGUN_SMTP_USER:-<not_set>}"
+  fi
   echo
   echo "Services using this mail server:"
   echo "  ✓ Cal.com - Appointment notifications"
@@ -1157,7 +1164,7 @@ if is_profile_active "mailserver"; then
   echo "Mailgun Intake Webhook (mail-ingest service):"
   echo "  Hostname: ${MAIL_INGEST_HOSTNAME:-mail-ingest.${BASE_DOMAIN}}"
   echo "  Endpoint: https://${MAIL_INGEST_HOSTNAME:-mail-ingest.${BASE_DOMAIN}}/mailgun/incoming"
-  echo "  Signing Key (Mailgun private API key): ${MAILGUN_API_KEY:-<not_set_in_env>}"
+  echo "  Signing Key (Mailgun private API key): ${MAILGUN_WEBHOOK_SIGNING_KEY:-<not_set_in_env>}"
   echo "  Route hint: Mailgun → Store and Notify → POST to the endpoint above"
   echo "  Internal health: http://mail-ingest:3000/healthz"
   echo

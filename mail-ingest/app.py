@@ -2,6 +2,7 @@ import os
 import hmac
 import hashlib
 import smtplib
+import re
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import PlainTextResponse
@@ -9,7 +10,7 @@ from fastapi.concurrency import run_in_threadpool
 
 app = FastAPI()
 
-MAILGUN_API_KEY = os.getenv("MAILGUN_API_KEY", "").strip()
+MAILGUN_WEBHOOK_SIGNING_KEY = os.getenv("MAILGUN_WEBHOOK_SIGNING_KEY", "").strip()
 
 # Internal mailserver container (docker-mailserver)
 MAILSERVER_HOST = os.getenv("MAILSERVER_HOST", "mailserver")
@@ -41,7 +42,12 @@ def smtp_forward(envelope_from: str, envelope_to: str, raw_mime: bytes) -> None:
         smtp.ehlo(MAILSERVER_HELO_DOMAIN)
         # internal, no TLS/auth needed
         smtp.mail(envelope_from)
-        smtp.rcpt(envelope_to)
+        # Allow multiple RCPT separated by commas/semicolons/spaces
+        recipients = [addr.strip() for addr in re.split(r"[,;]", envelope_to) if addr.strip()]
+        if not recipients:
+            raise ValueError("No valid recipients after parsing")
+        for rcpt in recipients:
+            smtp.rcpt(rcpt)
         smtp.data(raw_mime)
 
 
@@ -67,7 +73,7 @@ async def mailgun_incoming(request: Request):
     token = form.get("token", "")
     signature = form.get("signature", "")
 
-    if not verify_mailgun_signature(MAILGUN_API_KEY, timestamp, token, signature):
+    if not verify_mailgun_signature(MAILGUN_WEBHOOK_SIGNING_KEY, timestamp, token, signature):
         print("Invalid Mailgun signature")
         raise HTTPException(status_code=403, detail="Invalid Mailgun signature")
 
@@ -97,6 +103,18 @@ async def mailgun_incoming(request: Request):
     try:
         # Run blocking SMTP send in a thread so we don't block the event loop
         await run_in_threadpool(smtp_forward, sender, recipient, raw_bytes)
+    except smtplib.SMTPRecipientsRefused as e:
+        print("SMTP recipient refused:", repr(e))
+        raise HTTPException(status_code=422, detail="No valid recipients")
+    except smtplib.SMTPDataError as e:
+        print("SMTP data error while forwarding mail:", repr(e))
+        code, message = e.smtp_code, (e.smtp_error or b"?").decode(errors="replace")
+        if code in (550, 551, 552, 553, 554):
+            raise HTTPException(status_code=422, detail=f"SMTP {code}: {message}")
+        raise HTTPException(status_code=502, detail="Upstream SMTP rejected message")
+    except ValueError as e:
+        print("Recipient parsing error:", repr(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print("Error forwarding mail:", repr(e))
         raise HTTPException(status_code=500, detail="Failed to forward mail to SMTP")

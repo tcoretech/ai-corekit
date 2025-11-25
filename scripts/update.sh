@@ -87,7 +87,7 @@ fi
 log_info "Update script finished." # Changed final message
 
 # Check if SSH tunnel is configured and ask user about restart
-SSH_TUNNEL_CONFIG="$PROJECT_ROOT/ssh-tunnel/docker-compose.yml"
+SSH_TUNNEL_CONFIG="$PROJECT_ROOT/host-services/ssh/docker-compose.yml"
 if [ -f "$SSH_TUNNEL_CONFIG" ]; then
     echo
     echo "======================================================================"

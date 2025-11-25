@@ -1743,6 +1743,12 @@ services:
       - POSTMASTER_ADDRESS=postmaster@${BASE_DOMAIN}
       - POSTFIX_MESSAGE_SIZE_LIMIT=20480000  # 20MB
       - DEFAULT_RELAY_HOST=      # Leave empty for direct delivery
+      # Optional: relay outbound mail via Mailgun SMTP
+      - RELAY_HOST=${MAILGUN_SMTP_HOST}
+      - RELAY_PORT=${MAILGUN_SMTP_PORT:-587}
+      - RELAY_USER=${MAILGUN_SMTP_USER}
+      - RELAY_PASSWORD=${MAILGUN_SMTP_PASSWORD}
+      - RELAY_TLS_LEVEL=encrypt
       
       # Account Settings
       - ACCOUNT_PROVISIONER=FILE # Use file-based account management
@@ -1802,7 +1808,7 @@ services:
     profiles: ["mailserver"]
     restart: unless-stopped
     environment:
-      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
+      - MAILGUN_WEBHOOK_SIGNING_KEY=${MAILGUN_WEBHOOK_SIGNING_KEY}
       - MAILSERVER_HOST=mailserver
       - MAILSERVER_PORT=25
       - MAILSERVER_HELO_DOMAIN=mail-ingest.${BASE_DOMAIN}

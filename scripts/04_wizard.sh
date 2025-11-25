@@ -78,6 +78,7 @@ base_services_data=(
     "kopia" "Kopia (Fast and secure backup with Cloud and WebDAV storage)"
     "mailserver" "Docker-Mailserver (+ Mailgun ingest webhook for inbound mail)"
     "mail-ingest" "Mailgun ingest forwarder (webhook -> Docker-Mailserver SMTP)"
+    "private-dns" "Private DNS (CoreDNS for mail/ssh hostnames over WARP/private net)"
     "snappymail" "SnappyMail (Modern webmail client for Docker-Mailserver)"
     "langfuse" "Langfuse Suite (AI Observability - includes Clickhouse, Minio)"
     "qdrant" "Qdrant (Vector Database)"
@@ -249,6 +250,8 @@ if [[ " ${selected_profiles[@]} " =~ " leantime " ]]; then
         sleep 2
     fi
 fi
+
+# Private DNS needs mailserver IP defaults; no extra dependencies required
 
 # Ensure mail-ingest pulls in mailserver (SMTP target)
 if [[ " ${selected_profiles[@]} " =~ " mail-ingest " ]]; then

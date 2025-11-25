@@ -35,3 +35,7 @@ jitsi-web/
 jitsi-transcripts/
 VAULTWARDEN_IMPORT.txt
 ai-launchkit-credentials.json
+
+host-services/dns/Corefile
+host-services/dns/.env
+host-services/ssh/.env

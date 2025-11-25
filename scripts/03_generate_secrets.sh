@@ -654,27 +654,34 @@ fi
 DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"
 DNS_ENV_EXAMPLE="$PROJECT_ROOT/host-services/dns/.env.example"
 mkdir -p "$(dirname "$DNS_ENV_FILE")"
-if [[ -f "$DNS_ENV_EXAMPLE" ]]; then
-    cp "$DNS_ENV_EXAMPLE" "$DNS_ENV_FILE"
-    # Replace only the scalar values; leave HOSTS templated unless explicitly computed
-    sed -i "s|^PRIVATE_BASE_DOMAIN=.*|PRIVATE_BASE_DOMAIN=\"${generated_values[BASE_DOMAIN]}\"|" "$DNS_ENV_FILE"
-    if [[ -n "${generated_values[PRIVATE_DNS_TARGET_IP]}" ]]; then
-      sed -i "s|^PRIVATE_DNS_TARGET_IP=.*|PRIVATE_DNS_TARGET_IP=\"${generated_values[PRIVATE_DNS_TARGET_IP]}\"|" "$DNS_ENV_FILE"
-    fi
-    if [[ -n "${generated_values[PRIVATE_DNS_FORWARD_1]}" ]]; then
-      sed -i "s|^PRIVATE_DNS_FORWARD_1=.*|PRIVATE_DNS_FORWARD_1=\"${generated_values[PRIVATE_DNS_FORWARD_1]}\"|" "$DNS_ENV_FILE"
-    fi
-    if [[ -n "${generated_values[PRIVATE_DNS_FORWARD_2]}" ]]; then
-      sed -i "s|^PRIVATE_DNS_FORWARD_2=.*|PRIVATE_DNS_FORWARD_2=\"${generated_values[PRIVATE_DNS_FORWARD_2]}\"|" "$DNS_ENV_FILE"
-    fi
+# If a DNS env already exists with a base domain, preserve it
+if [[ -f "$DNS_ENV_FILE" ]] && grep -q "^PRIVATE_BASE_DOMAIN=" "$DNS_ENV_FILE"; then
+    : # keep existing
 else
-    {
-      echo "PRIVATE_BASE_DOMAIN=\"${generated_values[BASE_DOMAIN]}\""
-      echo "PRIVATE_DNS_TARGET_IP=\"${generated_values[PRIVATE_DNS_TARGET_IP]}\""
-      echo "PRIVATE_DNS_HOSTS=\"${generated_values[PRIVATE_DNS_HOSTS]}\""
-      echo "PRIVATE_DNS_FORWARD_1=\"${generated_values[PRIVATE_DNS_FORWARD_1]}\""
-      echo "PRIVATE_DNS_FORWARD_2=\"${generated_values[PRIVATE_DNS_FORWARD_2]}\""
-    } > "$DNS_ENV_FILE"
+    if [[ -f "$DNS_ENV_EXAMPLE" ]]; then
+        cp "$DNS_ENV_EXAMPLE" "$DNS_ENV_FILE"
+        # Replace only the scalar values; leave HOSTS templated
+        if [[ -n "${generated_values[BASE_DOMAIN]}" ]]; then
+            sed -i "s|^PRIVATE_BASE_DOMAIN=.*|PRIVATE_BASE_DOMAIN=${generated_values[BASE_DOMAIN]}|" "$DNS_ENV_FILE"
+        fi
+        if [[ -n "${generated_values[PRIVATE_DNS_TARGET_IP]}" ]]; then
+            sed -i "s|^PRIVATE_DNS_TARGET_IP=.*|PRIVATE_DNS_TARGET_IP=${generated_values[PRIVATE_DNS_TARGET_IP]}|" "$DNS_ENV_FILE"
+        fi
+        if [[ -n "${generated_values[PRIVATE_DNS_FORWARD_1]}" ]]; then
+            sed -i "s|^PRIVATE_DNS_FORWARD_1=.*|PRIVATE_DNS_FORWARD_1=${generated_values[PRIVATE_DNS_FORWARD_1]}|" "$DNS_ENV_FILE"
+        fi
+        if [[ -n "${generated_values[PRIVATE_DNS_FORWARD_2]}" ]]; then
+            sed -i "s|^PRIVATE_DNS_FORWARD_2=.*|PRIVATE_DNS_FORWARD_2=${generated_values[PRIVATE_DNS_FORWARD_2]}|" "$DNS_ENV_FILE"
+        fi
+    else
+        {
+          echo "PRIVATE_BASE_DOMAIN=${generated_values[BASE_DOMAIN]}"
+          echo "PRIVATE_DNS_TARGET_IP=${generated_values[PRIVATE_DNS_TARGET_IP]}"
+          echo "PRIVATE_DNS_HOSTS=${generated_values[PRIVATE_DNS_HOSTS]}"
+          echo "PRIVATE_DNS_FORWARD_1=${generated_values[PRIVATE_DNS_FORWARD_1]}"
+          echo "PRIVATE_DNS_FORWARD_2=${generated_values[PRIVATE_DNS_FORWARD_2]}"
+        } > "$DNS_ENV_FILE"
+    fi
 fi
 
 # Set mail service hostnames

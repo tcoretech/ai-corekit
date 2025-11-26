@@ -1724,6 +1724,7 @@ services:
       - ENABLE_RSPAMD=1          # Better than SpamAssassin
       - ENABLE_CLAMAV=0          # Disabled by default (saves RAM)
       - ENABLE_FAIL2BAN=1        # Brute-force protection
+      - FAIL2BAN_IGNORE_IP=127.0.0.1/8 172.18.0.0/16  # Allow internal Docker services (mail-ingest, etc.)
       - ENABLE_POSTGREY=0        # Greylisting (optional)
       - ENABLE_SASLAUTHD=0       # Not needed for basic setup
       - ENABLE_SPAMASSASSIN=0    # Using Rspamd instead

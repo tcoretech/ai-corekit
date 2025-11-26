@@ -219,7 +219,7 @@ services:
     profiles: ["n8n"]
     restart: unless-stopped
     ports:
-      - "5678:5678"
+      - "127.0.0.1:5678:5678"
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/backup:/backup
@@ -324,9 +324,9 @@ services:
     container_name: caddy
     image: docker.io/library/caddy:2-alpine
     ports:
-      - "80:80"
-      - "443:443"
-      - "7687:7687"
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+      - "127.0.0.1:7687:7687"
     restart: unless-stopped
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
@@ -430,7 +430,7 @@ services:
     command: tunnel --no-autoupdate run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-      - TUNNEL_METRICS=0.0.0.0:60123
+      - TUNNEL_METRICS=127.0.0.1:60123
     deploy:
       resources:
         reservations:
@@ -1684,11 +1684,11 @@ services:
     restart: unless-stopped
     # Direct port exposure (mail protocols cannot be HTTP proxied)
     ports:
-      - "25:25"     # SMTP (receiving from external)
-      - "465:465"   # SMTP (submission with SSL)
-      - "587:587"   # SMTP (submission with STARTTLS)
-      - "993:993"   # IMAPS (IMAP over SSL)
-      - "143:143"   # IMAP (with STARTTLS)
+      - "127.0.0.1:25:25"     # SMTP (receiving from external)
+      - "127.0.0.1:465:465"   # SMTP (submission with SSL)
+      - "127.0.0.1:587:587"   # SMTP (submission with STARTTLS)
+      - "127.0.0.1:993:993"   # IMAPS (IMAP over SSL)
+      - "127.0.0.1:143:143"   # IMAP (with STARTTLS)
     volumes:
       - ./docker-data/dms/mail-data/:/var/mail/
       - ./docker-data/dms/mail-state/:/var/mail-state/
@@ -1910,7 +1910,7 @@ services:
     profiles: ["jitsi"]
     restart: unless-stopped
     ports:
-      - "10000:10000/udp"
+      - "127.0.0.1:10000:10000/udp"
     volumes:
       - ./jitsi-jvb:/config
     environment:

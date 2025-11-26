@@ -116,8 +116,11 @@ def clone_supabase_repo():
     else:
         print("Supabase repository already exists, updating...")
         os.chdir("supabase")
-        run_command(["git", "pull"])
-        os.chdir("..")
+        try:
+            # keep local tweaks (e.g., binding ports to localhost) while updating
+            run_command(["git", "pull", "--rebase", "--autostash"])
+        finally:
+            os.chdir("..")
 
 def ensure_clean_supabase_db():
     """Ensure Supabase DB starts fresh if passwords don't match."""

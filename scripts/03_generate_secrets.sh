@@ -1226,30 +1226,26 @@ if [[ -z "${generated_values[METABASE_ENCRYPTION_KEY]}" ]]; then
 fi
 
 # --- N8N TASK RUNNER VERSION ---
-# Auto-detect stable n8n version by matching digest with "stable" tag
-log_info "Detecting stable n8n version..."
+# Auto-detect n8n version by pulling image and reading label
+log_info "Detecting n8n version for task runners..."
 
-# Get digest of "stable" tag
-STABLE_DIGEST=$(curl -s 'https://hub.docker.com/v2/repositories/n8nio/n8n/tags/stable' | \
-  jq -r '.images[0].digest' 2>/dev/null)
-
-if [[ -z "$STABLE_DIGEST" || "$STABLE_DIGEST" == "null" ]]; then
-    log_error "Could not fetch n8n stable digest. Check internet connection."
+# Pull latest n8n image (will be reused by docker compose build later)
+log_info "Pulling n8nio/n8n:latest to detect version..."
+if ! docker pull n8nio/n8n:latest > /dev/null 2>&1; then
+    log_error "Could not pull n8nio/n8n:latest. Check internet connection."
     exit 1
 fi
 
-# Find version tag that matches this digest
-RUNNERS_VERSION=$(curl -s 'https://hub.docker.com/v2/repositories/n8nio/n8n/tags?page_size=100' | \
-  jq -r --arg digest "$STABLE_DIGEST" \
-  '.results[] | select(.images[0].digest == $digest) | select(.name | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | .name' | \
-  head -1)
+# Read version from image label
+RUNNERS_VERSION=$(docker inspect n8nio/n8n:latest | \
+  jq -r '.[0].Config.Labels["org.opencontainers.image.version"]' 2>/dev/null)
 
-if [[ -z "$RUNNERS_VERSION" ]]; then
-    log_error "Could not find version matching stable digest."
+if [[ -z "$RUNNERS_VERSION" || "$RUNNERS_VERSION" == "null" ]]; then
+    log_error "Could not read version from n8n image label."
     exit 1
 fi
 
-log_success "Detected stable n8n/runners version: $RUNNERS_VERSION"
+log_success "Detected n8n/runners version: $RUNNERS_VERSION"
 generated_values["N8N_RUNNERS_VERSION"]="$RUNNERS_VERSION"
 _update_or_add_env_var "N8N_RUNNERS_VERSION" "$RUNNERS_VERSION"
 

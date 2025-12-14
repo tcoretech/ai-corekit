@@ -6,6 +6,19 @@ source "$(dirname "$0")/utils.sh"
 
 # Set the compose command explicitly to use docker compose subcommand
 
+# Parse command line arguments
+NO_RESET=false
+for arg in "$@"; do
+    case $arg in
+        --no-reset)
+            NO_RESET=true
+            shift
+            ;;
+        *)
+            ;;
+    esac
+done
+
 # Navigate to the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Project root directory (one level up from scripts)
@@ -22,7 +35,11 @@ fi
 log_info "Starting update process..."
 
 # Pull the latest repository changes
-log_info "Pulling latest repository changes..."
+if [ "$NO_RESET" = true ]; then
+    log_info "Pulling latest repository changes (--no-reset mode: preserving local changes)..."
+else
+    log_info "Pulling latest repository changes..."
+fi
 # Check if git is installed
 if ! command -v git &> /dev/null; then
     log_warning "'git' command not found. Skipping repository update."
@@ -31,7 +48,14 @@ if ! command -v git &> /dev/null; then
 else
     # Change to project root for git pull
     cd "$PROJECT_ROOT" || { log_error "Failed to change directory to $PROJECT_ROOT"; exit 1; }
-    git reset --hard HEAD || { log_warning "Failed to reset repository. Continuing update with potentially unreset local changes..."; }
+    
+    # Only reset if --no-reset flag is not set
+    if [ "$NO_RESET" = false ]; then
+        git reset --hard HEAD || { log_warning "Failed to reset repository. Continuing update with potentially unreset local changes..."; }
+    else
+        log_info "Skipping git reset (--no-reset mode enabled)"
+    fi
+    
     git pull || { log_warning "Failed to pull latest repository changes. Continuing update with potentially old version of apply_update.sh..."; }
 fi
 

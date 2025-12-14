@@ -678,20 +678,69 @@ if [[ -n "$GROQ_API_KEY" ]]; then
     generated_values["GROQ_API_KEY"]="$GROQ_API_KEY"
 fi
 
+if [[ -n "$MAILGUN_WEBHOOK_SIGNING_KEY" ]]; then
+    generated_values["MAILGUN_WEBHOOK_SIGNING_KEY"]="$MAILGUN_WEBHOOK_SIGNING_KEY"
+fi
+
+# Private DNS defaults
+if [[ -z "${generated_values[PRIVATE_DNS_TARGET_IP]}" ]]; then
+    generated_values["PRIVATE_DNS_TARGET_IP"]="10.255.0.5"
+fi
+if [[ -z "${generated_values[PRIVATE_DNS_HOSTS]}" ]] && [[ -n "${generated_values[BASE_DOMAIN]}" ]]; then
+    base_no_tld="${generated_values[BASE_DOMAIN]%%.*}"
+    generated_values["PRIVATE_DNS_HOSTS"]="mail.${generated_values[BASE_DOMAIN]} ssh.${generated_values[BASE_DOMAIN]} ${base_no_tld}.local"
+fi
+if [[ -z "${generated_values[PRIVATE_DNS_FORWARD_1]}" ]]; then
+    generated_values["PRIVATE_DNS_FORWARD_1"]="1.1.1.1"
+fi
+if [[ -z "${generated_values[PRIVATE_DNS_FORWARD_2]}" ]]; then
+    generated_values["PRIVATE_DNS_FORWARD_2"]="1.0.0.1"
+fi
+
+# Write DNS vars to host-services/dns/.env (local, not root)
+DNS_ENV_FILE="$PROJECT_ROOT/host-services/dns/.env"
+DNS_ENV_EXAMPLE="$PROJECT_ROOT/host-services/dns/.env.example"
+mkdir -p "$(dirname "$DNS_ENV_FILE")"
+# If DNS env already exists with base domain, keep it as-is
+if [[ -f "$DNS_ENV_FILE" ]] && grep -q "^PRIVATE_BASE_DOMAIN=" "$DNS_ENV_FILE"; then
+    : 
+else
+    if [[ -f "$DNS_ENV_EXAMPLE" ]]; then
+        cp "$DNS_ENV_EXAMPLE" "$DNS_ENV_FILE"
+        base_no_tld="${generated_values[BASE_DOMAIN]%%.*}"
+        concrete_hosts="mail.${generated_values[BASE_DOMAIN]} ssh.${generated_values[BASE_DOMAIN]} ${base_no_tld}.local"
+    sed -i "s|^PRIVATE_BASE_DOMAIN=.*|PRIVATE_BASE_DOMAIN=${generated_values[BASE_DOMAIN]}|" "$DNS_ENV_FILE"
+    sed -i "s|^PRIVATE_DNS_TARGET_IP=.*|PRIVATE_DNS_TARGET_IP=${generated_values[PRIVATE_DNS_TARGET_IP]}|" "$DNS_ENV_FILE"
+    sed -i "s|^PRIVATE_DNS_HOSTS=.*|PRIVATE_DNS_HOSTS=\"${concrete_hosts}\"|" "$DNS_ENV_FILE"
+    sed -i "s|^PRIVATE_DNS_FORWARD_1=.*|PRIVATE_DNS_FORWARD_1=${generated_values[PRIVATE_DNS_FORWARD_1]}|" "$DNS_ENV_FILE"
+    sed -i "s|^PRIVATE_DNS_FORWARD_2=.*|PRIVATE_DNS_FORWARD_2=${generated_values[PRIVATE_DNS_FORWARD_2]}|" "$DNS_ENV_FILE"
+    else
+        {
+          echo "PRIVATE_BASE_DOMAIN=${generated_values[BASE_DOMAIN]}"
+          echo "PRIVATE_DNS_TARGET_IP=${generated_values[PRIVATE_DNS_TARGET_IP]}"
+          echo "PRIVATE_DNS_HOSTS=${generated_values[PRIVATE_DNS_HOSTS]}"
+          echo "PRIVATE_DNS_FORWARD_1=${generated_values[PRIVATE_DNS_FORWARD_1]}"
+          echo "PRIVATE_DNS_FORWARD_2=${generated_values[PRIVATE_DNS_FORWARD_2]}"
+        } > "$DNS_ENV_FILE"
+    fi
+fi
+
 # Set mail service hostnames
 BASE_DOMAIN="${generated_values[BASE_DOMAIN]}"
 if [[ -n "$BASE_DOMAIN" ]]; then
     # Mailpit hostname (if not already set)
     if [[ -z "${generated_values[MAILPIT_HOSTNAME]}" ]]; then
         generated_values["MAILPIT_HOSTNAME"]="mail.${BASE_DOMAIN}"
-    fi
-    
+    fi    
     # Chatterbox TTS hostnames (if not already set)
     if [[ -z "${generated_values[CHATTERBOX_HOSTNAME]}" ]]; then
         generated_values["CHATTERBOX_HOSTNAME"]="chatterbox.${BASE_DOMAIN}"
     fi
     if [[ -z "${generated_values[CHATTERBOX_FRONTEND_HOSTNAME]}" ]]; then
         generated_values["CHATTERBOX_FRONTEND_HOSTNAME"]="voice.${BASE_DOMAIN}"
+    fi
+    if [[ -z "${generated_values[MAIL_INGEST_HOSTNAME]}" ]]; then
+        generated_values["MAIL_INGEST_HOSTNAME"]="mail-ingest.${BASE_DOMAIN}"
     fi
 fi
 
@@ -709,6 +758,14 @@ if [ ! -f "./website/index.html" ]; then
     else
         log_warning "Landing page template not found in ./templates/"
     fi
+fi
+
+# Default Mailgun SMTP relay host/port if not provided
+if [[ -z "${generated_values[MAILGUN_SMTP_HOST]}" ]]; then
+    generated_values["MAILGUN_SMTP_HOST"]="smtp.mailgun.org"
+fi
+if [[ -z "${generated_values[MAILGUN_SMTP_PORT]}" ]]; then
+    generated_values["MAILGUN_SMTP_PORT"]="587"
 fi
 
 # Create a temporary file for processing
@@ -753,6 +810,16 @@ found_vars["OUTLINE_MINIO_ROOT_USER"]=0
 found_vars["DEX_ADMIN_EMAIL"]=0
 found_vars["DEX_ADMIN_PASSWORD_HASH"]=0
 found_vars["MAILPIT_USERNAME"]=0
+found_vars["MAIL_INGEST_HOSTNAME"]=0
+found_vars["MAILGUN_WEBHOOK_SIGNING_KEY"]=0
+found_vars["MAILGUN_SMTP_HOST"]=0
+found_vars["MAILGUN_SMTP_PORT"]=0
+found_vars["MAILGUN_SMTP_USER"]=0
+found_vars["MAILGUN_SMTP_PASSWORD"]=0
+found_vars["PRIVATE_DNS_TARGET_IP"]=0
+found_vars["PRIVATE_DNS_HOSTS"]=0
+found_vars["PRIVATE_DNS_FORWARD_1"]=0
+found_vars["PRIVATE_DNS_FORWARD_2"]=0
 found_vars["EMAIL_FROM"]=0
 found_vars["EMAIL_SMTP"]=0
 found_vars["EMAIL_SMTP_HOST"]=0
@@ -814,7 +881,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             # This 'else' block is for lines from template not covered by existing values or VARS_TO_GENERATE.
             # Check if it is one of the user input vars - these are handled by found_vars later if not in template.
             is_user_input_var=0 # Reset for each line
-            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "WEBHOOK_TESTER_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "GPTR_USERNAME" "MAILPIT_USERNAME" "MAUTIC_ADMIN_EMAIL" "MAUTIC_DB_USER" "INVOICENINJA_ADMIN_EMAIL" "SEAFILE_ADMIN_EMAIL" "PAPERLESS_ADMIN_EMAIL" "PAPERLESS_GPT_USERNAME" "PAPERLESS_AI_HOSTNAME" "DEX_ADMIN_EMAIL" "DEX_ADMIN_PASSWORD_HASH" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN")
+            user_input_vars=("FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "OPENAI_API_KEY" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "WEBHOOK_TESTER_USERNAME" "RAGAPP_USERNAME" "LIBRETRANSLATE_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "GPTR_USERNAME" "MAILPIT_USERNAME" "MAIL_INGEST_HOSTNAME" "MAILGUN_WEBHOOK_SIGNING_KEY" "MAILGUN_SMTP_HOST" "MAILGUN_SMTP_PORT" "MAILGUN_SMTP_USER" "MAILGUN_SMTP_PASSWORD" "PRIVATE_DNS_TARGET_IP" "PRIVATE_DNS_HOSTS" "PRIVATE_DNS_FORWARD_1" "PRIVATE_DNS_FORWARD_2" "MAUTIC_ADMIN_EMAIL" "MAUTIC_DB_USER" "INVOICENINJA_ADMIN_EMAIL" "SEAFILE_ADMIN_EMAIL" "PAPERLESS_ADMIN_EMAIL" "PAPERLESS_GPT_USERNAME" "PAPERLESS_AI_HOSTNAME" "DEX_ADMIN_EMAIL" "DEX_ADMIN_PASSWORD_HASH" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN")
             for uivar in "${user_input_vars[@]}"; do
                 if [[ "$varName" == "$uivar" ]]; then
                     is_user_input_var=1
@@ -896,7 +963,7 @@ if [[ -z "${generated_values[SERVICE_ROLE_KEY]}" ]]; then
 fi
 
 # Add any custom variables that weren't found in the template
-for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "WEBHOOK_TESTER_USERNAME" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "MAILPIT_USERNAME" "GPTR_USERNAME" "MAUTIC_ADMIN_EMAIL" "MAUTIC_DB_USER" "INVOICENINJA_ADMIN_EMAIL" "SEAFILE_ADMIN_EMAIL" "PAPERLESS_ADMIN_EMAIL" "PAPERLESS_GPT_USERNAME" "PAPERLESS_AI_HOSTNAME" "DEX_ADMIN_EMAIL" "DEX_ADMIN_PASSWORD_HASH" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN"; do
+for var in "FLOWISE_USERNAME" "DASHBOARD_USERNAME" "LETSENCRYPT_EMAIL" "RUN_N8N_IMPORT" "OPENAI_API_KEY" "ANTHROPIC_API_KEY" "GROQ_API_KEY" "PROMETHEUS_USERNAME" "SEARXNG_USERNAME" "LANGFUSE_INIT_USER_EMAIL" "N8N_WORKER_COUNT" "WEAVIATE_USERNAME" "NEO4J_AUTH_USERNAME" "COMFYUI_USERNAME" "RAGAPP_USERNAME" "WHISPER_AUTH_USER" "TTS_AUTH_USER" "LIBRETRANSLATE_USERNAME" "LIGHTRAG_USERNAME" "PERPLEXICA_USERNAME" "WEBHOOK_TESTER_USERNAME" "ODOO_USERNAME" "BASEROW_USERNAME" "KOPIA_UI_USERNAME" "MAILPIT_USERNAME" "MAIL_INGEST_HOSTNAME" "MAILGUN_WEBHOOK_SIGNING_KEY" "MAILGUN_SMTP_HOST" "MAILGUN_SMTP_PORT" "MAILGUN_SMTP_USER" "MAILGUN_SMTP_PASSWORD" "PRIVATE_DNS_TARGET_IP" "PRIVATE_DNS_HOSTS" "PRIVATE_DNS_FORWARD_1" "PRIVATE_DNS_FORWARD_2" "GPTR_USERNAME" "MAUTIC_ADMIN_EMAIL" "MAUTIC_DB_USER" "INVOICENINJA_ADMIN_EMAIL" "SEAFILE_ADMIN_EMAIL" "PAPERLESS_ADMIN_EMAIL" "PAPERLESS_GPT_USERNAME" "PAPERLESS_AI_HOSTNAME" "DEX_ADMIN_EMAIL" "DEX_ADMIN_PASSWORD_HASH" "EMAIL_FROM" "EMAIL_SMTP" "EMAIL_SMTP_HOST" "EMAIL_SMTP_PORT" "EMAIL_SMTP_USER" "EMAIL_SMTP_PASSWORD" "EMAIL_SMTP_USE_TLS" "DOMAIN"; do
     if [[ ${found_vars["$var"]} -eq 0 && -v generated_values["$var"] ]]; then
         # Before appending, check if it's already in TMP_ENV_FILE to avoid duplicates
         if ! grep -q -E "^${var}=" "$TMP_ENV_FILE"; then

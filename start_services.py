@@ -29,6 +29,17 @@ def is_dify_enabled():
     compose_profiles = env_values.get("COMPOSE_PROFILES", "")
     return "dify" in compose_profiles.split(',')
 
+def is_private_dns_enabled():
+    """Check if user selected private-dns or provided a target IP."""
+    env_values = dotenv_values(".env")
+    compose_profiles = env_values.get("COMPOSE_PROFILES", "")
+    has_profile = "private-dns" in compose_profiles.split(',')
+    # also check local dns env if present
+    dns_env_path = os.path.join("host-services", "dns", ".env")
+    dns_env = dotenv_values(dns_env_path) if os.path.exists(dns_env_path) else {}
+    has_ip = bool(dns_env.get("PRIVATE_DNS_TARGET_IP", "").strip())
+    return has_profile or has_ip
+
 def get_all_profiles(compose_file):
     """Get all profile names from a docker-compose file."""
     if not os.path.exists(compose_file):
@@ -50,6 +61,42 @@ def run_command(cmd, cwd=None):
     print("Running:", " ".join(cmd))
     subprocess.run(cmd, cwd=cwd, check=True)
 
+def render_private_dns_corefile():
+    """Render Corefile from template using root .env values."""
+    template_path = os.path.join("host-services", "dns", "Corefile.template")
+    output_path = os.path.join("host-services", "dns", "Corefile")
+    if not os.path.exists(template_path):
+        print(f"Private DNS Corefile template not found at {template_path}, skipping render.")
+        return
+    # Load env only from local dns/.env
+    dns_env_path = os.path.join("host-services", "dns", ".env")
+    env = dotenv_values(dns_env_path) if os.path.exists(dns_env_path) else {}
+    base_domain = env.get("PRIVATE_BASE_DOMAIN", "example.com")
+    base_no_tld = base_domain.split(".", 1)[0] if "." in base_domain else base_domain
+
+    subs = {
+        "PRIVATE_DNS_TARGET_IP": env.get("PRIVATE_DNS_TARGET_IP", "10.255.0.5"),
+        "PRIVATE_DNS_HOSTS": env.get("PRIVATE_DNS_HOSTS", f"mail.{base_domain} ssh.{base_domain} {base_no_tld}.local"),
+        "PRIVATE_DNS_FORWARD_1": env.get("PRIVATE_DNS_FORWARD_1", "1.1.1.1"),
+        "PRIVATE_DNS_FORWARD_2": env.get("PRIVATE_DNS_FORWARD_2", "1.0.0.1"),
+        "BASE_DOMAIN": base_domain,
+    }
+    # Always render hosts concretely
+    subs["PRIVATE_DNS_HOSTS"] = f"mail.{base_domain} ssh.{base_domain} {base_no_tld}.local"
+
+    with open(template_path, "r") as f:
+        content = f.read()
+
+    import re
+    for k, v in subs.items():
+        # replace ${KEY} and ${KEY:-default}
+        pattern = re.compile(rf"\${{{k}(?:[:-][^}}]*)?}}")
+        content = pattern.sub(v, content)
+
+    with open(output_path, "w") as f:
+        f.write(content)
+    print(f"Rendered private DNS Corefile to {output_path}")
+
 def clone_supabase_repo():
     """Clone the Supabase repository using sparse checkout if not already present."""
     if not is_supabase_enabled():
@@ -69,8 +116,11 @@ def clone_supabase_repo():
     else:
         print("Supabase repository already exists, updating...")
         os.chdir("supabase")
-        run_command(["git", "pull"])
-        os.chdir("..")
+        try:
+            # keep local tweaks (e.g., binding ports to localhost) while updating
+            run_command(["git", "pull", "--rebase", "--autostash"])
+        finally:
+            os.chdir("..")
 
 def ensure_clean_supabase_db():
     """Ensure Supabase DB starts fresh if passwords don't match."""
@@ -247,6 +297,11 @@ def stop_existing_containers():
     if os.path.exists(dify_compose_path):
         cmd.extend(["-f", dify_compose_path])
 
+    # Private DNS compose file
+    dns_compose_path = os.path.join("host-services", "dns", "docker-compose.yml")
+    if os.path.exists(dns_compose_path):
+        cmd.extend(["-f", dns_compose_path])
+
     cmd.append("down")
     run_command(cmd)
 
@@ -319,6 +374,36 @@ def start_local_ai():
     print("Starting containers...")
     up_cmd = ["docker", "compose", "-p", "localai", "-f", "docker-compose.yml", "up", "-d"]
     run_command(up_cmd)
+
+def start_private_dns():
+    """Start CoreDNS private resolver if enabled and compose exists."""
+    if not is_private_dns_enabled():
+        print("Private DNS not enabled, skipping.")
+        return
+    dns_compose_path = os.path.join("host-services", "dns", "docker-compose.yml")
+    if not os.path.exists(dns_compose_path):
+        print(f"Private DNS compose not found at {dns_compose_path}, skipping.")
+        return
+    dns_env_path = os.path.join("host-services", "dns", ".env")
+    if not os.path.exists(dns_env_path):
+        print(f"Private DNS env not found at {dns_env_path}. Run 03_generate_secrets.sh or the wizard first. Skipping DNS start.")
+        return
+
+    # Validate required env
+    dns_env = dotenv_values(dns_env_path)
+    if not dns_env.get("PRIVATE_DNS_TARGET_IP", "").strip():
+        print("PRIVATE_DNS_TARGET_IP is missing in host-services/dns/.env; skipping DNS start to avoid port conflicts.")
+        return
+
+    render_private_dns_corefile()
+    print("Starting Private DNS (CoreDNS)...")
+    env_file_path = dns_env_path
+    run_command([
+        "docker", "compose", "-p", "localai-dns",
+        "--env-file", env_file_path,
+        "-f", dns_compose_path,
+        "up", "-d"
+    ])
 
 def generate_searxng_secret_key():
     """Generate a secret key for SearXNG based on the current platform."""
@@ -494,6 +579,9 @@ def main():
     
     # Then start the local AI services
     start_local_ai()
+
+    # Finally start private DNS if enabled
+    start_private_dns()
 
 if __name__ == "__main__":
     main()

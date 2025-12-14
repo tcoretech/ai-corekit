@@ -300,9 +300,20 @@
     reverse_proxy mailpit:8025
 }
 
+# Mailgun Incoming Webhook -> Docker-Mailserver ingest
+{$MAIL_INGEST_HOSTNAME} {
+    @mailgun path /mailgun/incoming
+    reverse_proxy @mailgun mail-ingest:3000
+}
+
 # SnappyMail Webmail Client
 {$SNAPPYMAIL_HOSTNAME} {
     reverse_proxy snappymail:8888
+}
+
+# Mailserver Certificate Generation - Only if different from SnappyMail hostname
+{$MAILSERVER_WEBMAIL_HOSTNAME} {
+    # Empty block - certificate will be generated automatically
 }
 
 # Neo4j

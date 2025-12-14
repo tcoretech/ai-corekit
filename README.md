@@ -85,18 +85,19 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 
 ### 📧 Mail System
 
-| Tool | Description | Always Active | Purpose |
-|------|-------------|---------------|----------|
-| **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI Access: `mail.yourdomain.com` | ✅ Yes | Development/Testing - captures all emails |
-| **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production mail server | ⚡ Optional | Real email delivery for production |
-| **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client Access: `webmail.yourdomain.com` | ⚡ Optional | Web interface for Docker-Mailserver |
+| Tool | Description | Always Active | Access | Purpose |
+|------|-------------|---------------|---------|----------|
+| **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | `mailpit.yourdomain.com` | Development/Testing - captures all emails |
+| **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production SMTP/IMAP server | ⚡ Optional | `mail.yourdomain.com` | Send/receive real emails |
+| **Mailgun Intake (mail-ingest)** | Mailgun webhook -> Docker-Mailserver forwarder | ⚡ Optional | `mail-ingest.yourdomain.com` | Receive inbound email via Mailgun + Cloudflare tunnel |
+| **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client | ⚡ Optional | `webmail.yourdomain.com` | Web interface for email access |
 
 **Mail Configuration:**
-- Mailpit automatically configured for all services (always active)
-- Docker-Mailserver available for production email delivery (optional)
-- SnappyMail provides a modern web interface for email access (optional, requires Docker-Mailserver)
-- Web UI to view all captured emails
-- Zero manual configuration needed!
+- **Mailpit:** Always active for development - captures emails from all services
+- **Docker-Mailserver:** Optional production email server with full SMTP/IMAP support
+- **Mailgun Intake:** Optional webhook endpoint that verifies Mailgun signatures and injects inbound mail into Docker-Mailserver over SMTP
+- **SnappyMail:** Optional webmail interface (requires Docker-Mailserver)
+- Each service uses a dedicated hostname for easy management
 
 ### 🔧 Workflow Automation
 

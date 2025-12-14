@@ -49,3 +49,7 @@ homepage_config/services.yaml
 homepage_config/docker.yaml
 homepage_config/widgets.yaml
 .env.backup
+
+host-services/dns/Corefile
+host-services/dns/.env
+host-services/ssh/.env

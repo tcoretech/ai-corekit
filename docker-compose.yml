@@ -257,6 +257,8 @@ services:
     container_name: n8n
     profiles: ["n8n"]
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/backup:/backup
@@ -347,7 +349,39 @@ services:
       - ./neo4j/data:/data
       - ./neo4j/plugins:/plugins
     environment:
-      - NEO4J_AUTH=${NEO4J_AUTH_USERNAME}/${NEO4J_AUTH_PASSWORD}
+      # Authentication
+      - NEO4J_AUTH=${NEO4J_AUTH_USERNAME:-neo4j}/${NEO4J_AUTH_PASSWORD}
+      
+      # Cloudflare Tunnel Configuration
+      # Tell Neo4j it's accessible via HTTPS through the tunnel
+      - NEO4J_server_default__advertised__address=${NEO4J_HOSTNAME}
+      - NEO4J_server_bolt_advertised__address=${NEO4J_HOSTNAME}:7687
+      - NEO4J_server_http_advertised__address=${NEO4J_HOSTNAME}
+      
+      # Disable TLS on Neo4j side - Cloudflare Tunnel handles all encryption
+      - NEO4J_server_bolt_tls__level=DISABLED
+      
+      # Browser configuration for HTTPS access
+      - NEO4J_browser_remote__content__hostname__whitelist=${NEO4J_HOSTNAME}
+      - NEO4J_browser_post__connect__cmd=play start
+      
+      # Memory settings
+      - NEO4J_server_memory_heap_initial__size=512m
+      - NEO4J_server_memory_heap_max__size=1G
+      - NEO4J_server_memory_pagecache_size=256m
+      
+      # Network settings
+      - NEO4J_server_default__listen__address=0.0.0.0
+      - NEO4J_server_bolt_listen__address=0.0.0.0:7687
+      - NEO4J_server_http_listen__address=0.0.0.0:7474
+      
+      # Security and misc settings
+      - NEO4J_dbms_security_auth__enabled=true
+      - NEO4J_client_allow__telemetry=false
+      - NEO4J_dbms_allow__upgrade=true
+    expose:
+      - "7474"
+      - "7687"
     healthcheck:
       test:
         [
@@ -366,9 +400,9 @@ services:
     container_name: caddy
     image: docker.io/library/caddy:2-alpine
     ports:
-      - "80:80"
-      - "443:443"
-      - "7687:7687"
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+      - "127.0.0.1:7687:7687"
     restart: unless-stopped
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
@@ -480,6 +514,7 @@ services:
       - MAILPIT_PASSWORD_HASH=${MAILPIT_PASSWORD_HASH}
       - MAILSERVER_WEBMAIL_HOSTNAME=${MAILSERVER_WEBMAIL_HOSTNAME}
       - SNAPPYMAIL_HOSTNAME=${SNAPPYMAIL_HOSTNAME}
+      - MAIL_INGEST_HOSTNAME=${MAIL_INGEST_HOSTNAME}
     cap_drop:
       - ALL
     cap_add:
@@ -489,20 +524,40 @@ services:
       options:
         max-size: "1m"
         max-file: "1"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2019/metrics", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
         
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared
+    container_name: cloudflared-web
     profiles: ["cloudflare-tunnel"]
-    restart: unless-stopped
+    restart: always
     command: tunnel --no-autoupdate run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+      - TUNNEL_METRICS=127.0.0.1:60123
+    deploy:
+      resources:
+        reservations:
+          memory: 64M
+        limits:
+          memory: 256M
+    mem_reservation: 64m
+    mem_limit: 256m
+    oom_score_adj: -900
     logging:
       driver: "json-file"
       options:
-        max-size: "1m"
-        max-file: "1"  
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "localhost:60123", "ready"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
 
   langfuse-worker:
     image: langfuse/langfuse-worker:3
@@ -632,8 +687,11 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
+      # Explicit PGDATA needed for Postgres 18+ when a volume is mounted
+      PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      - langfuse_postgres_data:/var/lib/postgresql/data
+      # Mount at /var/lib/postgresql (not .../data) to avoid 18+ entrypoint check
+      - langfuse_postgres_data:/var/lib/postgresql
 
   redis:
     container_name: redis
@@ -1257,7 +1315,7 @@ services:
       - ./shared:/data/shared
     environment:
       - NODE_PORT=3000
-      - PG_DATABASE_URL=postgresql://${TWENTY_CRM_DB_USER}:${TWENTY_CRM_DB_PASSWORD}@twenty-db:5432/default
+      - PG_DATABASE_URL=postgresql://${TWENTY_CRM_DB_USER}:${TWENTY_CRM_DB_PASSWORD}@twenty-db:5432/${TWENTY_CRM_DB_NAME}
       - REDIS_URL=redis://twenty-redis:6379
       - SERVER_URL=https://${TWENTY_CRM_HOSTNAME}
       - APP_SECRET=${TWENTY_CRM_APP_SECRET}
@@ -1285,7 +1343,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=${TWENTY_CRM_DB_PASSWORD}
       - POSTGRES_USER=${TWENTY_CRM_DB_USER}
-      - POSTGRES_DB=default
+      - POSTGRES_DB=${TWENTY_CRM_DB_NAME}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${TWENTY_CRM_DB_USER}"]
       interval: 10s
@@ -1720,43 +1778,59 @@ services:
       timeout: 10s
       retries: 3
 
-# Docker-Mailserver - Production email server
+# ==============================================================================
+# Production Mail Server Setup (Activate "mailserver" profile to enable):
+# 
+# Mailserver: SMTP/IMAP email server using the docker-mailserver image
   mailserver:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
     container_name: mailserver
-    hostname: mail.${BASE_DOMAIN}
+    hostname: ${MAILSERVER_WEBMAIL_HOSTNAME}
     profiles: ["mailserver"]
     restart: unless-stopped
+    # Direct port exposure (mail protocols cannot be HTTP proxied)
     ports:
-      - "25:25"     # SMTP (receiving)
-      - "587:587"   # SMTP (submission)
-      - "993:993"   # IMAP (optional, nur wenn User Mailboxen brauchen)
+      - "127.0.0.1:25:25"     # SMTP (receiving from external)
+      - "127.0.0.1:465:465"   # SMTP (submission with SSL)
+      - "127.0.0.1:587:587"   # SMTP (submission with STARTTLS)
+      - "127.0.0.1:993:993"   # IMAPS (IMAP over SSL)
+      - "127.0.0.1:143:143"   # IMAP (with STARTTLS)
     volumes:
       - ./docker-data/dms/mail-data/:/var/mail/
       - ./docker-data/dms/mail-state/:/var/mail-state/
       - ./docker-data/dms/config/:/tmp/docker-mailserver/
-      - caddy-data:/certs/:ro  # Uses Caddy's Let's Encrypt Certificates
+      - caddy-data:/certs/:ro  # Mount Caddy's certificate volume  
       - /etc/localtime:/etc/localtime:ro
       - ./shared:/data/shared
     environment:
       # Basic Configuration
-      - OVERRIDE_HOSTNAME=mail.${BASE_DOMAIN}
       - LOG_LEVEL=info
       - SUPERVISOR_LOGLEVEL=warn
       
-      # Network
+      # Network & Docker
       - PERMIT_DOCKER=network
-      - NETWORK_INTERFACE=
+      - NETWORK_INTERFACE=eth0
       
-      # Security & SSL (Caddy Zertifikate nutzen)
-      - SSL_TYPE=
-      - SSL_CERT_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.crt
-      - SSL_KEY_PATH=/certs/certificates/acme-v02.api.letsencrypt.org-directory/${BASE_DOMAIN}/${BASE_DOMAIN}.key
+      # SSL Configuration (Manual - using Caddy's certificates for mailserver hostname)  
+      - SSL_TYPE=manual
+      - SSL_CERT_PATH=/certs/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.crt
+      - SSL_KEY_PATH=/certs/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.key
+      - TLS_LEVEL=modern
       
-      # Features
+      # SMTP Settings
+      - POSTFIX_INET_PROTOCOLS=ipv4
+      - SMTP_ONLY=0              # Enable both SMTP and IMAP
+      
+      # Dovecot IMAP Settings
+      - DOVECOT_INET_PROTOCOLS=ipv4
+      - DOVECOT_TLS=yes
+      - DOVECOT_MAILBOX_FORMAT=maildir
+      
+      # Security Features
       - ENABLE_RSPAMD=1          # Better than SpamAssassin
       - ENABLE_CLAMAV=0          # Disabled by default (saves RAM)
       - ENABLE_FAIL2BAN=1        # Brute-force protection
+      - FAIL2BAN_IGNORE_IP=127.0.0.1/8 172.18.0.0/16  # Allow internal Docker services (mail-ingest, etc.)
       - ENABLE_POSTGREY=0        # Greylisting (optional)
       - ENABLE_SASLAUTHD=0       # Not needed for basic setup
       - ENABLE_SPAMASSASSIN=0    # Using Rspamd instead
@@ -1764,22 +1838,45 @@ services:
       - ENABLE_GETMAIL=0         # Not needed
       - ENABLE_AMAVIS=0          # Not needed with Rspamd
       
+      # Authentication & Delivery
+      - ENABLE_IMAP=1            # Enable IMAP service
+      - ENABLE_POP3=0            # Disable POP3 (use IMAP instead)
+      - ENABLE_MANAGESIEVE=1     # Enable Sieve mail filtering
+      - ENABLE_QUOTAS=1          # Enable mailbox quotas
+      
       # Mail Settings
       - ONE_DIR=1                # Better for Docker
       - DMS_DEBUG=0
       - POSTMASTER_ADDRESS=postmaster@${BASE_DOMAIN}
       - POSTFIX_MESSAGE_SIZE_LIMIT=20480000  # 20MB
+      - DEFAULT_RELAY_HOST=      # Leave empty for direct delivery
+      # Optional: relay outbound mail via Mailgun SMTP
+      - RELAY_HOST=${MAILGUN_SMTP_HOST}
+      - RELAY_PORT=${MAILGUN_SMTP_PORT:-587}
+      - RELAY_USER=${MAILGUN_SMTP_USER}
+      - RELAY_PASSWORD=${MAILGUN_SMTP_PASSWORD}
+      - RELAY_TLS_LEVEL=encrypt
+      
+      # Account Settings
+      - ACCOUNT_PROVISIONER=FILE # Use file-based account management
+      - ENABLE_UPDATE_CHECK=0    # Disable update checks
       
     cap_add:
       - NET_ADMIN
       - SYS_PTRACE
     healthcheck:
-      test: ["CMD", "ss", "-lnp", "|", "grep", ":25"]
+      test: ["CMD", "supervisorctl", "status", "postfix", "dovecot"]
       interval: 30s
       timeout: 10s
       retries: 3
+    # Add restart delay to allow time for Caddy to generate certificates
+    deploy:
+      restart_policy:
+        condition: on-failure  
+        delay: 15s
+        max_attempts: 3
     depends_on:
-      - caddy  # For SSL certificates
+      - caddy  # For domain certificate generation (HTTP endpoint only)
 
   # SnappyMail Webmail Client (Latest 2025)
   snappymail:
@@ -1811,6 +1908,29 @@ services:
     profiles: ["baserow", "calcom", "leantime"]
     restart: unless-stopped
     command: tcp-listen:8025,fork,reuseaddr tcp-connect:mailserver:25
+
+  mail-ingest:
+    build: ./mail-ingest
+    container_name: mail-ingest
+    profiles: ["mailserver"]
+    restart: unless-stopped
+    environment:
+      - MAILGUN_WEBHOOK_SIGNING_KEY=${MAILGUN_WEBHOOK_SIGNING_KEY}
+      - MAILSERVER_HOST=mailserver
+      - MAILSERVER_PORT=25
+      - MAILSERVER_HELO_DOMAIN=mail-ingest.${BASE_DOMAIN}
+    expose:
+      - "3000"  # internal-only; Caddy/Cloudflare tunnel will proxy
+    depends_on:
+      mailserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - default
 
   # Jitsi Web Frontend
   jitsi-web:
@@ -1897,7 +2017,7 @@ services:
     profiles: ["jitsi"]
     restart: unless-stopped
     ports:
-      - "10000:10000/udp"
+      - "127.0.0.1:10000:10000/udp"
     volumes:
       - ./jitsi-jvb:/config
     environment:

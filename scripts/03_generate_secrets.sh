@@ -33,8 +33,8 @@ declare -A VARS_TO_GENERATE=(
     ["CLICKHOUSE_PASSWORD"]="password:32"
     ["MINIO_ROOT_PASSWORD"]="password:32"
     ["LANGFUSE_SALT"]="secret:64" # base64 encoded, 48 bytes -> 64 chars
-    ["NEXTAUTH_SECRET"]="secret:64" # base64 encoded, 48 bytes -> 64 chars
-    ["ENCRYPTION_KEY"]="hex:64" # Langfuse Encryption Key (32 bytes -> 64 hex chars)
+    ["LANGFUSE_NEXTAUTH_SECRET"]="secret:64" # base64 encoded, 48 bytes -> 64 chars
+    ["LANGFUSE_ENCRYPTION_KEY"]="hex:64" # Langfuse Encryption Key (32 bytes -> 64 hex chars)
     ["GRAFANA_ADMIN_PASSWORD"]="password:32"
     # From MD file (ensure they are in template if needed)
     ["SECRET_KEY_BASE"]="base64:64" # 48 bytes -> 64 chars

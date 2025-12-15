@@ -1,0 +1,8 @@
+{
+  "id": "hoppscotch-db",
+  "category": "workflow-automation",
+  "profiles": [
+    "webhook-testing"
+  ],
+  "depends_on": []
+}

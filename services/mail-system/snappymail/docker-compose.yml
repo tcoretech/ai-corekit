@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  snappymail:
+    image: djmaze/snappymail:latest
+    container_name: snappymail
+    profiles:
+    - snappymail
+    restart: unless-stopped
+    volumes:
+    - snappymail_data:/var/lib/snappymail
+    - ../../shared-resources/shared:/data/shared
+    environment:
+    - UPLOAD_MAX_SIZE=25M
+    - PHP_MEMORY_LIMIT=128M
+    - TZ=${TZ:-UTC}
+    depends_on:
+    - mailserver
+    expose:
+    - '8888'
+    - '9000'
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - --spider
+      - http://localhost:8888/
+      interval: 30s
+      timeout: 10s
+      retries: 3
+networks:
+  default:
+    name: localai_default
+    external: true
+volumes:
+  snappymail_data: {}

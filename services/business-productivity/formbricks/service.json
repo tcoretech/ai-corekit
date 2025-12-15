@@ -1,0 +1,15 @@
+{
+  "id": "formbricks",
+  "category": "business",
+  "profiles": [
+    "formbricks"
+  ],
+  "depends_on": {
+    "formbricks_db": {
+      "condition": "service_healthy"
+    },
+    "redis": {
+      "condition": "service_healthy"
+    }
+  }
+}

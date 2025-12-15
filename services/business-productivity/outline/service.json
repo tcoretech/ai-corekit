@@ -1,0 +1,13 @@
+{
+  "id": "outline",
+  "category": "file-and-docs",
+  "profiles": [
+    "outline"
+  ],
+  "depends_on": [
+    "outline-postgres",
+    "outline-redis",
+    "outline-minio",
+    "dex"
+  ]
+}

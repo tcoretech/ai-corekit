@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  landing-page:
+    image: nginx:alpine
+    container_name: landing-page
+    profiles:
+      - core
+    restart: unless-stopped
+    volumes:
+      - ./website:/usr/share/nginx/html:ro
+    networks:
+      default:
+        aliases:
+          - landing-page
+
+networks:
+  default:
+    name: localai_default
+    external: true

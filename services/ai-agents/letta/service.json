@@ -1,0 +1,8 @@
+{
+  "id": "letta",
+  "category": "ai-agents",
+  "profiles": [
+    "letta"
+  ],
+  "depends_on": []
+}

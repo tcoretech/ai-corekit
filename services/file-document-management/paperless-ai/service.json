@@ -1,0 +1,10 @@
+{
+  "id": "paperless-ai",
+  "category": "file-and-docs",
+  "profiles": [
+    "paperless-ai"
+  ],
+  "depends_on": [
+    "paperless"
+  ]
+}

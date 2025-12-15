@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  ragapp:
+    image: ragapp/ragapp:latest
+    container_name: ragapp
+    profiles:
+    - ragapp
+    restart: unless-stopped
+networks:
+  default:
+    name: localai_default
+    external: true

@@ -1,0 +1,10 @@
+{
+  "id": "snappymail",
+  "category": "mail",
+  "profiles": [
+    "snappymail"
+  ],
+  "depends_on": [
+    "mailserver"
+  ]
+}

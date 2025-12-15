@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  redis:
+    container_name: redis
+    image: docker.io/valkey/valkey:8-alpine
+    command: valkey-server --save 30 1 --loglevel warning
+    restart: unless-stopped
+    volumes:
+    - valkey-data:/data
+    cap_drop:
+    - ALL
+    cap_add:
+    - SETGID
+    - SETUID
+    - DAC_OVERRIDE
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: '1'
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 3s
+      timeout: 10s
+      retries: 10
+networks:
+  default:
+    name: localai_default
+    external: true
+volumes:
+  valkey-data: {}

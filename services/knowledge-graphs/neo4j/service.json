@@ -1,0 +1,8 @@
+{
+  "id": "neo4j",
+  "category": "knowledge-graphs",
+  "profiles": [
+    "neo4j"
+  ],
+  "depends_on": []
+}

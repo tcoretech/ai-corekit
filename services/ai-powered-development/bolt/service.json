@@ -1,0 +1,8 @@
+{
+  "id": "bolt",
+  "category": "ai-dev",
+  "profiles": [
+    "bolt"
+  ],
+  "depends_on": []
+}

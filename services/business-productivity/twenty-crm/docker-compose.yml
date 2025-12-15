@@ -1,0 +1,73 @@
+services:
+  twenty-crm:
+    image: twentycrm/twenty:latest
+    container_name: twenty-crm
+    profiles:
+    - twenty-crm
+    restart: unless-stopped
+    volumes:
+    - twenty_data:/app/packages/twenty-server/.local-storage
+    - ../../shared-resources/shared:/data/shared
+    environment:
+    - NODE_PORT=3000
+    - PG_DATABASE_URL=postgresql://${TWENTY_CRM_DB_USER}:${TWENTY_CRM_DB_PASSWORD}@twenty-db:5432/${TWENTY_CRM_DB_NAME}
+    - REDIS_URL=redis://twenty-redis:6379
+    - SERVER_URL=https://${TWENTY_CRM_HOSTNAME}
+    - APP_SECRET=${TWENTY_CRM_APP_SECRET}
+    - STORAGE_TYPE=local
+    - DISABLE_DB_MIGRATIONS=false
+    depends_on:
+      twenty-db:
+        condition: service_healthy
+      twenty-redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:3000/api/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+  twenty-redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    profiles:
+    - twenty-crm
+    restart: unless-stopped
+    volumes:
+    - twenty_redis_data:/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - redis-cli ping | grep PONG
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  twenty-db:
+    image: postgres:${TWENTY_POSTGRES_VERSION:-16-alpine}
+    container_name: twenty-db
+    profiles:
+    - twenty-crm
+    restart: unless-stopped
+    volumes:
+    - twenty_db_data:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_PASSWORD=${TWENTY_CRM_DB_PASSWORD}
+    - POSTGRES_USER=${TWENTY_CRM_DB_USER}
+    - POSTGRES_DB=${TWENTY_CRM_DB_NAME}
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${TWENTY_CRM_DB_USER}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  twenty_data: {}
+  twenty_redis_data: {}
+  twenty_db_data: {}
+networks:
+  default:
+    name: localai_default
+    external: true

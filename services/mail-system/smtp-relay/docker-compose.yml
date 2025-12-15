@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  smtp-relay:
+    image: alpine/socat
+    container_name: smtp-relay
+    profiles:
+    - baserow
+    - calcom
+    - leantime
+    restart: unless-stopped
+    command: tcp-listen:8025,fork,reuseaddr tcp-connect:mailserver:25
+networks:
+  default:
+    name: localai_default
+    external: true

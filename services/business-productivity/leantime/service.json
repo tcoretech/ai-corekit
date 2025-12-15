@@ -1,0 +1,12 @@
+{
+  "id": "leantime",
+  "category": "business",
+  "profiles": [
+    "leantime"
+  ],
+  "depends_on": {
+    "mysql_leantime": {
+      "condition": "service_healthy"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "livekit-server",
+  "category": "video-conferencing",
+  "profiles": [
+    "livekit"
+  ],
+  "depends_on": {
+    "redis": {
+      "condition": "service_healthy"
+    }
+  }
+}

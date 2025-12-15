@@ -1,0 +1,8 @@
+{
+  "id": "clickhouse",
+  "category": "data-infrastructure",
+  "profiles": [
+    "langfuse"
+  ],
+  "depends_on": []
+}

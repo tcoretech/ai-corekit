@@ -1,0 +1,15 @@
+{
+  "id": "twenty-crm",
+  "category": "business",
+  "profiles": [
+    "twenty-crm"
+  ],
+  "depends_on": {
+    "twenty-db": {
+      "condition": "service_healthy"
+    },
+    "twenty-redis": {
+      "condition": "service_healthy"
+    }
+  }
+}

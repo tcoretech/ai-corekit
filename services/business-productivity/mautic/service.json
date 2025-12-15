@@ -1,0 +1,8 @@
+{
+  "id": "mautic_redis",
+  "category": "business",
+  "profiles": [
+    "mautic"
+  ],
+  "depends_on": []
+}

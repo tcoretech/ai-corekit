@@ -1,0 +1,10 @@
+{
+  "id": "gitea",
+  "category": "workflow-automation",
+  "profiles": [
+    "gitea"
+  ],
+  "depends_on": [
+    "gitea-db"
+  ]
+}

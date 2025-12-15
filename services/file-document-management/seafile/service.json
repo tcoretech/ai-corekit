@@ -1,0 +1,10 @@
+{
+  "id": "seafile",
+  "category": "file-and-docs",
+  "profiles": [
+    "seafile"
+  ],
+  "depends_on": [
+    "seafile-db"
+  ]
+}

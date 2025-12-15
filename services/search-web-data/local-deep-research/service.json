@@ -1,0 +1,10 @@
+{
+  "id": "local-deep-research",
+  "category": "uncategorized",
+  "profiles": [
+    "local-deep-research"
+  ],
+  "depends_on": [
+    "searxng"
+  ]
+}

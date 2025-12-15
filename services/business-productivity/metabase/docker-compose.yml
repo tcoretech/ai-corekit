@@ -1,0 +1,57 @@
+services:
+  metabase:
+    image: metabase/metabase:latest
+    container_name: metabase
+    profiles:
+    - metabase
+    restart: unless-stopped
+    volumes:
+    - metabase_data:/metabase-data
+    environment:
+    - MB_DB_TYPE=postgres
+    - MB_DB_DBNAME=metabase
+    - MB_DB_PORT=5432
+    - MB_DB_USER=metabase
+    - MB_DB_PASS=${METABASE_DB_PASSWORD}
+    - MB_DB_HOST=metabase_db
+    depends_on:
+      metabase_db:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:3000/api/health
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+  metabase_db:
+    image: postgres:${METABASE_POSTGRES_VERSION:-16-alpine}
+    container_name: metabase_db
+    profiles:
+    - metabase
+    restart: unless-stopped
+    volumes:
+    - metabase_postgres:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_DB=${METABASE_DB_NAME:-metabase}
+    - POSTGRES_USER=${METABASE_DB_USER:-metabase}
+    - POSTGRES_PASSWORD=${METABASE_DB_PASSWORD}
+    - POSTGRES_INITDB_ARGS=--encoding=UTF8 --lc-collate=C --lc-ctype=C
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${METABASE_DB_USER:-metabase}
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+volumes:
+  metabase_data: {}
+  metabase_postgres: {}
+networks:
+  default:
+    name: localai_default
+    external: true

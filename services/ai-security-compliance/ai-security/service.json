@@ -1,0 +1,8 @@
+{
+  "id": "flair-pii",
+  "category": "uncategorized",
+  "profiles": [
+    "ai-security"
+  ],
+  "depends_on": []
+}

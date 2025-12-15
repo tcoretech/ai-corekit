@@ -1,0 +1,8 @@
+{
+  "id": "gotenberg",
+  "category": "uncategorized",
+  "profiles": [
+    "gotenberg"
+  ],
+  "depends_on": []
+}

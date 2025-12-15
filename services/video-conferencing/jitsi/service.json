@@ -1,0 +1,10 @@
+{
+  "id": "jitsi-jvb",
+  "category": "video-conferencing",
+  "profiles": [
+    "jitsi"
+  ],
+  "depends_on": [
+    "jitsi-prosody"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "open-webui",
+  "category": "user-interfaces",
+  "profiles": [
+    "open-webui"
+  ],
+  "depends_on": []
+}

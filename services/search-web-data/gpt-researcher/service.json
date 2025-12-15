@@ -1,0 +1,10 @@
+{
+  "id": "gpt-researcher",
+  "category": "uncategorized",
+  "profiles": [
+    "gpt-researcher"
+  ],
+  "depends_on": [
+    "searxng"
+  ]
+}

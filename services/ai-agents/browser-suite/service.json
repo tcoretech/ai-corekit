@@ -1,0 +1,8 @@
+{
+  "id": "skyvern-postgres",
+  "category": "ai-agents",
+  "profiles": [
+    "browser-suite"
+  ],
+  "depends_on": []
+}

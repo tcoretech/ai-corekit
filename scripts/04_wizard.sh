@@ -436,12 +436,6 @@ if [ $cloudflare_ssh_selected -eq 1 ]; then
     
     mkdir -p "$SSH_TUNNEL_DIR"
     
-    # Set SSH enabled flag in main env
-    if grep -q "^CLOUDFLARE_SSH_ENABLED=" "$ENV_FILE"; then
-        sed -i.bak "/^CLOUDFLARE_SSH_ENABLED=/d" "$ENV_FILE"
-    fi
-    echo "CLOUDFLARE_SSH_ENABLED=true" >> "$ENV_FILE"
-    
     # Configure SSH tunnel token in host-services/ssh/.env
     existing_ssh_token=""
     if [ -f "$SSH_TUNNEL_ENV" ] && grep -q "^CLOUDFLARE_SSH_TUNNEL_TOKEN=" "$SSH_TUNNEL_ENV"; then
@@ -497,13 +491,6 @@ if [ $cloudflare_ssh_selected -eq 1 ]; then
     echo "   sudo ufw delete allow 22/tcp"
     echo "   sudo ufw reload"
     echo ""
-else
-    # SSH tunnel not selected - ensure it's disabled
-    if grep -q "^CLOUDFLARE_SSH_ENABLED=" "$ENV_FILE"; then
-        sed -i.bak "/^CLOUDFLARE_SSH_ENABLED=/d" "$ENV_FILE"
-    fi
-    echo "CLOUDFLARE_SSH_ENABLED=false" >> "$ENV_FILE"
-fi
 
 # Final security message if any Cloudflare tunnel is configured
 if [ $cloudflare_tunnel_selected -eq 1 ] || [ $cloudflare_ssh_selected -eq 1 ]; then

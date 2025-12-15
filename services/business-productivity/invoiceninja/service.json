@@ -1,0 +1,15 @@
+{
+  "id": "invoiceninja",
+  "category": "business",
+  "profiles": [
+    "invoiceninja"
+  ],
+  "depends_on": {
+    "invoiceninja_db": {
+      "condition": "service_healthy"
+    },
+    "redis": {
+      "condition": "service_healthy"
+    }
+  }
+}

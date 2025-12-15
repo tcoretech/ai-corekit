@@ -1,0 +1,8 @@
+{
+  "id": "lightrag",
+  "category": "knowledge-graphs",
+  "profiles": [
+    "lightrag"
+  ],
+  "depends_on": []
+}

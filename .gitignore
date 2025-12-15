@@ -1,55 +1,93 @@
+# Global Ignores
 .DS_Store
-.env
+*.env
+**/.env
 .env.bak
 .env.test
-neo4j/
-searxng/settings.yml
-searxng/uwsgi*
+.env.global
+.env.backup
+credentials.*.txt
+ai-launchkit-credentials.json
+dkim_*
+**/Caddyfile
+
+# Service Data & Logs (Standardized)
+**/data/
+**/logs/
+**/tmp/
+**/backup/
+**/backups/
+**/storage/
+**/uploads/
+**/db/
+**/database/
+
+# Specific Service Data (Legacy/Specific)
+volumes/
+docker-data/
 shared-backup/
-shared/
-supabase/
-dify/
-volumes/bolt-data/
-openedai-config/
-openedai-voices/
-perplexica/
-# Mail Services
+services/shared-resources/shared/
+services/shared-resources/media/
+services/shared-resources/temp/
+
+# Service Specifics
+# Caddy
+services/system-management/caddy/caddy-data/
+services/system-management/caddy/caddy-config/
+
+# Homepage
+services/user-interfaces/homepage/config/logs/
+services/user-interfaces/homepage/config/services.yaml
+services/user-interfaces/homepage/config/docker.yaml
+services/user-interfaces/homepage/config/widgets.yaml
+
+# Postiz
+services/user-interfaces/postiz/config/
+
+# Mailserver
+services/mail-system/mailserver/dms/*
+
+# Neo4j
+services/knowledge-graphs/neo4j/data/
+services/knowledge-graphs/neo4j/logs/
+services/knowledge-graphs/neo4j/import/
+services/knowledge-graphs/neo4j/plugins/
+
+# Monitoring
+services/system-management/monitoring/grafana/data/
+services/system-management/monitoring/prometheus/data/
+
+# Postal (Legacy/Root)
 postal/config/
 mailpit_data/
 postal_mariadb/
 postal_rabbitmq/
 postal_assets/
 postal_uploads/
-calcom-docker/
 *.backup-postal
-docker-data/
-dkim_generation.log
-dkim_record.txt
 
-# Jitsi configuration directories
+# Jitsi
 jitsi-jicofo/
 jitsi-jvb/
 jitsi-prosody-config/
 jitsi-prosody-plugins/
 jitsi-web/
 jitsi-transcripts/
-VAULTWARDEN_IMPORT.txt
-ai-launchkit-credentials.json
-chatterbox-frontend/
-chatterbox-frontend/
-chatterbox-frontend/
-website/
-vexa/
-volumes/
-opennotebook/
-credentials.*.txt
-dex/config.yaml
-homepage_config/logs/
-homepage_config/services.yaml
-homepage_config/docker.yaml
-homepage_config/widgets.yaml
-.env.backup
 
-host-services/dns/Corefile
-host-services/dns/.env
-host-services/ssh/.env
+# Other Services
+**/searxng/settings.yml
+**/searxng/uwsgi*
+supabase/
+dify/
+perplexica/
+opennotebook/
+**/dex/config.yaml
+vexa/
+calcom-docker/
+services/business-productivity/calcom/docker/
+chatterbox-frontend/
+
+# Host Services
+services/host-services/dns/Corefile
+services/host-services/dns/.env
+services/host-services/ssh/.env

@@ -1,0 +1,10 @@
+{
+  "id": "ollama-pull-llama-cpu",
+  "category": "uncategorized",
+  "profiles": [
+    "cpu"
+  ],
+  "depends_on": [
+    "ollama-cpu"
+  ]
+}

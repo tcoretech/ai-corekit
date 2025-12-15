@@ -1,0 +1,8 @@
+{
+  "id": "cadvisor",
+  "category": "uncategorized",
+  "profiles": [
+    "monitoring"
+  ],
+  "depends_on": []
+}

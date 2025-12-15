@@ -1,0 +1,12 @@
+{
+  "id": "metabase",
+  "category": "business",
+  "profiles": [
+    "metabase"
+  ],
+  "depends_on": {
+    "metabase_db": {
+      "condition": "service_healthy"
+    }
+  }
+}

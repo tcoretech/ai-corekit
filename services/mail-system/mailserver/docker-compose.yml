@@ -1,0 +1,87 @@
+services:
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:latest
+    container_name: mailserver
+    hostname: ${MAILSERVER_WEBMAIL_HOSTNAME}
+    profiles:
+    - mailserver
+    restart: unless-stopped
+    ports:
+    - 127.0.0.1:25:25
+    - 127.0.0.1:465:465
+    - 127.0.0.1:587:587
+    - 127.0.0.1:993:993
+    - 127.0.0.1:143:143
+    volumes:
+    - ./dms/mail-data/:/var/mail/
+    - ./dms/mail-state/:/var/mail-state/
+    - ./dms/config/:/tmp/docker-mailserver/
+    - caddy-data:/certs/:ro
+    - /etc/localtime:/etc/localtime:ro
+    - ../../shared-resources/shared:/data/shared
+    environment:
+    - LOG_LEVEL=info
+    - SUPERVISOR_LOGLEVEL=warn
+    - PERMIT_DOCKER=network
+    - NETWORK_INTERFACE=eth0
+    - SSL_TYPE=manual
+    - SSL_CERT_PATH=/certs/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.crt
+    - SSL_KEY_PATH=/certs/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.key
+    - TLS_LEVEL=modern
+    - POSTFIX_INET_PROTOCOLS=ipv4
+    - SMTP_ONLY=0
+    - DOVECOT_INET_PROTOCOLS=ipv4
+    - DOVECOT_TLS=yes
+    - DOVECOT_MAILBOX_FORMAT=maildir
+    - ENABLE_RSPAMD=1
+    - ENABLE_CLAMAV=0
+    - ENABLE_FAIL2BAN=1
+    - FAIL2BAN_IGNORE_IP=127.0.0.1/8 172.18.0.0/16
+    - ENABLE_POSTGREY=0
+    - ENABLE_SASLAUTHD=0
+    - ENABLE_SPAMASSASSIN=0
+    - ENABLE_FETCHMAIL=0
+    - ENABLE_GETMAIL=0
+    - ENABLE_AMAVIS=0
+    - ENABLE_IMAP=1
+    - ENABLE_POP3=0
+    - ENABLE_MANAGESIEVE=1
+    - ENABLE_QUOTAS=1
+    - ONE_DIR=1
+    - DMS_DEBUG=0
+    - POSTMASTER_ADDRESS=postmaster@${BASE_DOMAIN}
+    - POSTFIX_MESSAGE_SIZE_LIMIT=20480000
+    - DEFAULT_RELAY_HOST=
+    - RELAY_HOST=${MAILGUN_SMTP_HOST}
+    - RELAY_PORT=${MAILGUN_SMTP_PORT:-587}
+    - RELAY_USER=${MAILGUN_SMTP_USER}
+    - RELAY_PASSWORD=${MAILGUN_SMTP_PASSWORD}
+    - RELAY_TLS_LEVEL=encrypt
+    - ACCOUNT_PROVISIONER=FILE
+    - ENABLE_UPDATE_CHECK=0
+    cap_add:
+    - NET_ADMIN
+    - SYS_PTRACE
+    healthcheck:
+      test:
+      - CMD
+      - supervisorctl
+      - status
+      - postfix
+      - dovecot
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 15s
+        max_attempts: 3
+    depends_on:
+    - caddy
+volumes:
+  caddy-data: {}
+networks:
+  default:
+    name: localai_default
+    external: true

@@ -1,0 +1,5 @@
+# Host SSH Stack
+# Provides SSH access via Cloudflare Tunnel.
+
+services:
+  - cloudflare-ssh-tunnel

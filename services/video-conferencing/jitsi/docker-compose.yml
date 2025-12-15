@@ -1,0 +1,106 @@
+services:
+  jitsi-jvb:
+    image: jitsi/jvb:stable-10008
+    container_name: jitsi-jvb
+    profiles:
+    - jitsi
+    restart: unless-stopped
+    ports:
+    - 127.0.0.1:10000:10000/udp
+    volumes:
+    - ${PROJECT_ROOT}/jitsi-jvb:/config
+    environment:
+    - DOCKER_HOST_ADDRESS=${JVB_DOCKER_HOST_ADDRESS}
+    - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}
+    - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.${JITSI_XMPP_DOMAIN}
+    - XMPP_SERVER=jitsi-prosody
+    - JVB_AUTH_USER=jvb
+    - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
+    - JVB_BREWERY_MUC=jvbbrewery
+    - JVB_PORT=10000
+    - JVB_STUN_SERVERS=meet-jit-si-turnrelay.jitsi.net:443
+    - PUBLIC_URL=https://${JITSI_HOSTNAME}
+    - JVB_WS_DOMAIN=${JITSI_HOSTNAME}
+    - JVB_WS_SERVER_ID=jvb1
+    - TZ=${TZ}
+    depends_on:
+    - jitsi-prosody
+  jitsi-web:
+    image: jitsi/web:stable-10008
+    container_name: jitsi-web
+    profiles:
+    - jitsi
+    restart: unless-stopped
+    volumes:
+    - ${PROJECT_ROOT}/jitsi-web:/config
+    - ${PROJECT_ROOT}/jitsi-transcripts:/usr/share/jitsi-meet/transcripts
+    environment:
+    - ENABLE_LETSENCRYPT=0
+    - ENABLE_HTTP_REDIRECT=0
+    - DISABLE_HTTPS=1
+    - PUBLIC_URL=https://${JITSI_HOSTNAME}
+    - XMPP_DOMAIN=${JITSI_XMPP_DOMAIN}
+    - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}
+    - XMPP_BOSH_URL_BASE=http://jitsi-prosody:5280
+    - XMPP_MUC_DOMAIN=muc.${JITSI_XMPP_DOMAIN}
+    - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.${JITSI_XMPP_DOMAIN}
+    - JICOFO_AUTH_USER=jicofo
+    - JVB_WS_DOMAIN=${JITSI_HOSTNAME}
+    - JVB_WS_SERVER_ID=jvb1
+    - TZ=${TZ}
+    depends_on:
+    - jitsi-prosody
+    expose:
+    - '80'
+  jitsi-prosody:
+    image: jitsi/prosody:stable-10008
+    container_name: jitsi-prosody
+    profiles:
+    - jitsi
+    restart: unless-stopped
+    expose:
+    - '5222'
+    - '5347'
+    - '5280'
+    volumes:
+    - ${PROJECT_ROOT}/jitsi-prosody-config:/config
+    - ${PROJECT_ROOT}/jitsi-prosody-plugins:/prosody-plugins-custom
+    environment:
+    - AUTH_TYPE=internal
+    - ENABLE_GUESTS=1
+    - XMPP_DOMAIN=${JITSI_XMPP_DOMAIN}
+    - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}
+    - XMPP_GUEST_DOMAIN=guest.${JITSI_XMPP_DOMAIN}
+    - XMPP_MUC_DOMAIN=muc.${JITSI_XMPP_DOMAIN}
+    - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.${JITSI_XMPP_DOMAIN}
+    - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
+    - JICOFO_AUTH_USER=jicofo
+    - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
+    - JVB_AUTH_USER=jvb
+    - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
+    - TZ=${TZ}
+  jitsi-jicofo:
+    image: jitsi/jicofo:stable-10008
+    container_name: jitsi-jicofo
+    profiles:
+    - jitsi
+    restart: unless-stopped
+    volumes:
+    - ${PROJECT_ROOT}/jitsi-jicofo:/config
+    environment:
+    - XMPP_DOMAIN=${JITSI_XMPP_DOMAIN}
+    - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}
+    - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.${JITSI_XMPP_DOMAIN}
+    - XMPP_MUC_DOMAIN=muc.${JITSI_XMPP_DOMAIN}
+    - XMPP_SERVER=jitsi-prosody
+    - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
+    - JICOFO_AUTH_USER=jicofo
+    - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
+    - JVB_BREWERY_MUC=jvbbrewery
+    - TZ=${TZ}
+    depends_on:
+    - jitsi-prosody
+networks:
+  default:
+    name: localai_default
+    external: true

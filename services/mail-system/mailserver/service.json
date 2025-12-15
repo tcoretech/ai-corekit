@@ -1,0 +1,10 @@
+{
+  "id": "mailserver",
+  "category": "mail",
+  "profiles": [
+    "mailserver"
+  ],
+  "depends_on": [
+    "caddy"
+  ]
+}

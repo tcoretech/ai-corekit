@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:${POSTGRES_VERSION:-17}
+    restart: unless-stopped
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U postgres
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/18/docker
+    volumes:
+    - langfuse_postgres_data:/var/lib/postgresql
+networks:
+  default:
+    name: localai_default
+    external: true
+volumes:
+  langfuse_postgres_data: {}

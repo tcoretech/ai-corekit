@@ -1,0 +1,10 @@
+{
+  "id": "docuseal",
+  "category": "file-and-docs",
+  "profiles": [
+    "docuseal"
+  ],
+  "depends_on": [
+    "docuseal-db"
+  ]
+}

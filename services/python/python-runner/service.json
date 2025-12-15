@@ -1,0 +1,8 @@
+{
+  "id": "python-runner",
+  "category": "system-management",
+  "profiles": [
+    "python-runner"
+  ],
+  "depends_on": []
+}

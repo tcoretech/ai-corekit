@@ -1,0 +1,8 @@
+{
+  "id": "flowise",
+  "category": "ai-agents",
+  "profiles": [
+    "flowise"
+  ],
+  "depends_on": []
+}

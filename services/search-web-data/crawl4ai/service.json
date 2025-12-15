@@ -1,0 +1,8 @@
+{
+  "id": "crawl4ai",
+  "category": "search",
+  "profiles": [
+    "crawl4ai"
+  ],
+  "depends_on": []
+}

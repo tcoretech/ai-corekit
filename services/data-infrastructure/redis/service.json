@@ -1,0 +1,6 @@
+{
+  "id": "redis",
+  "category": "data-infrastructure",
+  "profiles": [],
+  "depends_on": []
+}

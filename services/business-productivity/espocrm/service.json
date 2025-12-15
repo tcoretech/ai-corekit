@@ -1,0 +1,12 @@
+{
+  "id": "espocrm",
+  "category": "business",
+  "profiles": [
+    "espocrm"
+  ],
+  "depends_on": {
+    "espocrm-db": {
+      "condition": "service_healthy"
+    }
+  }
+}

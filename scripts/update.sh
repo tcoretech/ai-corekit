@@ -84,18 +84,8 @@ else
 fi
 
 # Setup Dex for Outline if selected
-log_info "Checking if Outline needs Dex configuration..."
-if grep -q "outline" "$PROJECT_ROOT/.env" 2>/dev/null || [[ "$COMPOSE_PROFILES" == *"outline"* ]]; then
-    if [ -f "$SCRIPT_DIR/setup_dex_config.sh" ]; then
-        log_info "Outline detected - generating Dex configuration..."
-        bash "$SCRIPT_DIR/setup_dex_config.sh" || { log_warning "Dex configuration failed - continuing update..."; }
-        log_success "Dex configuration complete!"
-    else
-        log_warning "Outline selected but Dex setup script not found"
-    fi
-else
-    log_info "Outline not selected, skipping Dex setup"
-fi
+# Logic moved to services/business-productivity/outline/init.sh
+log_info "Dex configuration is now handled by the Outline service init script."
 
 # Execute the rest of the update process using the (potentially updated) apply_update.sh
 # This includes: 03_generate_secrets.sh --update, 04_wizard.sh, 05_run_services.sh

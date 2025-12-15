@@ -1,0 +1,7 @@
+{
+  "id": "watchtower",
+  "name": "Watchtower",
+  "description": "Automated Docker container updates",
+  "category": "System Management",
+  "documentation": "https://containrrr.dev/watchtower/"
+}

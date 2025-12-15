@@ -1,0 +1,10 @@
+{
+  "id": "smtp-relay",
+  "category": "uncategorized",
+  "profiles": [
+    "baserow",
+    "calcom",
+    "leantime"
+  ],
+  "depends_on": []
+}

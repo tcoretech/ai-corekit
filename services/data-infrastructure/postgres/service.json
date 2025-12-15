@@ -1,0 +1,6 @@
+{
+  "id": "postgres",
+  "category": "data-infrastructure",
+  "profiles": [],
+  "depends_on": []
+}

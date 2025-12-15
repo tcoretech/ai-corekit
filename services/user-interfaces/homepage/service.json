@@ -1,0 +1,8 @@
+{
+  "id": "homepage",
+  "category": "user-interfaces",
+  "profiles": [
+    "homepage"
+  ],
+  "depends_on": []
+}

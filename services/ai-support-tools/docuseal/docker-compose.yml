@@ -1,0 +1,40 @@
+services:
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: docuseal
+    profiles:
+    - docuseal
+    restart: unless-stopped
+    depends_on:
+    - docuseal-db
+    environment:
+    - DATABASE_URL=postgresql://docuseal:${DOCUSEAL_DB_PASSWORD}@docuseal-db:5432/docuseal
+    - FORCE_SSL=false
+    volumes:
+    - docuseal_data:/data
+  docuseal-db:
+    image: postgres:17-alpine
+    container_name: docuseal-db
+    profiles:
+    - docuseal
+    restart: unless-stopped
+    environment:
+    - POSTGRES_USER=docuseal
+    - POSTGRES_PASSWORD=${DOCUSEAL_DB_PASSWORD}
+    - POSTGRES_DB=docuseal
+    volumes:
+    - docuseal_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U docuseal
+      interval: 30s
+      timeout: 10s
+      retries: 3
+volumes:
+  docuseal_data: {}
+  docuseal_postgres_data: {}
+networks:
+  default:
+    name: localai_default
+    external: true

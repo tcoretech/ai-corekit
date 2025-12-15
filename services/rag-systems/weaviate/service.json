@@ -1,0 +1,8 @@
+{
+  "id": "weaviate",
+  "category": "rag-systems",
+  "profiles": [
+    "weaviate"
+  ],
+  "depends_on": []
+}

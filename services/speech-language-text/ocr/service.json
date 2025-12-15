@@ -1,0 +1,8 @@
+{
+  "id": "easyocr",
+  "category": "speech-text",
+  "profiles": [
+    "ocr"
+  ],
+  "depends_on": []
+}

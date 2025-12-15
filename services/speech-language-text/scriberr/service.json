@@ -1,0 +1,8 @@
+{
+  "id": "scriberr",
+  "category": "speech-text",
+  "profiles": [
+    "scriberr"
+  ],
+  "depends_on": []
+}

@@ -1,0 +1,18 @@
+{
+  "id": "baserow",
+  "category": "business",
+  "profiles": [
+    "baserow"
+  ],
+  "depends_on": {
+    "baserow-init": {
+      "condition": "service_completed_successfully"
+    },
+    "postgres": {
+      "condition": "service_healthy"
+    },
+    "redis": {
+      "condition": "service_healthy"
+    }
+  }
+}

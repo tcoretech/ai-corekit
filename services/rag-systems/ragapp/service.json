@@ -1,0 +1,8 @@
+{
+  "id": "ragapp",
+  "category": "rag-systems",
+  "profiles": [
+    "ragapp"
+  ],
+  "depends_on": []
+}

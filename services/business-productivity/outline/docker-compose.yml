@@ -1,0 +1,110 @@
+services:
+  outline:
+    image: docker.getoutline.com/outlinewiki/outline:latest
+    container_name: outline
+    profiles:
+    - outline
+    restart: unless-stopped
+    command: sh -c "yarn start --env=production-ssl-disabled"
+    depends_on:
+    - outline-postgres
+    - outline-redis
+    - outline-minio
+    - dex
+    environment:
+    - NODE_ENV=production
+    - SECRET_KEY=${OUTLINE_SECRET_KEY}
+    - UTILS_SECRET=${OUTLINE_UTILS_SECRET}
+    - DATABASE_URL=postgres://outline:outline@outline-postgres:5432/outline
+    - DATABASE_CONNECTION_POOL_MIN=5
+    - DATABASE_CONNECTION_POOL_MAX=100
+    - PGSSLMODE=disable
+    - REDIS_URL=redis://outline-redis:6379
+    - URL=https://${OUTLINE_HOSTNAME}
+    - PORT=3000
+    - FILE_STORAGE=s3
+    - FILE_STORAGE_UPLOAD_MAX_SIZE=26214400
+    - AWS_ACCESS_KEY_ID=${OUTLINE_MINIO_ROOT_USER}
+    - AWS_SECRET_ACCESS_KEY=${OUTLINE_MINIO_ROOT_PASSWORD}
+    - AWS_REGION=us-east-1
+    - AWS_S3_UPLOAD_BUCKET_URL=https://${OUTLINE_S3_HOSTNAME}
+    - AWS_S3_UPLOAD_BUCKET_NAME=outline
+    - AWS_S3_FORCE_PATH_STYLE=true
+    - AWS_S3_ACL=private
+    - OIDC_CLIENT_ID=outline
+    - OIDC_CLIENT_SECRET=${OUTLINE_OIDC_CLIENT_SECRET}
+    - OIDC_AUTH_URI=https://${DEX_HOSTNAME}/auth
+    - OIDC_TOKEN_URI=http://dex:5556/token
+    - OIDC_USERINFO_URI=http://dex:5556/userinfo
+    - OIDC_DISPLAY_NAME=Login
+    - OIDC_SCOPES=openid profile email
+    - FORCE_HTTPS=false
+    - SECURE_COOKIES=false
+    - TRUST_PROXY=true
+    volumes:
+    - outline_data:/var/lib/outline/data
+  outline-minio:
+    image: minio/minio:latest
+    container_name: outline-minio
+    profiles:
+    - outline
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+    - MINIO_ROOT_USER=${OUTLINE_MINIO_ROOT_USER}
+    - MINIO_ROOT_PASSWORD=${OUTLINE_MINIO_ROOT_PASSWORD}
+    - MINIO_BROWSER_REDIRECT_URL=https://${OUTLINE_S3_ADMIN_HOSTNAME}
+    volumes:
+    - outline_minio_data:/data
+  outline-postgres:
+    image: postgres:17-alpine
+    container_name: outline-postgres
+    profiles:
+    - outline
+    restart: unless-stopped
+    environment:
+    - POSTGRES_USER=outline
+    - POSTGRES_PASSWORD=outline
+    - POSTGRES_DB=outline
+    volumes:
+    - outline_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U outline
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  outline-redis:
+    image: redis:7-alpine
+    container_name: outline-redis
+    profiles:
+    - outline
+    restart: unless-stopped
+    volumes:
+    - outline_redis_data:/data
+  dex:
+    image: ghcr.io/dexidp/dex:v2.37.0
+    container_name: dex
+    profiles:
+    - outline
+    restart: unless-stopped
+    volumes:
+    - ./dex/config.yaml:/etc/dex/config.yaml:ro
+    - dex_data:/var/dex
+    environment:
+    - DEX_FRONTEND_DIR=/srv/dex/web
+    command:
+    - dex
+    - serve
+    - /etc/dex/config.yaml
+volumes:
+  outline_data: {}
+  outline_minio_data: {}
+  outline_postgres_data: {}
+  outline_redis_data: {}
+  dex_data: {}
+networks:
+  default:
+    name: localai_default
+    external: true

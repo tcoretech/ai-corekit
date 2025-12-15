@@ -1,0 +1,84 @@
+services:
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless-ngx
+    profiles:
+    - paperless
+    restart: unless-stopped
+    environment:
+    - PAPERLESS_REDIS=redis://paperless-redis:6379
+    - PAPERLESS_DBENGINE=postgresql
+    - PAPERLESS_DBHOST=paperless-db
+    - PAPERLESS_DBNAME=paperless
+    - PAPERLESS_DBUSER=paperless
+    - PAPERLESS_DBPASS=${PAPERLESS_DB_PASSWORD}
+    - PAPERLESS_SECRET_KEY=${PAPERLESS_SECRET_KEY}
+    - PAPERLESS_TIME_ZONE=Europe/Berlin
+    - PAPERLESS_OCR_LANGUAGE=deu+eng
+    - PAPERLESS_ADMIN_USER=${PAPERLESS_ADMIN_EMAIL}
+    - PAPERLESS_ADMIN_PASSWORD=${PAPERLESS_ADMIN_PASSWORD}
+    - PAPERLESS_ADMIN_MAIL=${PAPERLESS_ADMIN_EMAIL}
+    - PAPERLESS_URL=https://${PAPERLESS_HOSTNAME}
+    - PAPERLESS_FILENAME_FORMAT={created_year}/{correspondent}/{created_date}_{title}
+    - PAPERLESS_CONSUMER_RECURSIVE=true
+    - PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS=true
+    volumes:
+    - paperless_data:/usr/src/paperless/data
+    - paperless_media:/usr/src/paperless/media
+    - ../../shared-resources/shared:/usr/src/paperless/consume/seafile
+    depends_on:
+    - paperless-db
+    - paperless-redis
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8000
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  paperless-redis:
+    image: redis:7-alpine
+    container_name: paperless-redis
+    profiles:
+    - paperless
+    restart: unless-stopped
+    volumes:
+    - paperless_redis:/data
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 30s
+      timeout: 3s
+      retries: 5
+  paperless-db:
+    image: postgres:17-alpine
+    container_name: paperless-postgres
+    profiles:
+    - paperless
+    restart: unless-stopped
+    environment:
+    - POSTGRES_DB=paperless
+    - POSTGRES_USER=paperless
+    - POSTGRES_PASSWORD=${PAPERLESS_DB_PASSWORD}
+    volumes:
+    - paperless_postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U paperless
+      interval: 30s
+      timeout: 5s
+      retries: 5
+volumes:
+  paperless_data: {}
+  paperless_media: {}
+  paperless_redis: {}
+  paperless_postgresql: {}
+networks:
+  default:
+    name: localai_default
+    external: true

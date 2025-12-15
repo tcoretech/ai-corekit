@@ -1,0 +1,7 @@
+{
+  "id": "landing-page",
+  "name": "Landing Page",
+  "description": "Static landing page for AI LaunchKit",
+  "category": "User Interfaces",
+  "enabled": true
+}

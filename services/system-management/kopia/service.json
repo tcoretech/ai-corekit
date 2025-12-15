@@ -1,0 +1,11 @@
+{
+  "id": "kopia",
+  "category": "system-management",
+  "profiles": [
+    "kopia"
+  ],
+  "depends_on": [
+    "postgres",
+    "redis"
+  ]
+}

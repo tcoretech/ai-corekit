@@ -1,0 +1,62 @@
+services:
+  vikunja:
+    image: vikunja/vikunja:latest
+    container_name: vikunja
+    profiles:
+    - vikunja
+    restart: unless-stopped
+    environment:
+    - VIKUNJA_DATABASE_TYPE=postgres
+    - VIKUNJA_DATABASE_HOST=postgres
+    - VIKUNJA_DATABASE_USER=${POSTGRES_USER}
+    - VIKUNJA_DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+    - VIKUNJA_DATABASE_DATABASE=vikunja
+    - VIKUNJA_SERVICE_PUBLICURL=https://${VIKUNJA_HOSTNAME}
+    - VIKUNJA_SERVICE_JWTSECRET=${VIKUNJA_JWT_SECRET}
+    - VIKUNJA_SERVICE_ENABLEREGISTRATION=true
+    - VIKUNJA_SERVICE_ENABLETASKATTACHMENTS=true
+    - VIKUNJA_SERVICE_MAXAVATARSIZE=1024
+    - VIKUNJA_SERVICE_MAXATTACHMENTSIZE=20971520
+    - VIKUNJA_SERVICE_TIMEZONE=${TZ:-UTC}
+    volumes:
+    - vikunja-files:/app/vikunja/files
+    - ../../shared-resources/shared:/data/shared
+    depends_on:
+      vikunja-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - --spider
+      - http://localhost:3456/api/v1/info
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  vikunja-init:
+    image: postgres:${POSTGRES_VERSION:-17}
+    container_name: vikunja-init
+    profiles:
+    - vikunja
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: 'sh -c " psql -h postgres -U postgres -c \"CREATE DATABASE vikunja\"
+      || true && echo ''Vikunja database ready'' "
+
+      '
+    restart: 'no'
+volumes:
+  vikunja-files: {}
+networks:
+  default:
+    name: localai_default
+    external: true

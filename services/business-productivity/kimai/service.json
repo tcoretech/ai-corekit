@@ -1,0 +1,12 @@
+{
+  "id": "kimai",
+  "category": "business",
+  "profiles": [
+    "kimai"
+  ],
+  "depends_on": {
+    "kimai_db": {
+      "condition": "service_healthy"
+    }
+  }
+}

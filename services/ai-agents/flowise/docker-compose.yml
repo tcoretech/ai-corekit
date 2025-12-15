@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  flowise:
+    image: flowiseai/flowise
+    restart: unless-stopped
+    container_name: flowise
+    profiles:
+    - flowise
+    environment:
+    - PORT=3001
+    - FLOWISE_USERNAME=${FLOWISE_USERNAME}
+    - FLOWISE_PASSWORD=${FLOWISE_PASSWORD}
+    extra_hosts:
+    - host.docker.internal:host-gateway
+    volumes:
+    - ~/.flowise:/root/.flowise
+    entrypoint: /bin/sh -c "sleep 3; flowise start"
+networks:
+  default:
+    name: localai_default
+    external: true
+volumes:
+  ~/.flowise: {}

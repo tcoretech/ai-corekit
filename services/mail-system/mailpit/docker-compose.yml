@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    volumes:
+    - mailpit_data:/data
+    - ../../shared-resources/shared:/data/shared
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+      MP_UI_AUTH_FILE: ${MAILPIT_UI_AUTH_FILE:-}
+      MP_MAX_MESSAGES: ${MAILPIT_MAX_MESSAGES:-5000}
+    expose:
+    - '1025'
+    - '8025'
+    healthcheck:
+      test:
+      - CMD
+      - nc
+      - -z
+      - localhost
+      - '1025'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+networks:
+  default:
+    name: localai_default
+    external: true
+volumes:
+  mailpit_data: {}

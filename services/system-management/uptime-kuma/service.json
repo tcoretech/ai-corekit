@@ -1,0 +1,8 @@
+{
+  "id": "uptime-kuma",
+  "category": "uncategorized",
+  "profiles": [
+    "uptime-kuma"
+  ],
+  "depends_on": []
+}

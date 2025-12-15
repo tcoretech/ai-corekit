@@ -1,0 +1,675 @@
+{
+  "landing-page": {
+    "enabled": true,
+    "category": "User Interfaces",
+    "description": "Landing Page (Static website)",
+    "path": "services/user-interfaces/landing-page/docker-compose.yml",
+    "use_cases": "Main entry point",
+    "interface": "<yourdomain>.com",
+    "source": "local"
+  },
+  "n8n": {
+    "enabled": true,
+    "category": "Workflow Automation",
+    "description": "n8n, n8n-worker, n8n-import (Workflow Automation)",
+    "path": "services/workflow-automation/n8n/docker-compose.yml",
+    "use_cases": "API integrations, data pipelines, business automation",
+    "interface": "n8n.<yourdomain>.com",
+    "source": "https://github.com/n8n-io/n8n"
+  },
+  "n8n-mcp": {
+    "enabled": true,
+    "category": "Workflow Automation",
+    "description": "n8n-MCP (AI workflow generation for Claude/Cursor)",
+    "path": "services/workflow-automation/n8n-mcp/docker-compose.yml",
+    "use_cases": "Claude/Cursor integration, 525+ node docs, workflow validation",
+    "interface": "n8nmcp.<yourdomain>.com",
+    "source": "https://github.com/czlonkowski/n8n-mcp"
+  },
+  "webhook-testing": {
+    "enabled": false,
+    "category": "Workflow Automation",
+    "description": "Webhook Tester + Hoppscotch (API & Webhook Testing/Debugging Suite)",
+    "path": "services/workflow-automation/webhook-testing/docker-compose.yml",
+    "use_cases": "Receive & inspect webhooks, debug n8n integrations, test external services",
+    "interface": "webhook-test.<yourdomain>.com",
+    "source": "https://github.com/tarampampam/webhook-tester"
+  },
+  "gitea": {
+    "enabled": false,
+    "category": "Workflow Automation",
+    "description": "Gitea (Self-hosted Git service for n8n revisions- GitHub alternative)",
+    "path": "services/workflow-automation/gitea/docker-compose.yml",
+    "use_cases": "Source code management, issue tracking, CI/CD, GitHub alternative",
+    "interface": "git.<yourdomain>.com",
+    "source": "https://github.com/go-gitea/gitea"
+  },
+  "homepage": {
+    "enabled": true,
+    "category": "User Interfaces",
+    "description": "Homepage (Dashboard for all services)",
+    "path": "services/user-interfaces/homepage/docker-compose.yml",
+    "use_cases": "Service overview, Docker integration, quick access",
+    "interface": "dashboard.<yourdomain>.com",
+    "source": "https://github.com/gethomepage/homepage"
+  },
+  "dify": {
+    "enabled": false,
+    "category": "AI Agents",
+    "description": "Dify (AI Application Development Platform with LLMOps)",
+    "path": "services/ai-agents/dify/docker/docker-compose.yaml",
+    "use_cases": "Production AI apps, model management, prompt engineering",
+    "interface": "dify.<yourdomain>.com",
+    "source": "https://github.com/langgenius/dify"
+  },
+  "flowise": {
+    "enabled": true,
+    "category": "AI Agents",
+    "description": "Flowise (AI Agent Builder)",
+    "path": "services/ai-agents/flowise/docker-compose.yml",
+    "use_cases": "Chatbots, customer support, AI workflows",
+    "interface": "flowise.<yourdomain>.com",
+    "source": "https://github.com/FlowiseAI/Flowise"
+  },
+  "bolt": {
+    "enabled": false,
+    "category": "AIPowered Development  Vibe Coding",
+    "description": "bolt.diy (AI Web Development)",
+    "path": "services/ai-powered-development/bolt/docker-compose.yml",
+    "use_cases": "Rapid prototyping, MVP creation, learning to code",
+    "interface": "bolt.<yourdomain>.com",
+    "source": "https://github.com/stackblitz-labs/bolt.diy"
+  },
+  "openui": {
+    "enabled": false,
+    "category": "AIPowered Development  Vibe Coding",
+    "description": "OpenUI (AI Frontend/UI Generator - EXPERIMENTAL, best with Claude/GPT-4)",
+    "path": "services/ai-powered-development/openui/docker-compose.yml",
+    "use_cases": "Design systems, component libraries, mockups",
+    "interface": "openui.<yourdomain>.com",
+    "source": "https://github.com/wandb/openui"
+  },
+  "monitoring": {
+    "enabled": false,
+    "category": "System Management",
+    "description": "Monitoring Suite (Prometheus, Grafana, cAdvisor, Node-Exporter)",
+    "path": "services/system-management/monitoring/docker-compose.yml",
+    "use_cases": "System monitoring, performance dashboards, alerting",
+    "interface": "grafana.<yourdomain>.com",
+    "source": "https://github.com/grafana/grafana"
+  },
+  "uptime-kuma": {
+    "enabled": false,
+    "category": "System Management",
+    "description": "Uptime Kuma (Uptime Monitoring & Status Pages)",
+    "path": "services/system-management/uptime-kuma/docker-compose.yml",
+    "use_cases": "Service uptime tracking, public status pages, multi-protocol monitoring, 90+ notifications",
+    "interface": "status.<yourdomain>.com",
+    "source": "https://github.com/louislam/uptime-kuma"
+  },
+  "portainer": {
+    "enabled": true,
+    "category": "System Management",
+    "description": "Portainer (Docker management UI)",
+    "path": "services/system-management/portainer/docker-compose.yml",
+    "use_cases": "Container monitoring, logs, restart services",
+    "interface": "portainer.<yourdomain>.com",
+    "source": "https://github.com/portainer/portainer"
+  },
+  "cloudflare-tunnel": {
+    "enabled": false,
+    "category": "System Management",
+    "description": "Cloudflare Tunnel (Zero-Trust Secure Access for Web Services)",
+    "path": "services/system-management/cloudflared/docker-compose.yml",
+    "use_cases": "Zero-trust access, DDoS protection, firewall bypass",
+    "interface": "Optional",
+    "source": "https://github.com/cloudflare/cloudflared"
+  },
+  "cloudflare-ssh-tunnel": {
+    "enabled": false,
+    "category": "Host Services",
+    "description": "Cloudflare SSH Tunnel (Secure SSH via Cloudflare tunnel)",
+    "path": "services/host-services/ssh/docker-compose.yml",
+    "use_cases": "Zero-trust access, DDoS protection, firewall bypass",
+    "interface": "ssh.<yourdomain>.com",
+    "source": "https://github.com/cloudflare/cloudflared"
+  },
+  "postiz": {
+    "enabled": true,
+    "category": "User Interfaces",
+    "description": "Postiz (Social publishing platform)",
+    "path": "services/user-interfaces/postiz/docker-compose.yml",
+    "use_cases": "Content scheduling, analytics, multi-platform posting",
+    "interface": "postiz.<yourdomain>.com",
+    "source": "https://github.com/gitroomhq/postiz-app"
+  },
+  "odoo": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Odoo 18 (Open Source ERP/CRM with AI features)",
+    "path": "services/business-productivity/odoo/docker-compose.yml",
+    "use_cases": "Sales automation, inventory, accounting, AI lead scoring",
+    "interface": "odoo.<yourdomain>.com",
+    "source": "https://github.com/odoo/odoo"
+  },
+  "twenty-crm": {
+    "enabled": true,
+    "category": "Business & Productivity",
+    "description": "Twenty CRM (Modern Notion-like customer management)",
+    "path": "services/business-productivity/twenty-crm/docker-compose.yml",
+    "use_cases": "Customer pipelines, GraphQL API, team collaboration, lightweight CRM for startups",
+    "interface": "twenty.<yourdomain>.com",
+    "source": "https://github.com/twentyhq/twenty"
+  },
+  "espocrm": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "EspoCRM (Full-featured CRM with workflows & automation)",
+    "path": "services/business-productivity/espocrm/docker-compose.yml",
+    "use_cases": "Email campaigns, workflow automation, advanced reporting, role-based access",
+    "interface": "espocrm.<yourdomain>.com",
+    "source": "https://github.com/espocrm/espocrm"
+  },
+  "mautic": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Mautic 6.0 - Marketing Automation Platform (Email, Leads, Campaigns)",
+    "path": "services/business-productivity/mautic/docker-compose.yml",
+    "use_cases": "Lead scoring, email campaigns, landing pages, multi-channel marketing, automation workflows",
+    "interface": "mautic.<yourdomain>.com",
+    "source": "https://github.com/mautic/mautic"
+  },
+  "baserow": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Baserow (Airtable Alternative)",
+    "path": "services/business-productivity/baserow/docker-compose.yml",
+    "use_cases": "Database management, project tracking, collaborative workflows",
+    "interface": "baserow.<yourdomain>.com",
+    "source": "https://github.com/bram2w/baserow"
+  },
+  "nocodb": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "NocoDB (Open-source Airtable alternative, smart spreadsheet UI)",
+    "path": "services/business-productivity/nocodb/docker-compose.yml",
+    "use_cases": "Smart spreadsheet UI, realtime collaboration, automation",
+    "interface": "nocodb.<yourdomain>.com",
+    "source": "https://github.com/nocodb/nocodb"
+  },
+  "outline": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Outline (Wiki/Documentation - Notion alternative)",
+    "path": "services/business-productivity/outline/docker-compose.yml",
+    "use_cases": "Team documentation, knowledge base, Notion-like editor",
+    "interface": "outline.<yourdomain>.com",
+    "source": "https://github.com/outline/outline"
+  },
+  "seafile": {
+    "enabled": false,
+    "category": "File & Document Management",
+    "description": "Seafile (File sync & share like Dropbox/Google Drive/OneDrive)",
+    "path": "services/file-document-management/seafile/docker-compose.yml",
+    "use_cases": "Team collaboration, file versioning, WebDAV, mobile sync",
+    "interface": "files.<yourdomain>.com",
+    "source": "https://github.com/haiwen/seafile"
+  },
+  "paperless": {
+    "enabled": false,
+    "category": "File & Document Management",
+    "description": "Paperless-ngx (Document management with OCR & AI tagging)",
+    "path": "services/file-document-management/paperless/docker-compose.yml",
+    "use_cases": "Document archiving, AI auto-tagging, GDPR compliance, full-text search",
+    "interface": "docs.<yourdomain>.com",
+    "source": "https://github.com/paperless-ngx/paperless-ngx"
+  },
+  "paperless-ai": {
+    "enabled": false,
+    "category": "File & Document Management",
+    "description": "Paperless AI Suite (GPT+AI - Superior OCR & RAG Chat for documents)",
+    "path": "services/file-document-management/paperless-ai/docker-compose.yml",
+    "use_cases": "Natural language queries, document Q&A, intelligent search",
+    "interface": "paperless-ai.<yourdomain>.com",
+    "source": "https://github.com/clusterzx/paperless-ai"
+  },
+  "vikunja": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Vikunja (Modern Task Management - Todoist/TickTick alternative)",
+    "path": "services/business-productivity/vikunja/docker-compose.yml",
+    "use_cases": "Kanban boards, Gantt charts, team collaboration, CalDAV",
+    "interface": "vikunja.<yourdomain>.com",
+    "source": "https://github.com/go-vikunja/vikunja"
+  },
+  "leantime": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Leantime - Full project management suite (Asana/Monday alternative)",
+    "path": "services/business-productivity/leantime/docker-compose.yml",
+    "use_cases": "ADHD-friendly PM, time tracking, sprints, strategy tools",
+    "interface": "leantime.<yourdomain>.com",
+    "source": "https://github.com/Leantime/leantime"
+  },
+  "calcom": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Cal.com (Open Source Scheduling Platform)",
+    "path": "services/business-productivity/calcom/docker-compose.yml",
+    "use_cases": "Meeting bookings, team calendars, payment integrations",
+    "interface": "cal.<yourdomain>.com",
+    "source": "https://github.com/calcom/cal.com"
+  },
+  "kimai": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Kimai (Professional Time Tracking - DSGVO-compliant, 2FA, invoicing)",
+    "path": "services/business-productivity/kimai/docker-compose.yml",
+    "use_cases": "DSGVO-compliant billing, team timesheets, API, 2FA, invoicing",
+    "interface": "time.<yourdomain>.com",
+    "source": "https://github.com/kimai/kimai"
+  },
+  "invoiceninja": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Invoice Ninja - Professional invoicing platform",
+    "path": "services/business-productivity/invoiceninja/docker-compose.yml",
+    "use_cases": "Multi-currency invoices, 40+ payment gateways, recurring billing, client portal",
+    "interface": "invoices.<yourdomain>.com",
+    "source": "https://github.com/invoiceninja/invoiceninja"
+  },
+  "formbricks": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Formbricks - Privacy-first surveys & forms (Typeform alternative)",
+    "path": "services/business-productivity/formbricks/docker-compose.yml",
+    "use_cases": "Customer feedback, NPS surveys, market research, form builder, GDPR-compliant",
+    "interface": "forms.<yourdomain>.com",
+    "source": "https://github.com/formbricks/formbricks"
+  },
+  "metabase": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Metabase - Business intelligence (No-code dashboards, groups, ETL-ready)",
+    "path": "services/business-productivity/metabase/docker-compose.yml",
+    "use_cases": "No-code dashboards, automated reports, data exploration, team analytics",
+    "interface": "analytics.<yourdomain>.com",
+    "source": "https://github.com/metabase/metabase"
+  },
+  "airbyte": {
+    "enabled": false,
+    "category": "Business & Productivity",
+    "description": "Airbyte (Data Integration - Sync from 600+ sources like Google Ads, Meta, TikTok)",
+    "path": "services/business-productivity/airbyte/docker-compose.yml",
+    "use_cases": "Sync from Google Ads, Meta, TikTok, GA4, Mailjet to warehouses, perfect with Metabase",
+    "interface": "airbyte.<yourdomain>.com",
+    "source": "https://github.com/airbytehq/airbyte"
+  },
+  "jitsi": {
+    "enabled": false,
+    "category": "Video Conferencing",
+    "description": "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)",
+    "path": "services/video-conferencing/jitsi/docker-compose.yml",
+    "use_cases": "Client meetings, team calls, webinars, Cal.com integration",
+    "interface": "meet.<yourdomain>.com",
+    "source": "https://github.com/jitsi/jitsi-meet"
+  },
+  "livekit": {
+    "enabled": false,
+    "category": "AI Agents",
+    "description": "LiveKit (Real-time voice & video - WebRTC, REQUIRES UDP 50000-50100!)",
+    "path": "services/ai-agents/livekit/docker-compose.yml",
+    "use_cases": "AI voice assistants, conversational AI, ChatGPT-like voice bots, requires UDP 50000-50100",
+    "interface": "livekit.<yourdomain>.com",
+    "source": "https://github.com/livekit/livekit"
+  },
+  "vaultwarden": {
+    "enabled": true,
+    "category": "System Management",
+    "description": "Vaultwarden (Self-hosted Bitwarden-compatible password manager)",
+    "path": "services/system-management/vaultwarden/docker-compose.yml",
+    "use_cases": "Credential management, team password sharing, auto-fill",
+    "interface": "vault.<yourdomain>.com",
+    "source": "https://github.com/dani-garcia/vaultwarden"
+  },
+  "ai-security": {
+    "enabled": false,
+    "category": "AI Security & Compliance",
+    "description": "AI Security Suite - LLM Guard + Presidio (AI safety & GDPR-compliant PII)",
+    "path": "services/ai-security-compliance/ai-security/docker-compose.yml",
+    "use_cases": "Prompt injection prevention, toxicity filtering, PII removal",
+    "interface": "Internal API",
+    "source": "https://github.com/protectai/llm-guard"
+  },
+  "kopia": {
+    "enabled": false,
+    "category": "System Management",
+    "description": "Kopia (Fast and secure backup with Cloud and WebDAV storage)",
+    "path": "services/system-management/kopia/docker-compose.yml",
+    "use_cases": "Automated backups, WebDAV integration, deduplication, compression",
+    "interface": "backup.<yourdomain>.com",
+    "source": "https://github.com/kopia/kopia"
+  },
+  "mailserver": {
+    "enabled": true,
+    "category": "Mail System",
+    "description": "Docker-Mailserver (+ Mailgun ingest webhook for inbound mail)",
+    "path": "services/mail-system/mailserver/docker-compose.yml",
+    "use_cases": "Send/receive real emails",
+    "interface": "mail.<yourdomain>.com",
+    "source": "https://github.com/docker-mailserver/docker-mailserver"
+  },
+  "mail-ingest": {
+    "enabled": false,
+    "category": "Mail System",
+    "description": "Mailgun ingest forwarder (webhook -> Docker-Mailserver SMTP)",
+    "path": "services/mail-system/mail-ingest/docker-compose.yml",
+    "use_cases": "Receive inbound email via Mailgun + Cloudflare tunnel",
+    "interface": "mail-ingest.<yourdomain>.com",
+    "source": ""
+  },
+  "private-dns": {
+    "enabled": false,
+    "category": "Host Services",
+    "description": "Private DNS (CoreDNS for mail/ssh hostnames over WARP/private net)",
+    "path": "services/host-services/dns/docker-compose.yml",
+    "use_cases": "DSGVO compliance, German text processing, entity recognition",
+    "interface": "Internal API"
+  },
+  "snappymail": {
+    "enabled": true,
+    "category": "Mail System",
+    "description": "SnappyMail (Modern webmail client for Docker-Mailserver)",
+    "path": "services/mail-system/snappymail/docker-compose.yml",
+    "use_cases": "Web interface for email access",
+    "interface": "webmail.<yourdomain>.com",
+    "source": "https://github.com/the-djmaze/snappymail"
+  },
+  "langfuse": {
+    "enabled": false,
+    "category": "Ai Agents",
+    "description": "Langfuse Suite (AI Observability - includes Clickhouse, Minio)",
+    "path": "services/ai-agents/langfuse/docker-compose.yml",
+    "use_cases": "DSGVO compliance, German text processing, entity recognition",
+    "interface": "Internal API"
+  },
+  "qdrant": {
+    "enabled": false,
+    "category": "RAG Systems",
+    "description": "Qdrant (Vector Database)",
+    "path": "services/rag-systems/qdrant/docker-compose.yml",
+    "use_cases": "Semantic search, recommendations, RAG storage",
+    "interface": "qdrant.<yourdomain>.com",
+    "source": "https://github.com/qdrant/qdrant"
+  },
+  "supabase": {
+    "enabled": false,
+    "category": "Data Infrastructure",
+    "description": "Supabase (Backend as a Service)",
+    "path": "services/data-infrastructure/supabase/docker/docker-compose.yml",
+    "use_cases": "Instant APIs, auth, realtime, storage, edge functions",
+    "interface": "supabase.<yourdomain>.com",
+    "source": "https://github.com/supabase/supabase"
+  },
+  "weaviate": {
+    "enabled": false,
+    "category": "RAG Systems",
+    "description": "Weaviate (Vector Database with API Key Auth)",
+    "path": "services/rag-systems/weaviate/docker-compose.yml",
+    "use_cases": "Hybrid search, multi-modal data, GraphQL API",
+    "interface": "weaviate.<yourdomain>.com",
+    "source": "https://github.com/weaviate/weaviate"
+  },
+  "lightrag": {
+    "enabled": false,
+    "category": "Knowledge Graphs",
+    "description": "LightRAG (Graph-based RAG with entity extraction)",
+    "path": "services/knowledge-graphs/lightrag/docker-compose.yml",
+    "use_cases": "Automatic knowledge graph creation, relationship mapping, complex queries",
+    "interface": "lightrag.<yourdomain>.com",
+    "source": "https://github.com/HKUDS/LightRAG"
+  },
+  "neo4j": {
+    "enabled": true,
+    "category": "Knowledge Graphs",
+    "description": "Neo4j (Graph Database)",
+    "path": "services/knowledge-graphs/neo4j/docker-compose.yml",
+    "use_cases": "Knowledge graphs, entity relationships, fraud detection, recommendations",
+    "interface": "neo4j.<yourdomain>.com",
+    "source": "https://github.com/neo4j/neo4j"
+  },
+  "letta": {
+    "enabled": false,
+    "category": "AI Agents",
+    "description": "Letta (Agent Server & SDK)",
+    "path": "services/ai-agents/letta/docker-compose.yml",
+    "use_cases": "Persistent AI assistants, memory management",
+    "interface": "letta.<yourdomain>.com",
+    "source": "https://github.com/letta-ai/letta"
+  },
+  "gotenberg": {
+    "enabled": false,
+    "category": "AI Support Tools",
+    "description": "Gotenberg (Document Conversion API)",
+    "path": "services/ai-support-tools/gotenberg/docker-compose.yml",
+    "use_cases": "HTML/Markdown \u2192 PDF, Office \u2192 PDF, merge PDFs",
+    "interface": "Internal API",
+    "source": "https://github.com/gotenberg/gotenberg"
+  },
+  "stirling-pdf": {
+    "enabled": false,
+    "category": "AI Support Tools",
+    "description": "Stirling-PDF (100+ PDF Tools: Merge, Split, OCR, Sign)",
+    "path": "services/ai-support-tools/stirling-pdf/docker-compose.yml",
+    "use_cases": "Split, merge, compress, OCR, sign PDFs",
+    "interface": "pdf.<yourdomain>.com",
+    "source": "https://github.com/Stirling-Tools/Stirling-PDF"
+  },
+  "docuseal": {
+    "enabled": false,
+    "category": "AI Support Tools",
+    "description": "DocuSeal (E-Signatures platform - DocuSign alternative)",
+    "path": "services/ai-support-tools/docuseal/docker-compose.yml",
+    "use_cases": "Document signing, contract workflows, DocuSign alternative",
+    "interface": "sign.<yourdomain>.com",
+    "source": "https://github.com/docusealco/docuseal"
+  },
+  "crawl4ai": {
+    "enabled": true,
+    "category": "Search & Web Data",
+    "description": "Crawl4ai (Web Crawler for AI)",
+    "path": "services/search-web-data/crawl4ai/docker-compose.yml",
+    "use_cases": "Web scraping, data extraction, site monitoring",
+    "interface": "Internal API",
+    "source": "https://github.com/unclecode/crawl4ai"
+  },
+  "ragapp": {
+    "enabled": false,
+    "category": "RAG Systems",
+    "description": "RAGApp (Open-source RAG UI + API)",
+    "path": "services/rag-systems/ragapp/docker-compose.yml",
+    "use_cases": "Knowledge bases, document Q&A, research tools",
+    "interface": "ragapp.<yourdomain>.com",
+    "source": "https://github.com/ragapp/ragapp"
+  },
+  "open-webui": {
+    "enabled": false,
+    "category": "User Interfaces",
+    "description": "Open WebUI (ChatGPT-like Interface)",
+    "path": "services/user-interfaces/open-webui/docker-compose.yml",
+    "use_cases": "AI chat, model switching, conversation management",
+    "interface": "webui.<yourdomain>.com",
+    "source": "https://github.com/open-webui/open-webui"
+  },
+  "searxng": {
+    "enabled": true,
+    "category": "Search & Web Data",
+    "description": "SearXNG (Private Metasearch Engine)",
+    "path": "services/search-web-data/searxng/docker-compose.yml",
+    "use_cases": "Web search for agents, no tracking, multiple sources",
+    "interface": "searxng.<yourdomain>.com",
+    "source": "https://github.com/searxng/searxng"
+  },
+  "perplexica": {
+    "enabled": false,
+    "category": "Search & Web Data",
+    "description": "Perplexica (Open-source Deep Resarch/Perplexity AI alternative)",
+    "path": "services/search-web-data/perplexica/docker-compose.yml",
+    "use_cases": "Deep research, academic search, Perplexity AI alternative",
+    "interface": "perplexica.<yourdomain>.com",
+    "source": "https://github.com/ItzCrazyKns/Perplexica"
+  },
+  "gpt-researcher": {
+    "enabled": false,
+    "category": "Search & Web Data",
+    "description": "GPT Researcher (Autonomous research agent - 2000+ word reports with citations)",
+    "path": "services/search-web-data/gpt-researcher/docker-compose.yml",
+    "use_cases": "Comprehensive research reports, multi-source analysis, citations",
+    "interface": "research.<yourdomain>.com",
+    "source": "https://github.com/assafelovic/gpt-researcher"
+  },
+  "local-deep-research": {
+    "enabled": false,
+    "category": "Search & Web Data",
+    "description": "Local Deep Research (LangChain's iterative research - ~95% accuracy)",
+    "path": "services/search-web-data/local-deep-research/docker-compose.yml",
+    "use_cases": "Fact-checking, detailed analysis, research loops with reflection",
+    "interface": "Internal API",
+    "source": "https://github.com/langchain-ai/local-deep-researcher"
+  },
+  "opennotebook": {
+    "enabled": false,
+    "category": "Search & Web Data",
+    "description": "Open Notebook (AI Knowledge Management - NotebookLM alternative, 16+ models)",
+    "path": "services/search-web-data/opennotebook/docker-compose.yml",
+    "use_cases": "NotebookLM alternative, multi-modal content, podcast generation, 16+ AI models",
+    "interface": "notebook.<yourdomain>.com",
+    "source": "https://github.com/lfnovo/open-notebook"
+  },
+  "python-runner": {
+    "enabled": false,
+    "category": "System Management",
+    "description": "Python Runner (Run your custom Python code from ./python-runner)",
+    "path": "services/python/python-runner/docker-compose.yml",
+    "use_cases": "Execute Python scripts from n8n workflows",
+    "interface": "Internal only",
+    "source": "https://github.com/n8n-io/n8n"
+  },
+  "ollama": {
+    "enabled": false,
+    "category": "AI Support Tools",
+    "description": "Ollama (Local LLM Runner - select hardware in next step)",
+    "path": "services/ai-support-tools/ollama/docker-compose.yml",
+    "use_cases": "Run Llama, Mistral, Phi locally, API-compatible",
+    "interface": "ollama.<yourdomain>.com",
+    "source": "https://github.com/ollama/ollama"
+  },
+  "comfyui": {
+    "enabled": false,
+    "category": "AI Content Generation",
+    "description": "ComfyUI (Node-based Stable Diffusion UI)",
+    "path": "services/ai-content-generation/comfyui/docker-compose.yml",
+    "use_cases": "Image generation, AI art, photo editing, workflows",
+    "interface": "comfyui.<yourdomain>.com",
+    "source": "https://github.com/comfyanonymous/ComfyUI"
+  },
+  "speech": {
+    "enabled": false,
+    "category": "Speech Language & Text Processing",
+    "description": "Speech Stack (Whisper ASR + OpenedAI TTS - CPU optimized)",
+    "path": "services/speech-language-text/speech/docker-compose.yml",
+    "use_cases": "Voice assistants, audiobooks, notifications",
+    "interface": "Internal API",
+    "source": "https://github.com/matatonic/openedai-speech"
+  },
+  "tts-chatterbox": {
+    "enabled": false,
+    "category": "Speech Language & Text Processing",
+    "description": "TTS Chatterbox (State-of-the-art TTS - ElevenLabs alternative)",
+    "path": "services/speech-language-text/tts-chatterbox/docker-compose.yml",
+    "use_cases": "AI voices with emotional expression, voice synthesis, outperforms ElevenLabs",
+    "interface": "chatterbox.<yourdomain>.com",
+    "source": "https://github.com/resemble-ai/chatterbox"
+  },
+  "scriberr": {
+    "enabled": false,
+    "category": "Speech Language & Text Processing",
+    "description": "Scriberr (AI audio transcription with speaker diarization)",
+    "path": "services/speech-language-text/scriberr/docker-compose.yml",
+    "use_cases": "Meeting transcripts, podcast processing, call recordings, speaker identification",
+    "interface": "scriberr.<yourdomain>.com",
+    "source": "https://github.com/rishikanthc/Scriberr"
+  },
+  "ocr": {
+    "enabled": false,
+    "category": "Speech Language Text",
+    "description": "OCR Bundle (Tesseract + EasyOCR - Extract text from images/PDFs)",
+    "path": "services/speech-language-text/ocr/docker-compose.yml",
+    "use_cases": "Extract text from images/PDFs",
+    "interface": "Internal API",
+    "source": ""
+  },
+  "libretranslate": {
+    "enabled": false,
+    "category": "Speech Language & Text Processing",
+    "description": "LibreTranslate (Self-hosted translation API - 50+ languages)",
+    "path": "services/speech-language-text/libretranslate/docker-compose.yml",
+    "use_cases": "50+ languages, document translation, privacy-focused",
+    "interface": "translate.<yourdomain>.com",
+    "source": "https://github.com/LibreTranslate/LibreTranslate"
+  },
+  "browser-suite": {
+    "enabled": false,
+    "category": "AI Agents",
+    "description": "Browser Automation Suite (Browserless + Skyvern + Browser-use)",
+    "path": "services/ai-agents/browser-suite/docker-compose.yml",
+    "use_cases": "Web scraping, form filling, automated testing",
+    "interface": "Internal API only",
+    "source": "https://github.com/browser-use/browser-use"
+  },
+  "caddy": {
+    "enabled": true,
+    "category": "System Management",
+    "description": "Caddy (Reverse Proxy)",
+    "path": "services/system-management/caddy/docker-compose.yml",
+    "use_cases": "Reverse proxy, SSL termination",
+    "interface": "Internal Port 80/443",
+    "source": "https://caddyserver.com/"
+  },
+  "watchtower": {
+    "enabled": true,
+    "category": "System Management",
+    "description": "Watchtower (Automated Docker container updates)",
+    "path": "services/system-management/watchtower/docker-compose.yml",
+    "use_cases": "Keep containers up-to-date automatically",
+    "interface": "Internal",
+    "source": "https://containrrr.dev/watchtower/"
+  },
+  "mysql": {
+    "enabled": true,
+    "category": "Data Infrastructure",
+    "description": "MySQL Database (Shared)",
+    "path": "services/data-infrastructure/mysql/docker-compose.yml",
+    "use_cases": "Database for Leantime, Mautic, etc.",
+    "interface": "Internal Port 3306",
+    "source": "https://hub.docker.com/_/mysql"
+  },
+  "postgres": {
+    "enabled": true,
+    "category": "Data Infrastructure",
+    "description": "PostgreSQL Database (Shared)",
+    "path": "services/data-infrastructure/postgres/docker-compose.yml",
+    "use_cases": "Database for n8n, Flowise, etc.",
+    "interface": "Internal Port 5432",
+    "source": "https://hub.docker.com/_/postgres"
+  },
+  "redis": {
+    "enabled": true,
+    "category": "Data Infrastructure",
+    "description": "Redis Cache (Shared)",
+    "path": "services/data-infrastructure/redis/docker-compose.yml",
+    "use_cases": "Cache for n8n, etc.",
+    "interface": "Internal Port 6379",
+    "source": "https://hub.docker.com/_/redis"
+  }
+}

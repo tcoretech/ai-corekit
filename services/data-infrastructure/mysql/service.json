@@ -1,0 +1,8 @@
+{
+  "id": "mysql_leantime",
+  "category": "uncategorized",
+  "profiles": [
+    "mysql"
+  ],
+  "depends_on": []
+}

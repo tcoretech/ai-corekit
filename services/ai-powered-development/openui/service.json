@@ -1,0 +1,8 @@
+{
+  "id": "openui",
+  "category": "ai-dev",
+  "profiles": [
+    "openui"
+  ],
+  "depends_on": []
+}

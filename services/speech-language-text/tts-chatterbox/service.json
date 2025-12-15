@@ -1,0 +1,10 @@
+{
+  "id": "chatterbox-frontend",
+  "category": "speech-text",
+  "profiles": [
+    "tts-chatterbox"
+  ],
+  "depends_on": [
+    "chatterbox-tts"
+  ]
+}

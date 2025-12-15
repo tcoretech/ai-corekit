@@ -1,0 +1,72 @@
+services:
+  odoo:
+    image: odoo:18.0
+    container_name: odoo
+    profiles:
+    - odoo
+    restart: unless-stopped
+    depends_on:
+      odoo-schema-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    environment:
+    - HOST=postgres
+    - USER=odoo
+    - PASSWORD=${ODOO_DB_PASSWORD}
+    volumes:
+    - odoo_data:/var/lib/odoo
+    - ../../shared-resources/shared:/data/shared:ro
+    command: odoo --proxy-mode
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8069/web/login
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  odoo-schema-init:
+    image: odoo:18.0
+    container_name: odoo-schema-init
+    profiles:
+    - odoo
+    depends_on:
+      odoo-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    environment:
+    - HOST=postgres
+    - USER=odoo
+    - PASSWORD=${ODOO_DB_PASSWORD}
+    command: 'sh -c " odoo --db_host postgres --db_user odoo --db_password ${ODOO_DB_PASSWORD}
+      -d odoo -i base --stop-after-init ||  echo ''Database already initialized''
+      "
+
+      '
+    restart: 'no'
+  odoo-init:
+    image: postgres:${POSTGRES_VERSION:-17}
+    container_name: odoo-init
+    profiles:
+    - odoo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: 'sh -c " psql -h postgres -U postgres -c \"CREATE USER odoo WITH PASSWORD
+      ''${ODOO_DB_PASSWORD}'' CREATEDB\" || true && psql -h postgres -U postgres -c
+      \"CREATE DATABASE odoo OWNER odoo\" || true && echo ''Odoo user and database
+      ready'' "
+
+      '
+    restart: 'no'
+volumes:
+  odoo_data: {}
+networks:
+  default:
+    name: localai_default
+    external: true

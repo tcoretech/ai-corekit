@@ -1,0 +1,10 @@
+{
+  "my-custom-service": {
+    "description": "My Custom Service",
+    "path": "services/custom/my-service/docker-compose.yml",
+    "enabled": true,
+    "category": "Custom",
+    "url": "http://localhost:8080",
+    "use_cases": "Testing custom integration"
+  }
+}

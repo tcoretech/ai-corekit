@@ -1,0 +1,8 @@
+{
+  "id": "comfyui",
+  "category": "ai-content",
+  "profiles": [
+    "comfyui"
+  ],
+  "depends_on": []
+}

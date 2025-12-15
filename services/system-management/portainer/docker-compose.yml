@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    profiles:
+    - portainer
+    restart: unless-stopped
+    volumes:
+    - ./data:/data
+    - ${DOCKER_SOCKET_LOCATION:-/var/run/docker.sock}:/var/run/docker.sock
+
+# volumes:
+#   portainer_data: {}

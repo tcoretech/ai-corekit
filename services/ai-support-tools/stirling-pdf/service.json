@@ -1,0 +1,8 @@
+{
+  "id": "stirling-pdf",
+  "category": "uncategorized",
+  "profiles": [
+    "stirling-pdf"
+  ],
+  "depends_on": []
+}

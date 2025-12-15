@@ -1,0 +1,18 @@
+{
+  "id": "nocodb",
+  "category": "business",
+  "profiles": [
+    "nocodb"
+  ],
+  "depends_on": {
+    "nocodb-init": {
+      "condition": "service_completed_successfully"
+    },
+    "postgres": {
+      "condition": "service_healthy"
+    },
+    "redis": {
+      "condition": "service_started"
+    }
+  }
+}

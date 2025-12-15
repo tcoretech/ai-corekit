@@ -1,0 +1,12 @@
+{
+  "id": "n8n",
+  "category": "workflow-automation",
+  "profiles": [
+    "n8n"
+  ],
+  "depends_on": {
+    "n8n-import": {
+      "condition": "service_completed_successfully"
+    }
+  }
+}

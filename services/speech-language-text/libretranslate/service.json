@@ -1,0 +1,8 @@
+{
+  "id": "libretranslate",
+  "category": "speech-text",
+  "profiles": [
+    "libretranslate"
+  ],
+  "depends_on": []
+}

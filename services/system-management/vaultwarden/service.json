@@ -1,0 +1,8 @@
+{
+  "id": "vaultwarden",
+  "category": "system-management",
+  "profiles": [
+    "vaultwarden"
+  ],
+  "depends_on": []
+}

@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: gotenberg
+    profiles:
+    - gotenberg
+    restart: unless-stopped
+    environment:
+    - DISABLE_GOOGLE_CHROME=false
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO
+      - /dev/null
+      - http://localhost:3000/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+networks:
+  default:
+    name: localai_default
+    external: true

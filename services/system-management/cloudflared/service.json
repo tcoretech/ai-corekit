@@ -1,0 +1,8 @@
+{
+  "id": "cloudflared",
+  "category": "system-management",
+  "profiles": [
+    "cloudflare-tunnel"
+  ],
+  "depends_on": []
+}

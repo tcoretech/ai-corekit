@@ -1,0 +1,10 @@
+# Example Custom Stack Configuration
+# These services will be started when 'launchkit up core' is run.
+
+name: monitoring
+project_name: localai
+
+services:
+  - prometheus
+  - grafana
+  - cadvisor

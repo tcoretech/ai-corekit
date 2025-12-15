@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  openui:
+    image: ghcr.io/wandb/openui:latest
+    container_name: openui
+    profiles:
+    - openui
+    restart: unless-stopped
+    expose:
+    - '7878'
+    environment:
+    - OLLAMA_HOST=http://ollama:11434
+    - OPENAI_API_KEY=${OPENAI_API_KEY:-xxx}
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    - GROQ_API_KEY=${GROQ_API_KEY:-}
+    - OPENAI_COMPATIBLE_ENDPOINT=${OPENAI_COMPATIBLE_ENDPOINT:-}
+    volumes:
+    - ./data:/app/data
+    - ../../shared-resources/shared:/workspace
+    extra_hosts:
+    - host.docker.internal:host-gateway
+networks:
+  default:
+    name: localai_default
+    external: true

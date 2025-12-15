@@ -1,0 +1,50 @@
+services:
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: nocodb
+    profiles:
+    - nocodb
+    restart: unless-stopped
+    volumes:
+    - nocodb_data:/usr/app/data
+    - ../../shared-resources/shared:/data/shared
+    environment:
+    - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/nocodb
+    - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
+    - NC_DISABLE_TELE=true
+    depends_on:
+      nocodb-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -fsS http://localhost:8080/api/v1/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+  nocodb-init:
+    image: postgres:${POSTGRES_VERSION:-17}
+    container_name: nocodb-init
+    profiles:
+    - nocodb
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: 'sh -c " psql -h postgres -U postgres -c \"CREATE DATABASE nocodb\" ||
+      true && echo ''NocoDB database ready'' "
+
+      '
+    restart: 'no'
+volumes:
+  nocodb_data: {}
+networks:
+  default:
+    name: localai_default
+    external: true

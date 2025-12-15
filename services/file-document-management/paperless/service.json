@@ -1,0 +1,11 @@
+{
+  "id": "paperless",
+  "category": "uncategorized",
+  "profiles": [
+    "paperless"
+  ],
+  "depends_on": [
+    "paperless-db",
+    "paperless-redis"
+  ]
+}

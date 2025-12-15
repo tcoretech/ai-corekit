@@ -30,14 +30,14 @@ if ! docker info > /dev/null 2>&1; then
 fi
 
 # 5. Check if start_services.py exists and is executable
-if [ ! -f "start_services.py" ]; then
-  log_error "start_services.py file not found in project root." >&2
+if [ ! -f "./scripts/start_services.py" ]; then
+  log_error "start_services.py file not found in scripts directory." >&2
   exit 1
 fi
 
-if [ ! -x "start_services.py" ]; then
+if [ ! -x "./scripts/start_services.py" ]; then
   log_warning "start_services.py is not executable. Making it executable..."
-  chmod +x "start_services.py"
+  chmod +x "./scripts/start_services.py"
 fi
 
 # Create media directories with correct permissions BEFORE Docker starts
@@ -82,7 +82,7 @@ fi
 
 log_info "Launching services using start_services.py..."
 # Execute start_services.py
-./start_services.py
+./scripts/start_services.py
 
 # Explicitly start services with profiles that need building
 if [[ "$COMPOSE_PROFILES" == *"tts-chatterbox"* ]]; then

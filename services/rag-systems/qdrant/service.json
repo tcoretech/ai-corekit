@@ -1,0 +1,8 @@
+{
+  "id": "qdrant",
+  "category": "rag-systems",
+  "profiles": [
+    "qdrant"
+  ],
+  "depends_on": []
+}

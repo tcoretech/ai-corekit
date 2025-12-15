@@ -1,0 +1,8 @@
+{
+  "id": "openedai-speech",
+  "category": "uncategorized",
+  "profiles": [
+    "speech"
+  ],
+  "depends_on": []
+}

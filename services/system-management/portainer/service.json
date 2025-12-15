@@ -1,0 +1,8 @@
+{
+  "id": "portainer",
+  "category": "system-management",
+  "profiles": [
+    "portainer"
+  ],
+  "depends_on": []
+}

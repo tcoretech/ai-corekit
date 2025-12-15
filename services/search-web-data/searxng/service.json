@@ -1,0 +1,8 @@
+{
+  "id": "searxng",
+  "category": "search",
+  "profiles": [
+    "searxng"
+  ],
+  "depends_on": []
+}

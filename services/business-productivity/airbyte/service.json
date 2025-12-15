@@ -1,0 +1,8 @@
+{
+  "id": "airbyte_destination_db",
+  "category": "business",
+  "profiles": [
+    "airbyte"
+  ],
+  "depends_on": []
+}

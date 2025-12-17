@@ -1,0 +1,23 @@
+include:
+  - build/repo/docker/docker-compose.yaml
+
+services:
+  api:
+    volumes:
+      - ./data/app/storage:/app/api/storage
+  worker:
+    volumes:
+      - ./data/app/storage:/app/api/storage
+  db:
+    volumes:
+      - ./data/db/data:/var/lib/postgresql/data
+  redis:
+    volumes:
+      - ./data/redis/data:/data
+  weaviate:
+    volumes:
+      - ./data/weaviate:/var/lib/weaviate
+  sandbox:
+    volumes:
+      - ./data/sandbox/dependencies:/dependencies
+      - ./data/sandbox/conf:/conf

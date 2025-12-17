@@ -9,12 +9,12 @@ services:
     - 127.0.0.1:7687:7687
     restart: unless-stopped
     volumes:
-    - ./Caddyfile:/etc/caddy/Caddyfile:ro
-    - ./addons:/etc/caddy/addons:ro
-    - ./caddy-data:/data:rw
-    - ./caddy-config:/config:rw
+    - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
+    - ./config/addons:/etc/caddy/addons:ro
+    - ./data/data:/data:rw
+    - ./data/config:/config:rw
     # Website is now served by landing-page service
-    # - ./website:/srv/website
+    # - ./data/website:/srv/website
     environment:
     - BASE_DOMAIN=${BASE_DOMAIN}
     - COMFYUI_HOSTNAME=${COMFYUI_HOSTNAME}

@@ -7,10 +7,10 @@ services:
     - neo4j
     restart: unless-stopped
     volumes:
-    - ./logs:/logs
+    - ./data/logs:/logs
     - ./config:/config
     - ./data:/data
-    - ./plugins:/plugins
+    - ./config/plugins:/plugins
     environment:
     - NEO4J_AUTH=${NEO4J_AUTH_USERNAME:-neo4j}/${NEO4J_AUTH_PASSWORD}
     - NEO4J_server_default__advertised__address=${NEO4J_HOSTNAME}

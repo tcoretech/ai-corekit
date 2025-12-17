@@ -1,0 +1,11 @@
+{
+  "name": "vexa",
+  "description": "Open Source AI Agent Platform",
+  "category": "ai-agents",
+  "version": "1.0.0",
+  "enabled": false,
+  "ports": [
+    8056,
+    8057
+  ]
+}

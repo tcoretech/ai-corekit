@@ -52,7 +52,7 @@ services:
       MASTODON_CLIENT_SECRET: ${MASTODON_CLIENT_SECRET}
     volumes:
     - ./config:/config/
-    - ./uploads:/uploads/
+    - ./data/uploads:/uploads/
     depends_on:
       postgres:
         condition: service_healthy

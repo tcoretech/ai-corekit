@@ -20,7 +20,7 @@ services:
     volumes:
     - seafile_data:/shared
     - ../../shared-resources/shared:/shared/paperless-bridge
-    - ./scripts/seafile-init.sh:/init-fix.sh:ro
+    - ./config/seafile-init.sh:/init-fix.sh:ro
     depends_on:
     - seafile-db
     healthcheck:

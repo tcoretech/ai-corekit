@@ -13,9 +13,9 @@ services:
     - 127.0.0.1:993:993
     - 127.0.0.1:143:143
     volumes:
-    - ./dms/mail-data/:/var/mail/
-    - ./dms/mail-state/:/var/mail-state/
-    - ./dms/config/:/tmp/docker-mailserver/
+    - ./data/dms/mail-data/:/var/mail/
+    - ./data/dms/mail-state/:/var/mail-state/
+    - ./data/dms/config/:/tmp/docker-mailserver/
     - caddy-data:/certs/:ro
     - /etc/localtime:/etc/localtime:ro
     - ../../shared-resources/shared:/data/shared

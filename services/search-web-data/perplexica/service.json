@@ -1,0 +1,10 @@
+{
+  "id": "perplexica",
+  "category": "search",
+  "profiles": [
+    "perplexica"
+  ],
+  "depends_on": [
+    "searxng"
+  ]
+}

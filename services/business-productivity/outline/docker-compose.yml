@@ -90,7 +90,7 @@ services:
     - outline
     restart: unless-stopped
     volumes:
-    - ./dex/config.yaml:/etc/dex/config.yaml:ro
+    - ./config/local/dex/config.yaml:/etc/dex/config.yaml:ro
     - dex_data:/var/dex
     environment:
     - DEX_FRONTEND_DIR=/srv/dex/web

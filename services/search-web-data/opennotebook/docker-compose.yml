@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  opennotebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    container_name: opennotebook
+    profiles:
+    - opennotebook
+    restart: unless-stopped
+    environment:
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    - GROQ_API_KEY=${GROQ_API_KEY:-}
+    - SURREAL_URL=ws://localhost:8000/rpc
+    - SURREAL_USER=root
+    - SURREAL_PASSWORD=root
+    - SURREAL_NAMESPACE=open_notebook
+    - SURREAL_DATABASE=production
+    - API_URL=https://${OPENNOTEBOOK_HOSTNAME}
+    - OPEN_NOTEBOOK_PASSWORD=${OPENNOTEBOOK_PASSWORD}
+    volumes:
+    - ${PROJECT_ROOT}/opennotebook/notebook_data:/app/data
+    - ${PROJECT_ROOT}/opennotebook/surreal_data:/mydata
+    - ../../shared-resources/shared:/app/shared
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -fsS http://localhost:8502 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+networks:
+  default:
+    name: localai_default
+    external: true

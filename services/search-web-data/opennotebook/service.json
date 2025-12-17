@@ -1,0 +1,8 @@
+{
+  "id": "opennotebook",
+  "category": "search",
+  "profiles": [
+    "opennotebook"
+  ],
+  "depends_on": []
+}

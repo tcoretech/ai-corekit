@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     volumes:
     - airbyte_destination_data:/var/lib/postgresql/data
-    - ./airbyte_init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    - ./config/airbyte_init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     environment:
     - POSTGRES_USER=airbyte
     - POSTGRES_PASSWORD=${AIRBYTE_DESTINATION_DB_PASSWORD}

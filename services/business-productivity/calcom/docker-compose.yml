@@ -2,7 +2,7 @@ version: '3.8'
 services:
   calcom:
     build:
-      context: ./docker
+      context: ./build/docker
       dockerfile: Dockerfile
       args:
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/calcom

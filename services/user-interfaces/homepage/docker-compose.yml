@@ -16,7 +16,7 @@ services:
     - PGID=999
     - HOMEPAGE_ALLOWED_HOSTS=*
     volumes:
-    - ./config:/app/config
+    - ./config/local:/app/config
     - /var/run/docker.sock:/var/run/docker.sock:ro
     user: 1000:999
 

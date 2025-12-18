@@ -7,9 +7,9 @@
 # to a hostname-based text file and optionally provides a download link.
 #
 # Usage: 
-#   sudo bash ./scripts/export_credentials.sh           # Export only
-#   sudo bash ./scripts/export_credentials.sh -d        # Export + Download
-#   sudo bash ./scripts/export_credentials.sh --download # Export + Download
+#   sudo bash ./lib/maintenance/export_credentials.sh           # Export only
+#   sudo bash ./lib/maintenance/export_credentials.sh -d        # Export + Download
+#   sudo bash ./lib/maintenance/export_credentials.sh --download # Export + Download
 #
 # Note: Requires sudo access because .env file is owned by root
 # File is automatically deleted after successful download
@@ -17,7 +17,9 @@
 
 set -e
 
-# Parse command line arguments
+# Source utilities
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+source "$SCRIPT_DIR/../../utils/utils.sh"
 AUTO_DOWNLOAD=false
 if [[ "$1" == "-d" ]] || [[ "$1" == "--download" ]]; then
     AUTO_DOWNLOAD=true

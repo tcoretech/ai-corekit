@@ -1,8 +1,9 @@
 {
-  "id": "crawl4ai",
-  "category": "search",
-  "profiles": [
-    "crawl4ai"
-  ],
+  "name": "crawl4ai",
+  "category": "Search & Web Data",
+  "description": "Crawl4ai (Web Crawler for AI)",
+  "use_cases": "Web scraping, data extraction, site monitoring",
+  "interface": "Internal API",
+  "source": "https://github.com/unclecode/crawl4ai",
   "depends_on": []
 }

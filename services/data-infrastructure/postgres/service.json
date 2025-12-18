@@ -1,6 +1,9 @@
 {
-  "id": "postgres",
-  "category": "data-infrastructure",
-  "profiles": [],
+  "name": "postgres",
+  "category": "Data Infrastructure",
+  "description": "PostgreSQL Database (Shared)",
+  "use_cases": "Database for n8n, Flowise, etc.",
+  "interface": "Internal Port 5432",
+  "source": "https://hub.docker.com/_/postgres",
   "depends_on": []
 }

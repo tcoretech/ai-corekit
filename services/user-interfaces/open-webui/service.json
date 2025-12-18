@@ -1,8 +1,9 @@
 {
-  "id": "open-webui",
-  "category": "user-interfaces",
-  "profiles": [
-    "open-webui"
-  ],
+  "name": "open-webui",
+  "category": "User Interfaces",
+  "description": "Open WebUI (ChatGPT-like Interface)",
+  "use_cases": "AI chat, model switching, conversation management",
+  "interface": "webui.<yourdomain>.com",
+  "source": "https://github.com/open-webui/open-webui",
   "depends_on": []
 }

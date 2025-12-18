@@ -1,8 +1,9 @@
 {
-  "id": "mysql_leantime",
-  "category": "uncategorized",
-  "profiles": [
-    "mysql"
-  ],
+  "name": "mysql",
+  "category": "Data Infrastructure",
+  "description": "MySQL Database (Shared)",
+  "use_cases": "Database for Leantime, Mautic, etc.",
+  "interface": "Internal Port 3306",
+  "source": "https://hub.docker.com/_/mysql",
   "depends_on": []
 }

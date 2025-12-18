@@ -1,8 +1,9 @@
 {
-  "id": "libretranslate",
-  "category": "speech-text",
-  "profiles": [
-    "libretranslate"
-  ],
+  "name": "libretranslate",
+  "category": "Speech, Language & Text",
+  "description": "LibreTranslate (Self-hosted translation API - 50+ languages)",
+  "use_cases": "50+ languages, document translation, privacy-focused",
+  "interface": "translate.<yourdomain>.com",
+  "source": "https://github.com/LibreTranslate/LibreTranslate",
   "depends_on": []
 }

@@ -1,8 +1,9 @@
 {
-  "id": "flowise",
-  "category": "ai-agents",
-  "profiles": [
-    "flowise"
-  ],
+  "name": "flowise",
+  "category": "AI Agents",
+  "description": "Flowise (AI Agent Builder)",
+  "use_cases": "Chatbots, customer support, AI workflows",
+  "interface": "flowise.<yourdomain>.com",
+  "source": "https://github.com/FlowiseAI/Flowise",
   "depends_on": []
 }

@@ -5,31 +5,36 @@
 
 set -e
 
+# Determine script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+SSH_TUNNEL_DIR="$SCRIPT_DIR"
+
 # Source the utilities file
-source "$(dirname "$0")/utils.sh"
+# Assuming we are in services/host-services/ssh/
+if [ -f "$SSH_TUNNEL_DIR/../../../lib/utils/utils.sh" ]; then
+    source "$SSH_TUNNEL_DIR/../../../lib/utils/utils.sh"
+else
+    echo "Error: utils.sh not found."
+    exit 1
+fi
 
 # SSH Tunnel Management Functions
 stop_ssh_tunnel() {
-    local project_root="$1"
-    local ssh_tunnel_dir="$project_root/host-services/ssh"
-    
-    if [ -f "$ssh_tunnel_dir/docker-compose.yml" ]; then
+    if [ -f "$SSH_TUNNEL_DIR/docker-compose.yml" ]; then
         log_info "Stopping SSH tunnel..."
-        cd "$ssh_tunnel_dir"
+        cd "$SSH_TUNNEL_DIR"
         sudo docker compose -p ssh-tunnel down || true
         log_success "SSH tunnel stopped"
     else
-        log_info "No SSH tunnel configuration found - skipping stop"
+        log_info "No SSH tunnel configuration found in $SSH_TUNNEL_DIR - skipping stop"
     fi
 }
 
 start_ssh_tunnel() {
-    local project_root="$1"
-    local pull_image="${2:-false}"  # Optional parameter to pull image
-    local ssh_tunnel_dir="$project_root/host-services/ssh"
-    local ssh_tunnel_env="$ssh_tunnel_dir/.env"
+    local pull_image="${1:-false}"  # Optional parameter to pull image
+    local ssh_tunnel_env="$SSH_TUNNEL_DIR/.env"
     
-    if [ -f "$ssh_tunnel_dir/docker-compose.yml" ]; then
+    if [ -f "$SSH_TUNNEL_DIR/docker-compose.yml" ]; then
         # Check if SSH tunnel .env file exists and has token
         if [ ! -f "$ssh_tunnel_env" ]; then
             log_warning "SSH tunnel .env file not found at $ssh_tunnel_env - SSH tunnel will not start"
@@ -43,7 +48,7 @@ start_ssh_tunnel() {
             return
         fi
         
-        cd "$ssh_tunnel_dir"
+        cd "$SSH_TUNNEL_DIR"
         
         # Pull image if requested
         if [ "$pull_image" = "true" ]; then
@@ -60,26 +65,23 @@ start_ssh_tunnel() {
         }
         log_success "SSH tunnel started"
     else
-        log_info "No SSH tunnel configuration found - skipping start"
+        log_info "No SSH tunnel configuration found in $SSH_TUNNEL_DIR - skipping start"
     fi
 }
 
 restart_ssh_tunnel() {
-    local project_root="$1"
-    local ssh_tunnel_dir="$project_root/host-services/ssh"
-    
-    if [ -f "$ssh_tunnel_dir/docker-compose.yml" ]; then
+    if [ -f "$SSH_TUNNEL_DIR/docker-compose.yml" ]; then
         log_info "Restarting SSH tunnel with latest image..."
         
         # Brief pause before stop
         sleep 2
 
         # Stop the tunnel
-        stop_ssh_tunnel "$project_root"
+        stop_ssh_tunnel
         
         # Pull latest image
         log_info "Pulling latest cloudflared image..."
-        cd "$ssh_tunnel_dir"
+        cd "$SSH_TUNNEL_DIR"
         sudo docker compose -p ssh-tunnel pull || {
             log_warning "Failed to pull SSH tunnel image - continuing with existing image"
         }
@@ -88,19 +90,16 @@ restart_ssh_tunnel() {
         sleep 2
         
         # Start with updated image
-        start_ssh_tunnel "$project_root"
+        start_ssh_tunnel
     else
         log_info "No SSH tunnel configuration found - skipping restart"
     fi
 }
 
 status_ssh_tunnel() {
-    local project_root="$1"
-    local ssh_tunnel_dir="$project_root/host-services/ssh"
-    
-    if [ -f "$ssh_tunnel_dir/docker-compose.yml" ]; then
+    if [ -f "$SSH_TUNNEL_DIR/docker-compose.yml" ]; then
         log_info "SSH tunnel status:"
-        cd "$ssh_tunnel_dir"
+        cd "$SSH_TUNNEL_DIR"
         sudo docker compose -p ssh-tunnel ps || true
     else
         log_info "No SSH tunnel configuration found"
@@ -110,19 +109,19 @@ status_ssh_tunnel() {
 # Command line interface
 case "${1:-}" in
     "start")
-        start_ssh_tunnel "${2:-$(pwd)}" "${3:-false}"
+        start_ssh_tunnel "${2:-false}"
         ;;
     "stop")
-        stop_ssh_tunnel "${2:-$(pwd)}"
+        stop_ssh_tunnel
         ;;
     "restart")
-        restart_ssh_tunnel "${2:-$(pwd)}"
+        restart_ssh_tunnel
         ;;
     "status")
-        status_ssh_tunnel "${2:-$(pwd)}"
+        status_ssh_tunnel
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status} [project_root] [pull_image]"
+        echo "Usage: $0 {start|stop|restart|status} [pull_image]"
         echo ""
         echo "Commands:"
         echo "  start    - Start SSH tunnel (optionally pull image first)"
@@ -131,12 +130,11 @@ case "${1:-}" in
         echo "  status   - Show SSH tunnel status"
         echo ""
         echo "Parameters:"
-        echo "  project_root - Path to project root (default: current directory)"
         echo "  pull_image   - true/false to pull image before start (default: false)"
         echo ""
         echo "Examples:"
         echo "  $0 start"
-        echo "  $0 start /path/to/project true"
+        echo "  $0 start true"
         echo "  $0 restart"
         echo "  $0 status"
         exit 1

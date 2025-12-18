@@ -1,9 +1,10 @@
 {
-  "id": "mailserver",
-  "category": "mail",
-  "profiles": [
-    "mailserver"
-  ],
+  "name": "mailserver",
+  "category": "Mail System",
+  "description": "Docker-Mailserver (+ Mailgun ingest webhook for inbound mail)",
+  "use_cases": "Send/receive real emails",
+  "interface": "mail.<yourdomain>.com",
+  "source": "https://github.com/docker-mailserver/docker-mailserver",
   "depends_on": [
     "caddy"
   ]

@@ -1,8 +1,9 @@
 {
-  "id": "weaviate",
-  "category": "rag-systems",
-  "profiles": [
-    "weaviate"
-  ],
+  "name": "weaviate",
+  "category": "RAG Systems",
+  "description": "Weaviate (Vector Database with API Key Auth)",
+  "use_cases": "Hybrid search, multi-modal data, GraphQL API",
+  "interface": "weaviate.<yourdomain>.com",
+  "source": "https://github.com/weaviate/weaviate",
   "depends_on": []
 }

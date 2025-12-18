@@ -1,9 +1,10 @@
 {
-  "id": "jitsi-jvb",
-  "category": "video-conferencing",
-  "profiles": [
-    "jitsi"
-  ],
+  "name": "jitsi",
+  "category": "Video Conferencing",
+  "description": "Jitsi Meet (Video conferencing - REQUIRES UDP 10000!)",
+  "use_cases": "Client meetings, team calls, webinars, Cal.com integration",
+  "interface": "meet.<yourdomain>.com",
+  "source": "https://github.com/jitsi/jitsi-meet",
   "depends_on": [
     "jitsi-prosody"
   ]

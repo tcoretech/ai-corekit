@@ -1,8 +1,9 @@
 {
-  "id": "neo4j",
-  "category": "knowledge-graphs",
-  "profiles": [
-    "neo4j"
-  ],
+  "name": "neo4j",
+  "category": "Knowledge Graphs",
+  "description": "Neo4j (Graph Database)",
+  "use_cases": "Knowledge graphs, entity relationships, fraud detection, recommendations",
+  "interface": "neo4j.<yourdomain>.com",
+  "source": "https://github.com/neo4j/neo4j",
   "depends_on": []
 }

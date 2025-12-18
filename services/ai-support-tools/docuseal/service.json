@@ -1,9 +1,10 @@
 {
-  "id": "docuseal",
-  "category": "file-and-docs",
-  "profiles": [
-    "docuseal"
-  ],
+  "name": "docuseal",
+  "category": "AI Support Tools",
+  "description": "DocuSeal (E-Signatures platform - DocuSign alternative)",
+  "use_cases": "Document signing, contract workflows, DocuSign alternative",
+  "interface": "sign.<yourdomain>.com",
+  "source": "https://github.com/docusealco/docuseal",
   "depends_on": [
     "docuseal-db"
   ]

@@ -1,12 +1,11 @@
 {
-  "id": "espocrm",
-  "category": "business",
-  "profiles": [
-    "espocrm"
-  ],
-  "depends_on": {
-    "espocrm-db": {
-      "condition": "service_healthy"
-    }
-  }
+  "name": "espocrm",
+  "category": "Business Productivity",
+  "description": "EspoCRM (Full-featured CRM with workflows & automation)",
+  "use_cases": "Email campaigns, workflow automation, advanced reporting, role-based access",
+  "interface": "espocrm.<yourdomain>.com",
+  "source": "https://github.com/espocrm/espocrm",
+  "depends_on": [
+    "espocrm-db"
+  ]
 }

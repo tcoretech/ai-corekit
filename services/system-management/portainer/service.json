@@ -1,8 +1,9 @@
 {
-  "id": "portainer",
-  "category": "system-management",
-  "profiles": [
-    "portainer"
-  ],
+  "name": "portainer",
+  "category": "System Management",
+  "description": "Portainer (Docker management UI)",
+  "use_cases": "Container monitoring, logs, restart services",
+  "interface": "portainer.<yourdomain>.com",
+  "source": "https://github.com/portainer/portainer",
   "depends_on": []
 }

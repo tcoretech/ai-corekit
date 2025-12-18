@@ -1,9 +1,10 @@
 {
-  "id": "gpt-researcher",
-  "category": "uncategorized",
-  "profiles": [
-    "gpt-researcher"
-  ],
+  "name": "gpt-researcher",
+  "category": "Search & Web Data",
+  "description": "GPT Researcher (Autonomous research agent - 2000+ word reports with citations)",
+  "use_cases": "Comprehensive research reports, multi-source analysis, citations",
+  "interface": "research.<yourdomain>.com",
+  "source": "https://github.com/assafelovic/gpt-researcher",
   "depends_on": [
     "searxng"
   ]

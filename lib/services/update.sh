@@ -2,7 +2,7 @@
 set -e
 
 # Source the utilities file
-source "$(dirname "$0")/utils.sh"
+source "$(dirname "$0")/../utils/utils.sh"
 
 # Set the compose command explicitly to use docker compose subcommand
 

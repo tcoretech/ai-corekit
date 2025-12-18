@@ -1,9 +1,10 @@
 {
-  "id": "chatterbox-frontend",
-  "category": "speech-text",
-  "profiles": [
-    "tts-chatterbox"
-  ],
+  "name": "tts-chatterbox",
+  "category": "Speech, Language & Text",
+  "description": "TTS Chatterbox (State-of-the-art TTS - ElevenLabs alternative)",
+  "use_cases": "AI voices with emotional expression, voice synthesis, outperforms ElevenLabs",
+  "interface": "chatterbox.<yourdomain>.com",
+  "source": "https://github.com/resemble-ai/chatterbox",
   "depends_on": [
     "chatterbox-tts"
   ]

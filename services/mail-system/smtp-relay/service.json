@@ -1,10 +1,9 @@
 {
-  "id": "smtp-relay",
-  "category": "uncategorized",
-  "profiles": [
-    "baserow",
-    "calcom",
-    "leantime"
-  ],
+  "name": "smtp-relay",
+  "category": "Mail System",
+  "description": "",
+  "use_cases": "",
+  "interface": "",
+  "source": "",
   "depends_on": []
 }

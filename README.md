@@ -288,7 +288,11 @@ Pre-installed in the n8n container for seamless media manipulation:
 ### Installation Command
 
 ```bash
-git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && sudo bash ./scripts/install.sh
+git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit
+sudo make install
+launchkit init
+launchkit config
+launchkit up
 ```
 
 ### What the Installer Does
@@ -306,7 +310,7 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 2. **Create Admin Account:** First visitor becomes owner
 3. **Configure API Keys:** Add OpenAI, Anthropic, Groq keys in `.env` file
 4. **Explore Services:** Check the final report for all URLs and credentials
-5. **Import Credentials to Vaultwarden:** Run `sudo bash ./scripts/download_credentials.sh`
+5. **Import Credentials to Vaultwarden:** Run `sudo bash ./lib/maintenance/download_credentials.sh`
 
 ### Installation Time
 
@@ -328,7 +332,7 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 ### Update Command
 
 ```bash
-cd ai-launchkit && sudo bash ./scripts/update.sh
+cd ai-launchkit && launchkit update
 ```
 
 ### What the Update Does

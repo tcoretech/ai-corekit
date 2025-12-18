@@ -1,8 +1,9 @@
 {
-  "id": "lightrag",
-  "category": "knowledge-graphs",
-  "profiles": [
-    "lightrag"
-  ],
+  "name": "lightrag",
+  "category": "Knowledge Graphs",
+  "description": "LightRAG (Graph-based RAG with entity extraction)",
+  "use_cases": "Automatic knowledge graph creation, relationship mapping, complex queries",
+  "interface": "lightrag.<yourdomain>.com",
+  "source": "https://github.com/HKUDS/LightRAG",
   "depends_on": []
 }

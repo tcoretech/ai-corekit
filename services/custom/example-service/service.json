@@ -1,0 +1,9 @@
+{
+  "name": "example-service",
+  "category": "Custom",
+  "description": "Example Service Template",
+  "use_cases": "Template for creating new services",
+  "interface": "example.<yourdomain>.com",
+  "source": "Local",
+  "depends_on": []
+}

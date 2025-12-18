@@ -1,8 +1,9 @@
 {
-  "id": "clickhouse",
-  "category": "data-infrastructure",
-  "profiles": [
-    "langfuse"
-  ],
+  "name": "langfuse",
+  "category": "AI Agents",
+  "description": "Langfuse Suite (AI Observability - includes Clickhouse, Minio)",
+  "use_cases": "DSGVO compliance, German text processing, entity recognition",
+  "interface": "Internal API",
+  "source": "",
   "depends_on": []
 }

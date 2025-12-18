@@ -1,18 +1,13 @@
 {
-  "id": "nocodb",
-  "category": "business",
-  "profiles": [
-    "nocodb"
-  ],
-  "depends_on": {
-    "nocodb-init": {
-      "condition": "service_completed_successfully"
-    },
-    "postgres": {
-      "condition": "service_healthy"
-    },
-    "redis": {
-      "condition": "service_started"
-    }
-  }
+  "name": "nocodb",
+  "category": "Business Productivity",
+  "description": "NocoDB (Open-source Airtable alternative, smart spreadsheet UI)",
+  "use_cases": "Smart spreadsheet UI, realtime collaboration, automation",
+  "interface": "nocodb.<yourdomain>.com",
+  "source": "https://github.com/nocodb/nocodb",
+  "depends_on": [
+    "nocodb-init",
+    "postgres",
+    "redis"
+  ]
 }

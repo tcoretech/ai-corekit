@@ -3,7 +3,7 @@
 set -e
 
 # Source the utilities file
-source "$(dirname "$0")/utils.sh"
+source "$(dirname "$0")/../core/utils.sh"
 
 # Set the compose command explicitly to use docker compose subcommand
 COMPOSE_CMD="docker compose"
@@ -11,9 +11,9 @@ COMPOSE_CMD="docker compose"
 # Navigate to the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Project root directory (one level up from scripts)
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
-# Path to the 05_run_services.sh script (Corrected from original update.sh which had 04)
-RUN_SERVICES_SCRIPT="$SCRIPT_DIR/05_run_services.sh"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." &> /dev/null && pwd )"
+# Path to the run_services.sh script
+RUN_SERVICES_SCRIPT="$PROJECT_ROOT/lib/setup/run_services.sh"
 # Compose files (Not strictly needed here unless used directly, but good for context)
 # MAIN_COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
 # SUPABASE_COMPOSE_FILE="$PROJECT_ROOT/supabase/docker/docker-compose.yml"

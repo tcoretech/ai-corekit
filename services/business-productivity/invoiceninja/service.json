@@ -1,15 +1,12 @@
 {
-  "id": "invoiceninja",
-  "category": "business",
-  "profiles": [
-    "invoiceninja"
-  ],
-  "depends_on": {
-    "invoiceninja_db": {
-      "condition": "service_healthy"
-    },
-    "redis": {
-      "condition": "service_healthy"
-    }
-  }
+  "name": "invoiceninja",
+  "category": "Business Productivity",
+  "description": "Invoice Ninja - Professional invoicing platform",
+  "use_cases": "Multi-currency invoices, 40+ payment gateways, recurring billing, client portal",
+  "interface": "invoices.<yourdomain>.com",
+  "source": "https://github.com/invoiceninja/invoiceninja",
+  "depends_on": [
+    "invoiceninja_db",
+    "redis"
+  ]
 }

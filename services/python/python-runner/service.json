@@ -1,8 +1,9 @@
 {
-  "id": "python-runner",
-  "category": "system-management",
-  "profiles": [
-    "python-runner"
-  ],
+  "name": "python-runner",
+  "category": "Python",
+  "description": "Python Runner (Run your custom Python code from ./python-runner)",
+  "use_cases": "Execute Python scripts from n8n workflows",
+  "interface": "Internal only",
+  "source": "https://github.com/n8n-io/n8n",
   "depends_on": []
 }

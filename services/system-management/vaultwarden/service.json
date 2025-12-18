@@ -1,8 +1,9 @@
 {
-  "id": "vaultwarden",
-  "category": "system-management",
-  "profiles": [
-    "vaultwarden"
-  ],
+  "name": "vaultwarden",
+  "category": "System Management",
+  "description": "Vaultwarden (Self-hosted Bitwarden-compatible password manager)",
+  "use_cases": "Credential management, team password sharing, auto-fill",
+  "interface": "vault.<yourdomain>.com",
+  "source": "https://github.com/dani-garcia/vaultwarden",
   "depends_on": []
 }

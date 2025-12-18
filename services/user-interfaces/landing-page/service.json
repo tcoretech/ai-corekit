@@ -1,7 +1,8 @@
 {
-  "id": "landing-page",
-  "name": "Landing Page",
-  "description": "Static landing page for AI LaunchKit",
+  "name": "landing-page",
   "category": "User Interfaces",
-  "enabled": true
+  "description": "Landing Page (Static website)",
+  "use_cases": "Main entry point",
+  "interface": "<yourdomain>.com",
+  "source": "local"
 }

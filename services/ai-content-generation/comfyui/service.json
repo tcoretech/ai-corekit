@@ -1,8 +1,9 @@
 {
-  "id": "comfyui",
-  "category": "ai-content",
-  "profiles": [
-    "comfyui"
-  ],
+  "name": "comfyui",
+  "category": "AI Content Generation",
+  "description": "ComfyUI (Node-based Stable Diffusion UI)",
+  "use_cases": "Image generation, AI art, photo editing, workflows",
+  "interface": "comfyui.<yourdomain>.com",
+  "source": "https://github.com/comfyanonymous/ComfyUI",
   "depends_on": []
 }

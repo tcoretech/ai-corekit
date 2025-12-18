@@ -1,18 +1,13 @@
 {
-  "id": "baserow",
-  "category": "business",
-  "profiles": [
-    "baserow"
-  ],
-  "depends_on": {
-    "baserow-init": {
-      "condition": "service_completed_successfully"
-    },
-    "postgres": {
-      "condition": "service_healthy"
-    },
-    "redis": {
-      "condition": "service_healthy"
-    }
-  }
+  "name": "baserow",
+  "category": "Business Productivity",
+  "description": "Baserow (Airtable Alternative)",
+  "use_cases": "Database management, project tracking, collaborative workflows",
+  "interface": "baserow.<yourdomain>.com",
+  "source": "https://github.com/bram2w/baserow",
+  "depends_on": [
+    "baserow-init",
+    "postgres",
+    "redis"
+  ]
 }

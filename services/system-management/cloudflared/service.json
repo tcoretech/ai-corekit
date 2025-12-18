@@ -1,8 +1,9 @@
 {
-  "id": "cloudflared",
-  "category": "system-management",
-  "profiles": [
-    "cloudflare-tunnel"
-  ],
+  "name": "cloudflared",
+  "category": "System Management",
+  "description": "",
+  "use_cases": "",
+  "interface": "",
+  "source": "",
   "depends_on": []
 }

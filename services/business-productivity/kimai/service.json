@@ -1,12 +1,11 @@
 {
-  "id": "kimai",
-  "category": "business",
-  "profiles": [
-    "kimai"
-  ],
-  "depends_on": {
-    "kimai_db": {
-      "condition": "service_healthy"
-    }
-  }
+  "name": "kimai",
+  "category": "Business Productivity",
+  "description": "Kimai (Professional Time Tracking - DSGVO-compliant, 2FA, invoicing)",
+  "use_cases": "DSGVO-compliant billing, team timesheets, API, 2FA, invoicing",
+  "interface": "time.<yourdomain>.com",
+  "source": "https://github.com/kimai/kimai",
+  "depends_on": [
+    "kimai_db"
+  ]
 }

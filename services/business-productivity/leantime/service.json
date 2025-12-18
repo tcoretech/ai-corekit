@@ -1,12 +1,11 @@
 {
-  "id": "leantime",
-  "category": "business",
-  "profiles": [
-    "leantime"
-  ],
-  "depends_on": {
-    "mysql_leantime": {
-      "condition": "service_healthy"
-    }
-  }
+  "name": "leantime",
+  "category": "Business Productivity",
+  "description": "Leantime - Full project management suite (Asana/Monday alternative)",
+  "use_cases": "ADHD-friendly PM, time tracking, sprints, strategy tools",
+  "interface": "leantime.<yourdomain>.com",
+  "source": "https://github.com/Leantime/leantime",
+  "depends_on": [
+    "mysql_leantime"
+  ]
 }

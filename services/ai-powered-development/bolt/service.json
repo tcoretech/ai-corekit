@@ -1,8 +1,9 @@
 {
-  "id": "bolt",
-  "category": "ai-dev",
-  "profiles": [
-    "bolt"
-  ],
+  "name": "bolt",
+  "category": "AI-Powered Development",
+  "description": "bolt.diy (AI Web Development)",
+  "use_cases": "Rapid prototyping, MVP creation, learning to code",
+  "interface": "bolt.<yourdomain>.com",
+  "source": "https://github.com/stackblitz-labs/bolt.diy",
   "depends_on": []
 }

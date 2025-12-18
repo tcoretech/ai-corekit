@@ -33,9 +33,12 @@ ai-launchkit/
 │   ├── core.yaml               # Defines services included in "core"
 │   ├── host-dns.yaml
 │   └── host-ssh.yaml
-├── scripts/
-│   ├── launchkit.py            # New CLI orchestrator
-│   └── ...
+├── lib/
+│   ├── install/                # System prep, Docker install
+│   ├── config/                 # Wizard, global secrets
+│   ├── services/               # Service orchestration, updates
+│   └── utils/                  # Shared utilities
+├── launchkit.sh                # Main CLI entry point
 └── ...
 ```
 
@@ -48,6 +51,23 @@ ai-launchkit/
 - [x] **Snapshot Current State**
     - Run `docker ps --format "table {{.Names}}\t{{.Image}}"` and save to `current_running_services.txt`.
     - Run `docker volume ls` and save to `current_volumes.txt`.
+- [x] **Create Directory Structure**
+    - Create `config/`, `services/`, `lib/`.
+    - Create subdirectories in `lib/`: `install`, `config`, `services`, `utils`.
+
+### Phase 2: CLI & Core Logic
+
+- [x] **Implement CLI (`launchkit.sh`)**
+    - Bash-based entry point.
+    - Commands: `init`, `config`, `up`, `down`, `update`, `credentials`.
+    - Support for service-specific commands (e.g., `launchkit ssh`).
+- [x] **Migrate Scripts to `lib/`**
+    - Move system prep scripts to `lib/install/`.
+    - Move wizard and secret scripts to `lib/config/`.
+    - Move service management scripts to `lib/services/`.
+    - Move utilities to `lib/utils/`.
+    - Update all internal import paths.
+
     - Backup the current `.env` file to `.env.backup`.
 
 - [x] **Create Directory Structure**
@@ -149,6 +169,61 @@ ai-launchkit/
 
 - [ ] **Update Update Script**
     - Rewrite `scripts/update.sh` to simply call `launchkit update core`.
+
+### Phase 8: Script Refactoring & CLI Evolution
+
+- [x] **Restructure Scripts Directory**
+    - Rename `scripts/` to `lib/`.
+    - Create `bin/` directory.
+    - Create `bin/launchkit` entry point script.
+
+- [x] **Update `launchkit.py`**
+    - Update import paths to use `lib/`.
+    - Implement `init` command (wraps `system_preparation.sh` and `install_docker.sh`).
+    - Implement `config` command (wraps `wizard.sh`).
+    - Ensure `up`, `down`, `pull` commands work with the new structure.
+
+- [x] **Update Shell Scripts**
+    - Update `lib/utils.sh` to correctly locate `PROJECT_ROOT`.
+    - Update `lib/wizard.sh` to source `utils.sh` correctly.
+    - Rename scripts to be more friendly (e.g., `04_wizard.sh` -> `wizard.sh`).
+
+- [x] **Global Path Updates**
+    - Update any references to `scripts/` in documentation or other files.
+
+### Phase 9: Bash Conversion & CLI Simplification
+
+- [x] **Bash CLI Entry Point**
+    - Create `launchkit.sh` in the project root.
+    - Implement `launchkit <action>` logic in Bash.
+    - Remove `bin/` directory and `launchkit.py`.
+    - Implement `make install` to symlink `launchkit.sh` to `/usr/local/bin/launchkit`.
+
+- [x] **Configuration Consolidation**
+    - Remove `config/services-enabled.json`.
+    - Update `wizard.sh` to manage `COMPOSE_PROFILES` in `config/global.env`.
+    - Ensure `launchkit.sh` reads enabled services from `COMPOSE_PROFILES`.
+    - Deprecate root `.env` (keep only for migration/compatibility).
+
+- [x] **Library Reorganization**
+    - Create subdirectories in `lib/`:
+        - `lib/core/` (core logic, utils)
+        - `lib/setup/` (install, prep, wizard)
+        - `lib/maintenance/` (update, cleanup, backup)
+        - `lib/legacy/` (archived scripts)
+    - Move scripts to appropriate folders.
+    - Updated all script references to new locations.
+
+- [x] **Service-Specific Install Logic**
+    - Refactor `install.sh` logic.
+    - Move service-specific setup to `services/<category>/<service>/prepare.sh`.
+    - Ensure `launchkit up` runs `prepare.sh` for enabled services.
+    - Removed legacy `install.sh`.
+
+- [x] **Dynamic Project Naming**
+    - Update stack configuration to support dynamic project names.
+    - Remove hardcoded `localai` project name (default to it in config).
+    - Updated `launchkit.sh` to read `project_name` from stack config.
 
 ## ⚠️ Critical Considerations
 

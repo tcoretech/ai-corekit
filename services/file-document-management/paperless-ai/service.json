@@ -1,9 +1,10 @@
 {
-  "id": "paperless-ai",
-  "category": "file-and-docs",
-  "profiles": [
-    "paperless-ai"
-  ],
+  "name": "paperless-ai",
+  "category": "File & Document Management",
+  "description": "Paperless AI Suite (GPT+AI - Superior OCR & RAG Chat for documents)",
+  "use_cases": "Natural language queries, document Q&A, intelligent search",
+  "interface": "paperless-ai.<yourdomain>.com",
+  "source": "https://github.com/clusterzx/paperless-ai",
   "depends_on": [
     "paperless"
   ]

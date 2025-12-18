@@ -1,15 +1,12 @@
 {
-  "id": "twenty-crm",
-  "category": "business",
-  "profiles": [
-    "twenty-crm"
-  ],
-  "depends_on": {
-    "twenty-db": {
-      "condition": "service_healthy"
-    },
-    "twenty-redis": {
-      "condition": "service_healthy"
-    }
-  }
+  "name": "twenty-crm",
+  "category": "Business Productivity",
+  "description": "Twenty CRM (Modern Notion-like customer management)",
+  "use_cases": "Customer pipelines, GraphQL API, team collaboration, lightweight CRM for startups",
+  "interface": "twenty.<yourdomain>.com",
+  "source": "https://github.com/twentyhq/twenty",
+  "depends_on": [
+    "twenty-db",
+    "twenty-redis"
+  ]
 }

@@ -1,9 +1,10 @@
 {
-  "id": "seafile",
-  "category": "file-and-docs",
-  "profiles": [
-    "seafile"
-  ],
+  "name": "seafile",
+  "category": "File & Document Management",
+  "description": "Seafile (File sync & share like Dropbox/Google Drive/OneDrive)",
+  "use_cases": "Team collaboration, file versioning, WebDAV, mobile sync",
+  "interface": "files.<yourdomain>.com",
+  "source": "https://github.com/haiwen/seafile",
   "depends_on": [
     "seafile-db"
   ]

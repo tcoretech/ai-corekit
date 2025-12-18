@@ -1,15 +1,12 @@
 {
-  "id": "odoo",
-  "category": "business",
-  "profiles": [
-    "odoo"
-  ],
-  "depends_on": {
-    "odoo-schema-init": {
-      "condition": "service_completed_successfully"
-    },
-    "postgres": {
-      "condition": "service_healthy"
-    }
-  }
+  "name": "odoo",
+  "category": "Business Productivity",
+  "description": "Odoo 18 (Open Source ERP/CRM with AI features)",
+  "use_cases": "Sales automation, inventory, accounting, AI lead scoring",
+  "interface": "odoo.<yourdomain>.com",
+  "source": "https://github.com/odoo/odoo",
+  "depends_on": [
+    "odoo-schema-init",
+    "postgres"
+  ]
 }

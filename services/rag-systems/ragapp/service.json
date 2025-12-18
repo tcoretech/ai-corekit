@@ -1,8 +1,9 @@
 {
-  "id": "ragapp",
-  "category": "rag-systems",
-  "profiles": [
-    "ragapp"
-  ],
+  "name": "ragapp",
+  "category": "RAG Systems",
+  "description": "RAGApp (Open-source RAG UI + API)",
+  "use_cases": "Knowledge bases, document Q&A, research tools",
+  "interface": "ragapp.<yourdomain>.com",
+  "source": "https://github.com/ragapp/ragapp",
   "depends_on": []
 }

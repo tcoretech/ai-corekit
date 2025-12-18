@@ -1,9 +1,10 @@
 {
-  "id": "outline",
-  "category": "file-and-docs",
-  "profiles": [
-    "outline"
-  ],
+  "name": "outline",
+  "category": "Business Productivity",
+  "description": "Outline (Wiki/Documentation - Notion alternative)",
+  "use_cases": "Team documentation, knowledge base, Notion-like editor",
+  "interface": "outline.<yourdomain>.com",
+  "source": "https://github.com/outline/outline",
   "depends_on": [
     "outline-postgres",
     "outline-redis",

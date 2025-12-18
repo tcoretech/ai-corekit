@@ -1,8 +1,9 @@
 {
-  "id": "hoppscotch-db",
-  "category": "workflow-automation",
-  "profiles": [
-    "webhook-testing"
-  ],
+  "name": "webhook-testing",
+  "category": "Workflow Automation",
+  "description": "Webhook Tester + Hoppscotch (API & Webhook Testing/Debugging Suite)",
+  "use_cases": "Receive & inspect webhooks, debug n8n integrations, test external services",
+  "interface": "webhook-test.<yourdomain>.com",
+  "source": "https://github.com/tarampampam/webhook-tester",
   "depends_on": []
 }

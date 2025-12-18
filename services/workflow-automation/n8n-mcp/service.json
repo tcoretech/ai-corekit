@@ -1,8 +1,9 @@
 {
-  "id": "n8n-mcp",
-  "category": "workflow-automation",
-  "profiles": [
-    "n8n-mcp"
-  ],
+  "name": "n8n-mcp",
+  "category": "Workflow Automation",
+  "description": "n8n-MCP (AI workflow generation for Claude/Cursor)",
+  "use_cases": "Claude/Cursor integration, 525+ node docs, workflow validation",
+  "interface": "n8nmcp.<yourdomain>.com",
+  "source": "https://github.com/czlonkowski/n8n-mcp",
   "depends_on": []
 }

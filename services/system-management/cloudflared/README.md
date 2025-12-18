@@ -458,3 +458,587 @@ INF Updated to new configuration
 2. **Ollama** is not included in the tunnel setup as it's typically used internally only
 3. **Database ports** (PostgreSQL, Redis) should never be exposed through the tunnel
 4. Consider using **Cloudflare Access** for any services that need authentication
+
+### What is Cloudflare Tunnel?
+
+Cloudflare Tunnel (formerly Argo Tunnel) creates a secure, encrypted connection between your services and Cloudflare's global network **without exposing your server to the public internet**. No open ports, no port forwarding, no firewall changes required.
+
+The lightweight `cloudflared` daemon runs in your infrastructure and establishes an **outbound-only connection** to Cloudflare. Your server's IP address remains completely hidden, protecting you from direct attacks, DDoS, and reconnaissance. All traffic is routed through Cloudflare's Zero Trust platform with built-in DDoS mitigation and identity-based access control.
+
+**Perfect for:** Bypassing restrictive firewalls, securing self-hosted services, protecting development environments, or connecting IoT devices without static IPs.
+
+### Features
+
+- **Zero Firewall Configuration:** No open ports 80/443 required - only outbound HTTPS connections (port 443)
+- **Hidden Origin IP:** Your server's public IP remains completely private - prevents direct attacks
+- **Zero Trust Security:** Integrate with Cloudflare Access for email-based authentication, OTP, or SSO
+- **DDoS Protection:** Automatic protection via Cloudflare's global network (200+ data centers)
+- **Easy Docker Integration:** Run as a lightweight container alongside your services
+- **WebSocket Support:** Full support for real-time connections (WebSockets, gRPC, etc.)
+- **Free Tier Available:** Up to 50 users with Cloudflare Zero Trust Free plan
+- **No VPN Required:** Direct access to internal services without complex VPN setup
+
+### When to Use Cloudflare Tunnel
+
+**✅ Use Cloudflare Tunnel when:**
+- Your VPS provider blocks incoming ports (common with some cloud providers)
+- You want to hide your server's public IP for security
+- You need Zero Trust authentication (email OTP, SSO, etc.)
+- You're behind a restrictive firewall or CGNAT
+- You want DDoS protection included by default
+- You're running services on a home network without static IP
+- You want to bypass port forwarding on your router
+
+**❌ Don't use Cloudflare Tunnel when:**
+- You're already using Caddy with Let's Encrypt (Caddy provides SSL automatically)
+- You want full control over SSL certificates (Cloudflare terminates SSL at their edge)
+- You need non-HTTP protocols without Cloudflare's WARP client
+- You want to minimize latency (adds ~20-50ms via Cloudflare routing)
+- You're handling sensitive data that cannot pass through third-party networks
+
+**Note:** In AI LaunchKit, Cloudflare Tunnel is **optional**. The default setup uses Caddy for automatic HTTPS, which works perfectly for most use cases. Use Cloudflare Tunnel only if you have specific requirements like hiding your IP or need Zero Trust authentication.
+
+### Initial Setup
+
+Cloudflare Tunnel requires a Cloudflare account and a domain managed by Cloudflare.
+
+#### Prerequisites
+
+1. **Cloudflare Account:** Sign up at https://dash.cloudflare.com
+2. **Domain on Cloudflare:** Add your domain and change nameservers to Cloudflare
+3. **Zero Trust Account:** Enable at https://one.dash.cloudflare.com (free tier available)
+
+#### Step 1: Create Tunnel in Cloudflare Dashboard
+
+1. **Navigate to Zero Trust Dashboard:**
+   - Go to https://one.dash.cloudflare.com
+   - Click **Networks** → **Tunnels**
+   - Click **Create a tunnel**
+
+2. **Select Connector Type:**
+   - Choose **Cloudflared** (not WARP Connector)
+   - Click **Next**
+
+3. **Name Your Tunnel:**
+   - Enter a name (e.g., `ai-launchkit-prod`)
+   - Click **Save tunnel**
+
+4. **Get Tunnel Token:**
+   - Cloudflare will display a Docker command with your tunnel token
+   - Copy the token from the command (it starts with `eyJ...`)
+   - **Save this token** - you'll need it for Docker setup
+
+#### Step 2: Configure Tunnel in Docker
+
+Add Cloudflare Tunnel to your `docker-compose.yml`:
+
+```yaml
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    restart: unless-stopped
+    environment:
+      - TUNNEL_TOKEN=eyJhIjoiNTU2MDgw...  # Your token from Step 1
+    command: tunnel run
+    networks:
+      - default
+
+networks:
+  default:
+    name: localai_default
+    external: true
+```
+
+**Start the tunnel:**
+```bash
+docker compose up -d cloudflared
+```
+
+**Verify it's running:**
+```bash
+# Check container status
+docker ps | grep cloudflared
+
+# View logs
+docker logs cloudflared-tunnel
+
+# Should see: "Connection established" and "Registered tunnel"
+```
+
+#### Step 3: Add Public Hostnames
+
+Back in the Cloudflare Zero Trust Dashboard:
+
+1. **Click on your tunnel name** in the Tunnels list
+2. **Go to Public Hostname tab**
+3. **Click Add a public hostname**
+
+4. **Configure Service:**
+   ```
+   Subdomain: n8n
+   Domain: yourdomain.com
+   Type: HTTP
+   URL: n8n:5678
+   ```
+   - If cloudflared is on the same Docker network, use container name (e.g., `n8n:5678`)
+   - If different network, use `http://IP:PORT`
+
+5. **Click Save hostname**
+
+6. **Test Access:**
+   - Visit `https://n8n.yourdomain.com`
+   - DNS will automatically point to Cloudflare (CNAME record created)
+   - Traffic routes: User → Cloudflare → Tunnel → n8n
+
+#### Step 4: Add Zero Trust Authentication (Optional)
+
+**Protect services with email-based OTP:**
+
+1. **Create Access Application:**
+   - Go to **Access** → **Applications**
+   - Click **Add an application**
+   - Select **Self-hosted**
+
+2. **Configure Application:**
+   ```
+   Application name: n8n
+   Session Duration: 24 hours
+   Application domain: https://n8n.yourdomain.com
+   ```
+
+3. **Create Access Policy:**
+   - Policy name: Email whitelist
+   - Action: Allow
+   - Configure rule: **Emails**
+   - Enter allowed emails (e.g., `admin@yourcompany.com`)
+
+4. **Save and Test:**
+   - Visit `https://n8n.yourdomain.com`
+   - You'll be redirected to Cloudflare Access login
+   - Enter your email → receive OTP code → access granted
+
+### n8n Integration Setup
+
+**Cloudflare has no native n8n node**, but you can manage tunnels via the Cloudflare API using HTTP Request nodes.
+
+**Cloudflare API Setup:**
+1. Go to https://dash.cloudflare.com/profile/api-tokens
+2. Create API Token with permissions:
+   - **Zone.DNS** - Edit
+   - **Account.Cloudflare Tunnel** - Edit
+   - **Account.Access** - Edit
+3. Save token for n8n credentials
+
+#### Example 1: List All Tunnels
+
+Monitor tunnel status and health:
+
+```javascript
+// 1. HTTP Request Node
+// Method: GET
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel
+// Authentication: Generic Credential Type
+//   Header Auth:
+//     Name: Authorization
+//     Value: Bearer {{$env.CF_API_TOKEN}}
+
+// 2. Code Node: Parse tunnel status
+const tunnels = $json.result || [];
+const tunnelStatus = [];
+
+for (const tunnel of tunnels) {
+  tunnelStatus.push({
+    name: tunnel.name,
+    id: tunnel.id,
+    status: tunnel.status,
+    created: tunnel.created_at,
+    connections: tunnel.connections?.length || 0,
+    healthy: tunnel.status === 'healthy'
+  });
+}
+
+return tunnelStatus;
+
+// 3. IF Node: Check if any tunnels down
+// Condition: {{ $json.filter(t => !t.healthy).length > 0 }}
+
+// 4. Send Alert if tunnels unhealthy
+```
+
+#### Example 2: Create New Tunnel via API
+
+Automate tunnel creation for new services:
+
+```javascript
+// 1. Trigger: Manual / Webhook with service details
+
+// 2. HTTP Request Node: Create Tunnel
+// Method: POST
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel
+// Authentication: Bearer Token (CF_API_TOKEN)
+// Body (JSON):
+{
+  "name": "{{ $json.serviceName }}-tunnel",
+  "config_src": "cloudflare"
+}
+
+// 3. Code Node: Extract tunnel ID and token
+const tunnel = $json.result;
+return [{
+  tunnelId: tunnel.id,
+  tunnelName: tunnel.name,
+  tunnelToken: tunnel.token  // Use this to run cloudflared
+}];
+
+// 4. HTTP Request: Create DNS Record
+// Method: POST
+// URL: https://api.cloudflare.com/client/v4/zones/{{$env.CF_ZONE_ID}}/dns_records
+// Body:
+{
+  "type": "CNAME",
+  "name": "{{ $json.serviceName }}",
+  "content": "{{ $json.tunnelId }}.cfargotunnel.com",
+  "proxied": true
+}
+
+// 5. HTTP Request: Add Public Hostname
+// Method: PUT
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel/{{$json.tunnelId}}/configurations
+// Body:
+{
+  "config": {
+    "ingress": [
+      {
+        "hostname": "{{ $json.serviceName }}.yourdomain.com",
+        "service": "http://{{ $json.serviceName }}:{{ $json.port }}"
+      },
+      {
+        "service": "http_status:404"
+      }
+    ]
+  }
+}
+
+// 6. Notify admin with tunnel details
+```
+
+#### Example 3: Monitor Tunnel Health
+
+Check if tunnels are connected and responsive:
+
+```javascript
+// 1. Trigger: Schedule (every 5 minutes)
+
+// 2. HTTP Request: Get Tunnel Details
+// Method: GET
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel/{{$env.TUNNEL_ID}}
+
+// 3. Code Node: Check connection status
+const tunnel = $json.result;
+const connections = tunnel.connections || [];
+
+const health = {
+  tunnelName: tunnel.name,
+  status: tunnel.status,
+  totalConnections: connections.length,
+  activeConnections: connections.filter(c => c.is_pending_reconnect === false).length,
+  unhealthy: connections.filter(c => c.is_pending_reconnect).length,
+  datacenters: connections.map(c => c.colo_name),
+  uptime: connections.length > 0
+};
+
+return [health];
+
+// 4. IF Node: Check if tunnel unhealthy
+// Condition: {{ $json.unhealthy > 0 || $json.totalConnections === 0 }}
+
+// 5. Send Slack/Email Alert
+// Message: "Tunnel {{ $json.tunnelName }} is unhealthy! Active connections: {{ $json.activeConnections }}"
+```
+
+#### Example 4: Update Tunnel Configuration
+
+Add or remove services from tunnel programmatically:
+
+```javascript
+// 1. Trigger: Webhook (when service added/removed)
+
+// 2. HTTP Request: Get Current Config
+// Method: GET
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel/{{$env.TUNNEL_ID}}/configurations
+
+// 3. Code Node: Modify ingress rules
+const currentConfig = $json.result.config;
+const newService = $input.item.json;  // { hostname, service, port }
+
+// Add new ingress rule (before the catch-all 404)
+const ingressRules = currentConfig.ingress.slice(0, -1);  // Remove 404 rule
+ingressRules.push({
+  hostname: newService.hostname,
+  service: `http://${newService.service}:${newService.port}`
+});
+ingressRules.push({ service: "http_status:404" });  // Re-add catch-all
+
+return [{
+  config: {
+    ingress: ingressRules
+  }
+}];
+
+// 4. HTTP Request: Update Tunnel Config
+// Method: PUT
+// URL: https://api.cloudflare.com/client/v4/accounts/{{$env.CF_ACCOUNT_ID}}/cfd_tunnel/{{$env.TUNNEL_ID}}/configurations
+// Body: {{ $json.config }}
+
+// 5. Notify success
+```
+
+**Internal Cloudflare Tunnel URL:** Not applicable - Tunnel is the entry point from external internet.
+
+### Troubleshooting
+
+**Issue 1: Tunnel Shows as "Inactive" or "Down"**
+
+```bash
+# Check cloudflared container status
+docker ps | grep cloudflared
+
+# If not running, check logs
+docker logs cloudflared-tunnel
+
+# Common error: "authentication failed"
+# Solution: Verify TUNNEL_TOKEN is correct in docker-compose.yml
+
+# Common error: "no route to host"
+# Solution: Check Docker network configuration
+docker network inspect localai_default
+
+# Restart tunnel
+docker compose restart cloudflared
+```
+
+**Solution:**
+- Verify tunnel token is correct (starts with `eyJ`)
+- Check Docker network exists and cloudflared is connected
+- Ensure outbound HTTPS (port 443) is allowed on firewall
+- Check Cloudflare dashboard shows tunnel as "Healthy"
+
+**Issue 2: Services Not Accessible via Tunnel**
+
+```bash
+# Test service is reachable from cloudflared container
+docker exec cloudflared-tunnel ping n8n
+
+# Should get ping responses if on same network
+
+# Test HTTP connectivity
+docker exec cloudflared-tunnel curl http://n8n:5678
+
+# Should get HTML response or redirect
+
+# Check tunnel configuration in dashboard
+# Verify hostname, service type (HTTP), and URL are correct
+```
+
+**Solution:**
+- Ensure cloudflared and service are on the same Docker network
+- Use container names (not localhost) for service URLs
+- Verify service is actually running: `docker ps | grep n8n`
+- Check Public Hostname configuration in Cloudflare dashboard
+- Wait 1-2 minutes for configuration changes to propagate
+
+**Issue 3: DNS Not Resolving**
+
+```bash
+# Check if CNAME record exists
+nslookup n8n.yourdomain.com
+
+# Should point to: xxxxx.cfargotunnel.com
+
+# Check Cloudflare DNS dashboard
+# Go to: dash.cloudflare.com → your domain → DNS
+
+# Verify CNAME record:
+# Type: CNAME
+# Name: n8n
+# Target: <tunnel-id>.cfargotunnel.com
+# Proxied: Yes (orange cloud)
+```
+
+**Solution:**
+- Cloudflare auto-creates CNAME records when you add Public Hostname
+- If missing, manually create CNAME pointing to `<tunnel-id>.cfargotunnel.com`
+- Ensure "Proxied" (orange cloud) is enabled
+- DNS changes can take 1-5 minutes to propagate
+- Clear browser DNS cache: Chrome → `chrome://net-internals/#dns` → Clear
+
+**Issue 4: Cloudflare Access Login Loop**
+
+```bash
+# Check Access application policy
+# Go to: Zero Trust Dashboard → Access → Applications
+
+# Common issues:
+# 1. Email not in allowed list
+# 2. Session expired
+# 3. Cookie blocked by browser
+
+# Test without Access policy first
+# Temporarily remove policy to verify tunnel works
+```
+
+**Solution:**
+- Verify your email is in the Access policy "Allowed emails" list
+- Check browser allows cookies (required for Access sessions)
+- Try incognito/private browsing to rule out cookie issues
+- Check session duration in Access application settings
+- Clear browser cookies for your domain
+
+**Issue 5: High Latency Through Tunnel**
+
+```bash
+# Test latency to Cloudflare edge
+ping your-tunnel-domain.com
+
+# Typical latency: 20-100ms depending on location
+
+# Test direct to service (bypass tunnel)
+curl -w "@curl-format.txt" https://n8n.yourdomain.com
+
+# Compare with direct IP access
+curl -w "@curl-format.txt" http://YOUR_SERVER_IP:5678
+```
+
+**Solution:**
+- Cloudflare Tunnel adds 20-50ms latency on average (traffic routes through Cloudflare)
+- For latency-sensitive applications, consider direct access with Caddy instead
+- Use Cloudflare's Smart Routing (requires Argo Smart Routing - paid)
+- Ensure tunnel connected to nearest Cloudflare datacenter
+- Check `cloudflared` logs for routing information
+
+### Resources
+
+- **Official Documentation:** https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+- **Getting Started Guide:** https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/
+- **Docker Setup:** https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deploy-tunnels/deployment-guides/docker/
+- **API Documentation:** https://developers.cloudflare.com/api/operations/cloudflare-tunnel-create-a-tunnel
+- **GitHub:** https://github.com/cloudflare/cloudflared
+- **Docker Hub:** https://hub.docker.com/r/cloudflare/cloudflared
+- **Zero Trust Dashboard:** https://one.dash.cloudflare.com
+- **Cloudflare Access:** https://developers.cloudflare.com/cloudflare-one/policies/access/
+- **Community Forum:** https://community.cloudflare.com/c/security/access/51
+- **Tutorials:** https://developers.cloudflare.com/learning-paths/zero-trust-web-access/
+
+### Best Practices
+
+**Security:**
+- Never expose tunnel tokens in Git repositories or logs
+- Use environment variables for tokens in docker-compose.yml
+- Rotate tunnel tokens quarterly (delete old tunnel, create new)
+- Enable Cloudflare Access for production services
+- Use email whitelisting for Access policies (not "anyone with email")
+- Review Access logs regularly: Zero Trust → Logs → Access requests
+
+**Configuration:**
+- One tunnel per environment (dev, staging, prod)
+- Use descriptive tunnel names: `company-env-location` (e.g., `acme-prod-vps1`)
+- Document tunnel ID and creation date in team wiki
+- Keep tunnel configuration in version control (infrastructure as code)
+- Set up monitoring/alerts for tunnel health
+
+**Performance:**
+- Minimize number of Public Hostnames per tunnel (better to create multiple tunnels)
+- Use Cloudflare's Argo Smart Routing for better performance (paid feature)
+- Enable Cloudflare caching for static assets
+- Monitor latency: expect 20-50ms overhead compared to direct access
+- For latency-sensitive apps, consider direct access + WAF rules instead
+
+**Docker Integration:**
+- Run cloudflared on the same Docker network as your services
+- Use container names for service URLs (not `localhost` or IP addresses)
+- Set `restart: unless-stopped` to ensure tunnel auto-starts
+- Monitor container logs: `docker logs cloudflared-tunnel --follow`
+- Resource limits: cloudflared uses ~20-50MB RAM (very lightweight)
+
+**Monitoring:**
+```bash
+# Check tunnel status
+docker ps | grep cloudflared
+docker logs cloudflared-tunnel --tail 50
+
+# Monitor connections
+# In Cloudflare Dashboard: Networks → Tunnels → [Your tunnel]
+# Should show "Healthy" with 1+ active connections
+
+# Test service accessibility
+curl -I https://yourservice.yourdomain.com
+
+# Monitor Access logs (if using Zero Trust)
+# Zero Trust Dashboard → Logs → Access requests
+# Look for failed authentications or unusual patterns
+```
+
+**Backup & Disaster Recovery:**
+```bash
+# Backup tunnel token (CRITICAL!)
+# Store in password manager (Vaultwarden)
+echo "TUNNEL_TOKEN=eyJ..." > tunnel-token.txt.gpg
+gpg -c tunnel-token.txt
+
+# Document tunnel configuration
+# Export from Cloudflare Zero Trust Dashboard
+# Networks → Tunnels → [Tunnel] → Configure → Export config
+
+# Test failover
+# Create second tunnel in different region/VPS
+# Configure with same hostnames for instant failover
+```
+
+**Cost Optimization:**
+- Cloudflare Tunnel is **free** up to 50 users
+- Zero Trust Access is **free** for up to 50 users
+- No bandwidth charges for tunnel traffic
+- Argo Smart Routing is paid ($0.10/GB)
+- For >50 users, pricing starts at $7/user/month
+
+**Common Patterns:**
+
+**Pattern 1: Simple Service Exposure**
+```yaml
+# docker-compose.yml
+cloudflared:
+  image: cloudflare/cloudflared:latest
+  container_name: cloudflared
+  restart: unless-stopped
+  environment:
+    - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
+  command: tunnel run
+```
+
+**Pattern 2: Service with Zero Trust Auth**
+- Configure in Cloudflare Dashboard (easier than API)
+- Access → Applications → Add application
+- Apply email-based OTP policy
+- Session duration: 24 hours
+
+**Pattern 3: Multiple Services, One Tunnel**
+```
+Public Hostnames (in Cloudflare Dashboard):
+- n8n.example.com → http://n8n:5678
+- vault.example.com → http://vaultwarden:80
+- webui.example.com → http://open-webui:8080
+```
+
+**Pattern 4: Development vs Production Tunnels**
+```bash
+# Development
+Tunnel name: acme-dev
+Hostnames: *.dev.example.com
+No Access policies
+
+# Production
+Tunnel name: acme-prod
+Hostnames: *.example.com
+Access policies: Email whitelist
+```

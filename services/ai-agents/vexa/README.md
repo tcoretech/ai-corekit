@@ -1633,3 +1633,775 @@ sudo docker compose logs --tail 20
 **Wichtigste Erkenntnis für Problem 2/2B:** Wenn Sie "keeping token" sehen, aber der Token nicht funktioniert, IMMER zuerst den Token in .env löschen bevor Sie das Init-Script nochmal ausführen!
 
 **Key takeaway for Problem 2/2B:** If you see "keeping token" but the token doesn't work, ALWAYS clear the token in .env first before running the init script again!
+
+
+### What is Vexa?
+
+Vexa is a real-time meeting transcription service that drops AI bots into online meetings (Google Meet & Microsoft Teams) to capture live conversations with speaker identification. Unlike post-meeting transcription, Vexa bots join meetings as participants and provide real-time transcripts with sub-second latency via WebSocket streaming. Perfect for automated meeting notes, sales call analysis, and compliance recording.
+
+⚠️ **Important:** If you experience installation or update issues with Vexa, see the [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md)
+
+### Features
+
+- **Real-Time Transcription** - Sub-second latency via WebSocket streaming
+- **Google Meet & Teams Bots** - Automated bot joins meetings as participant
+- **Speaker Identification** - Track who said what in real-time
+- **99 Languages** - Multilingual transcription with auto-detection
+- **REST & WebSocket APIs** - Choose between polling or streaming
+- **Privacy-First** - All data stays on your server, zero external dependencies
+
+### Initial Setup
+
+**Vexa runs on a separate Docker network** and requires special configuration.
+
+**Access URLs:**
+- **User API:** `http://localhost:8056` (from n8n)
+- **Admin API:** `http://localhost:8057` (requires admin token)
+- **Not publicly accessible** (internal API only)
+
+**API Authentication:**
+
+During installation, Vexa generates:
+1. **User API Key** - Shown in installation report, used for bot control
+2. **Admin Token** - For user management (check `.env` file)
+
+**Get Your API Key:**
+
+```bash
+# View your Vexa API key from installation logs
+cd ~/ai-launchkit
+grep "VEXA_API_KEY" .env
+
+# Or check installation report
+cat installation-report-*.txt | grep -A5 "Vexa"
+```
+
+**Configure Whisper Model:**
+
+Before installation, edit `.env` to choose the Whisper model:
+
+```bash
+# Default is 'base' - good balance
+VEXA_WHISPER_MODEL=base
+
+# Options: tiny, base, small, medium, large
+# See Model Selection Guide below
+```
+
+### n8n Integration Setup
+
+**⚠️ Critical:** Vexa uses a separate Docker network. From n8n, always use:
+- **API URL:** `http://localhost:8056`
+- **NOT** `http://vexa:8056` (won't work!)
+
+**Internal URL:** `http://localhost:8056`
+
+**Available Endpoints:**
+- `POST /bots` - Start transcription bot in meeting
+- `GET /transcripts/{platform}/{meeting_id}` - Get transcript
+- `DELETE /bots/{meeting_id}` - Stop bot (auto-stops when meeting ends)
+- `GET /` - Health check
+
+### Example Workflows
+
+#### Example 1: Auto-Transcribe Google Meet Meetings
+
+```javascript
+// Complete workflow: Calendar → Bot Join → Transcript → Summary → Email
+
+// 1. Google Calendar Trigger Node
+Event: Event Starting
+Time Before: 2 minutes
+
+// 2. IF Node - Check if Google Meet link exists
+Condition: {{$json.hangoutLink}} exists
+
+// 3. Code Node - Extract Meeting ID
+// Google Meet URL: https://meet.google.com/abc-defg-hij
+// Meeting ID is: abc-defg-hij
+
+const meetUrl = $input.item.json.hangoutLink;
+const meetingId = meetUrl.split('/').pop();
+
+return {
+  meeting_id: meetingId,
+  meeting_title: $input.item.json.summary,
+  attendees: $input.item.json.attendees.map(a => a.email)
+};
+
+// 4. HTTP Request Node - Start Vexa Bot
+Method: POST
+URL: http://localhost:8056/bots
+Send Headers: ON
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+Send Body: JSON
+Body: {
+  "platform": "google_meet",
+  "native_meeting_id": "{{$json.meeting_id}}"
+}
+
+// Response:
+{
+  "id": 1,
+  "status": "requested",
+  "bot_container_id": "vexa_bot_abc123",
+  "platform": "google_meet",
+  "native_meeting_id": "abc-defg-hij"
+}
+
+// 5. Wait Node - Meeting Duration
+Wait: {{$('Calendar Trigger').json.duration}} minutes
+// Or add buffer: + 10 minutes
+
+// 6. HTTP Request Node - Get Transcript
+Method: GET
+URL: http://localhost:8056/transcripts/google_meet/{{$('Code Node').json.meeting_id}}
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+
+// Response:
+{
+  "transcript": [
+    {
+      "start": 0.5,
+      "end": 3.2,
+      "text": "Good morning everyone, thanks for joining.",
+      "speaker": "Speaker 1"
+    },
+    {
+      "start": 3.5,
+      "end": 6.8,
+      "text": "Happy to be here.",
+      "speaker": "Speaker 2"
+    }
+  ],
+  "full_text": "Good morning everyone...",
+  "speakers": ["Speaker 1", "Speaker 2"],
+  "language": "en"
+}
+
+// 7. Code Node - Format Transcript
+const transcript = $input.item.json.transcript;
+
+const formatted = transcript.map(seg => {
+  const time = new Date(seg.start * 1000).toISOString().substr(14, 5);
+  return `[${time}] ${seg.speaker}: ${seg.text}`;
+}).join('\n\n');
+
+return {
+  formatted_transcript: formatted,
+  full_text: $input.item.json.full_text,
+  speaker_count: $input.item.json.speakers.length
+};
+
+// 8. OpenAI Node - Generate Meeting Summary
+Model: gpt-4o-mini
+Prompt: |
+  Create detailed meeting notes from this transcript:
+  
+  {{$json.full_text}}
+  
+  Include:
+  - Key discussion points
+  - Decisions made
+  - Action items with owners
+  - Follow-up questions
+
+// 9. Google Docs Node - Create Meeting Notes
+Title: Meeting Notes - {{$('Calendar Trigger').json.summary}} - {{$now.format('YYYY-MM-DD')}}
+Content: |
+  # Meeting: {{$('Calendar Trigger').json.summary}}
+  **Date:** {{$now.format('YYYY-MM-DD HH:mm')}}
+  **Attendees:** {{$('Code Node').json.attendees.join(', ')}}
+  **Duration:** {{$('Calendar Trigger').json.duration}} minutes
+  **Speakers Identified:** {{$('Code Node').json.speaker_count}}
+  
+  ---
+  
+  ## AI Summary
+  {{$('OpenAI').json.summary}}
+  
+  ---
+  
+  ## Full Transcript with Timestamps
+  {{$('Code Node').json.formatted_transcript}}
+
+// 10. Gmail Node - Email Notes to Attendees
+To: {{$('Code Node').json.attendees.join(',')}}
+Subject: Meeting Notes - {{$('Calendar Trigger').json.summary}}
+Body: |
+  Hi team,
+  
+  Meeting notes are ready!
+  
+  View document: {{$('Google Docs').json.document_url}}
+  
+  Key takeaways:
+  {{$('OpenAI').json.key_points}}
+  
+  Best regards
+```
+
+#### Example 2: Microsoft Teams Meeting Transcription
+
+```javascript
+// Transcribe Teams meetings with passcode support
+
+// 1. Webhook Trigger - Receive Teams meeting info
+// Input: {
+//   "meeting_id": "12345678",
+//   "passcode": "ABC123",
+//   "title": "Client Call",
+//   "duration": 30
+// }
+
+// 2. HTTP Request - Start Vexa Bot in Teams
+Method: POST
+URL: http://localhost:8056/bots
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+Body: {
+  "platform": "teams",
+  "native_meeting_id": "{{$json.meeting_id}}",
+  "passcode": "{{$json.passcode}}"  // Required for Teams
+}
+
+// Response includes bot_container_id
+
+// 3. Wait Node - Meeting duration + buffer
+Wait: {{$json.duration + 5}} minutes
+
+// 4. HTTP Request - Get Transcript
+Method: GET
+URL: http://localhost:8056/transcripts/teams/{{$json.meeting_id}}
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+
+// 5. Process transcript (same as Example 1)
+```
+
+#### Example 3: Sales Call Analysis Pipeline
+
+```javascript
+// Automated sales call intelligence
+
+// 1. Schedule Trigger - Check for scheduled sales calls
+Cron: Every 5 minutes
+// Or: CRM webhook when call is scheduled
+
+// 2. Salesforce Node - Get upcoming calls
+Query: SELECT Id, Meeting_Link__c, Account_Name__c 
+       FROM Event 
+       WHERE StartDateTime = NEXT_HOUR 
+       AND Type = 'Sales Call'
+
+// 3. Loop Node - Process each call
+Items: {{$json}}
+
+// 4. Code Node - Extract Google Meet ID
+const meetUrl = $item.Meeting_Link__c;
+const meetingId = meetUrl.split('/').pop();
+return { meeting_id: meetingId, account: $item.Account_Name__c };
+
+// 5. HTTP Request - Start Vexa Bot
+Method: POST
+URL: http://localhost:8056/bots
+Headers:
+  X-API-Key: {{$env.VEXA_API_KEY}}
+Body: {
+  "platform": "google_meet",
+  "native_meeting_id": "{{$json.meeting_id}}"
+}
+
+// 6. Wait - 35 minutes (typical call duration)
+Wait: 35 minutes
+
+// 7. HTTP Request - Get Transcript
+Method: GET
+URL: http://localhost:8056/transcripts/google_meet/{{$json.meeting_id}}
+
+// 8. OpenAI Node - Extract Sales Intelligence
+Model: gpt-4o
+Prompt: |
+  Analyze this sales call transcript:
+  
+  {{$json.full_text}}
+  
+  Extract and return JSON:
+  {
+    "pain_points": ["list of customer pain points"],
+    "objections": ["list of objections raised"],
+    "budget_mentioned": true/false,
+    "decision_timeline": "timeframe mentioned",
+    "competitors_mentioned": ["competitor names"],
+    "next_steps": ["agreed action items"],
+    "sentiment": "positive/neutral/negative",
+    "deal_probability": "high/medium/low",
+    "key_quotes": ["important statements"]
+  }
+
+// 9. Code Node - Calculate Talk Ratio
+const transcript = $input.item.json.transcript;
+
+// Assume first speaker is sales rep
+const repSpeaker = transcript[0].speaker;
+const repTime = transcript
+  .filter(s => s.speaker === repSpeaker)
+  .reduce((sum, s) => sum + (s.end - s.start), 0);
+
+const totalTime = transcript[transcript.length - 1].end;
+const repTalkRatio = (repTime / totalTime * 100).toFixed(1);
+
+return {
+  rep_talk_ratio: repTalkRatio,
+  customer_talk_ratio: (100 - repTalkRatio).toFixed(1),
+  // Good: 30-40% rep, 60-70% customer
+  quality_score: repTalkRatio < 45 ? 'Good' : 'Needs Improvement'
+};
+
+// 10. Salesforce Node - Update Opportunity
+Update Record:
+  Object: Opportunity
+  Record ID: {{$('Salesforce').json.OpportunityId}}
+  Fields:
+    Pain_Points__c: {{$('OpenAI').json.pain_points.join(', ')}}
+    Objections__c: {{$('OpenAI').json.objections.join(', ')}}
+    Deal_Probability__c: {{$('OpenAI').json.deal_probability}}
+    Rep_Talk_Ratio__c: {{$('Code Node').json.rep_talk_ratio}}
+    Call_Sentiment__c: {{$('OpenAI').json.sentiment}}
+    Next_Steps__c: {{$('OpenAI').json.next_steps.join('\n')}}
+
+// 11. Slack Node - Alert Sales Manager if Issues
+IF: {{$('Code Node').json.rep_talk_ratio > 60}} OR {{$('OpenAI').json.sentiment === 'negative'}}
+
+Channel: #sales-management
+Message: |
+  ⚠️ Sales Call Requires Review
+  
+  **Account:** {{$('Loop').json.account}}
+  **Issue:** Rep talked {{$('Code Node').json.rep_talk_ratio}}% (should be <45%)
+  **Sentiment:** {{$('OpenAI').json.sentiment}}
+  
+  **Key Objections:**
+  {{$('OpenAI').json.objections.join('\n- ')}}
+  
+  **Recommended Actions:**
+  - Coach on listening skills
+  - Review objection handling
+  - Consider manager follow-up call
+
+// 12. Gmail - Send Summary to Sales Rep
+To: sales.rep@company.com
+Subject: Call Summary - {{$('Loop').json.account}}
+Body: |
+  Your call has been analyzed:
+  
+  **Performance:**
+  - Talk Ratio: {{$('Code Node').json.rep_talk_ratio}}% ✅/⚠️
+  - Sentiment: {{$('OpenAI').json.sentiment}}
+  
+  **Customer Pain Points:**
+  {{$('OpenAI').json.pain_points.join('\n- ')}}
+  
+  **Next Steps:**
+  {{$('OpenAI').json.next_steps.join('\n- ')}}
+  
+  **Key Quotes:**
+  {{$('OpenAI').json.key_quotes.join('\n- ')}}
+```
+
+#### Example 4: Compliance Recording System
+
+```javascript
+// Automatic compliance recording with alerting
+
+// 1. Webhook - Meeting scheduled with compliance flag
+// Input: { "meeting_id": "abc-def-ghi", "requires_compliance": true }
+
+// 2. IF Node - Check compliance requirement
+If: {{$json.requires_compliance}} === true
+
+// 3. HTTP Request - Start Vexa Bot
+Method: POST
+URL: http://localhost:8056/bots
+Body: {
+  "platform": "google_meet",
+  "native_meeting_id": "{{$json.meeting_id}}"
+}
+
+// 4. Email - Notify participants of recording
+To: {{$json.participants}}
+Subject: Meeting Recording Notice
+Body: |
+  This meeting will be recorded for compliance purposes.
+  
+  A transcription bot will join automatically.
+  By remaining in the meeting, you consent to recording.
+
+// 5. Wait - Meeting duration
+// 6. Get Transcript
+// 7. Store in secure database
+
+// 8. Code Node - Scan for compliance keywords
+const transcript = $input.item.json.full_text.toLowerCase();
+const flags = [];
+
+const keywords = {
+  'legal': ['lawsuit', 'attorney', 'legal action', 'court'],
+  'financial': ['insider', 'confidential', 'material information'],
+  'hr': ['harassment', 'discrimination', 'hostile environment']
+};
+
+for (const [category, words] of Object.entries(keywords)) {
+  for (const word of words) {
+    if (transcript.includes(word)) {
+      flags.push({ category, keyword: word });
+    }
+  }
+}
+
+return { compliance_flags: flags, flag_count: flags.length };
+
+// 9. IF Node - Alert if flags found
+If: {{$json.flag_count > 0}}
+
+// 10. Email - Compliance team alert
+To: compliance@company.com
+Priority: High
+Subject: Compliance Review Required
+Body: |
+  Meeting transcript flagged for review:
+  
+  **Flags:** {{$json.flag_count}}
+  **Categories:** {{$json.compliance_flags.map(f => f.category).join(', ')}}
+  
+  Review transcript immediately.
+
+// 11. Database - Store with metadata
+Table: compliance_transcripts
+Fields:
+  - meeting_id
+  - transcript
+  - flags
+  - review_status: 'pending'
+  - recorded_at: timestamp
+```
+
+### Model Selection Guide
+
+Choose Whisper model based on your needs:
+
+| Model | RAM | Speed | Quality | Best For |
+|-------|-----|-------|---------|----------|
+| **tiny** | ~1GB | Fastest | Good | Testing, development |
+| **base** | ~1.5GB | Fast | Better | **Recommended default** |
+| **small** | ~3GB | Medium | Good | Accents, multiple languages |
+| **medium** | ~5GB | Slow | Great | High accuracy needs |
+| **large** | ~10GB | Slowest | Best | Maximum quality (overkill for most) |
+
+**Real-Time Performance:**
+- **tiny/base:** Best for live transcription (<1s latency)
+- **small/medium:** Slight delay but better accuracy
+- **large:** Not recommended for real-time (too slow)
+
+**Configure before installation:**
+```bash
+# Edit .env file
+VEXA_WHISPER_MODEL=base  # Change here
+VEXA_WHISPER_DEVICE=cpu   # Or 'cuda' for GPU
+```
+
+### Troubleshooting
+
+**Issue 1: Bot Not Joining Meeting**
+
+```bash
+# Check Vexa service status
+docker ps | grep vexa
+
+# Should show containers:
+# - vexa-api
+# - vexa-bot-manager
+
+# Check bot logs
+docker logs vexa-api --tail 100
+
+# Common errors:
+# - "Meeting not found" → Check meeting ID format
+# - "Meeting not started" → Meeting must be active
+# - "Access denied" → Check Google Meet lobby settings
+```
+
+**Solution:**
+- **Google Meet:** Enable "Let people join before host" in Google Workspace settings
+- **Meeting must be active:** Bot cannot join meetings that haven't started yet
+- **Check meeting ID:** For `meet.google.com/abc-defg-hij`, use only `abc-defg-hij`
+- **Lobby settings:** Disable lobby mode or start meeting before bot joins
+- **Teams passcode:** Always required for Teams meetings with lobby
+
+**Issue 2: "Separate Docker Network" Connection Error**
+
+```bash
+# Vexa runs in separate network - use localhost, not service name
+# ❌ WRONG: http://vexa:8056
+# ✅ CORRECT: http://localhost:8056
+
+# Test connectivity from n8n
+docker exec n8n curl http://localhost:8056/
+
+# Should return: {"message": "Vexa API"}
+
+# If connection fails, check port mapping
+docker port vexa-api 8056
+```
+
+**Solution:**
+- Always use `http://localhost:8056` from n8n
+- Do NOT use `http://vexa:8056` (different network)
+- Vexa is not in the main Docker Compose network
+- This is by design for security isolation
+
+**Issue 3: Transcript Empty or Incomplete**
+
+```bash
+# Check if bot successfully joined
+docker logs vexa-bot-manager | grep "Joined meeting"
+
+# Check Whisper processing
+docker logs vexa-api | grep -i "whisper\|transcription"
+
+# Check meeting duration
+# Bot needs at least 30 seconds of audio to generate transcript
+```
+
+**Solution:**
+- Wait at least 30 seconds after meeting starts
+- Ensure participants are speaking (silence = no transcript)
+- Check if bot was removed from meeting by host
+- Verify Whisper model is downloaded (first run takes time)
+- For very short meetings, transcript may be minimal
+
+**Issue 4: API Key Authentication Failed**
+
+```bash
+# Find your Vexa API key
+cd ~/ai-launchkit
+grep "VEXA_API_KEY" .env
+
+# Or check admin API for users
+curl -H "Authorization: Bearer $(grep VEXA_ADMIN_TOKEN .env | cut -d= -f2)" \
+  http://localhost:8057/admin/users
+
+# Regenerate API key if needed
+docker exec vexa-api python3 manage.py create-user
+```
+
+**Solution:**
+- Check API key in `.env` file: `VEXA_API_KEY=...`
+- Include header: `X-API-Key: YOUR_KEY` in all requests
+- Case-sensitive: ensure exact key match
+- If lost, regenerate via admin API or reinstall
+
+**Issue 5: High Memory Usage**
+
+```bash
+# Check container memory
+docker stats vexa-api vexa-bot-manager --no-stream
+
+# Whisper models use RAM:
+# tiny: ~1GB
+# base: ~1.5GB
+# small: ~3GB
+# medium: ~5GB
+# large: ~10GB
+
+# Check current model
+grep VEXA_WHISPER_MODEL .env
+```
+
+**Solution:**
+- Use smaller Whisper model (base instead of large)
+- Bot containers are created per meeting (cleanup happens automatically)
+- Monitor server RAM: `free -h`
+- Each active bot uses 1.5-5GB depending on model
+- Limit concurrent meetings if RAM constrained
+- Bots auto-cleanup when meetings end
+
+**Issue 6: Vexa Installation Failed**
+
+```bash
+# If you experienced installation issues, see the workaround guide:
+# https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md
+
+# Common issues during install:
+# - Docker network conflicts
+# - Port 8056/8057 already in use
+# - Whisper model download timeout
+
+# Check Vexa logs during installation
+tail -f /var/log/ai-launchkit-install.log | grep -i vexa
+```
+
+**Solution:**
+- Follow [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md)
+- Most issues resolve with the documented workarounds
+- If problems persist, Vexa is optional and can be skipped
+
+### Meeting Platform Support
+
+| Platform | Status | Meeting ID Format | Requirements |
+|----------|--------|-------------------|--------------|
+| **Google Meet** | ✅ Ready | `abc-defg-hij` | Extract from meet.google.com URL |
+| **Microsoft Teams** | ✅ Ready | Numeric + passcode | Requires meeting passcode |
+| **Zoom** | ⏳ Coming Soon | - | Planned for future release |
+
+**Google Meet Setup:**
+1. Extract meeting ID from URL: `https://meet.google.com/abc-defg-hij` → Use `abc-defg-hij`
+2. Enable "Let people join before host" in Google Workspace settings
+3. Disable lobby mode or start meeting before bot joins
+4. Bot appears as "Vexa Transcription Bot" participant
+
+**Microsoft Teams Setup:**
+1. Get meeting ID (numeric) and passcode from Teams
+2. Include both in API request: `{"native_meeting_id": "12345", "passcode": "ABC123"}`
+3. Ensure lobby is disabled or meeting is started
+4. Bot appears as participant in Teams
+
+### API Reference
+
+**Start Transcription Bot:**
+```bash
+POST http://localhost:8056/bots
+Headers: X-API-Key: YOUR_KEY
+Body: {
+  "platform": "google_meet",  # or "teams"
+  "native_meeting_id": "abc-defg-hij",
+  "passcode": "ABC123"  # Teams only
+}
+
+Response: {
+  "id": 1,
+  "status": "requested",
+  "bot_container_id": "vexa_bot_abc123",
+  "platform": "google_meet",
+  "native_meeting_id": "abc-defg-hij"
+}
+```
+
+**Get Transcript (Polling):**
+```bash
+GET http://localhost:8056/transcripts/{platform}/{meeting_id}
+Headers: X-API-Key: YOUR_KEY
+
+Response: {
+  "transcript": [
+    {
+      "start": 0.5,
+      "end": 3.2,
+      "text": "Hello everyone",
+      "speaker": "Speaker 1"
+    }
+  ],
+  "full_text": "Complete transcript...",
+  "speakers": ["Speaker 1", "Speaker 2"],
+  "language": "en"
+}
+```
+
+**Stop Bot (Optional):**
+```bash
+DELETE http://localhost:8056/bots/{meeting_id}
+Headers: X-API-Key: YOUR_KEY
+
+# Note: Bots automatically leave when meeting ends
+```
+
+**Health Check:**
+```bash
+GET http://localhost:8056/
+# Returns: {"message": "Vexa API"}
+```
+
+**Admin API (User Management):**
+```bash
+GET http://localhost:8057/admin/users
+Headers: Authorization: Bearer YOUR_ADMIN_TOKEN
+
+# Create new API key
+POST http://localhost:8057/admin/users/{user_id}/tokens
+```
+
+### Resources
+
+- **GitHub:** https://github.com/Vexa-ai/vexa
+- **Troubleshooting Guide:** https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md
+- **Whisper Model Info:** https://github.com/openai/whisper#available-models-and-languages
+- **Language Support:** 99 languages supported
+
+### Best Practices
+
+**When to Use Vexa:**
+
+✅ **Perfect For:**
+- Automated meeting notes (Google Meet, Teams)
+- Sales call recording and analysis
+- Compliance recording requirements
+- Real-time transcription needs
+- Multi-speaker meeting capture
+- CRM integration workflows
+- Quality assurance monitoring
+- Remote team collaboration
+
+❌ **Not Ideal For:**
+- Pre-recorded audio files (use Scriberr instead)
+- Zoom meetings (not yet supported)
+- Meetings you didn't organize (privacy/consent issues)
+- Very short meetings (<1 minute)
+- Meetings where bot participant is not allowed
+
+**Privacy & Consent:**
+
+⚠️ **Legal Requirements:**
+- Always inform participants that meeting is being recorded
+- Check local laws (some require all-party consent)
+- Bot appears as visible participant in meeting
+- Consider adding recording notice to calendar invites
+- Store transcripts securely and comply with GDPR/privacy laws
+
+**Optimal Configuration:**
+
+1. **Model Selection:**
+   - Development/Testing: `tiny` or `base`
+   - Production: `base` (best balance)
+   - High Accuracy: `small` or `medium`
+   - Avoid: `large` (overkill, too slow for real-time)
+
+2. **Meeting Setup:**
+   - Disable lobby mode when possible
+   - Start meeting before bot joins (especially Teams)
+   - Enable "join before host" for Google Meet
+   - Test bot with sample meeting before production
+
+3. **Resource Planning:**
+   - 1.5-3GB RAM per active bot (base/small model)
+   - Plan for concurrent meetings
+   - Monitor server resources during peak times
+   - Consider auto-scaling for large deployments
+
+4. **Integration Strategy:**
+   - Use calendar webhooks to auto-start bots
+   - Implement retry logic for failed bot joins
+   - Poll transcript endpoint every 30-60 seconds
+   - Store transcripts in database for backup
+   - Cache transcripts to avoid re-processing
+
+**Vexa vs Scriberr vs Faster-Whisper:**
+
+| Feature | Vexa | Scriberr | Faster-Whisper |
+|---------|------|----------|----------------|
+| **Use Case** | Live meeting bots | Post-recording diarization | Single speaker transcription |
+| **Platforms** | Google Meet, Teams | Pre-recorded files, YouTube | Any audio file |
+| **Speaker ID** | Real-time | Post-processing | No |
+| **Latency** | <1 second | Minutes (processing) | Seconds to minutes |
+| **Best For** | Automated meeting notes | Detailed analysis | Voice commands, simple transcription |

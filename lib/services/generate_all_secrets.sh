@@ -4,7 +4,7 @@ set -e
 # Source utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-source "$PROJECT_ROOT/lib/config/utils_secrets.sh"
+source "$PROJECT_ROOT/lib/utils/secrets.sh"
 
 # 1. Global Configuration
 log_info "Initializing global configuration..."

@@ -2,12 +2,12 @@
 set -e
 
 # Source the utilities file
-source "$(dirname "$0")/../utils/utils.sh"
+source "$(dirname "$0")/../utils/logging.sh"
 
 # Get the directory where the script resides
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." &> /dev/null && pwd )"
-ENV_FILE="$PROJECT_ROOT/config/global.env"
+ENV_FILE="$PROJECT_ROOT/config/.env.global"
 
 # Check if .env file exists
 if [ ! -f "$ENV_FILE" ]; then

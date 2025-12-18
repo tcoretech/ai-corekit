@@ -45,7 +45,7 @@ User runs: git clone && cd n8n-installer && sudo bash ./scripts/install.sh
 - **Sequential Execution**: Runs each installation step with error handling
 
 **Interactions**:
-1. Sources `utils.sh` for logging functions
+1. Sources `logging.sh` for logging functions
 2. Executes scripts 01-06 in sequence
 3. Exits on any script failure to prevent partial installations
 
@@ -53,7 +53,7 @@ User runs: git clone && cd n8n-installer && sudo bash ./scripts/install.sh
 
 ---
 
-### 🛠️ **scripts/utils.sh**
+### 🛠️ **scripts/logging.sh**
 
 **Purpose**: Shared utility functions for consistent logging across all scripts
 
@@ -66,7 +66,7 @@ User runs: git clone && cd n8n-installer && sudo bash ./scripts/install.sh
 
 **Used By**: Every script in the project sources this file for consistent output formatting
 
-> 🤖 **AI Context Note**: When generating or modifying scripts for this project, ALWAYS source utils.sh at the beginning with `source "$(dirname "$0")/utils.sh"` and use these logging functions instead of plain echo statements. This ensures consistent output formatting and helps with debugging.
+> 🤖 **AI Context Note**: When generating or modifying scripts for this project, ALWAYS source logging.sh at the beginning with `source "$(dirname "$0")/logging.sh"` and use these logging functions instead of plain echo statements. This ensures consistent output formatting and helps with debugging.
 
 ---
 

@@ -19,7 +19,9 @@ set -e
 
 # Source utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-source "$SCRIPT_DIR/../../utils/utils.sh"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+source "$PROJECT_ROOT/lib/utils/logging.sh"
+
 AUTO_DOWNLOAD=false
 if [[ "$1" == "-d" ]] || [[ "$1" == "--download" ]]; then
     AUTO_DOWNLOAD=true
@@ -29,18 +31,11 @@ fi
 # Directory Setup
 # ============================================================================
 
-# Get script and project directories
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
-
-# Source utilities
-source "$SCRIPT_DIR/utils.sh"
-
 # ============================================================================
 # Check .env file access
 # ============================================================================
 
-ENV_FILE="$PROJECT_ROOT/.env"
+ENV_FILE="$PROJECT_ROOT/config/.env.global"
 
 # Check if .env exists and is readable
 if [ ! -r "$ENV_FILE" ]; then
@@ -49,7 +44,7 @@ if [ ! -r "$ENV_FILE" ]; then
     echo "This script requires access to the .env file which is owned by root."
     echo
     echo "Please run with sudo:"
-    echo "  sudo bash ./scripts/export_credentials.sh"
+    echo "  sudo launchkit credentials export"
     echo
     exit 1
 fi
@@ -67,7 +62,9 @@ if [ -z "$BASE_DOMAIN" ]; then
 fi
 
 # Create filename with hostname (gets overwritten each time)
-OUTPUT_FILE="$PROJECT_ROOT/credentials.${BASE_DOMAIN}.txt"
+OUTPUT_DIR="$PROJECT_ROOT/config/local"
+mkdir -p "$OUTPUT_DIR"
+OUTPUT_FILE="$OUTPUT_DIR/credentials.${BASE_DOMAIN}.txt"
 
 # ============================================================================
 # Header
@@ -83,7 +80,7 @@ echo
 # Check if final report script exists
 # ============================================================================
 
-FINAL_REPORT_SCRIPT="$SCRIPT_DIR/06_final_report.sh"
+FINAL_REPORT_SCRIPT="$PROJECT_ROOT/lib/services/final_report.sh"
 
 if [ ! -f "$FINAL_REPORT_SCRIPT" ]; then
     log_error "Final report script not found: $FINAL_REPORT_SCRIPT"
@@ -143,85 +140,17 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo
 
 # ============================================================================
-# Download Option
+# Next Steps
 # ============================================================================
 
-OFFER_DOWNLOAD=false
-
-# Auto-download if flag was provided
-if [ "$AUTO_DOWNLOAD" = true ]; then
-    OFFER_DOWNLOAD=true
-else
-    # Ask user if they want to download
-    echo
-    read -p "📥 Do you want to download the credentials file? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        OFFER_DOWNLOAD=true
-    fi
-fi
-
-# ============================================================================
-# Provide Download Link
-# ============================================================================
-
-if [ "$OFFER_DOWNLOAD" = true ]; then
-    echo
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📥 DOWNLOAD CREDENTIALS"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo
-    
-    # Port for temporary HTTP server
-    DOWNLOAD_PORT=8890
-    DOWNLOAD_FILENAME="credentials.${BASE_DOMAIN}.txt"
-    
-    # Get server IPv4 address
-    echo "🔍 Detecting server IP address..."
-    IP=$(curl -4 -s ifconfig.me 2>/dev/null || echo "YOUR_SERVER_IP")
-    
-    # Open firewall port temporarily
-    echo "🔓 Opening firewall port $DOWNLOAD_PORT..."
-    sudo ufw allow $DOWNLOAD_PORT/tcp >/dev/null 2>&1 || true
-    
-    echo
-    echo "👇 Open this link in your browser:"
-    echo
-    echo "   http://$IP:$DOWNLOAD_PORT/$DOWNLOAD_FILENAME"
-    echo
-    echo "⏱️  Link expires in 60 seconds!"
-    echo
-    echo "💡 Tip: Right-click → 'Save Link As' to download"
-    echo
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo
-    echo "🌐 Starting temporary download server..."
-    echo "   (Server will auto-stop after 60 seconds)"
-    echo
-    
-    cd "$PROJECT_ROOT"
-    timeout 60 python3 -m http.server $DOWNLOAD_PORT >/dev/null 2>&1 || true
-    
-    echo
-    echo "🧹 Cleaning up..."
-    
-    # Close firewall port
-    sudo ufw delete allow $DOWNLOAD_PORT/tcp >/dev/null 2>&1 || true
-    
-    # Delete the credentials file after download
-    rm -f "$OUTPUT_FILE"
-    
-    echo
-    echo "✅ Download link expired."
-    echo "🗑️  Credentials file deleted for security."
-    echo
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-else
-    echo
-    echo "💾 Credentials file saved. Remember to delete it after use:"
-    echo "   rm $OUTPUT_FILE"
-fi
-
+echo
+echo "💾 Credentials file saved to: $OUTPUT_FILE"
+echo
+echo "To download this file securely (encrypted zip):"
+echo "   launchkit credentials download"
+echo
+echo "Remember to delete the file after use:"
+echo "   rm $OUTPUT_FILE"
 echo
 
 exit 0

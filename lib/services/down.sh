@@ -4,7 +4,7 @@ set -e
 # Source utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-source "$PROJECT_ROOT/lib/utils/utils.sh"
+source "$PROJECT_ROOT/lib/utils/logging.sh"
 CONFIG_DIR="$PROJECT_ROOT/config"
 GLOBAL_ENV="$CONFIG_DIR/.env.global"
 
@@ -115,9 +115,9 @@ fi
 # Cleanup Hooks (Optional)
 for service in "${SERVICES_TO_STOP[@]}"; do
     service_dir=$(find "$PROJECT_ROOT/services" -name "$service" -type d | head -n 1)
-    if [ -n "$service_dir" ] && [ -f "$service_dir/hooks/cleanup.sh" ]; then
+    if [ -n "$service_dir" ] && [ -f "$service_dir/cleanup.sh" ]; then
         log_info "[$service] Running cleanup hook..."
-        bash "$service_dir/hooks/cleanup.sh"
+        bash "$service_dir/cleanup.sh"
     fi
 done
 

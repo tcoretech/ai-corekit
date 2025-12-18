@@ -3,10 +3,10 @@ set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-source "$SCRIPT_DIR/../utils/utils_secrets.sh"
+source "$PROJECT_ROOT/lib/utils/secrets.sh"
 
 CONFIG_DIR="$PROJECT_ROOT/config"
-GLOBAL_ENV="$CONFIG_DIR/global.env"
+GLOBAL_ENV="$CONFIG_DIR/.env.global"
 TEMPLATE_FILE="$CONFIG_DIR/.env.global.example"
 
 # Ensure config dir exists

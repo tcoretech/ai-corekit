@@ -4,7 +4,7 @@ set -e
 # Source utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-source "$PROJECT_ROOT/lib/utils/utils.sh"
+source "$PROJECT_ROOT/lib/utils/logging.sh"
 CONFIG_DIR="$PROJECT_ROOT/config"
 GLOBAL_ENV="$CONFIG_DIR/.env.global"
 
@@ -83,6 +83,13 @@ fi
 
 log_info "Starting services: ${SERVICES_TO_START[*]}"
 
+# Load project name
+PROJECT_NAME="localai" # Default
+if [ -f "$CONFIG_DIR/stacks/core.yaml" ]; then
+    PROJECT_NAME=$(grep "^project_name:" "$CONFIG_DIR/stacks/core.yaml" | cut -d':' -f2 | tr -d ' "')
+fi
+export PROJECT_NAME
+
 # 1. Prepare & Build
 log_info "Running preparation and build hooks..."
 for service in "${SERVICES_TO_START[@]}"; do
@@ -93,16 +100,22 @@ for service in "${SERVICES_TO_START[@]}"; do
         continue
     fi
     
+    # Secrets Generation
+    if [ -f "$service_dir/secrets.sh" ]; then
+        log_info "[$service] Checking secrets..."
+        bash "$service_dir/secrets.sh"
+    fi
+
     # Prepare Hook
-    if [ -f "$service_dir/hooks/prepare.sh" ]; then
+    if [ -f "$service_dir/prepare.sh" ]; then
         log_info "[$service] Running prepare hook..."
-        bash "$service_dir/hooks/prepare.sh"
+        bash "$service_dir/prepare.sh"
     fi
     
     # Build Hook
-    if [ -f "$service_dir/hooks/build.sh" ]; then
+    if [ -f "$service_dir/build.sh" ]; then
         log_info "[$service] Running build hook..."
-        bash "$service_dir/hooks/build.sh"
+        bash "$service_dir/build.sh"
     fi
 done
 
@@ -116,12 +129,6 @@ for service in "${SERVICES_TO_START[@]}"; do
     fi
 done
 
-# Load project name
-PROJECT_NAME="localai" # Default
-if [ -f "$CONFIG_DIR/stacks/core.yaml" ]; then
-    PROJECT_NAME=$(grep "^project_name:" "$CONFIG_DIR/stacks/core.yaml" | cut -d':' -f2 | tr -d ' "')
-fi
-
 # 3. Run Docker Compose Up
 log_info "Bringing up services..."
 docker compose -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" "${COMPOSE_FILES[@]}" up -d "${SERVICES_TO_START[@]}"
@@ -130,9 +137,9 @@ docker compose -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" "${COMPOSE
 log_info "Running startup hooks..."
 for service in "${SERVICES_TO_START[@]}"; do
     service_dir=$(find "$PROJECT_ROOT/services" -name "$service" -type d | head -n 1)
-    if [ -n "$service_dir" ] && [ -f "$service_dir/hooks/startup.sh" ]; then
+    if [ -n "$service_dir" ] && [ -f "$service_dir/startup.sh" ]; then
         log_info "[$service] Running startup hook..."
-        bash "$service_dir/hooks/startup.sh"
+        bash "$service_dir/startup.sh"
     fi
 done
 

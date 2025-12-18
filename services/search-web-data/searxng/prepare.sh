@@ -7,8 +7,8 @@ if ! command -v log_info &> /dev/null; then
     # Assuming utils.sh is in the project root scripts folder
     # Adjust path if necessary based on where prepare.sh is located relative to project root
     PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." &> /dev/null && pwd )"
-    if [ -f "$PROJECT_ROOT/scripts/utils.sh" ]; then
-        source "$PROJECT_ROOT/scripts/utils.sh"
+    if [ -f "$PROJECT_ROOT/lib/utils/logging.sh" ]; then
+        source "$PROJECT_ROOT/lib/utils/logging.sh"
     fi
 fi
 

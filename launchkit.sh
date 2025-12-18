@@ -22,10 +22,10 @@ CONFIG_DIR="$PROJECT_ROOT/config"
 GLOBAL_ENV="$CONFIG_DIR/.env.global"
 
 # Source utilities
-if [ -f "$LIB_DIR/utils/utils.sh" ]; then
-    source "$LIB_DIR/utils/utils.sh"
+if [ -f "$LIB_DIR/utils/logging.sh" ]; then
+    source "$LIB_DIR/utils/logging.sh"
 else
-    echo "Error: utils.sh not found in $LIB_DIR/utils/utils.sh"
+    echo "Error: utils.sh not found in $LIB_DIR/utils/logging.sh"
     exit 1
 fi
 
@@ -43,17 +43,24 @@ cmd_init() {
     log_info "Initializing AI LaunchKit System..."
     
     # Run System Prep
-    if [ -f "$LIB_DIR/install/system_prep.sh" ]; then
-        bash "$LIB_DIR/install/system_prep.sh"
+    if [ -f "$LIB_DIR/system/system_prep.sh" ]; then
+        bash "$LIB_DIR/system/system_prep.sh"
     else
         log_error "System prep script not found."
     fi
     
     # Run Docker Install
-    if [ -f "$LIB_DIR/install/install_docker.sh" ]; then
-        bash "$LIB_DIR/install/install_docker.sh"
+    if [ -f "$LIB_DIR/system/install_docker.sh" ]; then
+        bash "$LIB_DIR/system/install_docker.sh"
     else
         log_error "Docker install script not found."
+    fi
+
+    # Generate Secrets
+    if [ -f "$LIB_DIR/services/generate_all_secrets.sh" ]; then
+        bash "$LIB_DIR/services/generate_all_secrets.sh"
+    else
+        log_error "Secrets generation script not found."
     fi
 }
 
@@ -74,15 +81,15 @@ cmd_credentials() {
     
     case "$action" in
         download)
-            if [ -f "$LIB_DIR/services/credentials/download_credentials.sh" ]; then
-                bash "$LIB_DIR/services/credentials/download_credentials.sh" "$@"
+            if [ -f "$LIB_DIR/services/credentials/download.sh" ]; then
+                bash "$LIB_DIR/services/credentials/download.sh" "$@"
             else
                 log_error "Download credentials script not found."
             fi
             ;;
         export)
-            if [ -f "$LIB_DIR/services/credentials/export_credentials.sh" ]; then
-                bash "$LIB_DIR/services/credentials/export_credentials.sh" "$@"
+            if [ -f "$LIB_DIR/services/credentials/export.sh" ]; then
+                bash "$LIB_DIR/services/credentials/export.sh" "$@"
             else
                 log_error "Export credentials script not found."
             fi
@@ -189,6 +196,15 @@ cmd_up() {
         bash "$LIB_DIR/services/up.sh" "$@"
     else
         log_error "Up script not found."
+    fi
+}
+
+# Command: Update
+cmd_update() {
+    if [ -f "$LIB_DIR/services/update.sh" ]; then
+        bash "$LIB_DIR/services/update.sh" "$@"
+    else
+        log_error "Update script not found."
     fi
 }
 

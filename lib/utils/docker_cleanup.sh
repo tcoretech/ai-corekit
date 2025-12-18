@@ -3,7 +3,7 @@
 set -e
 
 # Source the utilities file
-source "$(dirname "$0")/../core/utils.sh"
+source "$(dirname "$0")/logging.sh"
 
 # This script is intended for cleaning up the Docker system.
 # It removes all unused containers, images, networks, and volumes.

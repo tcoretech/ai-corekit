@@ -11,8 +11,8 @@ SSH_TUNNEL_DIR="$SCRIPT_DIR"
 
 # Source the utilities file
 # Assuming we are in services/host-services/ssh/
-if [ -f "$SSH_TUNNEL_DIR/../../../lib/utils/utils.sh" ]; then
-    source "$SSH_TUNNEL_DIR/../../../lib/utils/utils.sh"
+if [ -f "$SSH_TUNNEL_DIR/../../../lib/utils/logging.sh" ]; then
+    source "$SSH_TUNNEL_DIR/../../../lib/utils/logging.sh"
 else
     echo "Error: utils.sh not found."
     exit 1

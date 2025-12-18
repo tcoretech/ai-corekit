@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude (claude.ai) and other AI assistants when working with code in this repository.
 
+## Service Specifications
+*   **Service Structure**: All services must adhere to the structure defined in [docs/SERVICE_STRUCTURE_SPEC.md](docs/SERVICE_STRUCTURE_SPEC.md). This includes file locations for `prepare.sh`, `startup.sh`, `secrets.sh`, and `docker-compose.yml`.
+
 ## Project Overview
 
 This is **AI LaunchKit**: a comprehensive Docker Compose-based toolkit that creates a complete self-hosted AI development and automation environment. It transforms any Ubuntu server into a powerful AI development platform with 20+ pre-configured services that can be selectively deployed with a single command.

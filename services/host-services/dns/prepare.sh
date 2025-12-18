@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-source "$PROJECT_ROOT/scripts/utils.sh"
+source "$PROJECT_ROOT/lib/utils/logging.sh"
 
 # Only run if interactive
 if [[ -t 0 ]]; then

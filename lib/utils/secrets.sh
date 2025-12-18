@@ -2,7 +2,7 @@
 
 # Source basic utils if not already sourced
 if ! command -v log_info &> /dev/null; then
-    source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
+    source "$(dirname "${BASH_SOURCE[0]}")/logging.sh"
 fi
 
 # --- Generation Functions ---

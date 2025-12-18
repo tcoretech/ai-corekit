@@ -3,7 +3,7 @@
 # This should run after Docker containers are up
 
 set -e
-source "$(dirname "$0")/utils.sh"
+source "$(dirname "$0")/../../../lib/utils/logging.sh"
 
 # Check if SnappyMail is running
 if ! docker ps | grep -q snappymail; then

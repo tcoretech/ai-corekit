@@ -13,10 +13,11 @@ services/<category>/<service-name>/
 ├── .env.example            # Template for environment variables
 ├── .env                    # (Ignored) Active environment variables
 ├── README.md               # Service-specific documentation
-├── prepare.sh              # (Optional) PRE-startup (host prep)
-├── startup.sh              # (Optional) POST-startup (app bootstrapping)
 ├── secrets.sh              # (Optional) Secret generation logic
 ├── build.sh                # (Optional) Custom build logic
+├── prepare.sh              # (Optional) PRE-startup (host prep)
+├── startup.sh              # (Optional) POST-startup (app bootstrapping)
+├── cleanup.sh              # (Optional) On service down tidy up hook
 ├── report.sh               # (Optional) Status/Info reporting
 ├── scripts/                # (Optional) Any service specific helper scripts
 ├── data/                   # (Ignored) Runtime data persistence

@@ -1,35 +1,23 @@
-# Active Context - Memory Bank Ready
+# Active Context
 
 ## Current Phase
-**READY FOR NEW TASK** - Archive Phase Complete
+**Refactoring & Standardization**
 
-### Last Completed Task
-- Portainer Integration (Level 2) — COMPLETED & ARCHIVED (2025-08-08)
-- Archive: `memory-bank/archive/feature-portainer-integration_20250808.md`
+### Recent Accomplishments
+- **Secrets Management Refactor**: Centralized secret generation in `lib/utils/secrets.sh` and `generate_all_secrets.sh`.
+- **Update Process Overhaul**: Replaced monolithic `apply_update.sh` with modular `lib/services/update.sh`.
+- **Service Structure Enforcement**: 
+    - Removed `hooks/` subdirectories from services.
+    - Moved lifecycle scripts (`prepare.sh`, `startup.sh`) to service roots.
+    - Updated `lib/services/up.sh` to support the new structure.
+- **Legacy Logic Migration**: Ported service-specific logic (Vexa, Supabase, LibreTranslate, Seafile) from legacy update scripts to individual service lifecycle scripts.
+- **Hardcoding Removal**: Updated scripts to use `$PROJECT_NAME` instead of hardcoded "localai".
 
-## Previous Task
-**Dify AI Platform Integration** - Level 3 (Intermediate Feature)  
-**Status**: ✅ COMPLETED, REFLECTED, AND ARCHIVED  
-**Archive Date**: 2025-01-17  
-**Archive Location**: `memory-bank/archive/feature-dify-integration_20250117.md`
+## Current State
+- **Architecture**: Service-based modular architecture is now strictly enforced.
+- **Orchestration**: `launchkit.sh` -> `lib/services/up.sh` handles service lifecycle with proper environment variable propagation.
+- **Configuration**: `PROJECT_NAME` is dynamically loaded from `core.yaml` and exported to all child scripts.
 
-## Task History Summary
-- **Gotenberg Document Conversion API**: ✅ COMPLETED & ARCHIVED (2025-01-09)
-- **Dify AI Platform Integration**: ✅ COMPLETED & ARCHIVED (2025-01-17)
-
-## Current Status
-- **Memory Bank**: Reset and ready for next task
-- **Documentation**: All previous tasks archived with full traceability
-- **Project State**: n8n-installer enhanced with AI capabilities
-- **Development Patterns**: Proven service integration patterns established
-
-## Ready for Next Task
-The Memory Bank is fully prepared for the next development task. Previous work has been comprehensively documented and archived.
-
-**Recommended Next Mode**: **VAN MODE** for task initialization and project analysis
-
----
-
-*Memory Bank last updated: 2025-01-17*  
-*Current project: n8n-installer*  
-*Archive count: 2 completed features*
+## Next Steps
+- Verify the full system startup with the new structure.
+- Continue with any further service integrations or feature requests.

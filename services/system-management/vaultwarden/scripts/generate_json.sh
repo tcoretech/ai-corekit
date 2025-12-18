@@ -21,12 +21,13 @@ if [[ "$1" == "-d" ]] || [[ "$1" == "--download" ]]; then
     AUTO_DOWNLOAD=true
 fi
 
-# Source utilities
-source "$(dirname "$0")/utils.sh"
-
 # Get script and project directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
+
+# Source utilities
+source "$WORKSPACE_ROOT/lib/utils/logging.sh"
 ENV_FILE="$PROJECT_ROOT/.env"
 
 # Function to check if a profile is active

@@ -5,7 +5,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 GLOBAL_ENV="$PROJECT_ROOT/config/.env.global"
 ROOT_ENV="$PROJECT_ROOT/.env"
-source "$PROJECT_ROOT/lib/utils/utils.sh"
+source "$PROJECT_ROOT/lib/utils/logging.sh"
 
 # Check dependencies
 if ! command -v whiptail &> /dev/null; then
@@ -21,7 +21,7 @@ fi
 # Load current profiles
 CURRENT_PROFILES_VALUE=""
 
-# Try loading from global env first
+# Try loading from .env.global first
 if [ -f "$GLOBAL_ENV" ]; then
     if grep -q "COMPOSE_PROFILES" "$GLOBAL_ENV"; then
         CURRENT_PROFILES_VALUE=$(grep "^COMPOSE_PROFILES=" "$GLOBAL_ENV" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
@@ -166,7 +166,7 @@ if [ $exit_status -eq 0 ]; then
     
     log_info "Updating configuration..."
     
-    # Update global.env
+    # Update .env.global
     if [ -f "$GLOBAL_ENV" ]; then
         if grep -q "^COMPOSE_PROFILES=" "$GLOBAL_ENV"; then
             TMP_ENV=$(mktemp)

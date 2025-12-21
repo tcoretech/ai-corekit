@@ -13,7 +13,3 @@ services:
         aliases:
           - landing-page
 
-networks:
-  default:
-    name: localai_default
-    external: true

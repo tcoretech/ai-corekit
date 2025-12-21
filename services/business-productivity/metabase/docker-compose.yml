@@ -51,7 +51,3 @@ services:
 volumes:
   metabase_data: {}
   metabase_postgres: {}
-networks:
-  default:
-    name: localai_default
-    external: true

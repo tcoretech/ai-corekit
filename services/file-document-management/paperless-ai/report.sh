@@ -26,7 +26,7 @@ echo "     Find: PAPERLESS_API_TOKEN="
 echo "     Paste your token after ="
 echo
 echo "  2. Restart paperless-gpt:"
-echo "     docker compose -p localai restart paperless-gpt"
+echo "     launchkit restart paperless-gpt"
 echo
 echo "  3. Access: https://${PAPERLESS_GPT_HOSTNAME}"
 echo "     Login: ${PAPERLESS_GPT_USERNAME} / ${PAPERLESS_GPT_PASSWORD}"
@@ -48,7 +48,7 @@ echo "────────────────────────�
 echo "  Run this command to fix RAG indexing:"
 echo
 echo "  docker exec paperless-ai sh -c \"echo 'PAPERLESS_URL=http://paperless-ngx:8000' >> /app/data/.env\""
-echo "  docker compose -p localai restart paperless-ai"
+echo "  launchkit restart paperless-ai"
 echo
 echo "  This fixes a bug where paperless-ai uses inconsistent ENV variables"
 echo

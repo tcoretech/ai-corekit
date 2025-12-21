@@ -388,8 +388,8 @@ sudo lsof -i :5055
 # - Speicherplatz: Mindestens 5GB freier Speicher erforderlich
 df -h
 
-# - Docker-Netzwerk: Sicherstellen dass localai Netzwerk existiert
-docker network ls | grep localai
+# - Docker-Netzwerk: Sicherstellen dass das Projekt-Netzwerk existiert (z.B. localai_default)
+docker network ls | grep ${PROJECT_NAME:-localai}
 
 # Container neu starten
 docker restart opennotebook
@@ -463,7 +463,7 @@ ls -la ~/ai-launchkit/opennotebook/
 chmod -R 755 ~/ai-launchkit/opennotebook/
 
 # Docker-Volume prüfen
-docker volume inspect localai_opennotebook_data
+docker volume inspect ${PROJECT_NAME:-localai}_opennotebook_data
 ```
 
 **Lösung:**
@@ -514,7 +514,7 @@ docker logs opennotebook | grep -i "embedding"
 docker exec n8n curl http://opennotebook:5055/docs
 
 # Docker-Netzwerk prüfen
-docker network inspect localai | grep -E "opennotebook|n8n"
+docker network inspect ${PROJECT_NAME:-localai}_default | grep -E "opennotebook|n8n"
 
 # Spezifischen Endpoint testen
 docker exec n8n curl -X POST http://opennotebook:5055/api/notebooks \

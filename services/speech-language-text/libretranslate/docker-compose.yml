@@ -24,10 +24,6 @@ services:
     - libretranslate_models:/home/libretranslate/.local
     - libretranslate_db:/app/db
     - ../../shared-resources/shared:/data/shared
-networks:
-  default:
-    name: localai_default
-    external: true
 volumes:
   libretranslate_db: {}
   libretranslate_models: {}

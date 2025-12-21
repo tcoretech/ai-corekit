@@ -41,10 +41,6 @@ services:
     depends_on:
     - postgres
     - redis
-networks:
-  default:
-    name: localai_default
-    external: true
 volumes:
   kopia_logs: {}
   kopia_config: {}

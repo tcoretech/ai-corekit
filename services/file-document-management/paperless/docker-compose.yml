@@ -78,7 +78,3 @@ volumes:
   paperless_media: {}
   paperless_redis: {}
   paperless_postgresql: {}
-networks:
-  default:
-    name: localai_default
-    external: true

@@ -637,7 +637,7 @@ ls -la ~/ai-launchkit/opennotebook/
 chmod -R 755 ~/ai-launchkit/opennotebook/
 
 # Check Docker volume
-docker volume inspect localai_opennotebook_data
+docker volume inspect ${PROJECT_NAME:-localai}_opennotebook_data
 ```
 
 **Solution:**
@@ -688,7 +688,7 @@ docker logs opennotebook | grep -i "embedding"
 docker exec n8n curl http://opennotebook:5055/docs
 
 # Check Docker network
-docker network inspect localai | grep -E "opennotebook|n8n"
+docker network inspect ${PROJECT_NAME:-localai}_default | grep -E "opennotebook|n8n"
 
 # Test specific endpoint
 docker exec n8n curl -X POST http://opennotebook:5055/api/notebooks \

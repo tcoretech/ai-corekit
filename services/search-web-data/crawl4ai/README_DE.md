@@ -231,10 +231,10 @@ Viele Seiten haben Anti-Bot-Schutz. Stealth-Modus und Proxys nutzen.
 
 ```bash
 # Prüfen, ob Crawl4AI-Service läuft
-docker compose -p localai ps | grep crawl4ai
+launchkit ps | grep crawl4ai
 
 # Crawl4AI-Logs auf Blockierungs-Indikatoren prüfen
-docker compose -p localai logs crawl4ai | grep -i "blocked\|captcha\|403\|429"
+launchkit logs crawl4ai | grep -i "blocked\|captcha\|403\|429"
 ```
 
 **Lösung:**
@@ -255,7 +255,7 @@ Moderne SPAs benötigen möglicherweise Zeit für JavaScript-Ausführung.
 
 ```bash
 # Crawler-Logs auf Timeout-Fehler prüfen
-docker compose -p localai logs crawl4ai --tail 100
+launchkit logs crawl4ai --tail 100
 ```
 
 **Lösung:**
@@ -308,7 +308,7 @@ Das gleichzeitige Crawlen vieler Seiten kann ressourcenintensiv sein.
 docker stats crawl4ai
 
 # Verfügbaren Speicher prüfen
-docker compose -p localai exec crawl4ai free -h
+launchkit exec crawl4ai free -h
 ```
 
 **Lösung:**

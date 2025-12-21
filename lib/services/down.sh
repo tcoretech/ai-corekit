@@ -5,6 +5,7 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$PROJECT_ROOT/lib/utils/logging.sh"
+source "$PROJECT_ROOT/lib/utils/stack.sh"
 CONFIG_DIR="$PROJECT_ROOT/config"
 GLOBAL_ENV="$CONFIG_DIR/.env.global"
 
@@ -22,32 +23,30 @@ load_env() {
     fi
 }
 
-# Helper: Get Services from Stack
-get_stack_services() {
-    local stack="$1"
-    local stack_file="$CONFIG_DIR/stacks/$stack.yaml"
-    if [ -f "$stack_file" ]; then
-        sed -n '/^services:/,$p' "$stack_file" | grep '^\s*-\s*' | sed 's/^\s*-\s*//'
-    else
-        log_error "Stack file not found: $stack"
-        return 1
-    fi
-}
 
 # Parse Arguments
 SERVICES_TO_STOP=()
 USE_SPECIFIC=false
+STACK_NAME="core"
+PROJECT_OVERRIDE=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -s|--stack)
             shift
             if [ -z "$1" ]; then log_error "Stack name required"; exit 1; fi
-            stack_services=$(get_stack_services "$1")
+            STACK_NAME="$1"
+            stack_services=$(get_stack_services "$STACK_NAME")
             if [ $? -eq 0 ]; then
                 for s in $stack_services; do SERVICES_TO_STOP+=("$s"); done
             fi
             USE_SPECIFIC=true
+            shift
+            ;;
+        -p|--project)
+            shift
+            if [ -z "$1" ]; then log_error "Project name required"; exit 1; fi
+            PROJECT_OVERRIDE="$1"
             shift
             ;;
         *)
@@ -93,8 +92,10 @@ done
 
 # Load project name
 PROJECT_NAME="localai"
-if [ -f "$CONFIG_DIR/stacks/core.yaml" ]; then
-    PROJECT_NAME=$(grep "^project_name:" "$CONFIG_DIR/stacks/core.yaml" | cut -d':' -f2 | tr -d ' "')
+if [ -n "$PROJECT_OVERRIDE" ]; then
+    PROJECT_NAME="$PROJECT_OVERRIDE"
+else
+    PROJECT_NAME=$(get_stack_project_name "$STACK_NAME")
 fi
 
 # Run Docker Compose Stop/Down

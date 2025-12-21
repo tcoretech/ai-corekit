@@ -546,7 +546,7 @@ services:
 
 networks:
   default:
-    name: localai_default
+    name: ${PROJECT_NAME:-localai}_default
     external: true
 ```
 
@@ -812,7 +812,7 @@ docker logs cloudflared-tunnel
 
 # Common error: "no route to host"
 # Solution: Check Docker network configuration
-docker network inspect localai_default
+docker network inspect ${PROJECT_NAME:-localai}_default
 
 # Restart tunnel
 docker compose restart cloudflared

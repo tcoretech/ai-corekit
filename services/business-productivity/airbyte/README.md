@@ -172,7 +172,7 @@ sudo ufw status | grep -E "5433|8001"
 Caddy must route to Airbyte via the Docker gateway IP. This IP can vary per server:
 ```bash
 # Find your gateway IP
-docker network inspect localai_default | grep Gateway
+docker network inspect ${PROJECT_NAME:-localai}_default | grep Gateway
 # Output example: "Gateway": "172.18.0.1"
 
 # Update Caddyfile with the correct IP:
@@ -184,9 +184,9 @@ docker network inspect localai_default | grep Gateway
 ```
 
 **If you get 502 errors after installation:**
-1. Find gateway IP: `docker network inspect localai_default | grep Gateway`
+1. Find gateway IP: `docker network inspect ${PROJECT_NAME:-localai}_default | grep Gateway`
 2. Update `Caddyfile` with the correct IP
-3. Restart Caddy: `docker restart caddy`
+3. Restart Caddy: `launchkit restart caddy`
 
 ### Destination Database Setup
 
@@ -720,7 +720,7 @@ sudo bash scripts/05a_init_airbyte.sh
 #### 502 Bad Gateway After Installation
 ```bash
 # 1. Find Docker gateway IP
-docker network inspect localai_default | grep Gateway
+docker network inspect ${PROJECT_NAME:-localai}_default | grep Gateway
 # Output: "Gateway": "172.18.0.1"
 
 # 2. Update Caddyfile
@@ -814,7 +814,7 @@ airbyte_destination_db:
   command: postgres -c max_connections=200  # Default: 100
 
 # 2. Restart database
-docker compose -p localai restart airbyte_destination_db
+launchkit restart airbyte_destination_db
 
 # 3. Verify
 docker exec airbyte_destination_db psql -U airbyte -c "SHOW max_connections;"

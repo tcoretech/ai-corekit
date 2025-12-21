@@ -26,7 +26,3 @@ services:
       retries: 3
     networks:
     - default
-networks:
-  default:
-    name: localai_default
-    external: true

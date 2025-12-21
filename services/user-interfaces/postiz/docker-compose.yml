@@ -58,10 +58,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-networks:
-  default:
-    name: localai_default
-    external: true
 # volumes:
 #   postiz-uploads: {}
 #   postiz-config: {}

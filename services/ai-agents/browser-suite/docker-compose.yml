@@ -89,7 +89,3 @@ services:
 volumes:
   skyvern_postgres_data: {}
   browser-use-cache: {}
-networks:
-  default:
-    name: localai_default
-    external: true

@@ -29,7 +29,3 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-networks:
-  default:
-    name: localai_default
-    external: true

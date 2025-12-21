@@ -6,7 +6,3 @@ services:
     profiles:
     - ragapp
     restart: unless-stopped
-networks:
-  default:
-    name: localai_default
-    external: true

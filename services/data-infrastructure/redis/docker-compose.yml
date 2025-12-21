@@ -26,9 +26,5 @@ services:
       interval: 3s
       timeout: 10s
       retries: 10
-networks:
-  default:
-    name: localai_default
-    external: true
 volumes:
   valkey-data: {}

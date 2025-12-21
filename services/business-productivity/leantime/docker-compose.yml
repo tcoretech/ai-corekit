@@ -51,10 +51,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
-networks:
-  default:
-    name: localai_default
-    external: true
 volumes:
   leantime-userfiles: {}
   leantime-public: {}

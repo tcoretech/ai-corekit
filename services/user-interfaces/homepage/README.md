@@ -38,7 +38,7 @@ nano homepage_config/settings.yaml
 nano homepage_config/widgets.yaml
 
 # Restart to apply changes
-docker compose -p localai restart homepage
+launchkit restart homepage
 ```
 
 ### Configuration Files

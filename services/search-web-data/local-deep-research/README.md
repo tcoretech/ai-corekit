@@ -347,10 +347,10 @@ Monitor published content and verify accuracy continuously.
 
 ```bash
 # Check container status
-docker compose -p localai ps | grep local-deep-research
+launchkit ps | grep local-deep-research
 
 # View logs for stalled processes
-docker compose -p localai logs local-deep-research --tail 100 --follow
+launchkit logs local-deep-research --tail 100 --follow
 ```
 
 **Solution:**
@@ -358,14 +358,14 @@ docker compose -p localai logs local-deep-research --tail 100 --follow
 - Simplify query: be more specific
 - Check if search backend (SearXNG) is responsive:
   ```bash
-  docker compose -p localai exec n8n curl http://searxng:8080/search?q=test
+  launchkit exec n8n curl http://searxng:8080/search?q=test
   ```
 
 **Issue 2: Low Confidence Scores**
 
 ```bash
 # Check if LLM provider is working
-docker compose -p localai logs local-deep-research | grep -i "llm\|error"
+launchkit logs local-deep-research | grep -i "llm\|error"
 ```
 
 **Solution:**
@@ -378,10 +378,10 @@ docker compose -p localai logs local-deep-research | grep -i "llm\|error"
 
 ```bash
 # Test search backend
-docker compose -p localai exec local-deep-research curl http://searxng:8080/health
+launchkit exec local-deep-research curl http://searxng:8080/health
 
 # Check search logs
-docker compose -p localai logs searxng --tail 50
+launchkit logs searxng --tail 50
 ```
 
 **Solution:**
@@ -389,7 +389,7 @@ docker compose -p localai logs searxng --tail 50
 - Check Docker network connectivity
 - Restart search service:
   ```bash
-  docker compose -p localai restart searxng local-deep-research
+  launchkit restart searxng local-deep-research
   ```
 
 **Issue 4: Conflicting Information Found**
@@ -421,10 +421,10 @@ This is actually a GOOD sign - shows thorough research.
 
 ```bash
 # Check environment variables
-docker compose -p localai exec local-deep-research printenv | grep -E "OPENAI|OLLAMA|SEARXNG"
+launchkit exec local-deep-research printenv | grep -E "OPENAI|OLLAMA|SEARXNG"
 
 # Check for rate limiting
-docker compose -p localai logs local-deep-research | grep -i "rate\|limit\|quota"
+launchkit logs local-deep-research | grep -i "rate\|limit\|quota"
 ```
 
 **Solution:**

@@ -19,10 +19,6 @@ services:
     - host.docker.internal:host-gateway
     depends_on:
     - searxng
-networks:
-  default:
-    name: localai_default
-    external: true
 volumes:
   perplexica_uploads: {}
   perplexica_data: {}

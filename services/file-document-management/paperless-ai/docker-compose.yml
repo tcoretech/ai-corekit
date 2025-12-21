@@ -70,7 +70,3 @@ services:
 volumes:
   paperless-ai-data: {}
   paperless-gpt-prompts: {}
-networks:
-  default:
-    name: localai_default
-    external: true

@@ -349,10 +349,10 @@ Veröffentlichte Inhalte überwachen und Genauigkeit kontinuierlich verifizieren
 
 ```bash
 # Container-Status prüfen
-docker compose -p localai ps | grep local-deep-research
+launchkit ps | grep local-deep-research
 
 # Logs auf festgefahrene Prozesse ansehen
-docker compose -p localai logs local-deep-research --tail 100 --follow
+launchkit logs local-deep-research --tail 100 --follow
 ```
 
 **Lösung:**
@@ -360,14 +360,14 @@ docker compose -p localai logs local-deep-research --tail 100 --follow
 - Anfrage vereinfachen: spezifischer sein
 - Prüfen, ob Such-Backend (SearXNG) reagiert:
   ```bash
-  docker compose -p localai exec n8n curl http://searxng:8080/search?q=test
+  launchkit exec n8n curl http://searxng:8080/search?q=test
   ```
 
 **Problem 2: Niedrige Konfidenz-Scores**
 
 ```bash
 # Prüfen, ob LLM-Provider funktioniert
-docker compose -p localai logs local-deep-research | grep -i "llm\|error"
+launchkit logs local-deep-research | grep -i "llm\|error"
 ```
 
 **Lösung:**
@@ -380,10 +380,10 @@ docker compose -p localai logs local-deep-research | grep -i "llm\|error"
 
 ```bash
 # Such-Backend testen
-docker compose -p localai exec local-deep-research curl http://searxng:8080/health
+launchkit exec local-deep-research curl http://searxng:8080/health
 
 # Such-Logs prüfen
-docker compose -p localai logs searxng --tail 50
+launchkit logs searxng --tail 50
 ```
 
 **Lösung:**
@@ -391,7 +391,7 @@ docker compose -p localai logs searxng --tail 50
 - Docker-Netzwerk-Konnektivität prüfen
 - Such-Service neu starten:
   ```bash
-  docker compose -p localai restart searxng local-deep-research
+  launchkit restart searxng local-deep-research
   ```
 
 **Problem 4: Widersprüchliche Informationen gefunden**
@@ -423,10 +423,10 @@ Dies ist tatsächlich ein GUTES Zeichen - zeigt gründliche Recherche.
 
 ```bash
 # Umgebungsvariablen prüfen
-docker compose -p localai exec local-deep-research printenv | grep -E "OPENAI|OLLAMA|SEARXNG"
+launchkit exec local-deep-research printenv | grep -E "OPENAI|OLLAMA|SEARXNG"
 
 # Auf Rate-Limiting prüfen
-docker compose -p localai logs local-deep-research | grep -i "rate\|limit\|quota"
+launchkit logs local-deep-research | grep -i "rate\|limit\|quota"
 ```
 
 **Lösung:**

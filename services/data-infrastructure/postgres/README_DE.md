@@ -492,7 +492,7 @@ docker exec postgres pg_dumpall -U postgres > postgres_backup.sql
 docker compose down
 
 # 3. Volume entfernen
-docker volume rm localai_postgres_data
+docker volume rm ${PROJECT_NAME:-localai}_postgres_data
 
 # 4. PostgreSQL starten
 docker compose up -d postgres

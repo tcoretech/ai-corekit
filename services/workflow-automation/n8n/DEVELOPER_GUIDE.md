@@ -219,12 +219,12 @@ def start_local_services()      # Starts main services from docker-compose.yml
 #### Special Handling:
 - **SearXNG First Run**: Temporarily removes security restrictions for initialization
 - **Service Dependencies**: Ensures proper startup order (Supabase → Dify → n8n)
-- **Network Management**: All services join `localai_default` network
+- **Network Management**: All services join the default project network (e.g., `${PROJECT_NAME:-localai}_default`)
 
 > 🤖 **AI Context Note**: This Python script is the most complex component. Key patterns:
 > 1. External services (Supabase, Dify) use sparse git checkout to get only their docker directories
 > 2. The script uses dotenv to read COMPOSE_PROFILES and determine which services to start
-> 3. All docker-compose commands use project name "localai" for consistency
+> 3. All docker-compose commands use the configured project name (default "localai", configurable via stacks) for consistency
 > 4. The SearXNG workaround is necessary because it needs to create config files on first run
 > 5. prepare_dify_env() does variable mapping (DIFY_SECRET_KEY → SECRET_KEY) because Dify expects different variable names
 > 6. The script handles both docker-compose.yml and docker-compose.yaml (Dify uses .yaml)
@@ -301,7 +301,7 @@ volumes:
   # ... 20+ more volumes
 ```
 
-> 🤖 **AI Context Note**: Docker Compose profiles are the key to selective deployment. Services without profiles always run. Services with profiles only run if their profile is in COMPOSE_PROFILES. The YAML anchors (&service-n8n) define reusable configurations - modifying the anchor affects all services using it. Volume names must be unique across all services. The network "localai_default" is implicitly created and all services join it.
+> 🤖 **AI Context Note**: Docker Compose profiles are the key to selective deployment. Services without profiles always run. Services with profiles only run if their profile is in COMPOSE_PROFILES. The YAML anchors (&service-n8n) define reusable configurations - modifying the anchor affects all services using it. Volume names must be unique across all services. The default network is implicitly created and all services join it.
 
 ---
 
@@ -313,7 +313,7 @@ volumes:
 - **Profiles**: `python-runner` (disabled by default; enabled via wizard or `.env`)
 - **Mount**: `./python-runner:/app`
 - **Command**: Installs `requirements.txt` if present, then runs `python /app/main.py`.
-- **Network**: Joins the default compose network (`localai_default`), so it can reach other services by their container names (e.g., `n8n`, `postgres`, `redis`, `qdrant`).
+- **Network**: Joins the default compose network, so it can reach other services by their container names (e.g., `n8n`, `postgres`, `redis`, `qdrant`).
 - **Security/Exposure**: No external ports, no reverse proxy, no domains. Internal-only.
 
 ### How to enable (Wizard)
@@ -329,7 +329,7 @@ COMPOSE_PROFILES="...,python-runner"
 
 Or start on-demand from the CLI without changing `.env`:
 ```bash
-docker compose -p localai --profile python-runner up -d python-runner
+launchkit --profile python-runner up -d python-runner
 ```
 
 ### Where to put your code
@@ -344,11 +344,11 @@ docker compose -p localai --profile python-runner up -d python-runner
 2) Add dependencies to `python-runner/requirements.txt` if needed.
 3) Start or restart the service:
 ```bash
-docker compose -p localai --profile python-runner up -d --force-recreate python-runner
+launchkit --profile python-runner up -d --force-recreate python-runner
 ```
 4) View logs:
 ```bash
-docker compose -p localai logs -f python-runner
+launchkit logs -f python-runner
 ```
 
 This service is intentionally minimal to avoid conflicts and can be extended by users as needed.
@@ -464,16 +464,16 @@ Multiple services share Postgres and Redis instances when possible.
 1. **APT Lock Issues**: Handled by `run_apt_with_retry()` in `02_install_docker.sh`
 2. **Docker Daemon Not Running**: Checked in `05_run_services.sh`
 3. **Missing Permissions**: Scripts automatically fix executable permissions
-4. **Network Conflicts**: All services use `localai_default` network
+4. **Network Conflicts**: All services use the shared project network
 5. **Port Conflicts**: Caddy handles all external ports (80, 443)
 
 > 🤖 **AI Context Note**: When debugging issues:
 > - Check `docker ps` to see running containers
-> - Check `docker compose -p localai ps` to see service states
+> - Check `launchkit ps` to see service states
 > - Check `docker logs [container_name]` for service-specific errors
 > - Verify .env has all required variables (compare with .env.example)
 > - Ensure COMPOSE_PROFILES contains selected services
-> - For network issues, verify all services are on network `docker network inspect localai_default`
+> - For network issues, verify all services are on network `docker network inspect [project_name]_default`
 > - For "port already in use", check if another web server is running on ports 80/443
 
 ---
@@ -510,22 +510,22 @@ Multiple services share Postgres and Redis instances when possible.
 ### Debugging Command Reference:
 ```bash
 # Check service status
-docker compose -p localai ps
+launchkit ps
 
 # View service logs
-docker compose -p localai logs [service_name]
+launchkit logs [service_name]
 
 # Verify environment variables
-docker compose -p localai config
+launchkit config
 
 # Test without starting
-docker compose -p localai config --dry-run
+launchkit config --dry-run
 
 # Force recreate services
-docker compose -p localai up -d --force-recreate
+launchkit up -d --force-recreate
 
 # Clean everything
-docker compose -p localai down -v
+launchkit down -v
 ```
 
 ---

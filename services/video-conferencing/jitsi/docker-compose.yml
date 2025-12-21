@@ -100,7 +100,3 @@ services:
     - TZ=${TZ}
     depends_on:
     - jitsi-prosody
-networks:
-  default:
-    name: localai_default
-    external: true

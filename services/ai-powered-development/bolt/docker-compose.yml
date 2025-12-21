@@ -24,7 +24,3 @@ services:
       options:
         max-size: 10m
         max-file: '3'
-networks:
-  default:
-    name: localai_default
-    external: true

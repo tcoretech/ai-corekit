@@ -67,7 +67,3 @@ volumes:
   twenty_data: {}
   twenty_redis_data: {}
   twenty_db_data: {}
-networks:
-  default:
-    name: localai_default
-    external: true

@@ -30,8 +30,8 @@ Together, they transform Paperless-ngx from a document archive into an intellige
 
 2. **CRITICAL: Full restart required for token to load:**
 ```bash
-   docker compose -p localai down
-   docker compose -p localai up -d
+   launchkit down
+   launchkit up -d
 ```
    ⚠️ Simple restart is NOT enough - must use `down` then `up -d`!
 
@@ -53,7 +53,7 @@ Together, they transform Paperless-ngx from a document archive into an intellige
 ```bash
 # This fixes a bug where paperless-ai uses different ENV variable names
 docker exec paperless-ai sh -c "echo 'PAPERLESS_URL=http://paperless-ngx:8000' >> /app/data/.env"
-docker compose -p localai restart paperless-ai
+launchkit restart paperless-ai
 ```
 
 ### Known Issues & Workarounds
@@ -62,7 +62,7 @@ docker compose -p localai restart paperless-ai
 |-------|---------|-----------|
 | **paperless-gpt: Documents need tags** | Can't update documents without at least one tag | Add a default tag like "inbox" to all documents |
 | **paperless-ai: Inconsistent ENV names** | RAG chat shows "your-paperless-instance" error | Apply Step 5 fix above |
-| **Token not loading after update** | Services show "401 Unauthorized" | Use full restart with `docker compose -p localai down` then `up -d` |
+| **Token not loading after update** | Services show "401 Unauthorized" | Use full restart with `launchkit down` then `up -d` |
 
 ### Features Comparison
 
@@ -118,8 +118,8 @@ grep PAPERLESS_API_TOKEN .env
 docker exec paperless-gpt env | grep PAPERLESS_API_TOKEN
 
 # If missing, full restart required:
-docker compose -p localai down
-docker compose -p localai up -d
+launchkit down
+launchkit up -d
 ```
 
 **RAG Not Working:**
@@ -129,14 +129,14 @@ docker logs paperless-ai | grep "your-paperless"
 
 # Apply fix:
 docker exec paperless-ai sh -c "echo 'PAPERLESS_URL=http://paperless-ngx:8000' >> /app/data/.env"
-docker compose -p localai restart paperless-ai
+launchkit restart paperless-ai
 ```
 
 **Reset paperless-ai (loses settings):**
 ```bash
-docker compose -p localai stop paperless-ai
-docker volume rm localai_paperless-ai-data
-docker compose -p localai up -d paperless-ai
+launchkit stop paperless-ai
+docker volume rm ${PROJECT_NAME:-localai}_paperless-ai-data
+launchkit up -d paperless-ai
 ```
 
 ### Resources

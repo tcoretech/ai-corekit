@@ -58,7 +58,3 @@ services:
       '
 volumes:
   livekit_data: {}
-networks:
-  default:
-    name: localai_default
-    external: true

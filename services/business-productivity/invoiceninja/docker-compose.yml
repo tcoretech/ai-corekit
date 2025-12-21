@@ -99,7 +99,3 @@ volumes:
   invoiceninja_public: {}
   invoiceninja_storage: {}
   invoiceninja_mysql: {}
-networks:
-  default:
-    name: localai_default
-    external: true

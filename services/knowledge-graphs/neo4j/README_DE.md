@@ -398,14 +398,14 @@ Erkennung verdächtiger Muster in Transaktionsnetzwerken.
 
 ```bash
 # Prüfen ob Neo4j läuft
-docker compose -p localai ps | grep neo4j
+launchkit ps | grep neo4j
 
 # Logs auf Fehler prüfen
-docker compose -p localai logs neo4j --tail 100
+launchkit logs neo4j --tail 100
 
 # Prüfen ob Ports erreichbar sind
-docker compose -p localai port neo4j 7474
-docker compose -p localai port neo4j 7687
+launchkit port neo4j 7474
+launchkit port neo4j 7687
 ```
 
 **Lösung:**
@@ -425,9 +425,9 @@ nano /root/ai-launchkit/.env
 # Ändere NEO4J_AUTH=neo4j/dein-neues-passwort
 
 # Option 2: Neo4j komplett zurücksetzen (WARNUNG: Löscht alle Daten)
-docker compose -p localai down neo4j
+launchkit down neo4j
 docker volume rm ai-launchkit_neo4j_data
-docker compose -p localai up -d neo4j
+launchkit up -d neo4j
 ```
 
 **Lösung:**
@@ -468,7 +468,7 @@ SHOW INDEXES
 docker stats neo4j
 
 # Neo4j-Konfiguration anzeigen
-docker compose -p localai exec neo4j cat /var/lib/neo4j/conf/neo4j.conf | grep memory
+launchkit exec neo4j cat /var/lib/neo4j/conf/neo4j.conf | grep memory
 ```
 
 **Lösung:**
@@ -481,7 +481,7 @@ docker compose -p localai exec neo4j cat /var/lib/neo4j/conf/neo4j.conf | grep m
   ```
 - Neo4j neu starten:
   ```bash
-  docker compose -p localai restart neo4j
+  launchkit restart neo4j
   ```
 
 **Problem 5: Knoten kann nicht gelöscht werden (Beziehungs-Constraint)**

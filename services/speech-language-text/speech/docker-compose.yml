@@ -40,7 +40,3 @@ services:
       retries: 3
 volumes:
   whisper-models: {}
-networks:
-  default:
-    name: localai_default
-    external: true

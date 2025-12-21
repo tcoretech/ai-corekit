@@ -81,7 +81,3 @@ services:
     - caddy
 volumes:
   caddy-data: {}
-networks:
-  default:
-    name: localai_default
-    external: true

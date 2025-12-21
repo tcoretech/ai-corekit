@@ -398,14 +398,14 @@ Detect suspicious patterns in transaction networks.
 
 ```bash
 # Check if Neo4j is running
-docker compose -p localai ps | grep neo4j
+launchkit ps | grep neo4j
 
 # Check logs for errors
-docker compose -p localai logs neo4j --tail 100
+launchkit logs neo4j --tail 100
 
 # Check if ports are accessible
-docker compose -p localai port neo4j 7474
-docker compose -p localai port neo4j 7687
+launchkit port neo4j 7474
+launchkit port neo4j 7687
 ```
 
 **Solution:**
@@ -425,9 +425,9 @@ nano /root/ai-launchkit/.env
 # Change NEO4J_AUTH=neo4j/your-new-password
 
 # Option 2: Reset Neo4j completely (WARNING: Deletes all data)
-docker compose -p localai down neo4j
+launchkit down neo4j
 docker volume rm ai-launchkit_neo4j_data
-docker compose -p localai up -d neo4j
+launchkit up -d neo4j
 ```
 
 **Solution:**
@@ -468,7 +468,7 @@ SHOW INDEXES
 docker stats neo4j
 
 # View Neo4j configuration
-docker compose -p localai exec neo4j cat /var/lib/neo4j/conf/neo4j.conf | grep memory
+launchkit exec neo4j cat /var/lib/neo4j/conf/neo4j.conf | grep memory
 ```
 
 **Solution:**
@@ -481,7 +481,7 @@ docker compose -p localai exec neo4j cat /var/lib/neo4j/conf/neo4j.conf | grep m
   ```
 - Restart Neo4j:
   ```bash
-  docker compose -p localai restart neo4j
+  launchkit restart neo4j
   ```
 
 **Issue 5: Cannot Delete Node (Relationship Constraint)**

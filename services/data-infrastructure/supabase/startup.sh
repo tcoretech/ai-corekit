@@ -4,7 +4,7 @@ set -e
 # Supabase Startup Hook
 # Ensure the database container is running.
 # This was in the legacy update script:
-# "sudo docker compose -p localai -f supabase/docker/docker-compose.yml up -d db"
+# "sudo launchkit -f supabase/docker/docker-compose.yml up -d db"
 
 # Since 'launchkit up' should handle bringing up the service defined in docker-compose.yml,
 # and Supabase likely has a 'db' service in its compose file, this might be redundant if the main 'up' command works correctly.

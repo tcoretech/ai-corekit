@@ -18,9 +18,5 @@ services:
       PGDATA: /var/lib/postgresql/18/docker
     volumes:
     - langfuse_postgres_data:/var/lib/postgresql
-networks:
-  default:
-    name: localai_default
-    external: true
 volumes:
   langfuse_postgres_data: {}

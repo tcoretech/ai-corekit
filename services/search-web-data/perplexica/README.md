@@ -638,7 +638,7 @@ docker exec n8n curl -X POST http://perplexica:3000/api/search \
   -d '{"query":"test","focusMode":"webSearch","chatHistory":[]}'
 
 # Check if both containers are in same network
-docker network inspect localai | grep -E "perplexica|n8n"
+docker network inspect ${PROJECT_NAME:-localai}_default | grep -E "perplexica|n8n"
 ```
 
 **Solution:**

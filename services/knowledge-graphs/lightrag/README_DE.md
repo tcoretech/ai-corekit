@@ -415,7 +415,7 @@ lightrag:
 
 3. **LightRAG neu starten:**
 ```bash
-docker compose -p localai restart lightrag
+launchkit restart lightrag
 ```
 
 **Performance-Vergleich:**
@@ -433,7 +433,7 @@ docker compose -p localai restart lightrag
 
 ```bash
 # Prüfen ob Ollama (langsam) oder OpenAI (schnell) verwendet wird
-docker compose -p localai logs lightrag | grep -E "LLM_BINDING|EMBEDDING_BINDING"
+launchkit logs lightrag | grep -E "LLM_BINDING|EMBEDDING_BINDING"
 
 # Falls Ollama auf CPU verwendet wird:
 # Lösung 1: Zu OpenAI wechseln (siehe oben)
@@ -441,7 +441,7 @@ docker compose -p localai logs lightrag | grep -E "LLM_BINDING|EMBEDDING_BINDING
 # Lösung 3: Chunk-Größe im Preprocessing reduzieren
 
 # Prüfen ob Ollama läuft
-docker compose -p localai ps | grep ollama
+launchkit ps | grep ollama
 curl http://ollama:11434/api/tags
 ```
 
@@ -457,7 +457,7 @@ curl http://ollama:11434/api/tags
 curl http://lightrag:9621/api/health
 
 # Wissensgraphen auf Daten verifizieren
-docker compose -p localai logs lightrag | grep "entities extracted"
+launchkit logs lightrag | grep "entities extracted"
 
 # Mit einfacher Abfrage testen
 curl -X POST http://lightrag:9621/api/query \
@@ -474,14 +474,14 @@ curl -X POST http://lightrag:9621/api/query \
 
 ```bash
 # Prüfen ob LightRAG-Port erreichbar ist
-docker compose -p localai exec open-webui curl http://lightrag:9621/health
+launchkit exec open-webui curl http://lightrag:9621/health
 
 # Ollama-kompatible API verifizieren
 curl http://lightrag:9621/v1/models
 # Sollte Modellliste zurückgeben
 
 # Open WebUI neu starten
-docker compose -p localai restart open-webui
+launchkit restart open-webui
 ```
 
 **Lösung:**
@@ -514,10 +514,10 @@ docker stats lightrag --no-stream
 
 ```bash
 # Container-Status prüfen
-docker compose -p localai ps -a | grep lightrag
+launchkit ps -a | grep lightrag
 
 # Logs anzeigen
-docker compose -p localai logs lightrag
+launchkit logs lightrag
 
 # Häufige Probleme:
 # - Fehlende LLM-Konfiguration
@@ -528,7 +528,7 @@ docker compose -p localai logs lightrag
 **Lösung:**
 - Verifizieren, dass Ollama läuft: `docker ps | grep ollama`
 - Port-Konflikte prüfen: `netstat -tulpn | grep 9621`
-- Mit Abhängigkeiten neu starten: `docker compose -p localai restart ollama lightrag`
+- Mit Abhängigkeiten neu starten: `launchkit restart ollama lightrag`
 
 ### Best Practices
 

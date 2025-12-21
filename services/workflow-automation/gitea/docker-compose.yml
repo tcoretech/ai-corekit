@@ -43,7 +43,3 @@ services:
 volumes:
   gitea_data: {}
   gitea_postgres_data: {}
-networks:
-  default:
-    name: localai_default
-    external: true

@@ -48,7 +48,7 @@ ComfyUI requires AI models to generate images. Here's how to get started:
 
 ```bash
 # Access ComfyUI models directory
-cd /var/lib/docker/volumes/localai_comfyui_data/_data/models
+cd /var/lib/docker/volumes/${PROJECT_NAME:-localai}_comfyui_data/_data/models
 
 # Download FLUX.1-schnell (fast, recommended for beginners)
 cd checkpoints

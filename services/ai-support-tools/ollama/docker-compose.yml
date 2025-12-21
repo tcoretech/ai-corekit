@@ -93,7 +93,3 @@ services:
     - /dev/dri
 volumes:
   ollama_storage: {}
-networks:
-  default:
-    name: localai_default
-    external: true

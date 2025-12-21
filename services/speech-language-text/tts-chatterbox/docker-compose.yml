@@ -41,7 +41,3 @@ services:
       start_period: 60s
 volumes:
   chatterbox_models: {}
-networks:
-  default:
-    name: localai_default
-    external: true

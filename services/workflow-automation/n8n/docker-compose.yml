@@ -191,7 +191,3 @@ services:
         condition: service_healthy
 volumes:
   n8n_storage: {}
-networks:
-  default:
-    name: localai_default
-    external: true

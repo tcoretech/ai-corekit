@@ -83,7 +83,3 @@ services:
 volumes:
   formbricks_uploads: {}
   formbricks_postgres: {}
-networks:
-  default:
-    name: localai_default
-    external: true

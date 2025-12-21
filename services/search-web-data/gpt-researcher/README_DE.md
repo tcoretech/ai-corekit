@@ -303,10 +303,10 @@ Tiefenrecherche zu Konkurrenten mit vergleichender Analyse.
 
 ```bash
 # Prüfen, ob Service läuft
-docker compose -p localai ps | grep gpt-researcher
+launchkit ps | grep gpt-researcher
 
 # Service-Logs prüfen
-docker compose -p localai logs gpt-researcher --tail 100
+launchkit logs gpt-researcher --tail 100
 
 # Aktive Recherche-Aufgaben überwachen
 curl http://gpt-researcher:8000/api/tasks/active
@@ -335,7 +335,7 @@ curl http://gpt-researcher:8000/api/result/{task_id} | jq '.sources'
 
 ```bash
 # Interne Konnektivität testen
-docker compose -p localai exec n8n curl http://gpt-researcher:8000/health
+launchkit exec n8n curl http://gpt-researcher:8000/health
 
 # Docker-Netzwerk prüfen
 docker network inspect ai-launchkit_default | grep gpt-researcher
@@ -346,14 +346,14 @@ docker network inspect ai-launchkit_default | grep gpt-researcher
 - Prüfen, ob Service im gleichen Docker-Netzwerk ist
 - Beide Services neu starten:
   ```bash
-  docker compose -p localai restart gpt-researcher n8n
+  launchkit restart gpt-researcher n8n
   ```
 
 **Problem 4: Task-Status zeigt "Failed"**
 
 ```bash
 # Detaillierte Fehler-Logs prüfen
-docker compose -p localai logs gpt-researcher | grep ERROR
+launchkit logs gpt-researcher | grep ERROR
 
 # Task-Status mit Fehlerdetails prüfen
 curl http://gpt-researcher:8000/api/status/{task_id}

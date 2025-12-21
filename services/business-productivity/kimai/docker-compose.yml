@@ -63,7 +63,3 @@ volumes:
   kimai_plugins: {}
   kimai_data: {}
   kimai_mysql: {}
-networks:
-  default:
-    name: localai_default
-    external: true

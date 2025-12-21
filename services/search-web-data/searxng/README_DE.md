@@ -553,7 +553,7 @@ docker exec n8n curl http://searxng:8080/
 docker exec n8n curl "http://searxng:8080/search?q=test&format=json"
 
 # Prüfe ob beide Container im gleichen Netzwerk sind
-docker network inspect localai | grep -E "searxng|n8n"
+docker network inspect ${PROJECT_NAME:-localai}_default | grep -E "searxng|n8n"
 ```
 
 **Lösung:**

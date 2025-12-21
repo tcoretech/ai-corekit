@@ -46,7 +46,3 @@ services:
       start_period: 10s
 volumes:
   easyocr_models: {}
-networks:
-  default:
-    name: localai_default
-    external: true

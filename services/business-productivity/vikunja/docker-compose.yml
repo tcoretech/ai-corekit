@@ -56,7 +56,3 @@ services:
     restart: 'no'
 volumes:
   vikunja-files: {}
-networks:
-  default:
-    name: localai_default
-    external: true

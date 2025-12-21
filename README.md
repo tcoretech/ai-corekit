@@ -618,7 +618,7 @@ docker exec mailserver cat /tmp/docker-mailserver/opendkim/keys/yourdomain.com/m
 sudo systemctl status docker
 
 # Check specific service logs
-docker compose logs [service-name] --tail 50
+launchkit logs [service-name] --tail 50
 
 # Common issues:
 # - Not enough RAM: Reduce services or upgrade server
@@ -631,13 +631,13 @@ docker compose logs [service-name] --tail 50
 ```bash
 # Caddy might take a few minutes to get certificates
 # Check Caddy logs:
-docker compose logs caddy --tail 50
+launchkit logs caddy --tail 50
 
 # If problems persist:
 # 1. Verify DNS is correct
 # 2. Check firewall allows 80/443
 # 3. Restart Caddy
-docker compose restart caddy
+launchkit restart caddy
 ```
 
 #### Docker Issues
@@ -651,7 +651,7 @@ docker network prune -f
 
 # Restart all services
 cd ai-launchkit
-docker compose restart
+launchkit restart
 ```
 
 </details>
@@ -727,10 +727,10 @@ sudobash ./scripts/update.sh
 💡 **Tip:** If you encounter Docker Hub rate limit errors (`toomanyrequests: Rate exceeded`) during installation/update, run `docker login` first (free account required) - this gives you individual rate limits instead of sharing with all VPS users, significantly reducing timeout issues. If that doesn't work, I recommend not installing all services with one installation, but only a maximum of 15-20 at first and then gradually installing the others via updates!
 
 # 3. Check service status
-docker compose ps
+launchkit ps
 
 # 4. Monitor logs for issues
-docker compose logs -f --tail 100
+launchkit logs -f --tail 100
 ```
 
 ### PostgreSQL Version Handling
@@ -767,23 +767,23 @@ If you see "database files are incompatible" errors:
 docker exec postgres pg_dumpall -U postgres > emergency-backup.sql
 
 # 2. Stop all services
-docker compose down
+launchkit down
 
 # 3. Remove incompatible volume
-docker volume rm localai_postgres_data
+docker volume rm ${PROJECT_NAME:-localai}_postgres_data
 
 # 4. Pull latest fixes
 git pull
 
 # 5. Start PostgreSQL (now pinned to v17)
-docker compose up -d postgres
+launchkit up postgres
 sleep 10
 
 # 6. Restore your data
 docker exec -i postgres psql -U postgres < emergency-backup.sql
 
 # 7. Start all services
-docker compose up -d
+launchkit up
 ```
 
 </details>
@@ -803,11 +803,11 @@ docker exec postgres postgres --version
 
 ```bash
 # View all services
-docker compose ps
+launchkit ps
 
 # All should show: STATUS = Up
 # If any show "Restarting" wait 2-3 minutes, then check logs:
-docker compose logs [service-name] --tail 50
+launchkit logs [service-name] --tail 50
 ```
 
 #### Test Key Services
@@ -867,26 +867,26 @@ git reset --hard [previous-commit-hash]
 cp .env.backup .env
 
 # 5. Restart with old version
-docker compose down
-docker compose up -d
+launchkit down
+launchkit up
 ```
 
 #### Full Rollback with Data Restore
 
 ```bash
 # 1. Stop services
-docker compose down
+launchkit down
 
 # 2. Restore volumes from backup
 tar xzf volumes-backup-YYYYMMDD.tar.gz
 
 # 3. Restore PostgreSQL
-docker compose up -d postgres
+launchkit up postgres
 sleep 10
 docker exec -i postgres psql -U postgres < backup-YYYYMMDD.sql
 
 # 4. Start all services
-docker compose up -d
+launchkit up
 ```
 
 ### Service-Specific Updates
@@ -898,7 +898,7 @@ Some services may require additional steps:
 ```bash
 # Models are not automatically updated
 # To update models, manually download new versions to:
-/var/lib/docker/volumes/localai_comfyui_data/_data/models/
+/var/lib/docker/volumes/${PROJECT_NAME:-localai}_comfyui_data/_data/models/
 ```
 
 #### Ollama Models
@@ -916,16 +916,16 @@ docker exec ollama ollama pull mistral
 docker exec n8n npm update -g n8n
 
 # Restart n8n
-docker compose restart n8n
+launchkit restart n8n
 ```
 
 #### Supabase
 
 ```bash
 # Supabase has multiple components
-# All update together with docker compose pull
-docker compose pull supabase-kong supabase-auth supabase-rest supabase-storage
-docker compose up -d supabase-kong supabase-auth supabase-rest supabase-storage
+# All update together with launchkit pull
+launchkit pull supabase-kong supabase-auth supabase-rest supabase-storage
+launchkit up supabase-kong supabase-auth supabase-rest supabase-storage
 ```
 
 ### Update Troubleshooting
@@ -934,16 +934,16 @@ docker compose up -d supabase-kong supabase-auth supabase-rest supabase-storage
 
 ```bash
 # Check logs for specific error
-docker compose logs [service-name] --tail 100
+launchkit logs [service-name] --tail 100
 
 # Common fixes:
 # 1. Recreate service
-docker compose up -d --force-recreate [service-name]
+launchkit up --force-recreate [service-name]
 
 # 2. Clear cache and restart
-docker compose down
+launchkit down
 docker system prune -f
-docker compose up -d
+launchkit up
 
 # 3. Restore from backup if needed
 ```
@@ -952,7 +952,7 @@ docker compose up -d
 
 ```bash
 # PostgreSQL not starting
-docker compose logs postgres --tail 100
+launchkit logs postgres --tail 100
 
 # Common causes:
 # - Incompatible data format (see PostgreSQL section)

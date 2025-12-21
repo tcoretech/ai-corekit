@@ -807,7 +807,7 @@ docker ps | grep metabase_db
 
 # 5. Falls korrupt, Metabase-Datenbank zurücksetzen (verliert alle Einstellungen!)
 docker compose down metabase metabase_db
-docker volume rm localai_metabase_postgres
+docker volume rm ${PROJECT_NAME:-localai}_metabase_postgres
 docker compose up -d metabase metabase_db
 
 # Warte 2-3 Minuten für Initialisierung

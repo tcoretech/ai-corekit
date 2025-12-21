@@ -104,7 +104,3 @@ volumes:
   outline_postgres_data: {}
   outline_redis_data: {}
   dex_data: {}
-networks:
-  default:
-    name: localai_default
-    external: true

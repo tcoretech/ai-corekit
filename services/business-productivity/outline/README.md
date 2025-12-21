@@ -64,7 +64,7 @@ staticPasswords:
 
 3. Restart Dex:
 ```bash
-docker compose -p localai restart dex
+launchkit restart dex
 ```
 
 ### n8n Integration
@@ -354,7 +354,7 @@ docker exec outline-postgres pg_dump -U outline outline \
 
 # Backup MinIO data
 docker run --rm \
-  -v localai_outline_minio_data:/data \
+  -v ${PROJECT_NAME:-localai}_outline_minio_data:/data \
   -v $BACKUP_DIR:/backup \
   alpine tar czf /backup/minio-data.tar.gz /data
 ```
@@ -387,7 +387,7 @@ sed -i "s/^OUTLINE_SECRET_KEY=.*/OUTLINE_SECRET_KEY=\"$(openssl rand -hex 32)\"/
 sed -i "s/^OUTLINE_UTILS_SECRET=.*/OUTLINE_UTILS_SECRET=\"$(openssl rand -hex 32)\"/" .env
 
 # Restart Outline
-docker compose -p localai restart outline
+launchkit restart outline
 ```
 
 #### Database Connection Issues
@@ -442,9 +442,9 @@ file dex/config.yaml
 # Should output: "dex/config.yaml: ASCII text"
 
 # IMPORTANT: Container must be recreated, not just restarted
-docker compose -p localai stop dex
-docker compose -p localai rm -f dex
-docker compose -p localai up -d dex
+launchkit stop dex
+launchkit rm -f dex
+launchkit up -d dex
 
 # Verify Dex is running
 docker logs dex --tail 10

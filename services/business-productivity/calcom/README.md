@@ -659,7 +659,7 @@ Google Calendar integration allows:
 
 1. Stop Cal.com:
    ```bash
-   sudo docker compose -p localai stop calcom
+   sudo launchkit stop calcom
    ```
 
 2. Add to your `.env` file:
@@ -689,8 +689,8 @@ Google Calendar integration allows:
 4. Rebuild Cal.com:
    ```bash
    sudo bash scripts/build_calcom.sh
-   sudo docker compose -p localai build --no-cache calcom
-   sudo docker compose -p localai up -d calcom
+   sudo launchkit build --no-cache calcom
+   sudo launchkit up -d calcom
    ```
 
 ##### Method B: Database Update (Advanced)
@@ -804,10 +804,10 @@ sudo docker logs -f calcom --tail 100
 sudo docker exec postgres psql -U postgres -d calcom -c "\dt"
 
 # Restart Cal.com
-sudo docker compose -p localai restart calcom
+sudo launchkit restart calcom
 
 # Force rebuild
-sudo docker compose -p localai build --no-cache calcom
+sudo launchkit build --no-cache calcom
 ```
 
 ## Configuration Options

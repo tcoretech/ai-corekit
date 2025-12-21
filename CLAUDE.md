@@ -23,62 +23,49 @@ This is **AI LaunchKit**: a comprehensive Docker Compose-based toolkit that crea
 ### Installation and Updates
 ```bash
 # Main installation (from project root)
-sudo bash ./scripts/install.sh
+launchkit init
+launchkit config
+launchkit up
 
 # Update all services to latest versions
-sudo bash ./scripts/update.sh
-
-# Clean up unused Docker resources
-sudo bash ./scripts/cleanup.sh
+launchkit update
 ```
 
 ### Docker Operations
 ```bash
 # View running services
-docker compose ps
+launchkit ps
 
 # View logs for specific service
-docker compose logs [service-name]
+launchkit logs [service-name]
 
-# Restart services with specific profiles
-docker compose --profile n8n --profile ai-dev up -d
+# Restart services
+launchkit restart
 
 # Stop all services
-docker compose down
-```
-
-### Python Helper Script
-```bash
-# Start services with automatic profile detection
-python3 start_services.py
+launchkit down
 ```
 
 ### Service Management
 ```bash
-# Apply configuration updates to running services
-sudo bash ./scripts/apply_update.sh
-
-# View all available Docker Compose profiles
-grep -E '^\s*profiles:' docker-compose.yml
+# Enable a service
+launchkit enable [service-name]
 
 # Check service health status
-docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+launchkit ps
 ```
 
 ## Architecture
 
 ### Core Installation Flow
-The installation follows a strict 6-step sequence managed by `scripts/install.sh`:
-1. **01_system_preparation.sh** - Updates system, installs dependencies, configures security
-2. **02_install_docker.sh** - Installs Docker Engine and Docker Compose
-3. **03_generate_secrets.sh** - Creates .env file with secure passwords and keys
-4. **04_wizard.sh** - Interactive service selection with whiptail UI (20+ services)
-5. **05_run_services.sh** - Deploys selected services using Docker Compose profiles
-6. **06_final_report.sh** - Displays access URLs and credentials
+The installation follows a sequence managed by `launchkit`:
+1. **init** - Updates system, installs Docker, generates secrets (`lib/system/`, `lib/services/`)
+2. **config** - Interactive service selection (`lib/config/wizard.sh`)
+3. **up** - Deploys selected services (`lib/services/up.sh`)
 
 ### Docker Compose Architecture
 - **Profiles**: Services organized into logical groups (n8n, ai-dev, monitoring, langfuse, ollama, speech, etc.)
-- **Environment**: All configuration through `.env` file generated during installation
+- **Environment**: All configuration through `.env` files generated during installation
 - **Volumes**: Named volumes for data persistence across container rebuilds
 - **Networks**: All services on default Docker network with internal service discovery
 
@@ -111,7 +98,7 @@ The installation follows a strict 6-step sequence managed by `scripts/install.sh
 - Persistent storage for generated content (images, documents, models)
 
 ### AI Service Configuration
-- **ComfyUI**: Models stored in `/var/lib/docker/volumes/localai_comfyui_data/_data/models/`
+- **ComfyUI**: Models stored in `/var/lib/docker/volumes/${PROJECT_NAME:-localai}_comfyui_data/_data/models/`
 - **Ollama**: Models persist in `ollama_data` volume
 - **Speech Stack**: Uses ports 8001 (Whisper) and 5001 (TTS)
 - **Vector DBs**: Qdrant on port 6333, Supabase includes pgvector

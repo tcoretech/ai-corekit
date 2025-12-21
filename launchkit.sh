@@ -29,6 +29,13 @@ else
     exit 1
 fi
 
+if [ -f "$LIB_DIR/utils/stack.sh" ]; then
+    source "$LIB_DIR/utils/stack.sh"
+else
+    echo "Error: stack.sh not found in $LIB_DIR/utils/stack.sh"
+    exit 1
+fi
+
 # Helper: Load Environment
 load_env() {
     if [ -f "$GLOBAL_ENV" ]; then
@@ -217,13 +224,112 @@ cmd_down() {
     fi
 }
 
-# Command: Update
-cmd_update() {
-    if [ -f "$LIB_DIR/services/update.sh" ]; then
-        bash "$LIB_DIR/services/update.sh" "$@"
+# Helper: Get Compose Files for Stack
+# Usage: get_stack_compose_files <stack_name>
+# Returns array of -f flags in global COMPOSE_FLAGS variable
+get_stack_compose_files() {
+    local stack="$1"
+    local services=$(get_stack_services "$stack")
+    
+    COMPOSE_FLAGS=("-f" "$PROJECT_ROOT/docker-compose.yml")
+    
+    for service in $services; do
+        # Optimization: assume structure services/category/service
+        # Or use find. Find is safer.
+        local service_dir=$(find "$PROJECT_ROOT/services" -name "$service" -type d | head -n 1)
+        if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
+            COMPOSE_FLAGS+=("-f" "$service_dir/docker-compose.yml")
+        fi
+    done
+}
+
+# Generic Docker Compose Wrapper
+# Usage: run_compose_cmd <command> [args...]
+run_compose_cmd() {
+    local cmd="$1"
+    shift
+    
+    local stack="core"
+    local project=""
+    local compose_args=()
+    
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -s|--stack)
+                shift
+                if [ -n "$1" ]; then
+                    stack="$1"
+                    shift
+                fi
+                ;;
+            -p|--project)
+                shift
+                if [ -n "$1" ]; then
+                    project="$1"
+                    shift
+                fi
+                ;;
+            *)
+                compose_args+=("$1")
+                shift
+                ;;
+        esac
+    done
+    
+    if [ -n "$project" ]; then
+        PROJECT_NAME="$project"
     else
-        log_error "Update script not found."
+        load_stack_config "$stack"
     fi
+    
+    # Gather compose files if we are using a stack
+    # If project is manually specified, we might not know the stack, so we default to core or just root compose?
+    # If we don't provide -f, docker compose might fail to find services.
+    # We'll try to load files from the stack if project is not manually overridden OR if stack is explicitly provided.
+    
+    get_stack_compose_files "$stack"
+    
+    docker compose -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" "${COMPOSE_FLAGS[@]}" "$cmd" "${compose_args[@]}"
+}
+
+# Command: Logs
+cmd_logs() {
+    run_compose_cmd logs "$@"
+}
+
+# Command: PS
+cmd_ps() {
+    run_compose_cmd ps "$@"
+}
+
+# Command: Restart
+cmd_restart() {
+    run_compose_cmd restart "$@"
+}
+
+# Command: Exec
+cmd_exec() {
+    run_compose_cmd exec "$@"
+}
+
+# Command: Pull
+cmd_pull() {
+    run_compose_cmd pull "$@"
+}
+
+# Command: Build
+cmd_build() {
+    run_compose_cmd build "$@"
+}
+
+# Command: Stop
+cmd_stop() {
+    run_compose_cmd stop "$@"
+}
+
+# Command: Rm
+cmd_rm() {
+    run_compose_cmd rm "$@"
 }
 
 # Command: Help
@@ -235,8 +341,16 @@ cmd_help() {
     echo "  init          Initialize the system (install dependencies)"
     echo "  config        Run configuration wizard"
     echo "  enable        Enable services or stacks (e.g. enable service1 -s stack1)"
-    echo "  up            Start services (alias for run_services.sh)"
+    echo "  up            Start services"
     echo "  down          Stop services"
+    echo "  restart       Restart services"
+    echo "  stop          Stop services (without removing)"
+    echo "  build         Build services"
+    echo "  rm            Remove stopped containers"
+    echo "  logs          View service logs"
+    echo "  ps            List running services"
+    echo "  exec          Execute command in container"
+    echo "  pull          Pull service images"
     echo "  update        Update the system"
     echo "  credentials   Manage credentials (download|export)"
     echo "  <service>     Run a service-specific command (e.g., launchkit ssh ...)"
@@ -262,6 +376,30 @@ case "$COMMAND" in
         ;;
     down)
         cmd_down "$@"
+        ;;
+    restart)
+        cmd_restart "$@"
+        ;;
+    stop)
+        cmd_stop "$@"
+        ;;
+    build)
+        cmd_build "$@"
+        ;;
+    rm)
+        cmd_rm "$@"
+        ;;
+    logs)
+        cmd_logs "$@"
+        ;;
+    ps)
+        cmd_ps "$@"
+        ;;
+    exec)
+        cmd_exec "$@"
+        ;;
+    pull)
+        cmd_pull "$@"
         ;;
     update)
         cmd_update "$@"

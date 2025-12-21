@@ -107,7 +107,3 @@ volumes:
   mautic_redis_data: {}
   mautic_data: {}
   mautic_db_data: {}
-networks:
-  default:
-    name: localai_default
-    external: true

@@ -15,9 +15,5 @@ services:
     volumes:
     - ~/.flowise:/root/.flowise
     entrypoint: /bin/sh -c "sleep 3; flowise start"
-networks:
-  default:
-    name: localai_default
-    external: true
 volumes:
   ~/.flowise: {}

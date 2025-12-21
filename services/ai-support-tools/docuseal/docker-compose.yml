@@ -34,7 +34,3 @@ services:
 volumes:
   docuseal_data: {}
   docuseal_postgres_data: {}
-networks:
-  default:
-    name: localai_default
-    external: true

@@ -26,10 +26,5 @@ services:
       retries: 3
       start_period: 60s
 
-networks:
-  default:
-    name: localai_default
-    external: true
-
 volumes:
   mysql_data: {}

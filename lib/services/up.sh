@@ -34,6 +34,9 @@ load_env() {
         export "$key"="${ALL_ENV_VARS[$key]}"
     done
     
+    # Mark environment as loaded to prevent re-scanning in subprocesses
+    export LAUNCHKIT_ENV_LOADED=true
+    
     # Restore PROJECT_ROOT if it was clobbered
     if [ -z "$PROJECT_ROOT" ] && [ -n "$SAVED_PROJECT_ROOT" ]; then
         PROJECT_ROOT="$SAVED_PROJECT_ROOT"

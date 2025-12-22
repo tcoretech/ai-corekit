@@ -187,7 +187,9 @@ load_all_env() {
     log_info "Loading environment for $(basename "$service_dir")..."
 
     # Load all environment context if not already loaded
-    if [[ ${#ALL_ENV_VARS[@]} -eq 0 ]]; then
+    # Optimization: If LAUNCHKIT_ENV_LOADED is true, we assume variables are already in the environment
+    # and we skip the expensive file scan.
+    if [[ ${#ALL_ENV_VARS[@]} -eq 0 && "$LAUNCHKIT_ENV_LOADED" != "true" ]]; then
         load_all_envs
     fi
     
@@ -217,8 +219,11 @@ load_all_env() {
             
             if [[ -z "${SERVICE_ENV_VARS[$key]}" ]]; then
                  # Try inheritance first
+                 # Check ALL_ENV_VARS map OR current environment variable (indirect reference)
                  if [[ -n "${ALL_ENV_VARS[$key]}" ]]; then
                      SERVICE_ENV_VARS["$key"]="${ALL_ENV_VARS[$key]}"
+                 elif [[ -n "${!key}" ]]; then
+                     SERVICE_ENV_VARS["$key"]="${!key}"
                  else
                      SERVICE_ENV_VARS["$key"]="$default_val"
                  fi

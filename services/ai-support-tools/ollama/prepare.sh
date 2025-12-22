@@ -16,11 +16,8 @@ if [[ -t 0 ]]; then
     
     # Check if already configured
     if [ -f "$ENV_FILE" ] && grep -q "OLLAMA_HARDWARE_PROFILE" "$ENV_FILE"; then
-        log_info "Ollama is already configured."
-        read -p "Do you want to reconfigure? [y/N]: " RECONFIGURE
-        if [[ ! "$RECONFIGURE" =~ ^[Yy]$ ]]; then
-            exit 0
-        fi
+        log_info "Ollama is already configured. Skipping hardware selection."
+        exit 0
     fi
 
     echo "Select hardware acceleration for Ollama:"

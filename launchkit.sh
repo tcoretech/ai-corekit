@@ -175,6 +175,99 @@ cmd_enable() {
     log_info "Current profiles: $new_profiles"
 }
 
+# Command: Disable
+cmd_disable() {
+    local services_to_disable=()
+    
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -s|--stack)
+                shift
+                if [ -z "$1" ]; then log_error "Stack name required"; exit 1; fi
+                local stack_services=$(get_stack_services "$1")
+                if [ $? -eq 0 ]; then
+                    for s in $stack_services; do services_to_disable+=("$s"); done
+                fi
+                shift
+                ;;
+            *)
+                services_to_disable+=("$1")
+                shift
+                ;;
+        esac
+    done
+    
+    if [ ${#services_to_disable[@]} -eq 0 ]; then
+        log_error "No services specified to disable."
+        exit 1
+    fi
+    
+    load_env
+    local current_profiles="${COMPOSE_PROFILES:-}"
+    local new_profiles=""
+    
+    # Convert comma-separated string to array
+    IFS=',' read -ra profile_array <<< "$current_profiles"
+    
+    for p in "${profile_array[@]}"; do
+        local keep=true
+        for s in "${services_to_disable[@]}"; do
+            if [ "$p" == "$s" ]; then
+                keep=false
+                break
+            fi
+        done
+        
+        if [ "$keep" = true ]; then
+            if [ -z "$new_profiles" ]; then
+                new_profiles="$p"
+            else
+                new_profiles="$new_profiles,$p"
+            fi
+        fi
+    done
+    
+    # Update .env.global
+    if [ -f "$GLOBAL_ENV" ]; then
+        if grep -q "^COMPOSE_PROFILES=" "$GLOBAL_ENV"; then
+            local tmp_env=$(mktemp)
+            sed "s|^COMPOSE_PROFILES=.*|COMPOSE_PROFILES=\"$new_profiles\"|" "$GLOBAL_ENV" > "$tmp_env"
+            mv "$tmp_env" "$GLOBAL_ENV"
+        else
+            echo "COMPOSE_PROFILES=\"$new_profiles\"" >> "$GLOBAL_ENV"
+        fi
+    else
+        echo "COMPOSE_PROFILES=\"$new_profiles\"" > "$GLOBAL_ENV"
+    fi
+    
+    log_success "Disabled services: ${services_to_disable[*]}"
+    log_info "Current profiles: $new_profiles"
+}
+
+# Command: Run
+cmd_run() {
+    local service_name="$1"
+    if [ -n "$1" ]; then
+        shift
+    fi
+    
+    if [ -z "$service_name" ]; then
+        log_error "Service name required."
+        exit 1
+    fi
+    
+    # Search for a service with this name
+    local found_service=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -type d -name "$service_name" | head -n 1)
+    
+    if [ -n "$found_service" ] && [ -f "$found_service/cli.sh" ]; then
+        log_info "Delegating to service CLI: $service_name"
+        bash "$found_service/cli.sh" "$@"
+    else
+        log_error "Service '$service_name' not found or does not have a CLI."
+        exit 1
+    fi
+}
+
 # Command: Up
 cmd_up() {
     if [ -f "$LIB_DIR/services/up.sh" ]; then
@@ -452,6 +545,7 @@ cmd_help() {
     echo "  init          Initialize the system (install dependencies)"
     echo "  config        Run configuration wizard"
     echo "  enable        Enable services or stacks (e.g. enable service1 -s stack1)"
+    echo "  disable       Disable services or stacks"
     echo "  up            Start services"
     echo "  down          Stop services"
     echo "  restart       Restart services"
@@ -464,7 +558,7 @@ cmd_help() {
     echo "  pull          Pull service images"
     echo "  update        Update the system"
     echo "  credentials   Manage credentials (download|export)"
-    echo "  <service>     Run a service-specific command (e.g., launchkit ssh ...)"
+    echo "  run <service> Run a service-specific command (e.g., launchkit run ssh ...)"
     echo "  help          Show this help message"
 }
 
@@ -481,6 +575,9 @@ case "$COMMAND" in
         ;;
     enable)
         cmd_enable "$@"
+        ;;
+    disable)
+        cmd_disable "$@"
         ;;
     up)
         cmd_up "$@"
@@ -518,6 +615,9 @@ case "$COMMAND" in
     credentials)
         cmd_credentials "$@"
         ;;
+    run)
+        cmd_run "$@"
+        ;;
     help|--help|-h)
         cmd_help
         ;;
@@ -526,21 +626,8 @@ case "$COMMAND" in
         exit 1
         ;;
     *)
-        # Check for service-specific CLI
-        # Search for a service with this name (directory name match)
-        # We search in all service subdirectories
-        
-        SERVICE_CLI=""
-        # Optimization: Check common paths first or use find
-        FOUND_SERVICE=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -type d -name "$COMMAND" | head -n 1)
-        
-        if [ -n "$FOUND_SERVICE" ] && [ -f "$FOUND_SERVICE/cli.sh" ]; then
-            log_info "Delegating to service CLI: $COMMAND"
-            bash "$FOUND_SERVICE/cli.sh" "$@"
-        else
-            echo "Unknown command: $COMMAND"
-            cmd_help
-            exit 1
-        fi
+        echo "Unknown command: $COMMAND"
+        cmd_help
+        exit 1
         ;;
 esac

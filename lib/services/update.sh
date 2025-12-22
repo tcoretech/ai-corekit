@@ -76,6 +76,22 @@ else
     cd "$PROJECT_ROOT"
     
     if [ "$NO_RESET" = false ]; then
+        # Check for local changes
+        if [ -n "$(git status --porcelain)" ]; then
+            log_warning "Local changes detected in the repository."
+            git status --short
+            
+            if [[ -t 0 ]]; then
+                echo ""
+                read -p "⚠️  WARNING: Update will DISCARD all local changes. Proceed? [y/N]: " CONFIRM
+                if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                    log_info "Update aborted. Use 'launchkit update --no-reset' to pull changes without resetting."
+                    exit 0
+                fi
+            else
+                log_info "Non-interactive terminal detected. Proceeding with reset..."
+            fi
+        fi
         git reset --hard HEAD || log_warning "Failed to reset repository."
     fi
     

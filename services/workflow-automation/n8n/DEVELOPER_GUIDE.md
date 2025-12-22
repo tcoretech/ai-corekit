@@ -163,7 +163,7 @@ VARS_TO_GENERATE=(
 3. Updates `COMPOSE_PROFILES` with selected services
 4. Writes back to `.env` file
 
-> 🤖 **AI Context Note**: The wizard modifies ONLY the COMPOSE_PROFILES variable in .env. Service profiles must match exactly with those defined in docker-compose.yml. The wizard handles Ollama variants specially - only one variant (cpu, gpu-nvidia, gpu-amd) can be selected. When adding new services, you must add them to both base_services_data array here AND as a profile in docker-compose.yml.
+> 🤖 **AI Context Note**: The wizard modifies ONLY the COMPOSE_PROFILES variable in .env. Service profiles must match exactly with those defined in the service's docker-compose.yml. The wizard handles Ollama variants specially - only one variant (cpu, gpu-nvidia, gpu-amd) can be selected. When adding new services, you must add them to both base_services_data array here AND ensure they are configured in their respective service directory.
 
 ---
 
@@ -173,7 +173,7 @@ VARS_TO_GENERATE=(
 
 **Checks Performed**:
 1. `.env` file exists
-2. `docker-compose.yml` exists
+2. Service `docker-compose.yml` exists
 3. `Caddyfile` exists
 4. Docker daemon is running
 5. `start_services.py` is executable
@@ -213,7 +213,7 @@ def prepare_dify_env()       # Maps variables from root .env to service-specific
 def stop_existing_containers()  # Stops all containers with proper profiles
 def start_supabase()            # Starts Supabase with external compose file
 def start_dify()                # Starts Dify with external compose file
-def start_local_services()      # Starts main services from docker-compose.yml
+def start_local_services()      # Starts main services from service directories
 ```
 
 #### Special Handling:
@@ -487,7 +487,7 @@ Multiple services share Postgres and Redis instances when possible.
 > 3. **Preserve user data**: The .env file contains user-specific configuration - always back up before modifications
 > 4. **Use existing patterns**: Follow the established patterns for adding new services
 > 5. **Test changes incrementally**: Make small changes and test before proceeding
-> 6. **Check profile consistency**: Service profiles must match between wizard, docker-compose.yml, and COMPOSE_PROFILES
+> 6. **Check profile consistency**: Service profiles must match between wizard, service docker-compose.yml, and COMPOSE_PROFILES
 > 7. **Document all changes**: Update this documentation when modifying the system
 > 8. **Consider resource usage**: Each service consumes memory - warn users about requirements
 > 9. **Maintain idempotency**: Any script modifications must be safely re-runnable
@@ -498,7 +498,7 @@ Multiple services share Postgres and Redis instances when possible.
 ## 📚 Quick Reference for AI Assistants
 
 ### Adding a New Service Checklist:
-- [ ] Add service definition to `docker-compose.yml` with profile
+- [ ] Add service definition to service `docker-compose.yml` with profile
 - [ ] Add hostname variable to `.env.example`
 - [ ] Add password generation to `03_generate_secrets.sh` VARS_TO_GENERATE
 - [ ] Add service to `04_wizard.sh` base_services_data array

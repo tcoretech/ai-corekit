@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   scriberr:
     image: ghcr.io/rishikanthc/scriberr:latest
@@ -8,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - scriberr_data:/app/data
-    - ../../shared-resources/shared/audio:/app/data/uploads
+    - ${PROJECT_ROOT}/services/shared-resources/shared/audio:/app/data/uploads
     environment:
     - HOST=0.0.0.0
     - PORT=8080

@@ -170,13 +170,13 @@ if [ $exit_status -eq 0 ]; then
     if [ -f "$GLOBAL_ENV" ]; then
         if grep -q "^COMPOSE_PROFILES=" "$GLOBAL_ENV"; then
             TMP_ENV=$(mktemp)
-            sed "s|^COMPOSE_PROFILES=.*|COMPOSE_PROFILES=\"$NEW_PROFILES\"|" "$GLOBAL_ENV" > "$TMP_ENV"
+            sed "s|^COMPOSE_PROFILES=.*|COMPOSE_PROFILES='$NEW_PROFILES'|" "$GLOBAL_ENV" > "$TMP_ENV"
             mv "$TMP_ENV" "$GLOBAL_ENV"
         else
-            echo "COMPOSE_PROFILES=\"$NEW_PROFILES\"" >> "$GLOBAL_ENV"
+            echo "COMPOSE_PROFILES='$NEW_PROFILES'" >> "$GLOBAL_ENV"
         fi
     else
-        echo "COMPOSE_PROFILES=\"$NEW_PROFILES\"" > "$GLOBAL_ENV"
+        echo "COMPOSE_PROFILES='$NEW_PROFILES'" > "$GLOBAL_ENV"
     fi
     
     log_success "Configuration updated in $GLOBAL_ENV"

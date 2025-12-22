@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - espocrm_data:/var/www/html
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
     - ESPOCRM_DATABASE_PLATFORM=Mysql
     - ESPOCRM_DATABASE_HOST=espocrm-db

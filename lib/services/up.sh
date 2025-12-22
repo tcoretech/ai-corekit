@@ -2,25 +2,41 @@
 set -e
 
 # Source utilities
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+# Resolve real path if symlinked
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Debug
+# echo "DEBUG: SCRIPT_DIR=$SCRIPT_DIR"
+# echo "DEBUG: PROJECT_ROOT=$PROJECT_ROOT"
+
 source "$PROJECT_ROOT/lib/utils/logging.sh"
+source "$PROJECT_ROOT/lib/utils/secrets.sh"
 source "$PROJECT_ROOT/lib/utils/stack.sh"
 CONFIG_DIR="$PROJECT_ROOT/config"
 GLOBAL_ENV="$CONFIG_DIR/.env.global"
 
 # Helper: Load Environment
 load_env() {
-    if [ -f "$GLOBAL_ENV" ]; then
-        set -a
-        source "$GLOBAL_ENV"
-        set +a
-    fi
-    # Also load root .env for backward compatibility or overrides
-    if [ -f "$PROJECT_ROOT/.env" ]; then
-        set -a
-        source "$PROJECT_ROOT/.env"
-        set +a
+    # Save PROJECT_ROOT before loading env, as env might overwrite it with empty string
+    local SAVED_PROJECT_ROOT="$PROJECT_ROOT"
+    
+    load_all_envs
+    
+    # Export all loaded variables
+    for key in "${!ALL_ENV_VARS[@]}"; do
+        export "$key"="${ALL_ENV_VARS[$key]}"
+    done
+    
+    # Restore PROJECT_ROOT if it was clobbered
+    if [ -z "$PROJECT_ROOT" ] && [ -n "$SAVED_PROJECT_ROOT" ]; then
+        PROJECT_ROOT="$SAVED_PROJECT_ROOT"
     fi
 }
 
@@ -60,16 +76,63 @@ done
 
 load_env
 
+# Helper: Resolve Dependencies
+resolve_dependencies() {
+    local service="$1"
+    local service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+    
+    if [ -n "$service_dir" ] && [ -f "$service_dir/service.json" ]; then
+        # Extract depends_on array using grep/sed/tr since we don't have jq guaranteed
+        # This is a simple parser and assumes standard formatting
+        local deps=$(grep -A 10 '"depends_on":' "$service_dir/service.json" | grep '"' | grep -v "depends_on" | tr -d ' ",' | tr '\n' ' ')
+        echo "$deps"
+    fi
+}
+
 # Determine services to run
 if [ "$USE_SPECIFIC" = true ]; then
-    # Use provided list
-    # Deduplicate
-    sorted_unique_ids=($(echo "${SERVICES_TO_START[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-    SERVICES_TO_START=("${sorted_unique_ids[@]}")
+    # Resolve dependencies recursively
+    # Simple iterative approach to resolve dependencies
+    # Max depth 5 to prevent infinite loops
+    for i in {1..5}; do
+        NEW_SERVICES=()
+        for s in "${SERVICES_TO_START[@]}"; do
+            deps=$(resolve_dependencies "$s")
+            # Add dependencies BEFORE the service
+            for d in $deps; do
+                NEW_SERVICES+=("$d")
+            done
+            NEW_SERVICES+=("$s")
+        done
+        SERVICES_TO_START=("${NEW_SERVICES[@]}")
+    done
+
+    # Deduplicate preserving order (keep first occurrence)
+    # This ensures dependencies (added before) stay before the services that need them
+    UNIQUE_SERVICES=()
+    declare -A SEEN_SERVICES
+    for s in "${SERVICES_TO_START[@]}"; do
+        if [ -z "${SEEN_SERVICES[$s]}" ]; then
+            UNIQUE_SERVICES+=("$s")
+            SEEN_SERVICES[$s]=1
+        fi
+    done
+    SERVICES_TO_START=("${UNIQUE_SERVICES[@]}")
+
+    # Update profiles
+    log_info "Updating enabled profiles..."
+    for s in "${SERVICES_TO_START[@]}"; do
+        enable_service_profile "$s"
+    done
+    
+    # Reload COMPOSE_PROFILES to ensure docker compose sees the changes
+    if [ -f "$GLOBAL_ENV" ]; then
+        export COMPOSE_PROFILES=$(grep "^COMPOSE_PROFILES=" "$GLOBAL_ENV" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    fi
 else
     # Use configured profiles
     if [ -z "$COMPOSE_PROFILES" ]; then
-        log_warning "No services enabled in configuration. Use 'launchkit config' or 'launchkit enable'."
+        log_warning "No services a in configuration. Use 'launchkit config' or 'launchkit enable'."
         exit 0
     fi
     IFS=',' read -ra SERVICES_TO_START <<< "$COMPOSE_PROFILES"
@@ -95,16 +158,40 @@ export PROJECT_NAME
 log_info "Running preparation and build hooks..."
 for service in "${SERVICES_TO_START[@]}"; do
     # Find service directory
-    service_dir=$(find "$PROJECT_ROOT/services" -name "$service" -type d | head -n 1)
+    # Look for services/<category>/<service>
+    # Use find with explicit path to avoid empty PROJECT_ROOT issues
+    if [ -z "$PROJECT_ROOT" ]; then
+        log_error "PROJECT_ROOT is not defined."
+        exit 1
+    fi
+    
+    service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+    
     if [ -z "$service_dir" ]; then
         log_warning "Service directory not found for: $service"
         continue
+    fi
+    
+    # Load Service Environment
+    if [ -f "$service_dir/.env" ]; then
+        log_info "[$service] Loading environment variables..."
+        set -a
+        source "$service_dir/.env"
+        set +a
     fi
     
     # Secrets Generation
     if [ -f "$service_dir/secrets.sh" ]; then
         log_info "[$service] Checking secrets..."
         bash "$service_dir/secrets.sh"
+        
+        # Re-load environment to pick up generated secrets
+        if [ -f "$service_dir/.env" ]; then
+            log_info "[$service] Reloading environment variables..."
+            set -a
+            source "$service_dir/.env"
+            set +a
+        fi
     fi
 
     # Prepare Hook
@@ -120,24 +207,23 @@ for service in "${SERVICES_TO_START[@]}"; do
     fi
 done
 
-# 2. Construct Docker Compose Command
-COMPOSE_FILES=("-f" "$PROJECT_ROOT/docker-compose.yml")
+# 2. Run Docker Compose Up
+log_info "Bringing up services..."
 
 for service in "${SERVICES_TO_START[@]}"; do
-    service_dir=$(find "$PROJECT_ROOT/services" -name "$service" -type d | head -n 1)
+    service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
     if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
-        COMPOSE_FILES+=("-f" "$service_dir/docker-compose.yml")
+        log_info "[$service] Starting..."
+        # Run docker compose with project directory set to service directory
+        # This allows relative paths in docker-compose.yml to work correctly
+        docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" up -d
     fi
 done
 
-# 3. Run Docker Compose Up
-log_info "Bringing up services..."
-docker compose -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" "${COMPOSE_FILES[@]}" up -d "${SERVICES_TO_START[@]}"
-
-# 4. Startup Hooks
+# 3. Startup Hooks
 log_info "Running startup hooks..."
 for service in "${SERVICES_TO_START[@]}"; do
-    service_dir=$(find "$PROJECT_ROOT/services" -name "$service" -type d | head -n 1)
+    service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
     if [ -n "$service_dir" ] && [ -f "$service_dir/startup.sh" ]; then
         log_info "[$service] Running startup hook..."
         bash "$service_dir/startup.sh"

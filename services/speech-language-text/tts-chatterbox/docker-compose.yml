@@ -21,8 +21,8 @@ services:
     restart: unless-stopped
     volumes:
     - chatterbox_models:/app/models
-    - ../../shared-resources/shared/tts/voices:/app/voice-samples
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared/tts/voices:/app/voice-samples
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
     - DEVICE=${CHATTERBOX_DEVICE:-cpu}
     - EXAGGERATION=${CHATTERBOX_EXAGGERATION:-0.5}

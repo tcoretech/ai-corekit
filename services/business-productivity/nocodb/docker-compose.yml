@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - nocodb_data:/usr/app/data
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
     - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/nocodb
     - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}

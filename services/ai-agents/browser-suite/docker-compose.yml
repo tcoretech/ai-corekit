@@ -56,8 +56,8 @@ services:
     - ENABLE_OPENAI=true
     - LOG_LEVEL=INFO
     volumes:
-    - ../../shared-resources/shared/skyvern-artifacts:/data/artifacts
-    - ../../shared-resources/shared/skyvern-videos:/data/videos
+    - ${PROJECT_ROOT}/services/shared-resources/shared/skyvern-artifacts:/data/artifacts
+    - ${PROJECT_ROOT}/services/shared-resources/shared/skyvern-videos:/data/videos
     depends_on:
       skyvern-postgres:
         condition: service_healthy
@@ -82,7 +82,7 @@ services:
     - OPENAI_API_KEY=${OPENAI_API_KEY}
     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
-    - ../../shared-resources/shared:/workspace
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/workspace
     - browser-use-cache:/root/.cache
     depends_on:
     - browserless

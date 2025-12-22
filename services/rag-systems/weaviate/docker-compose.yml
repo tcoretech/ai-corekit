@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   weaviate:
     image: cr.weaviate.io/semitechnologies/weaviate:latest

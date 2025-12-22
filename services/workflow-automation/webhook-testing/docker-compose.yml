@@ -104,7 +104,7 @@ services:
     - RATE_LIMIT_MAX=100
     - VITE_ALLOWED_AUTH_PROVIDERS=EMAIL
     volumes:
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     depends_on:
       hoppscotch-db:
         condition: service_healthy

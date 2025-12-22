@@ -46,8 +46,7 @@ Portainer is a lightweight, open-source container management platform that provi
 3. Choose **Web editor**
 4. Paste this example:
    ```yaml
-   version: '3.8'
-   services:
+      services:
      nginx:
        image: nginx:alpine
        ports:

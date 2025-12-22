@@ -1,6 +1,6 @@
 {
     # Global options - works for both environments
-    email {$LETSENCRYPT_EMAIL}
+    email {$PRIMARY_EMAIL}
 }
 
 # Main Website (Base Domain)

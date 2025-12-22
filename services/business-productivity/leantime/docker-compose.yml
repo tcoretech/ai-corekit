@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   leantime:
     image: leantime/leantime:latest
@@ -37,7 +36,7 @@ services:
     - leantime-userfiles:/var/www/html/userfiles
     - leantime-plugins:/var/www/html/app/Plugins
     - leantime-logs:/var/www/html/storage/logs
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     depends_on:
       mysql:
         condition: service_healthy

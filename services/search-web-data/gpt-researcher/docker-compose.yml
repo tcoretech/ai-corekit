@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - gpt_researcher_data:/usr/src/app/outputs
-    - ../../shared-resources/shared/research:/usr/src/app/my-docs
+    - ${PROJECT_ROOT}/services/shared-resources/shared/research:/usr/src/app/my-docs
     environment:
     - OPENAI_API_KEY=${OPENAI_API_KEY}
     - LLM_PROVIDER=openai

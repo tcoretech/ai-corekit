@@ -44,12 +44,15 @@ services:
     volumes:
     - n8n_storage:/home/node/.n8n
     - ./backup:/backup
-    - ../../shared-resources/shared:/data/shared
-    - ../../shared-resources/media:/data/media
-    - ../../shared-resources/temp:/data/temp
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/media:/data/media
+    - ${PROJECT_ROOT}/services/shared-resources/temp:/data/temp
     depends_on:
       n8n-import:
         condition: service_completed_successfully
+    networks:
+      - default
+
   n8n-worker:
     build:
       context: .
@@ -92,16 +95,16 @@ services:
     command: worker
     volumes:
     - n8n_storage:/home/node/.n8n
-    - ../../shared-resources/shared:/data/shared
-    - ../../shared-resources/media:/data/media
-    - ../../shared-resources/temp:/data/temp
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/media:/data/media
+    - ${PROJECT_ROOT}/services/shared-resources/temp:/data/temp
     depends_on:
       n8n:
         condition: service_started
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
+      # redis:
+      #   condition: service_healthy
+      # postgres:
+      #   condition: service_healthy
     deploy:
       replicas: ${N8N_WORKER_COUNT:-1}
   n8n-runner:
@@ -120,7 +123,7 @@ services:
     - N8N_RUNNERS_PYTHON_ALLOW_BUILTIN=*
     - N8N_RUNNERS_PYTHON_ALLOW_EXTERNAL=
     volumes:
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     - ./task-runners.json:/etc/n8n-task-runners.json:ro
     depends_on:
       n8n:
@@ -143,7 +146,7 @@ services:
       start_period: 10s
   n8n-import:
     build:
-      context: ${PROJECT_ROOT}/n8n
+      context: .
       pull: true
     environment:
       DB_POSTGRESDB_DATABASE: postgres
@@ -186,8 +189,25 @@ services:
     volumes:
     - ./backup:/backup
     - ./n8n_import_script.sh:/scripts/n8n_import_script.sh:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # depends_on:
+      # postgres:
+      #   condition: service_healthy
+      # Redis and Postgres are external services in the same network
+      # We cannot depend on them directly if they are not in this compose file
+      # But we can assume they are running if we are starting n8n
+      # Empty depends_on is not valid in all versions, removing it
+      # []
+    # External dependencies
+    external_links:
+      - postgres
+      - redis
+    networks:
+      - default
+
 volumes:
   n8n_storage: {}
+
+networks:
+  default:
+    external: true
+    name: ${PROJECT_NAME:-localai}_default

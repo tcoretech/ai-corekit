@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - easyocr_models:/root/.EasyOCR/model
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
     - SECRET_KEY=${EASYOCR_SECRET_KEY:-launchkit}
     healthcheck:
@@ -27,7 +27,7 @@ services:
     - ocr
     restart: unless-stopped
     volumes:
-    - ../../shared-resources/shared:/tmp
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/tmp
     environment:
     - HTTP_LISTEN_PORT=8884
     - HTTP_UPLOAD_TMPDIR=/tmp

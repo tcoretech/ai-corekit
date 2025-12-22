@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   python-runner:
     image: python:3.11-slim

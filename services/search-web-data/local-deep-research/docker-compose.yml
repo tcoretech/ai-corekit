@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   local-deep-research:
     build:
@@ -10,7 +9,7 @@ services:
     restart: unless-stopped
     volumes:
     - ldr_data:/data
-    - ../../shared-resources/shared/research:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared/research:/data/shared
     environment:
     - LLM_PROVIDER=${LDR_LLM_PROVIDER:-ollama}
     - OLLAMA_BASE_URL=http://ollama:11434

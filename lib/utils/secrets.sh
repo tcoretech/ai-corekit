@@ -88,7 +88,12 @@ update_env_var() {
 declare -gA ALL_ENV_VARS
 
 get_project_root() {
-    echo "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
+    # If PROJECT_ROOT is already set, use it
+    if [[ -n "$PROJECT_ROOT" ]]; then
+        echo "$PROJECT_ROOT"
+        return
+    fi
+    echo "$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." &> /dev/null && pwd )"
 }
 
 _load_file_to_map() {
@@ -109,6 +114,7 @@ _load_file_to_map() {
 
 load_all_envs() {
     local project_root=$(get_project_root)
+    local specific_services=("${@}")
     
     # 0. Load Legacy Root .env (Lowest Priority)
     if [[ -f "$project_root/.env" ]]; then
@@ -125,10 +131,22 @@ load_all_envs() {
         ALL_ENV_VARS["PRIMARY_EMAIL"]="${ALL_ENV_VARS[LETSENCRYPT_EMAIL]}"
     fi
     
-    # 2. Load all service environments
-    while IFS= read -r env_file; do
-        _load_file_to_map "$env_file"
-    done < <(find "$project_root/services" -name ".env" -type f)
+    # 2. Load service environments
+    if [[ ${#specific_services[@]} -gt 0 ]]; then
+        # Load only specific services
+        for service in "${specific_services[@]}"; do
+            # Find service directory (maxdepth 2)
+            local s_dir=$(find "$project_root/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+            if [[ -n "$s_dir" && -f "$s_dir/.env" ]]; then
+                _load_file_to_map "$s_dir/.env"
+            fi
+        done
+    else
+        # Load all service environments (Legacy behavior)
+        while IFS= read -r env_file; do
+            _load_file_to_map "$env_file"
+        done < <(find "$project_root/services" -name ".env" -type f)
+    fi
     
     # Ensure PROJECT_ROOT is set in map
     ALL_ENV_VARS["PROJECT_ROOT"]="$project_root"
@@ -259,7 +277,7 @@ write_env_file() {
         if [[ "$line" == *"="* ]]; then
             local key=$(echo "$line" | cut -d'=' -f1 | xargs)
             local final_val="${SERVICE_ENV_VARS[$key]}"
-            echo "${key}=\"${final_val}\"" >> "$temp_file"
+            echo "${key}='${final_val}'" >> "$temp_file"
         else
             echo "$line" >> "$temp_file"
         fi

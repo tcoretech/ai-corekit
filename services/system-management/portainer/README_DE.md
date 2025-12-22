@@ -46,8 +46,7 @@ Portainer ist eine leichtgewichtige, Open-Source-Container-Management-Plattform,
 3. Wähle **Web editor**
 4. Füge dieses Beispiel ein:
    ```yaml
-   version: '3.8'
-   services:
+      services:
      nginx:
        image: nginx:alpine
        ports:

@@ -5,5 +5,8 @@
   "use_cases": "DSGVO compliance, German text processing, entity recognition",
   "interface": "Internal API",
   "source": "",
-  "depends_on": []
+  "depends_on": [
+    "postgres",
+    "redis"
+  ]
 }

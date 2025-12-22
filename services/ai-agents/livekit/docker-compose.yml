@@ -40,7 +40,7 @@ services:
     working_dir: /app
     volumes:
     - ./agents:/app
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
     - LIVEKIT_URL=ws://livekit-server:7880
     - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}

@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   opennotebook:
     image: lfnovo/open_notebook:v1-latest-single
@@ -20,7 +19,7 @@ services:
     volumes:
     - ${PROJECT_ROOT}/opennotebook/notebook_data:/app/data
     - ${PROJECT_ROOT}/opennotebook/surreal_data:/mydata
-    - ../../shared-resources/shared:/app/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/app/shared
     healthcheck:
       test:
       - CMD-SHELL

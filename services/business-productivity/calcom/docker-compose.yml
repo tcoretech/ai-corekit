@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   calcom:
     build:
@@ -35,7 +34,7 @@ services:
     - NODE_ENV=production
     volumes:
     - calcom_data:/app/data
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     depends_on:
       postgres:
         condition: service_healthy

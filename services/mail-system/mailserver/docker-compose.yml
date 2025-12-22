@@ -13,12 +13,12 @@ services:
     - 127.0.0.1:993:993
     - 127.0.0.1:143:143
     volumes:
-    - ./data/dms/mail-data/:/var/mail/
-    - ./data/dms/mail-state/:/var/mail-state/
-    - ./data/dms/config/:/tmp/docker-mailserver/
+    - ./data/dms/mail-data:/var/mail/
+    - ./data/dms/mail-state:/var/mail-state/
+    - ./data/dms/config:/tmp/docker-mailserver/
     - caddy-data:/certs/:ro
     - /etc/localtime:/etc/localtime:ro
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
     - LOG_LEVEL=info
     - SUPERVISOR_LOGLEVEL=warn
@@ -77,7 +77,5 @@ services:
         condition: on-failure
         delay: 15s
         max_attempts: 3
-    depends_on:
-    - caddy
 volumes:
   caddy-data: {}

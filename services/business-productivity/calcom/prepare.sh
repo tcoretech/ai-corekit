@@ -118,7 +118,7 @@ EOF
     if [[ -n "$GOOGLE_CREDS" ]]; then
         echo "" >> .env
         echo "# Google Calendar Integration" >> .env
-        echo "GOOGLE_API_CREDENTIALS=${GOOGLE_CREDS}" >> .env
+        echo "GOOGLE_API_CREDENTIALS='${GOOGLE_CREDS}'" >> .env
     fi
 fi
 

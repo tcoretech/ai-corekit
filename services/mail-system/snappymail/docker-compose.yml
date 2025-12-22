@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   snappymail:
     image: djmaze/snappymail:latest
@@ -8,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - snappymail_data:/var/lib/snappymail
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
     - UPLOAD_MAX_SIZE=25M
     - PHP_MEMORY_LIMIT=128M

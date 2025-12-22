@@ -8,7 +8,7 @@ services:
     volumes:
     - invoiceninja_public:/var/www/app/public
     - invoiceninja_storage:/var/www/app/storage
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
     - APP_ENV=production
     - APP_DEBUG=false

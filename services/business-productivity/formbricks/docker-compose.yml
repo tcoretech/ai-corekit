@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - formbricks_uploads:/home/nextjs/apps/web/uploads
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
     - WEBAPP_URL=https://${FORMBRICKS_HOSTNAME}
     - NEXTAUTH_URL=https://${FORMBRICKS_HOSTNAME}

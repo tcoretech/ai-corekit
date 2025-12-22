@@ -28,7 +28,7 @@ services:
     - WHISPER__CPU_THREADS=4
     volumes:
     - whisper-models:/root/.cache/huggingface
-    - ../../shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     healthcheck:
       test:
       - CMD

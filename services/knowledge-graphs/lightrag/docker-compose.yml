@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   lightrag:
     image: ghcr.io/hkuds/lightrag:latest
@@ -8,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - lightrag_data:/app/data/rag_storage
-    - ../../shared-resources/shared:/app/data/inputs
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/app/data/inputs
     environment:
     - OPENAI_API_KEY=${OPENAI_API_KEY}
     - LLM_BINDING=openai

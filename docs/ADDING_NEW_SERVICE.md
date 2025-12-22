@@ -46,7 +46,6 @@ This file registers your service with the LaunchKit system.
   "description": "A short description of what this service does",
   "category": "My Category",
   "version": "1.0.0",
-  "enabled": false,
   "dependencies": ["postgres"]
 }
 ```

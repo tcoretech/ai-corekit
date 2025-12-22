@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   ragapp:
     image: ragapp/ragapp:latest

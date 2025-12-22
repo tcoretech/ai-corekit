@@ -43,6 +43,12 @@ load_env() {
         source "$GLOBAL_ENV"
         set +a
     fi
+    # Also load root .env if it exists
+    if [ -f "$PROJECT_ROOT/.env" ]; then
+        set -a
+        source "$PROJECT_ROOT/.env"
+        set +a
+    fi
 }
 
 # Command: Init
@@ -231,12 +237,12 @@ get_stack_compose_files() {
     local stack="$1"
     local services=$(get_stack_services "$stack")
     
-    COMPOSE_FLAGS=("-f" "$PROJECT_ROOT/docker-compose.yml")
+    COMPOSE_FLAGS=()
     
     for service in $services; do
         # Optimization: assume structure services/category/service
         # Or use find. Find is safer.
-        local service_dir=$(find "$PROJECT_ROOT/services" -name "$service" -type d | head -n 1)
+        local service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
         if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
             COMPOSE_FLAGS+=("-f" "$service_dir/docker-compose.yml")
         fi
@@ -282,6 +288,8 @@ run_compose_cmd() {
         load_stack_config "$stack"
     fi
     
+    load_env
+
     # Gather compose files if we are using a stack
     # If project is manually specified, we might not know the stack, so we default to core or just root compose?
     # If we don't provide -f, docker compose might fail to find services.
@@ -299,7 +307,70 @@ cmd_logs() {
 
 # Command: PS
 cmd_ps() {
-    run_compose_cmd ps "$@"
+    local stack=""
+    local project=""
+    
+    # Parse args to find project/stack
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -s|--stack)
+                shift
+                if [ -n "$1" ]; then stack="$1"; fi
+                shift
+                ;;
+            -p|--project)
+                shift
+                if [ -n "$1" ]; then project="$1"; fi
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+    
+    load_env
+    
+    if [ -n "$project" ]; then
+        # Specific project requested
+        docker ps --filter "label=com.docker.compose.project=$project" --format "table {{.Label \"com.docker.compose.project\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | sed '1s/com.docker.compose.project/PROJECT/'
+    elif [ -n "$stack" ]; then
+        # Specific stack requested
+        load_stack_config "$stack"
+        docker ps --filter "label=com.docker.compose.project=$PROJECT_NAME" --format "table {{.Label \"com.docker.compose.project\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | sed '1s/com.docker.compose.project/PROJECT/'
+    else
+        # No specific project/stack, find all configured projects
+        local found_projects=()
+        
+        # Default project
+        found_projects+=("localai")
+        
+        # Scan stack files
+        if [ -d "$CONFIG_DIR/stacks" ]; then
+            # Enable nullglob to handle no matches
+            shopt -s nullglob
+            for stack_file in "$CONFIG_DIR/stacks"/*.yaml; do
+                if [ -f "$stack_file" ]; then
+                    local p_name=$(grep "^\s*project_name:" "$stack_file" | cut -d':' -f2 | tr -d ' "')
+                    if [ -n "$p_name" ]; then
+                        found_projects+=("$p_name")
+                    fi
+                fi
+            done
+            shopt -u nullglob
+        fi
+        
+        # Deduplicate
+        local unique_projects=($(echo "${found_projects[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+        local pattern=$(IFS="|"; echo "${unique_projects[*]}")
+        
+        # Use docker ps to list all running containers for the project(s)
+        # Include Project label in output
+        # We replace the first column header (which might be 'project' or 'com.docker.compose.project') with 'PROJECT'
+        docker ps --filter "label=com.docker.compose.project" --format "table {{.Label \"com.docker.compose.project\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | \
+        sed '1s/^[a-zA-Z0-9_.]*/PROJECT/' | \
+        grep -E "^(PROJECT|${pattern})\s"
+    fi
 }
 
 # Command: Restart

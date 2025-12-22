@@ -122,16 +122,17 @@ The installation follows a sequence managed by `launchkit`:
 
 ### Testing Profile Changes
 1. Update `COMPOSE_PROFILES` in `.env`
-2. Run `docker compose --profile [profiles] up -d`
-3. Check `docker compose ps` to verify services started
+2. Run `launchkit up`
+3. Check `launchkit ps` to verify services started
 
 ### Adding New AI Services
-1. Define service in `docker-compose.yml` with appropriate profile
-2. Add hostname variables to Caddy environment section
-3. Update `04_wizard.sh` to include in service selection
-4. Add Caddyfile routing if service needs web access
-5. Consider GPU requirements and volume mounts
-6. Document API endpoints and integration points
+1. Create a new service directory in `services/` following the structure in `docs/SERVICE_STRUCTURE_SPEC.md`
+2. Create `docker-compose.yml` in the service directory
+3. Add hostname variables to Caddy environment section (if applicable)
+4. Update `config/stacks/core.yaml` (or other stack) to include the service
+5. Add Caddyfile routing if service needs web access
+6. Consider GPU requirements and volume mounts
+7. Document API endpoints and integration points
 
 ### Working with AI Models
 - ComfyUI models: Download to model directories before use
@@ -196,7 +197,6 @@ The installation follows a sequence managed by `launchkit`:
 - The `.env` file contains all secrets and must never be committed
 - Services use Docker health checks - respect dependency conditions
 - Profile-based deployment allows selective service activation
-- When modifying `docker-compose.yml`, maintain the x-templates pattern
 - AI services may require significant resources (RAM, disk, GPU)
 - Community workflows are imported during installation (20-30 minutes)
 - Model downloads for ComfyUI/Ollama happen post-installation

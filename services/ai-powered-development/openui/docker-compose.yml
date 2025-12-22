@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   openui:
     image: ghcr.io/wandb/openui:latest
@@ -16,6 +15,6 @@ services:
     - OPENAI_COMPATIBLE_ENDPOINT=${OPENAI_COMPATIBLE_ENDPOINT:-}
     volumes:
     - ./data:/app/data
-    - ../../shared-resources/shared:/workspace
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/workspace
     extra_hosts:
     - host.docker.internal:host-gateway

@@ -547,7 +547,7 @@ cmd_help() {
     echo "  enable        Enable services or stacks (e.g. enable service1 -s stack1)"
     echo "  disable       Disable services or stacks"
     echo "  up            Start services"
-    echo "  down          Stop services"
+    echo "  down          Stop services (use --prune to stop disabled services)"
     echo "  restart       Restart services"
     echo "  stop          Stop services (without removing)"
     echo "  build         Build services"

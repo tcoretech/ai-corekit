@@ -112,6 +112,10 @@ if [ "$UPDATE_CONTAINERS" = true ]; then
     log_info "Updating containers..."
     load_env
     
+    # Prune disabled services
+    log_info "Pruning disabled services..."
+    bash "$PROJECT_ROOT/lib/services/down.sh" --prune
+    
     # Get enabled services
     IFS=',' read -ra ENABLED_SERVICES <<< "${COMPOSE_PROFILES:-}"
     

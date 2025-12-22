@@ -44,11 +44,16 @@ USE_SPECIFIC=false
 STACK_NAME="core"
 PROJECT_OVERRIDE=""
 FORCE_STOP=false
+PRUNE_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -f|--force)
             FORCE_STOP=true
+            shift
+            ;;
+        --prune)
+            PRUNE_MODE=true
             shift
             ;;
         -s|--stack)
@@ -76,6 +81,69 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Prune Mode Logic
+if [ "$PRUNE_MODE" = true ]; then
+    log_info "Checking for disabled services to prune..."
+    load_env
+    
+    # Get enabled services
+    IFS=',' read -ra ENABLED_SERVICES_ARRAY <<< "${COMPOSE_PROFILES:-}"
+    # Create associative array for fast lookup
+    declare -A ENABLED_MAP
+    for s in "${ENABLED_SERVICES_ARRAY[@]}"; do
+        ENABLED_MAP["$s"]=1
+    done
+    
+    # Determine project name for checking status
+    CHECK_PROJECT_NAME="localai"
+    if [ -n "$PROJECT_OVERRIDE" ]; then
+        CHECK_PROJECT_NAME="$PROJECT_OVERRIDE"
+    else
+        CHECK_PROJECT_NAME=$(get_stack_project_name "$STACK_NAME")
+    fi
+
+    # 1. Build Map: Docker Service Name -> Launchkit Service Name
+    declare -A DOCKER_TO_LAUNCHKIT
+    
+    # Find all docker-compose.yml files
+    # We use a loop to handle paths with spaces safely, though unlikely here
+    while IFS= read -r file; do
+        # Extract launchkit service name from path
+        # Path: .../services/<category>/<service_name>/docker-compose.yml
+        launchkit_svc=$(basename "$(dirname "$file")")
+        
+        # Extract docker service names from file
+        # Look for lines starting with 2 spaces and a name followed by colon
+        docker_svcs=$(grep "^  [a-zA-Z0-9_-]\+:" "$file" | sed 's/^  //;s/://')
+        
+        for d_svc in $docker_svcs; do
+            DOCKER_TO_LAUNCHKIT["$d_svc"]="$launchkit_svc"
+        done
+    done < <(find "$PROJECT_ROOT/services" -mindepth 3 -maxdepth 3 -name "docker-compose.yml")
+
+    # 2. Get Running Docker Services
+    RUNNING_DOCKER_SVCS=$(docker ps --filter "label=com.docker.compose.project=$CHECK_PROJECT_NAME" --format "{{.Label \"com.docker.compose.service\"}}" | sort -u)
+    
+    # 3. Check against Enabled Services
+    declare -A SERVICES_TO_STOP_MAP
+    
+    for d_svc in $RUNNING_DOCKER_SVCS; do
+        lk_svc="${DOCKER_TO_LAUNCHKIT[$d_svc]}"
+        
+        if [ -n "$lk_svc" ]; then
+            # Check if enabled
+            if [ -z "${ENABLED_MAP[$lk_svc]}" ]; then
+                if [ -z "${SERVICES_TO_STOP_MAP[$lk_svc]}" ]; then
+                    log_info "[$lk_svc] Found running service '$d_svc' but '$lk_svc' is disabled. Scheduling for stop."
+                    SERVICES_TO_STOP+=("$lk_svc")
+                    SERVICES_TO_STOP_MAP["$lk_svc"]=1
+                    USE_SPECIFIC=true
+                fi
+            fi
+        fi
+    done
+fi
+
 # Determine services to stop
 if [ "$USE_SPECIFIC" = true ]; then
     # Use provided list
@@ -100,6 +168,10 @@ fi
 load_env
 
 if [ ${#SERVICES_TO_STOP[@]} -eq 0 ]; then
+    if [ "$PRUNE_MODE" = true ]; then
+        log_info "No disabled services found running."
+        exit 0
+    fi
     log_error "No services to stop."
     exit 1
 fi
@@ -153,7 +225,8 @@ if [ "$USE_SPECIFIC" = true ]; then
         service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
         log_info "Found service dir: $service_dir"
         if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
-             docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" down
+             # Force enable all profiles to ensure the service is actually stopped/removed
+             COMPOSE_PROFILES="*" docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" down
         else
              log_error "Service directory or docker-compose.yml not found for $service"
         fi
@@ -168,7 +241,8 @@ else
     for service in "${SERVICES_TO_STOP[@]}"; do
         service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
         if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
-             docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" down
+             # Force enable all profiles to ensure the service is actually stopped/removed
+             COMPOSE_PROFILES="*" docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" down
         fi
     done
 fi

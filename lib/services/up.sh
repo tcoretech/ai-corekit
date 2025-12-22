@@ -153,6 +153,10 @@ else
         exit 0
     fi
     IFS=',' read -ra SERVICES_TO_START <<< "$COMPOSE_PROFILES"
+    
+    # Prune disabled services
+    log_info "Pruning disabled services..."
+    bash "$PROJECT_ROOT/lib/services/down.sh" --prune
 fi
 
 if [ ${#SERVICES_TO_START[@]} -eq 0 ]; then

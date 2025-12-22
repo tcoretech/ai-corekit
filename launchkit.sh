@@ -114,35 +114,7 @@ cmd_credentials() {
     esac
 }
 
-# Helper: Load Stack Config
-# Reads project_name from stack config
-load_stack_config() {
-    local stack="${1:-core}"
-    local stack_file="$CONFIG_DIR/stacks/$stack.yaml"
-    
-    if [ -f "$stack_file" ]; then
-        # Simple grep to extract project_name
-        # Assumes format "project_name: value"
-        PROJECT_NAME=$(grep "^project_name:" "$stack_file" | cut -d':' -f2 | tr -d ' "')
-    fi
-    
-    if [ -z "$PROJECT_NAME" ]; then
-        PROJECT_NAME="localai"
-    fi
-}
 
-# Helper: Get Services from Stack
-get_stack_services() {
-    local stack="$1"
-    local stack_file="$CONFIG_DIR/stacks/$stack.yaml"
-    if [ -f "$stack_file" ]; then
-        # Extract services list. Assumes "  - service_name" format under "services:"
-        sed -n '/^services:/,$p' "$stack_file" | grep '^\s*-\s*' | sed 's/^\s*-\s*//'
-    else
-        log_error "Stack file not found: $stack"
-        return 1
-    fi
-}
 
 # Command: Enable
 cmd_enable() {
@@ -331,46 +303,110 @@ cmd_ps() {
     
     load_env
     
+    # Generate Service Map
+    local map_file=$(mktemp)
+    find "$PROJECT_ROOT/services" -mindepth 3 -maxdepth 3 -name docker-compose.yml -exec grep -H "^  [a-zA-Z0-9_-]\+:" {} + | \
+    awk -F: '{ 
+        split($1, parts, "/"); 
+        for (i=1; i<=length(parts); i++) {
+            if (parts[i] == "services") {
+                launchkit_service = parts[i+2];
+                break;
+            }
+        }
+        service_name = $2; 
+        gsub(/^[ \t]+/, "", service_name); 
+        gsub(/:$/, "", service_name); 
+        
+        # Check for service.json to get a better name
+        service_json_path = "";
+        for (j=1; j<=length(parts)-1; j++) {
+            service_json_path = service_json_path parts[j] "/";
+        }
+        service_json_path = service_json_path "service.json";
+        
+        json_name = "";
+        if ((getline json_line < service_json_path) > 0) {
+             # Very simple JSON parsing for "name": "value"
+             # Read whole file
+             close(service_json_path);
+             while ((getline json_line < service_json_path) > 0) {
+                 if (match(json_line, /"name"[ \t]*:[ \t]*"([^"]+)"/, groups)) {
+                     json_name = groups[1];
+                     break;
+                 }
+             }
+             close(service_json_path);
+        }
+
+        if (json_name != "") {
+            launchkit_service = json_name;
+        }
+
+        if (launchkit_service == service_name) {
+            best_map[service_name] = launchkit_service;
+        } else {
+            if (!(service_name in best_map)) {
+                best_map[service_name] = launchkit_service;
+            }
+            # If we have a json name, it should probably override?
+            if (json_name != "") {
+                 best_map[service_name] = launchkit_service;
+            }
+        }
+    }
+    END {
+        for (s in best_map) {
+            print s "=" best_map[s];
+        }
+    }' > "$map_file"
+
+    # Define processing function to avoid code duplication
+    process_ps_output() {
+        awk -F'\t' -v map_file="$map_file" '
+        BEGIN {
+            OFS="\t";
+            while ((getline line < map_file) > 0) {
+                split(line, kv, "=");
+                service_map[kv[1]] = kv[2];
+            }
+            close(map_file);
+        }
+        NR==1 { print; next }
+        {
+            if ($2 in service_map) {
+                $2 = service_map[$2];
+            }
+            print $1, $2, $3, $4, $5, $6
+        }' | column -t -s $'\t'
+    }
+
     if [ -n "$project" ]; then
         # Specific project requested
-        docker ps --filter "label=com.docker.compose.project=$project" --format "table {{.Label \"com.docker.compose.project\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | sed '1s/com.docker.compose.project/PROJECT/'
+        {
+            printf "PROJECT\tSERVICE\tCONTAINER\tIMAGE\tSTATUS\tPORTS\n"
+            docker ps --filter "label=com.docker.compose.project=$project" --format "{{.Label \"com.docker.compose.project\"}}\t{{.Label \"com.docker.compose.service\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+        } | process_ps_output
     elif [ -n "$stack" ]; then
         # Specific stack requested
         load_stack_config "$stack"
-        docker ps --filter "label=com.docker.compose.project=$PROJECT_NAME" --format "table {{.Label \"com.docker.compose.project\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | sed '1s/com.docker.compose.project/PROJECT/'
+        {
+            printf "PROJECT\tSERVICE\tCONTAINER\tIMAGE\tSTATUS\tPORTS\n"
+            docker ps --filter "label=com.docker.compose.project=$PROJECT_NAME" --format "{{.Label \"com.docker.compose.project\"}}\t{{.Label \"com.docker.compose.service\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+        } | process_ps_output
     else
         # No specific project/stack, find all configured projects
-        local found_projects=()
-        
-        # Default project
-        found_projects+=("localai")
-        
-        # Scan stack files
-        if [ -d "$CONFIG_DIR/stacks" ]; then
-            # Enable nullglob to handle no matches
-            shopt -s nullglob
-            for stack_file in "$CONFIG_DIR/stacks"/*.yaml; do
-                if [ -f "$stack_file" ]; then
-                    local p_name=$(grep "^\s*project_name:" "$stack_file" | cut -d':' -f2 | tr -d ' "')
-                    if [ -n "$p_name" ]; then
-                        found_projects+=("$p_name")
-                    fi
-                fi
-            done
-            shopt -u nullglob
-        fi
-        
-        # Deduplicate
-        local unique_projects=($(echo "${found_projects[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+        local unique_projects=($(get_all_stack_projects))
         local pattern=$(IFS="|"; echo "${unique_projects[*]}")
         
         # Use docker ps to list all running containers for the project(s)
-        # Include Project label in output
-        # We replace the first column header (which might be 'project' or 'com.docker.compose.project') with 'PROJECT'
-        docker ps --filter "label=com.docker.compose.project" --format "table {{.Label \"com.docker.compose.project\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | \
-        sed '1s/^[a-zA-Z0-9_.]*/PROJECT/' | \
-        grep -E "^(PROJECT|${pattern})\s"
+        {
+            printf "PROJECT\tSERVICE\tCONTAINER\tIMAGE\tSTATUS\tPORTS\n"
+            docker ps --filter "label=com.docker.compose.project" --format "{{.Label \"com.docker.compose.project\"}}\t{{.Label \"com.docker.compose.service\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+        } | process_ps_output | grep -E "^(PROJECT|${pattern})\s"
     fi
+    
+    rm "$map_file"
 }
 
 # Command: Restart
@@ -400,7 +436,11 @@ cmd_stop() {
 
 # Command: Rm
 cmd_rm() {
-    run_compose_cmd rm "$@"
+    if [ -f "$LIB_DIR/services/rm.sh" ]; then
+        bash "$LIB_DIR/services/rm.sh" "$@"
+    else
+        log_error "Rm script not found."
+    fi
 }
 
 # Command: Help

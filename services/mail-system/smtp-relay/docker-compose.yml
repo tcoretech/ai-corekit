@@ -3,8 +3,6 @@ services:
     image: alpine/socat
     container_name: smtp-relay
     profiles:
-    - baserow
-    - calcom
-    - leantime
+    - smtp-relay
     restart: unless-stopped
     command: tcp-listen:8025,fork,reuseaddr tcp-connect:mailserver:25

@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Ensure we are in the script's directory
+cd "$(dirname "$0")"
+
 # Ensure build directory exists
 mkdir -p build
 

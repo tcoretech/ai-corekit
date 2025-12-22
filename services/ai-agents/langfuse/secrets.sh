@@ -19,6 +19,8 @@ declare -A SECRETS=(
     ["LANGFUSE_INIT_PROJECT_SECRET_KEY"]="langfuse_sk:32"
     ["MINIO_ROOT_PASSWORD"]="password:32"
     ["CLICKHOUSE_PASSWORD"]="password:32"
+    ["LANGFUSE_INIT_ORG_ID"]="random:10"
+    ["LANGFUSE_INIT_PROJECT_ID"]="random:10"
 )
 
 ############################################

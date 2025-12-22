@@ -10,7 +10,7 @@ services:
     - sleep 3; OLLAMA_HOST=ollama:11434 ollama pull qwen2.5:7b-instruct-q4_K_M; OLLAMA_HOST=ollama:11434
       ollama pull nomic-embed-text
     profiles:
-    - cpu
+    - ${OLLAMA_CPU_PROFILE:-ollama-cpu-disabled}
     depends_on:
     - ollama-cpu
   ollama-cpu:
@@ -18,14 +18,14 @@ services:
     container_name: ollama
     restart: unless-stopped
     environment:
-    - OLLAMA_CONTEXT_LENGTH=8192
-    - OLLAMA_FLASH_ATTENTION=1
-    - OLLAMA_KV_CACHE_TYPE=q8_0
-    - OLLAMA_MAX_LOADED_MODELS=2
+    - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-8192}
+    - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
+    - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
+    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
     volumes:
     - ollama_storage:/root/.ollama
     profiles:
-    - cpu
+    - ${OLLAMA_CPU_PROFILE:-ollama-cpu-disabled}
   ollama-pull-llama-gpu:
     image: ollama/ollama:latest
     container_name: ollama-pull-llama
@@ -37,7 +37,7 @@ services:
     - sleep 3; OLLAMA_HOST=ollama:11434 ollama pull qwen2.5:7b-instruct-q4_K_M; OLLAMA_HOST=ollama:11434
       ollama pull nomic-embed-text
     profiles:
-    - gpu-nvidia
+    - ${OLLAMA_GPU_PROFILE:-ollama-gpu-disabled}
     depends_on:
     - ollama-gpu
   ollama-gpu:
@@ -45,14 +45,14 @@ services:
     container_name: ollama
     restart: unless-stopped
     environment:
-    - OLLAMA_CONTEXT_LENGTH=8192
-    - OLLAMA_FLASH_ATTENTION=1
-    - OLLAMA_KV_CACHE_TYPE=q8_0
-    - OLLAMA_MAX_LOADED_MODELS=2
+    - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-8192}
+    - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
+    - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
+    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
     volumes:
     - ollama_storage:/root/.ollama
     profiles:
-    - gpu-nvidia
+    - ${OLLAMA_GPU_PROFILE:-ollama-gpu-disabled}
     deploy:
       resources:
         reservations:
@@ -72,7 +72,7 @@ services:
     - sleep 3; OLLAMA_HOST=ollama:11434 ollama pull qwen2.5:7b-instruct-q4_K_M; OLLAMA_HOST=ollama:11434
       ollama pull nomic-embed-text
     profiles:
-    - gpu-amd
+    - ${OLLAMA_AMD_PROFILE:-ollama-amd-disabled}
     depends_on:
     - ollama-gpu-amd
   ollama-gpu-amd:
@@ -80,14 +80,14 @@ services:
     container_name: ollama
     restart: unless-stopped
     environment:
-    - OLLAMA_CONTEXT_LENGTH=8192
-    - OLLAMA_FLASH_ATTENTION=1
-    - OLLAMA_KV_CACHE_TYPE=q8_0
-    - OLLAMA_MAX_LOADED_MODELS=2
+    - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-8192}
+    - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
+    - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
+    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
     volumes:
     - ollama_storage:/root/.ollama
     profiles:
-    - gpu-amd
+    - ${OLLAMA_AMD_PROFILE:-ollama-amd-disabled}
     devices:
     - /dev/kfd
     - /dev/dri

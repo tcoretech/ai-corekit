@@ -10,14 +10,20 @@ CONFIG_DIR="$SCRIPT_DIR/config/local"
 mkdir -p "$CONFIG_DIR"
 
 # Load environment variables
+if [ -f "$PROJECT_ROOT/config/.env.global" ]; then
+    set -a
+    source "$PROJECT_ROOT/config/.env.global"
+    set +a
+fi
+
 if [ -f "$PROJECT_ROOT/.env" ]; then
     set -a
     source "$PROJECT_ROOT/.env"
     set +a
-else
-    echo "Error: .env file not found at $PROJECT_ROOT/.env"
-    exit 1
 fi
+
+# If variables are still missing, we might be in trouble, but let's proceed as they might be inherited
+
 
 echo "Generating Homepage services configuration..."
 

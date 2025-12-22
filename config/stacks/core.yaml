@@ -18,7 +18,7 @@ services:
   - monitoring
   - uptime-kuma
   - portainer
-  - cloudflare-tunnel
+  - web-tunnel
   - postiz
   - odoo
   - twenty-crm

@@ -76,6 +76,20 @@ done
 
 load_env
 
+# Suppress orphan warnings
+export COMPOSE_IGNORE_ORPHANS=True
+
+# Auto-detect stack if using specific services and default stack
+if [ "$USE_SPECIFIC" = true ] && [ "$STACK_NAME" = "core" ] && [ ${#SERVICES_TO_START[@]} -gt 0 ]; then
+    # Check the first service
+    first_service="${SERVICES_TO_START[0]}"
+    detected_stack=$(find_stack_for_service "$first_service")
+    if [ -n "$detected_stack" ] && [ "$detected_stack" != "core" ]; then
+        log_info "Auto-detected stack '$detected_stack' for service '$first_service'. Switching context."
+        STACK_NAME="$detected_stack"
+    fi
+fi
+
 # Helper: Resolve Dependencies
 resolve_dependencies() {
     local service="$1"
@@ -210,24 +224,45 @@ done
 # 2. Run Docker Compose Up
 log_info "Bringing up services..."
 
+FAILED_SERVICES=()
+set +e # Disable exit on error to capture failures
+
 for service in "${SERVICES_TO_START[@]}"; do
     service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
     if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
         log_info "[$service] Starting..."
         # Run docker compose with project directory set to service directory
         # This allows relative paths in docker-compose.yml to work correctly
-        docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" up -d
+        if ! docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" up -d; then
+            log_error "[$service] Failed to start."
+            FAILED_SERVICES+=("$service")
+        fi
     fi
 done
+
+set -e # Re-enable exit on error
 
 # 3. Startup Hooks
 log_info "Running startup hooks..."
 for service in "${SERVICES_TO_START[@]}"; do
+    # Skip if failed
+    if [[ " ${FAILED_SERVICES[*]} " =~ " ${service} " ]]; then
+        log_warning "[$service] Skipping startup hook due to start failure."
+        continue
+    fi
+
     service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
     if [ -n "$service_dir" ] && [ -f "$service_dir/startup.sh" ]; then
         log_info "[$service] Running startup hook..."
-        bash "$service_dir/startup.sh"
+        if ! bash "$service_dir/startup.sh"; then
+             log_warning "[$service] Startup hook failed."
+        fi
     fi
 done
 
-log_success "Services started successfully."
+if [ ${#FAILED_SERVICES[@]} -gt 0 ]; then
+    log_error "Services started with errors. Failed: ${FAILED_SERVICES[*]}"
+    exit 1
+else
+    log_success "Services started successfully."
+fi

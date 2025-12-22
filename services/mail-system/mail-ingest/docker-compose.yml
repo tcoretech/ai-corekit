@@ -3,7 +3,7 @@ services:
     build: ${PROJECT_ROOT}/services/mail-system/mail-ingest
     container_name: mail-ingest
     profiles:
-    - mailserver
+    - mail-ingest
     restart: unless-stopped
     environment:
     - MAILGUN_WEBHOOK_SIGNING_KEY=${MAILGUN_WEBHOOK_SIGNING_KEY}
@@ -12,9 +12,6 @@ services:
     - MAILSERVER_HELO_DOMAIN=mail-ingest.${BASE_DOMAIN}
     expose:
     - '3000'
-    depends_on:
-      mailserver:
-        condition: service_healthy
     healthcheck:
       test:
       - CMD

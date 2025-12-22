@@ -43,9 +43,14 @@ SERVICES_TO_STOP=()
 USE_SPECIFIC=false
 STACK_NAME="core"
 PROJECT_OVERRIDE=""
+FORCE_STOP=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        -f|--force)
+            FORCE_STOP=true
+            shift
+            ;;
         -s|--stack)
             shift
             if [ -z "$1" ]; then log_error "Stack name required"; exit 1; fi
@@ -76,12 +81,8 @@ if [ "$USE_SPECIFIC" = true ]; then
     # Use provided list
     sorted_unique_ids=($(echo "${SERVICES_TO_STOP[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
     SERVICES_TO_STOP=("${sorted_unique_ids[@]}")
-
-    # Update profiles
-    log_info "Updating enabled profiles..."
-    for s in "${SERVICES_TO_STOP[@]}"; do
-        disable_service_profile "$s"
-    done
+    
+    # Note: We do NOT disable profiles yet, because docker compose needs the profile enabled to stop the service if it uses profiles.
 else
     # Use configured profiles (stop everything enabled)
     if [ -z "$COMPOSE_PROFILES" ]; then
@@ -101,6 +102,23 @@ load_env
 if [ ${#SERVICES_TO_STOP[@]} -eq 0 ]; then
     log_error "No services to stop."
     exit 1
+fi
+
+# Check for Critical Services
+if [ -n "$CRITICAL_SERVICES" ]; then
+    IFS=',' read -ra CRITICAL_LIST <<< "$CRITICAL_SERVICES"
+    for critical in "${CRITICAL_LIST[@]}"; do
+        for stop_svc in "${SERVICES_TO_STOP[@]}"; do
+            if [ "$critical" == "$stop_svc" ]; then
+                if [ "$FORCE_STOP" != true ]; then
+                    log_error "Service '$stop_svc' is marked as CRITICAL. Use --force to stop it."
+                    exit 1
+                else
+                    log_warning "Stopping CRITICAL service '$stop_svc' (Force enabled)."
+                fi
+            fi
+        done
+    done
 fi
 
 log_info "Stopping services: ${SERVICES_TO_STOP[*]}"
@@ -131,11 +149,13 @@ fi
 if [ "$USE_SPECIFIC" = true ]; then
     log_info "Stopping specific services..."
     for service in "${SERVICES_TO_STOP[@]}"; do
+        log_info "Looking for service: $service in $PROJECT_ROOT/services"
         service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+        log_info "Found service dir: $service_dir"
         if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
-             docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" stop
-             # Optional: remove containers
-             # docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" rm -f
+             docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" down
+        else
+             log_error "Service directory or docker-compose.yml not found for $service"
         fi
     done
 else
@@ -161,5 +181,13 @@ for service in "${SERVICES_TO_STOP[@]}"; do
         bash "$service_dir/cleanup.sh"
     fi
 done
+
+# Disable profiles after stopping
+if [ "$USE_SPECIFIC" = true ]; then
+    log_info "Updating enabled profiles..."
+    for s in "${SERVICES_TO_STOP[@]}"; do
+        disable_service_profile "$s"
+    done
+fi
 
 log_success "Services stopped."

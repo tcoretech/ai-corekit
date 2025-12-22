@@ -3,7 +3,7 @@ services:
     image: nginx:alpine
     container_name: landing-page
     profiles:
-      - core
+      - landing-page
     restart: unless-stopped
     volumes:
       - ./website:/usr/share/nginx/html:ro

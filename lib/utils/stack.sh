@@ -7,11 +7,17 @@
 get_stack_services() {
     local stack="$1"
     local stack_file="$CONFIG_DIR/stacks/$stack.yaml"
+    
+    # Check custom folder if not found in root stacks folder
+    if [ ! -f "$stack_file" ]; then
+        if [ -f "$CONFIG_DIR/stacks/custom/$stack.yaml" ]; then
+            stack_file="$CONFIG_DIR/stacks/custom/$stack.yaml"
+        fi
+    fi
+
     if [ -f "$stack_file" ]; then
         sed -n '/^services:/,$p' "$stack_file" | grep '^\s*-\s*' | sed 's/^\s*-\s*//'
     else
-        # If stack file doesn't exist, return empty or error?
-        # For now, just return empty so we don't break things if stack is invalid
         return 1
     fi
 }
@@ -21,6 +27,14 @@ get_stack_services() {
 get_stack_project_name() {
     local stack="$1"
     local stack_file="$CONFIG_DIR/stacks/$stack.yaml"
+    
+    # Check custom folder if not found in root stacks folder
+    if [ ! -f "$stack_file" ]; then
+        if [ -f "$CONFIG_DIR/stacks/custom/$stack.yaml" ]; then
+            stack_file="$CONFIG_DIR/stacks/custom/$stack.yaml"
+        fi
+    fi
+
     local project_name="localai" # Default
     
     if [ -f "$stack_file" ]; then
@@ -100,4 +114,51 @@ disable_service_profile() {
     else
         log_warning "Cannot update profiles: update_env_var not found"
     fi
+}
+
+# Helper: Get All Stack Projects
+# Usage: get_all_stack_projects
+# Returns space-separated list of all unique project names defined in stacks
+get_all_stack_projects() {
+    local projects=("localai")
+    
+    if [ -d "$CONFIG_DIR/stacks" ]; then
+        # Enable nullglob to handle no matches
+        shopt -s nullglob
+        for stack_file in "$CONFIG_DIR/stacks"/*.yaml "$CONFIG_DIR/stacks/custom"/*.yaml; do
+            if [ -f "$stack_file" ]; then
+                local p_name=$(grep "^\s*project_name:" "$stack_file" | cut -d':' -f2 | tr -d ' "')
+                if [ -n "$p_name" ]; then
+                    projects+=("$p_name")
+                fi
+            fi
+        done
+        shopt -u nullglob
+    fi
+    
+    # Deduplicate and print
+    echo "${projects[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '
+}
+
+# Helper: Find Stack for Service
+# Usage: find_stack_for_service <service_name>
+find_stack_for_service() {
+    local service="$1"
+    local found_stack=""
+    
+    if [ -d "$CONFIG_DIR/stacks" ]; then
+        shopt -s nullglob
+        for stack_file in "$CONFIG_DIR/stacks"/*.yaml "$CONFIG_DIR/stacks/custom"/*.yaml; do
+            if [ -f "$stack_file" ]; then
+                # Check if service is listed in the services array
+                # We look for "  - service_name" pattern
+                if grep -q "^\s*-\s*$service\s*$" "$stack_file"; then
+                    found_stack=$(basename "$stack_file" .yaml)
+                    break
+                fi
+            fi
+        done
+        shopt -u nullglob
+    fi
+    echo "$found_stack"
 }

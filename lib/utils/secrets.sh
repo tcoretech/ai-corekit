@@ -65,21 +65,21 @@ update_env_var() {
     local file="$1"
     local var_name="$2"
     local var_value="$3"
-    local tmp_file
-
-    tmp_file=$(mktemp)
     
-    if [[ -f "$file" ]]; then
-        # Remove existing line
-        grep -v -E "^${var_name}=" "$file" > "$tmp_file" || true
+    if [ ! -f "$file" ]; then
+        touch "$file"
+    fi
+    
+    # Check if var exists
+    if grep -q "^${var_name}=" "$file"; then
+        # Use | as delimiter for sed, escape | in value
+        local safe_value="${var_value//|/\\|}"
+        # Use sed -i to replace
+        # We use single quotes for the value as per policy
+        sed -i "s|^${var_name}=.*|${var_name}='${safe_value}'|" "$file"
     else
-        touch "$tmp_file"
+        echo "${var_name}='${var_value}'" >> "$file"
     fi
-
-    if [[ -n "$var_value" ]]; then
-        echo "${var_name}='${var_value}'" >> "$tmp_file"
-    fi
-    mv "$tmp_file" "$file"
 }
 
 # --- Central Environment Management ---
@@ -116,6 +116,8 @@ load_all_envs() {
     local project_root=$(get_project_root)
     local specific_services=("${@}")
     
+    log_info "Loading environment variables..."
+
     # 0. Load Legacy Root .env (Lowest Priority)
     if [[ -f "$project_root/.env" ]]; then
         _load_file_to_map "$project_root/.env"
@@ -143,9 +145,11 @@ load_all_envs() {
         done
     else
         # Load all service environments (Legacy behavior)
+        # Optimized find: Limit depth to avoid scanning node_modules or build artifacts
+        # Structure is services/<category>/<service>/.env (depth 3 from services/)
         while IFS= read -r env_file; do
             _load_file_to_map "$env_file"
-        done < <(find "$project_root/services" -name ".env" -type f)
+        done < <(find "$project_root/services" -mindepth 3 -maxdepth 3 -name ".env" -type f)
     fi
     
     # Ensure PROJECT_ROOT is set in map
@@ -246,42 +250,58 @@ write_env_file() {
     local output_file="$2"
     local temp_file=$(mktemp)
     
-    # Perform final substitution pass before writing
-    for key in "${!SERVICE_ENV_VARS[@]}"; do
-        local val="${SERVICE_ENV_VARS[$key]}"
-        if [[ "$val" == *"\${"* ]]; then
-             local vars_in_string=$(echo "$val" | grep -o '\${[^}]*}' | sort | uniq)
-             for v_placeholder in $vars_in_string; do
-                 local v_name=${v_placeholder:2:-1}
-                 local v_sub=""
-                 if [[ -n "${SERVICE_ENV_VARS[$v_name]}" ]]; then
-                     v_sub="${SERVICE_ENV_VARS[$v_name]}"
-                 elif [[ -n "${ALL_ENV_VARS[$v_name]}" ]]; then
-                     v_sub="${ALL_ENV_VARS[$v_name]}"
-                 fi
-                 if [[ -n "$v_sub" ]]; then
-                     val="${val//$v_placeholder/$v_sub}"
-                 fi
-             done
-             SERVICE_ENV_VARS["$key"]="$val"
-        fi
-    done
-    
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        # Pass comments and empty lines
-        if [[ "$line" =~ ^\s*# ]] || [[ -z "$line" ]]; then
-            echo "$line" >> "$temp_file"
-            continue
-        fi
-        
-        if [[ "$line" == *"="* ]]; then
-            local key=$(echo "$line" | cut -d'=' -f1 | xargs)
-            local final_val="${SERVICE_ENV_VARS[$key]}"
-            echo "${key}='${final_val}'" >> "$temp_file"
-        else
-            echo "$line" >> "$temp_file"
-        fi
-    done < "$template_file"
+    # Perform substitution using shell expansion to support ${VAR} and ${VAR%%.*}
+    # We run this in a subshell to avoid polluting the current environment
+    (
+        # Export global vars
+        for k in "${!ALL_ENV_VARS[@]}"; do
+            export "$k"="${ALL_ENV_VARS[$k]}"
+        done
+
+        # Export service vars (initial state)
+        for k in "${!SERVICE_ENV_VARS[@]}"; do
+            export "$k"="${SERVICE_ENV_VARS[$k]}"
+        done
+
+        # Resolve variables (Multiple passes for dependencies)
+        for pass in {1..3}; do
+            local changed=false
+            for key in "${!SERVICE_ENV_VARS[@]}"; do
+                local val="${SERVICE_ENV_VARS[$key]}"
+                if [[ "$val" == *"\${"* ]]; then
+                    # Escape double quotes to prevent breaking eval
+                    local escaped_val="${val//\"/\\\"}"
+                    # Use eval echo to expand variables
+                    local resolved_val
+                    if resolved_val=$(eval echo "\"$escaped_val\"" 2>/dev/null); then
+                        if [[ "$resolved_val" != "$val" ]]; then
+                            SERVICE_ENV_VARS["$key"]="$resolved_val"
+                            export "$key"="$resolved_val"
+                            changed=true
+                        fi
+                    fi
+                fi
+            done
+            if [ "$changed" = false ]; then break; fi
+        done
+
+        # Write to temp file
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            # Pass comments and empty lines
+            if [[ "$line" =~ ^\s*# ]] || [[ -z "$line" ]]; then
+                echo "$line" >> "$temp_file"
+                continue
+            fi
+            
+            if [[ "$line" == *"="* ]]; then
+                local key=$(echo "$line" | cut -d'=' -f1 | xargs)
+                local final_val="${SERVICE_ENV_VARS[$key]}"
+                echo "${key}='${final_val}'" >> "$temp_file"
+            else
+                echo "$line" >> "$temp_file"
+            fi
+        done < "$template_file"
+    )
     
     mv "$temp_file" "$output_file"
 }

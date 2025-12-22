@@ -12,8 +12,6 @@ services:
     - UPLOAD_MAX_SIZE=25M
     - PHP_MEMORY_LIMIT=128M
     - TZ=${TZ:-UTC}
-    depends_on:
-    - mailserver
     expose:
     - '8888'
     - '9000'

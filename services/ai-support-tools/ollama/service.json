@@ -5,7 +5,5 @@
   "use_cases": "Run Llama, Mistral, Phi locally, API-compatible",
   "interface": "ollama.<yourdomain>.com",
   "source": "https://github.com/ollama/ollama",
-  "depends_on": [
-    "ollama-cpu"
-  ]
+  "depends_on": []
 }

@@ -141,9 +141,8 @@ if [ "$UPDATE_CONTAINERS" = true ]; then
         
         if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
              log_info "Pulling images for $service..."
-             # We use project directory as root to ensure .env files are found if needed, 
-             # though we exported env vars already.
-             docker compose -f "$service_dir/docker-compose.yml" --project-directory "$PROJECT_ROOT" pull
+             # We use service directory as project directory to ensure relative paths work correctly
+             docker compose -f "$service_dir/docker-compose.yml" --project-directory "$service_dir" pull
              
              log_info "Recreating containers for $service..."
              # Call up.sh to handle startup logic (networks, etc)

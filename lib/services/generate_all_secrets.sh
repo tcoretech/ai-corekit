@@ -22,7 +22,7 @@ find "$PROJECT_ROOT/services" -name "secrets.sh" | sort | while read -r secret_s
     log_info "Processing $service_name..."
     
     # Run the script
-    if ! bash "$secret_script"; then
+    if ! (cd "$(dirname "$secret_script")" && bash "secrets.sh"); then
         log_error "Failed to generate secrets for $service_name"
     fi
 done

@@ -178,7 +178,7 @@ for service in "${SERVICES_TO_STOP[@]}"; do
     service_dir=$(find "$PROJECT_ROOT/services" -name "$service" -type d | head -n 1)
     if [ -n "$service_dir" ] && [ -f "$service_dir/cleanup.sh" ]; then
         log_info "[$service] Running cleanup hook..."
-        bash "$service_dir/cleanup.sh"
+        (cd "$service_dir" && bash "cleanup.sh")
     fi
 done
 

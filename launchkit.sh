@@ -261,7 +261,7 @@ cmd_run() {
     
     if [ -n "$found_service" ] && [ -f "$found_service/cli.sh" ]; then
         log_info "Delegating to service CLI: $service_name"
-        bash "$found_service/cli.sh" "$@"
+        (cd "$found_service" && bash "cli.sh" "$@")
     else
         log_error "Service '$service_name' not found or does not have a CLI."
         exit 1

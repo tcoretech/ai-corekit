@@ -200,7 +200,7 @@ for service in "${SERVICES_TO_START[@]}"; do
     # Secrets Generation
     if [ -f "$service_dir/secrets.sh" ]; then
         log_info "[$service] Checking secrets..."
-        bash "$service_dir/secrets.sh"
+        (cd "$service_dir" && bash "secrets.sh")
         
         # Re-load environment to pick up generated secrets
         if [ -f "$service_dir/.env" ]; then
@@ -214,13 +214,13 @@ for service in "${SERVICES_TO_START[@]}"; do
     # Prepare Hook
     if [ -f "$service_dir/prepare.sh" ]; then
         log_info "[$service] Running prepare hook..."
-        bash "$service_dir/prepare.sh"
+        (cd "$service_dir" && bash "prepare.sh")
     fi
     
     # Build Hook
     if [ -f "$service_dir/build.sh" ]; then
         log_info "[$service] Running build hook..."
-        bash "$service_dir/build.sh"
+        (cd "$service_dir" && bash "build.sh")
     fi
 done
 
@@ -257,7 +257,7 @@ for service in "${SERVICES_TO_START[@]}"; do
     service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
     if [ -n "$service_dir" ] && [ -f "$service_dir/startup.sh" ]; then
         log_info "[$service] Running startup hook..."
-        if ! bash "$service_dir/startup.sh"; then
+        if ! (cd "$service_dir" && bash "startup.sh"); then
              log_warning "[$service] Startup hook failed."
         fi
     fi

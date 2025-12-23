@@ -5,6 +5,8 @@ services:
     profiles:
     - perplexica
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - SEARXNG_API_URL=http://searxng:8080
     - DATA_DIR=/home/perplexica

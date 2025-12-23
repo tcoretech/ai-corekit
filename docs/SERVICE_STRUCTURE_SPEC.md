@@ -82,6 +82,10 @@ To avoid confusion about *when* a script runs, we use distinct names:
 *   **`.env`**: The source of truth for secrets and instance-specific configuration.
 *   **`.env.example`**: Must exist and list all required variables with dummy values.
 *   **Inheritance**: Services should inherit global settings (like `BASE_DOMAIN`) from the root `.env` or any other enabled service `.env`, they are all available at runtime.
+*   **Precedence**:
+    *   **`environment` (in `docker-compose.yml`)**: Hardcoded values here take highest precedence. Use this for values that *must* be fixed for the service to work (e.g., internal container paths).
+    *   **`env_file` (loading `.env`)**: Variables loaded from the `.env` file. This is where user configuration lives.
+    *   **Note**: If a variable is defined in both `environment` and `.env`, the value in `environment` wins. To allow user override, use variable substitution in `environment` (e.g., `KEY: ${KEY:-default}`) or omit it from `environment` and rely solely on `env_file`.
 
 ## Migration Checklist
 When refactoring a service to this standard:

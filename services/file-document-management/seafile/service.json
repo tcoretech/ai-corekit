@@ -5,7 +5,5 @@
   "use_cases": "Team collaboration, file versioning, WebDAV, mobile sync",
   "interface": "files.<yourdomain>.com",
   "source": "https://github.com/haiwen/seafile",
-  "depends_on": [
-    "seafile-db"
-  ]
+  "depends_on": []
 }

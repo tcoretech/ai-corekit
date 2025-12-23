@@ -5,10 +5,5 @@
   "use_cases": "Team documentation, knowledge base, Notion-like editor",
   "interface": "outline.<yourdomain>.com",
   "source": "https://github.com/outline/outline",
-  "depends_on": [
-    "outline-postgres",
-    "outline-redis",
-    "outline-minio",
-    "dex"
-  ]
+  "depends_on": []
 }

@@ -9,6 +9,8 @@ services:
     - 127.0.0.1:10000:10000/udp
     volumes:
     - ./config/local/jitsi-jvb:/config
+    env_file:
+      - .env
     environment:
     - DOCKER_HOST_ADDRESS=${JVB_DOCKER_HOST_ADDRESS}
     - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}
@@ -34,6 +36,8 @@ services:
     volumes:
     - ./config/local/jitsi-web:/config
     - ./data/transcripts:/usr/share/jitsi-meet/transcripts
+    env_file:
+      - .env
     environment:
     - ENABLE_LETSENCRYPT=0
     - ENABLE_HTTP_REDIRECT=0
@@ -65,6 +69,8 @@ services:
     volumes:
     - ./config/local/jitsi-prosody-config:/config
     - ./config/local/jitsi-prosody-plugins:/prosody-plugins-custom
+    env_file:
+      - .env
     environment:
     - AUTH_TYPE=internal
     - ENABLE_GUESTS=1
@@ -87,6 +93,8 @@ services:
     restart: unless-stopped
     volumes:
     - ./config/local/jitsi-jicofo:/config
+    env_file:
+      - .env
     environment:
     - XMPP_DOMAIN=${JITSI_XMPP_DOMAIN}
     - XMPP_AUTH_DOMAIN=auth.${JITSI_XMPP_DOMAIN}

@@ -210,7 +210,30 @@ PROJECT_NAME="localai"
 if [ -n "$PROJECT_OVERRIDE" ]; then
     PROJECT_NAME="$PROJECT_OVERRIDE"
 else
-    PROJECT_NAME=$(get_stack_project_name "$STACK_NAME")
+    # If stopping specific services, try to detect the correct project name for each service
+    # This is tricky because we are iterating over services, but PROJECT_NAME is global for the loop if we don't change it.
+    # However, the loop below uses PROJECT_NAME.
+    
+    # If we are using the default stack (core), PROJECT_NAME is localai.
+    # But ssh-tunnel is in host-ssh stack, which has project_name: host-ssh.
+    
+    # If the user didn't specify a stack, we default to core/localai.
+    # This is why ssh-tunnel (running in host-ssh project) is not found when we try to stop it with project localai.
+    
+    # We should probably detect the stack for each service if we are in specific mode and no stack was explicitly provided?
+    # Or just rely on the user to provide the stack?
+    # Better: Auto-detect stack if not provided.
+    
+    if [ "$STACK_NAME" = "core" ]; then
+         # We are using default stack.
+         # We will let the loop handle project name detection if possible, or just use the detected stack's project.
+         # But the loop uses $PROJECT_NAME.
+         
+         # Let's just set it to localai for now, and override it inside the loop if we can detect a different stack.
+         PROJECT_NAME=$(get_stack_project_name "$STACK_NAME")
+    else
+         PROJECT_NAME=$(get_stack_project_name "$STACK_NAME")
+    fi
 fi
 
 # Run Docker Compose Stop/Down
@@ -221,12 +244,25 @@ fi
 if [ "$USE_SPECIFIC" = true ]; then
     log_info "Stopping specific services..."
     for service in "${SERVICES_TO_STOP[@]}"; do
+        # Auto-detect project name for this service if we are using default stack and no override
+        CURRENT_PROJECT_NAME="$PROJECT_NAME"
+        if [ -z "$PROJECT_OVERRIDE" ] && [ "$STACK_NAME" = "core" ]; then
+            detected_stack=$(find_stack_for_service "$service")
+            if [ -n "$detected_stack" ]; then
+                detected_project=$(get_stack_project_name "$detected_stack")
+                if [ -n "$detected_project" ]; then
+                    CURRENT_PROJECT_NAME="$detected_project"
+                    log_info "[$service] Auto-detected project: $CURRENT_PROJECT_NAME (from stack: $detected_stack)"
+                fi
+            fi
+        fi
+
         log_info "Looking for service: $service in $PROJECT_ROOT/services"
         service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
         log_info "Found service dir: $service_dir"
         if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
              # Force enable all profiles to ensure the service is actually stopped/removed
-             COMPOSE_PROFILES="*" docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" down
+             COMPOSE_PROFILES="*" docker compose -p "$CURRENT_PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" down
         else
              log_error "Service directory or docker-compose.yml not found for $service"
         fi

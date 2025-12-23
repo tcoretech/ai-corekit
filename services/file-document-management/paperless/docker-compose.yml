@@ -5,6 +5,8 @@ services:
     profiles:
     - paperless
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - PAPERLESS_REDIS=redis://paperless-redis:6379
     - PAPERLESS_DBENGINE=postgresql
@@ -41,6 +43,8 @@ services:
   paperless-redis:
     image: redis:7-alpine
     container_name: paperless-redis
+    env_file:
+      - .env
     profiles:
     - paperless
     restart: unless-stopped
@@ -60,6 +64,8 @@ services:
     profiles:
     - paperless
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - POSTGRES_DB=paperless
     - POSTGRES_USER=paperless

@@ -5,6 +5,8 @@ services:
     profiles:
     - postiz
     restart: always
+    env_file:
+      - .env
     environment:
       BACKEND_INTERNAL_URL: http://postiz:3000
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres?schema=postiz

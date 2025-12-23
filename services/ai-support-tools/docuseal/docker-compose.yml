@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     depends_on:
     - docuseal-db
+    env_file:
+      - .env
     environment:
     - DATABASE_URL=postgresql://docuseal:${DOCUSEAL_DB_PASSWORD}@docuseal-db:5432/docuseal
     - FORCE_SSL=false
@@ -18,6 +20,8 @@ services:
     profiles:
     - docuseal
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - POSTGRES_USER=docuseal
     - POSTGRES_PASSWORD=${DOCUSEAL_DB_PASSWORD}

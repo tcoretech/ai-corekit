@@ -6,7 +6,6 @@
   "interface": "forms.<yourdomain>.com",
   "source": "https://github.com/formbricks/formbricks",
   "depends_on": [
-    "formbricks_db",
     "postgres",
     "redis"
   ]

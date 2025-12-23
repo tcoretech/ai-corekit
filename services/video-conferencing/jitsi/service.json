@@ -5,7 +5,5 @@
   "use_cases": "Client meetings, team calls, webinars, Cal.com integration",
   "interface": "meet.<yourdomain>.com",
   "source": "https://github.com/jitsi/jitsi-meet",
-  "depends_on": [
-    "jitsi-prosody"
-  ]
+  "depends_on": []
 }

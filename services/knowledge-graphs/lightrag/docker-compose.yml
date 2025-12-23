@@ -8,6 +8,8 @@ services:
     volumes:
     - lightrag_data:/app/data/rag_storage
     - ${PROJECT_ROOT}/services/shared-resources/shared:/app/data/inputs
+    env_file:
+      - .env
     environment:
     - OPENAI_API_KEY=${OPENAI_API_KEY}
     - LLM_BINDING=openai

@@ -6,7 +6,6 @@
   "interface": "nocodb.<yourdomain>.com",
   "source": "https://github.com/nocodb/nocodb",
   "depends_on": [
-    "nocodb-init",
     "postgres",
     "redis"
   ]

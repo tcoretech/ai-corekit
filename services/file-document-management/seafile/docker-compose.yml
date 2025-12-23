@@ -5,6 +5,8 @@ services:
     profiles:
     - seafile
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - DB_HOST=seafile-db
     - DB_ROOT_PASSWD=${SEAFILE_DB_ROOT_PASSWORD}
@@ -36,6 +38,8 @@ services:
     profiles:
     - seafile
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - MYSQL_ROOT_PASSWORD=${SEAFILE_DB_ROOT_PASSWORD}
     - MYSQL_DATABASE=seafile_db

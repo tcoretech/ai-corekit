@@ -3,6 +3,8 @@ services:
     build:
       context: .
       pull: true
+    env_file:
+      - .env
     environment:
       DB_POSTGRESDB_DATABASE: postgres
       DB_POSTGRESDB_HOST: postgres
@@ -43,13 +45,12 @@ services:
     - 127.0.0.1:5678:5678
     volumes:
     - n8n_storage:/home/node/.n8n
-    - ./backup:/backup
+    - ./data/backups:/backup
+    - ./config/workflows:/import/workflows:ro
+    - ./config/credentials:/import/credentials:ro
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     - ${PROJECT_ROOT}/services/shared-resources/media:/data/media
     - ${PROJECT_ROOT}/services/shared-resources/temp:/data/temp
-    depends_on:
-      n8n-import:
-        condition: service_completed_successfully
     networks:
       - default
 
@@ -57,6 +58,8 @@ services:
     build:
       context: .
       pull: true
+    env_file:
+      - .env
     environment:
       DB_POSTGRESDB_DATABASE: postgres
       DB_POSTGRESDB_HOST: postgres
@@ -113,6 +116,8 @@ services:
     profiles:
     - n8n
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}
     - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679
@@ -124,7 +129,7 @@ services:
     - N8N_RUNNERS_PYTHON_ALLOW_EXTERNAL=
     volumes:
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
-    - ./task-runners.json:/etc/n8n-task-runners.json:ro
+    - ./config/task-runners.json:/etc/n8n-task-runners.json:ro
     depends_on:
       n8n:
         condition: service_started
@@ -144,65 +149,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-  n8n-import:
-    build:
-      context: .
-      pull: true
-    environment:
-      DB_POSTGRESDB_DATABASE: postgres
-      DB_POSTGRESDB_HOST: postgres
-      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_POSTGRESDB_USER: postgres
-      DB_TYPE: postgresdb
-      EXECUTIONS_MODE: queue
-      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
-      LANGCHAIN_ENDPOINT: ${LANGCHAIN_ENDPOINT}
-      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2}
-      N8N_BINARY_DATA_MODE: filesystem
-      N8N_PAYLOAD_SIZE_MAX: 256
-      N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE: true
-      N8N_DIAGNOSTICS_ENABLED: false
-      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
-      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: true
-      N8N_METRICS: true
-      N8N_PERSONALIZATION_ENABLED: false
-      N8N_RUNNERS_ENABLED: true
-      N8N_RUNNERS_MODE: external
-      N8N_RUNNERS_BROKER_LISTEN_ADDRESS: 0.0.0.0
-      N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN}
-      N8N_NATIVE_PYTHON_RUNNER: true
-      N8N_TRUST_PROXY: true
-      N8N_USER_MANAGEMENT_JWT_SECRET: ${N8N_USER_MANAGEMENT_JWT_SECRET}
-      NODE_ENV: production
-      NODE_FUNCTION_ALLOW_BUILTIN: '*'
-      NODE_FUNCTION_ALLOW_EXTERNAL: cheerio,axios,moment,lodash
-      QUEUE_BULL_REDIS_HOST: ${REDIS_HOST:-redis}
-      QUEUE_BULL_REDIS_PORT: ${REDIS_PORT:-6379}
-      QUEUE_HEALTH_CHECK_ACTIVE: true
-      WEBHOOK_URL: ${N8N_HOSTNAME:+https://}${N8N_HOSTNAME:-http://localhost:5678}/
-      RUN_N8N_IMPORT: ${RUN_N8N_IMPORT:-false}
-    container_name: n8n-import
-    profiles:
-    - n8n
-    entrypoint: /bin/sh
-    command: /scripts/n8n_import_script.sh
-    volumes:
-    - ./backup:/backup
-    - ./n8n_import_script.sh:/scripts/n8n_import_script.sh:ro
-    # depends_on:
-      # postgres:
-      #   condition: service_healthy
-      # Redis and Postgres are external services in the same network
-      # We cannot depend on them directly if they are not in this compose file
-      # But we can assume they are running if we are starting n8n
-      # Empty depends_on is not valid in all versions, removing it
-      # []
-    # External dependencies
-    external_links:
-      - postgres
-      - redis
-    networks:
-      - default
 
 volumes:
   n8n_storage: {}

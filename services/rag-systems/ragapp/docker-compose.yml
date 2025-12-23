@@ -2,6 +2,8 @@ services:
   ragapp:
     image: ragapp/ragapp:latest
     container_name: ragapp
+    env_file:
+      - .env
     profiles:
     - ragapp
     restart: unless-stopped

@@ -5,19 +5,31 @@ services:
   api:
     volumes:
       - ./data/app/storage:/app/api/storage
+    env_file:
+      - .env
   worker:
     volumes:
       - ./data/app/storage:/app/api/storage
+    env_file:
+      - .env
   db:
     volumes:
       - ./data/db/data:/var/lib/postgresql/data
+    env_file:
+      - .env
   redis:
     volumes:
       - ./data/redis/data:/data
+    env_file:
+      - .env
   weaviate:
     volumes:
       - ./data/weaviate:/var/lib/weaviate
+    env_file:
+      - .env
   sandbox:
     volumes:
       - ./data/sandbox/dependencies:/dependencies
       - ./data/sandbox/conf:/conf
+    env_file:
+      - .env

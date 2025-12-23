@@ -5,6 +5,8 @@ services:
     profiles:
     - langfuse
     user: 101:101
+    env_file:
+      - .env
     environment:
       CLICKHOUSE_DB: default
       CLICKHOUSE_USER: clickhouse
@@ -27,6 +29,8 @@ services:
     entrypoint: sh
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address
       ":9001" /data'
+      env_file:
+        - .env
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -52,6 +56,8 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
+        env_file:
+          - .env
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/langfuse
       SALT: ${LANGFUSE_SALT}
@@ -117,6 +123,8 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
+        env_file:
+          - .env
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/langfuse
       SALT: ${LANGFUSE_SALT}

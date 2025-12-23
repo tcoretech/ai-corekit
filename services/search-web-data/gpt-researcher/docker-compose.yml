@@ -8,6 +8,8 @@ services:
     volumes:
     - gpt_researcher_data:/usr/src/app/outputs
     - ${PROJECT_ROOT}/services/shared-resources/shared/research:/usr/src/app/my-docs
+    env_file:
+      - .env
     environment:
     - OPENAI_API_KEY=${OPENAI_API_KEY}
     - LLM_PROVIDER=openai
@@ -43,6 +45,8 @@ services:
     profiles:
     - gpt-researcher
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - NEXT_PUBLIC_GPTR_API_URL=https://${GPTR_HOSTNAME}
     - CHOKIDAR_USEPOLLING=true

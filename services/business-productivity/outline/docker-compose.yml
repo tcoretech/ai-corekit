@@ -11,6 +11,8 @@ services:
     - outline-redis
     - outline-minio
     - dex
+    env_file:
+      - .env
     environment:
     - NODE_ENV=production
     - SECRET_KEY=${OUTLINE_SECRET_KEY}
@@ -50,6 +52,8 @@ services:
     - outline
     restart: unless-stopped
     command: server /data --console-address ":9001"
+    env_file:
+      - .env
     environment:
     - MINIO_ROOT_USER=${OUTLINE_MINIO_ROOT_USER}
     - MINIO_ROOT_PASSWORD=${OUTLINE_MINIO_ROOT_PASSWORD}
@@ -62,6 +66,8 @@ services:
     profiles:
     - outline
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - POSTGRES_USER=outline
     - POSTGRES_PASSWORD=outline
@@ -78,6 +84,8 @@ services:
   outline-redis:
     image: redis:7-alpine
     container_name: outline-redis
+    env_file:
+      - .env
     profiles:
     - outline
     restart: unless-stopped
@@ -92,6 +100,8 @@ services:
     volumes:
     - ./config/local/dex/config.yaml:/etc/dex/config.yaml:ro
     - dex_data:/var/dex
+    env_file:
+      - .env
     environment:
     - DEX_FRONTEND_DIR=/srv/dex/web
     command:

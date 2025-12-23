@@ -2,6 +2,8 @@ services:
   mautic_redis:
     image: redis:7-alpine
     container_name: mautic_redis
+    env_file:
+      - .env
     profiles:
     - mautic
     restart: unless-stopped
@@ -27,6 +29,8 @@ services:
     volumes:
     - mautic_data:/var/www/html
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - MAUTIC_DB_HOST=mautic_db
     - MAUTIC_DB_PORT=3306
@@ -51,6 +55,8 @@ services:
     restart: unless-stopped
     volumes:
     - mautic_db_data:/var/lib/mysql
+    env_file:
+      - .env
     environment:
     - MYSQL_ROOT_PASSWORD=${MAUTIC_DB_ROOT_PASSWORD}
     - MYSQL_DATABASE=mautic
@@ -78,6 +84,8 @@ services:
     volumes:
     - mautic_data:/var/www/html
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - MAUTIC_DB_HOST=mautic_db
     - MAUTIC_DB_PORT=3306

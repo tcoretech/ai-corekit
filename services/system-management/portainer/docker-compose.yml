@@ -2,6 +2,8 @@ services:
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
+    env_file:
+      - .env
     profiles:
     - portainer
     restart: unless-stopped

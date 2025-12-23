@@ -8,6 +8,8 @@ services:
     - bolt
     expose:
     - '5173'
+    env_file:
+      - .env
     environment:
     - BOLT_HOSTNAME=${BOLT_HOSTNAME}
     - OLLAMA_API_BASE_URL=http://ollama:11434

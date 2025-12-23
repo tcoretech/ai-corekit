@@ -10,6 +10,8 @@ services:
     - stirling_configs:/configs
     - stirling_logs:/logs
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - SYSTEM_DEFAULTLOCALE=${STIRLING_LOCALE:-de-DE}
     - UI_APPNAME=${STIRLING_APP_NAME:-AI LaunchKit PDF}

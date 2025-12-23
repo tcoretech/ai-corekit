@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     volumes:
     - weaviate_data:/var/lib/weaviate
+    env_file:
+      - .env
     environment:
       QUERY_DEFAULTS_LIMIT: 25
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'false'

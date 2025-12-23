@@ -10,6 +10,8 @@ services:
     volumes:
     - chatterbox_models:/root/.cache/huggingface
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - GRADIO_SERVER_NAME=0.0.0.0
     ports:

@@ -5,6 +5,8 @@ services:
     profiles:
     - homepage
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - HOMEPAGE_VAR_TITLE=AI LaunchKit Dashboard
     - HOMEPAGE_VAR_SEARCH_PROVIDER=searxng

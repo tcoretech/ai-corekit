@@ -8,6 +8,8 @@ services:
     depends_on:
       odoo-schema-init:
         condition: service_completed_successfully
+        env_file:
+          - .env
     environment:
     - HOST=postgres
     - USER=odoo
@@ -33,6 +35,8 @@ services:
     depends_on:
       odoo-init:
         condition: service_completed_successfully
+        env_file:
+          - .env
     environment:
     - HOST=postgres
     - USER=odoo
@@ -48,6 +52,8 @@ services:
     container_name: odoo-init
     profiles:
     - odoo
+    env_file:
+      - .env
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     command: 'sh -c " psql -h postgres -U postgres -c \"CREATE USER odoo WITH PASSWORD

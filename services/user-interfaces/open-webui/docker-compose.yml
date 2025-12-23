@@ -5,6 +5,8 @@ services:
     container_name: open-webui
     profiles:
     - open-webui
+    env_file:
+      - .env
     environment:
     - OLLAMA_BASE_URL=http://ollama:11434
     extra_hosts:

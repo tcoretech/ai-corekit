@@ -5,6 +5,8 @@ services:
     profiles:
     - browser-suite
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - POSTGRES_USER=skyvern
     - POSTGRES_PASSWORD=skyvern
@@ -25,6 +27,8 @@ services:
     profiles:
     - browser-suite
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - TOKEN=${BROWSERLESS_TOKEN}
     - CONCURRENT=${BROWSERLESS_CONCURRENT:-10}
@@ -48,6 +52,8 @@ services:
     profiles:
     - browser-suite
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - OPENAI_API_KEY=${OPENAI_API_KEY}
     - DATABASE_STRING=postgresql+psycopg://skyvern:skyvern@skyvern-postgres:5432/skyvern
@@ -77,6 +83,8 @@ services:
       "
 
       '
+      env_file:
+        - .env
     environment:
     - BROWSERLESS_URL=ws://browserless:3000?token=${BROWSERLESS_TOKEN}
     - OPENAI_API_KEY=${OPENAI_API_KEY}

@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     volumes:
     - metabase_data:/metabase-data
+    env_file:
+      - .env
     environment:
     - MB_DB_TYPE=postgres
     - MB_DB_DBNAME=metabase
@@ -35,6 +37,8 @@ services:
     restart: unless-stopped
     volumes:
     - metabase_postgres:/var/lib/postgresql/data
+    env_file:
+      - .env
     environment:
     - POSTGRES_DB=${METABASE_DB_NAME:-metabase}
     - POSTGRES_USER=${METABASE_DB_USER:-metabase}

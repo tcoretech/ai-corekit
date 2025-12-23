@@ -5,6 +5,8 @@ services:
     profiles:
     - libretranslate
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - LT_HOST=0.0.0.0
     - LT_PORT=5000

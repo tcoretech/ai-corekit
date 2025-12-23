@@ -10,6 +10,8 @@ services:
     - invoiceninja_storage:/var/www/app/storage
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     - ./config/php-cli.ini:/usr/local/etc/php/conf.d/memory-limit.ini
+    env_file:
+      - .env
     environment:
     - APP_ENV=production
     - APP_DEBUG=false
@@ -61,6 +63,8 @@ services:
     restart: unless-stopped
     volumes:
     - invoiceninja_mysql:/var/lib/mysql
+    env_file:
+      - .env
     environment:
     - MYSQL_DATABASE=${INVOICENINJA_DB_NAME:-invoiceninja}
     - MYSQL_USER=${INVOICENINJA_DB_USER:-invoiceninja}
@@ -84,6 +88,8 @@ services:
   invoiceninja_nginx:
     image: nginx:alpine
     container_name: invoiceninja_nginx
+    env_file:
+      - .env
     profiles:
     - invoiceninja
     restart: unless-stopped

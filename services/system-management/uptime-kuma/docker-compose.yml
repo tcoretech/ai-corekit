@@ -9,6 +9,8 @@ services:
     - uptime-kuma_data:/app/data
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file:
+      - .env
     environment:
     - TZ=${TZ:-Europe/Berlin}
     healthcheck:

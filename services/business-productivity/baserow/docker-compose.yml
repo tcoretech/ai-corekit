@@ -6,6 +6,8 @@ services:
     - baserow
     privileged: true
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - BASEROW_PUBLIC_URL=https://${BASEROW_HOSTNAME}
     - SECRET_KEY=${BASEROW_SECRET_KEY}
@@ -39,6 +41,8 @@ services:
     container_name: baserow-init
     profiles:
     - baserow
+    env_file:
+      - .env
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     command: 'sh -c " psql -h postgres -U postgres -c \"CREATE DATABASE baserow\"

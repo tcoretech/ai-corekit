@@ -6,7 +6,6 @@
   "interface": "invoices.<yourdomain>.com",
   "source": "https://github.com/invoiceninja/invoiceninja",
   "depends_on": [
-    "invoiceninja_db",
     "redis"
   ]
 }

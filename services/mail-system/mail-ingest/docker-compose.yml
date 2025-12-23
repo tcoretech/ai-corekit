@@ -5,6 +5,8 @@ services:
     profiles:
     - mail-ingest
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - MAILGUN_WEBHOOK_SIGNING_KEY=${MAILGUN_WEBHOOK_SIGNING_KEY}
     - MAILSERVER_HOST=mailserver

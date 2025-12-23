@@ -5,6 +5,8 @@ services:
     profiles:
     - opennotebook
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - OPENAI_API_KEY=${OPENAI_API_KEY}
     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}

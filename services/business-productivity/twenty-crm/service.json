@@ -5,8 +5,5 @@
   "use_cases": "Customer pipelines, GraphQL API, team collaboration, lightweight CRM for startups",
   "interface": "twenty.<yourdomain>.com",
   "source": "https://github.com/twentyhq/twenty",
-  "depends_on": [
-    "twenty-db",
-    "twenty-redis"
-  ]
+  "depends_on": []
 }

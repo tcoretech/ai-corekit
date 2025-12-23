@@ -13,6 +13,8 @@ services:
     - /var/lib/docker/volumes:/data/docker-volumes:ro
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared:ro
     - .:/data/ai-launchkit:ro
+    env_file:
+      - .env
     environment:
     - KOPIA_PASSWORD=${KOPIA_PASSWORD}
     - KOPIA_UI_USERNAME=${KOPIA_UI_USERNAME}

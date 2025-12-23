@@ -290,6 +290,9 @@ write_env_file() {
             if [ "$changed" = false ]; then break; fi
         done
 
+        # Track written keys
+        declare -A WRITTEN_KEYS
+
         # Write to temp file
         while IFS= read -r line || [[ -n "$line" ]]; do
             # Pass comments and empty lines
@@ -302,10 +305,24 @@ write_env_file() {
                 local key=$(echo "$line" | cut -d'=' -f1 | xargs)
                 local final_val="${SERVICE_ENV_VARS[$key]}"
                 echo "${key}='${final_val}'" >> "$temp_file"
+                WRITTEN_KEYS["$key"]=1
             else
                 echo "$line" >> "$temp_file"
             fi
         done < "$template_file"
+
+        # Append User Defined Variables
+        local header_written=false
+        for key in "${!SERVICE_ENV_VARS[@]}"; do
+            if [[ -z "${WRITTEN_KEYS[$key]}" ]]; then
+                if [ "$header_written" = false ]; then
+                    echo "" >> "$temp_file"
+                    echo "# --- User Defined Variables ---" >> "$temp_file"
+                    header_written=true
+                fi
+                echo "${key}='${SERVICE_ENV_VARS[$key]}'" >> "$temp_file"
+            fi
+        done
     )
     
     mv "$temp_file" "$output_file"

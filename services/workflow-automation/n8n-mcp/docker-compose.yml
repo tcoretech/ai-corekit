@@ -7,6 +7,8 @@ services:
     profiles:
     - n8n-mcp
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - AUTH_TOKEN=${N8N_MCP_TOKEN}
     - USE_FIXED_HTTP=true

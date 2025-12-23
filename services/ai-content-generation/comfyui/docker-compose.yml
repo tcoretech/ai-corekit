@@ -5,6 +5,8 @@ services:
     profiles:
     - comfyui
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - CLI_ARGS=--listen 0.0.0.0 --cpu
     volumes:

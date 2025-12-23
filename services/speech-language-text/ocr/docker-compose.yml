@@ -8,6 +8,8 @@ services:
     volumes:
     - easyocr_models:/root/.EasyOCR/model
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - SECRET_KEY=${EASYOCR_SECRET_KEY:-launchkit}
     healthcheck:
@@ -28,6 +30,8 @@ services:
     restart: unless-stopped
     volumes:
     - ${PROJECT_ROOT}/services/shared-resources/shared:/tmp
+    env_file:
+      - .env
     environment:
     - HTTP_LISTEN_PORT=8884
     - HTTP_UPLOAD_TMPDIR=/tmp

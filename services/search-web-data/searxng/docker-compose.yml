@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     volumes:
     - ./config/local/settings.yml:/etc/searxng/settings.yml:ro
+    env_file:
+      - .env
     environment:
     - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
     - SEARXNG_SECRET=${SEARXNG_SECRET}

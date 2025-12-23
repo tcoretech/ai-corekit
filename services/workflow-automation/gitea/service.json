@@ -5,7 +5,5 @@
   "use_cases": "Source code management, issue tracking, CI/CD, GitHub alternative",
   "interface": "git.<yourdomain>.com",
   "source": "https://github.com/go-gitea/gitea",
-  "depends_on": [
-    "gitea-db"
-  ]
+  "depends_on": []
 }

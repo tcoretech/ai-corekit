@@ -1,7 +1,7 @@
 services:
   private-dns:
     image: coredns/coredns:latest
-    container_name: coredns-private
+    container_name: private-dns
     profiles:
       - private-dns
     restart: unless-stopped

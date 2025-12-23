@@ -9,6 +9,8 @@ services:
     - kimai_data:/opt/kimai/var/data
     - kimai_plugins:/opt/kimai/var/plugins
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - ADMINMAIL=${KIMAI_ADMIN_EMAIL:-${PRIMARY_EMAIL}}
     - ADMINPASS=${KIMAI_ADMIN_PASSWORD}
@@ -39,6 +41,8 @@ services:
     restart: unless-stopped
     volumes:
     - kimai_mysql:/var/lib/mysql
+    env_file:
+      - .env
     environment:
     - MYSQL_DATABASE=${KIMAI_DB_NAME:-kimai}
     - MYSQL_USER=${KIMAI_DB_USER:-kimai}

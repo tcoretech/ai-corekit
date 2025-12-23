@@ -5,6 +5,8 @@ services:
     profiles:
     - leantime
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - LEAN_DB_HOST=mysql
     - LEAN_DB_USER=leantime

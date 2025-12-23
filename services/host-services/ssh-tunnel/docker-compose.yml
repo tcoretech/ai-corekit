@@ -2,11 +2,13 @@
 services:
   ssh-tunnel:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared-ssh
+    container_name: ssh-tunnel
     profiles:
       - ssh-tunnel
     restart: always
     command: tunnel --no-autoupdate run
+    env_file:
+      - .env
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_SSH_TUNNEL_TOKEN}
       - TUNNEL_METRICS=127.0.0.1:60123

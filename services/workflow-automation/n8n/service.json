@@ -6,7 +6,6 @@
   "interface": "n8n.<yourdomain>.com",
   "source": "https://github.com/n8n-io/n8n",
   "depends_on": [
-    "n8n-import",
     "postgres",
     "redis"
   ]

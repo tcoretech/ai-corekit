@@ -151,3 +151,9 @@ for service in "${SERVICES_TO_REMOVE[@]}"; do
         log_warning "[$service] No docker-compose.yml found."
     fi
 done
+
+# Disable profiles after removal
+log_info "Updating enabled profiles..."
+for s in "${SERVICES_TO_REMOVE[@]}"; do
+    disable_service_profile "$s"
+done

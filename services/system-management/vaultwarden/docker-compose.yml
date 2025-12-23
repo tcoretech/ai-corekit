@@ -8,6 +8,8 @@ services:
     volumes:
     - ./data:/data
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - DOMAIN=https://${VAULTWARDEN_HOSTNAME}
     - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}

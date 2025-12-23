@@ -5,6 +5,8 @@ services:
     profiles:
     - gotenberg
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - DISABLE_GOOGLE_CHROME=false
     healthcheck:

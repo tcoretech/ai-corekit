@@ -2,6 +2,8 @@ services:
   smtp-relay:
     image: alpine/socat
     container_name: smtp-relay
+    env_file:
+      - .env
     profiles:
     - smtp-relay
     restart: unless-stopped

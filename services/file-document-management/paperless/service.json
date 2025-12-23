@@ -5,8 +5,5 @@
   "use_cases": "Document archiving, AI auto-tagging, GDPR compliance, full-text search",
   "interface": "docs.<yourdomain>.com",
   "source": "https://github.com/paperless-ngx/paperless-ngx",
-  "depends_on": [
-    "paperless-db",
-    "paperless-redis"
-  ]
+  "depends_on": []
 }

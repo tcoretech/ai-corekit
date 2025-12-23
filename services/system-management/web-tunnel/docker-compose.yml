@@ -1,11 +1,13 @@
 services:
   web-tunnel:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared-web
+    container_name: web-tunnel
     profiles:
     - web-tunnel
     restart: always
     command: tunnel --no-autoupdate run
+    env_file:
+      - .env
     environment:
     - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     - TUNNEL_METRICS=127.0.0.1:60123

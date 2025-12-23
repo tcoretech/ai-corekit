@@ -5,6 +5,8 @@ services:
     container_name: flowise
     profiles:
     - flowise
+    env_file:
+      - .env
     environment:
     - PORT=3001
     - FLOWISE_USERNAME=${FLOWISE_USERNAME}

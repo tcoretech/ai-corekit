@@ -9,6 +9,8 @@ services:
     - ALL
     security_opt:
     - no-new-privileges=true
+    env_file:
+      - .env
     environment:
     - PUID=1000
     - PGID=1000
@@ -31,6 +33,8 @@ services:
     profiles:
     - paperless-ai
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - PAPERLESS_BASE_URL=http://paperless-ngx:8000
     - PAPERLESS_API_TOKEN=${PAPERLESS_API_TOKEN}

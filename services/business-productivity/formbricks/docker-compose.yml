@@ -8,6 +8,8 @@ services:
     volumes:
     - formbricks_uploads:/home/nextjs/apps/web/uploads
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - WEBAPP_URL=https://${FORMBRICKS_HOSTNAME}
     - NEXTAUTH_URL=https://${FORMBRICKS_HOSTNAME}
@@ -51,6 +53,8 @@ services:
     restart: unless-stopped
     volumes:
     - formbricks_postgres:/var/lib/postgresql/data
+    env_file:
+      - .env
     environment:
     - POSTGRES_DB=formbricks
     - POSTGRES_USER=formbricks
@@ -68,6 +72,8 @@ services:
     container_name: formbricks-init
     profiles:
     - formbricks
+    env_file:
+      - .env
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     command: 'sh -c " psql -h postgres -U postgres -c \"CREATE DATABASE formbricks\"

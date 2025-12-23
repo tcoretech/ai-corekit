@@ -6,7 +6,6 @@
   "interface": "baserow.<yourdomain>.com",
   "source": "https://github.com/bram2w/baserow",
   "depends_on": [
-    "baserow-init",
     "postgres",
     "redis"
   ]

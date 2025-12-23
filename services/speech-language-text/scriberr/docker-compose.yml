@@ -8,6 +8,8 @@ services:
     volumes:
     - scriberr_data:/app/data
     - ${PROJECT_ROOT}/services/shared-resources/shared/audio:/app/data/uploads
+    env_file:
+      - .env
     environment:
     - HOST=0.0.0.0
     - PORT=8080

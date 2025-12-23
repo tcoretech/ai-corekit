@@ -8,6 +8,8 @@ services:
     volumes:
     - twenty_data:/app/packages/twenty-server/.local-storage
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - NODE_PORT=3000
     - PG_DATABASE_URL=postgresql://${TWENTY_CRM_DB_USER}:${TWENTY_CRM_DB_PASSWORD}@twenty-db:5432/${TWENTY_CRM_DB_NAME}
@@ -32,6 +34,8 @@ services:
   twenty-redis:
     image: redis:7-alpine
     container_name: twenty-redis
+    env_file:
+      - .env
     profiles:
     - twenty-crm
     restart: unless-stopped
@@ -52,6 +56,8 @@ services:
     restart: unless-stopped
     volumes:
     - twenty_db_data:/var/lib/postgresql/data
+    env_file:
+      - .env
     environment:
     - POSTGRES_PASSWORD=${TWENTY_CRM_DB_PASSWORD}
     - POSTGRES_USER=${TWENTY_CRM_DB_USER}

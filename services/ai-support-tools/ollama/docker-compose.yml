@@ -2,6 +2,8 @@ services:
   ollama-pull-llama-cpu:
     image: ollama/ollama:latest
     container_name: ollama-pull-llama
+    env_file:
+      - .env
     volumes:
     - ollama_storage:/root/.ollama
     entrypoint: /bin/sh
@@ -17,6 +19,8 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-8192}
     - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
@@ -29,6 +33,8 @@ services:
   ollama-pull-llama-gpu:
     image: ollama/ollama:latest
     container_name: ollama-pull-llama
+    env_file:
+      - .env
     volumes:
     - ollama_storage:/root/.ollama
     entrypoint: /bin/sh
@@ -44,6 +50,8 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-8192}
     - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
@@ -64,6 +72,8 @@ services:
   ollama-pull-llama-gpu-amd:
     image: ollama/ollama:rocm
     container_name: ollama-pull-llama
+    env_file:
+      - .env
     volumes:
     - ollama_storage:/root/.ollama
     entrypoint: /bin/sh
@@ -79,6 +89,8 @@ services:
     image: ollama/ollama:rocm
     container_name: ollama
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-8192}
     - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}

@@ -6,7 +6,6 @@
   "interface": "odoo.<yourdomain>.com",
   "source": "https://github.com/odoo/odoo",
   "depends_on": [
-    "odoo-schema-init",
     "postgres"
   ]
 }

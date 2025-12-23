@@ -8,6 +8,8 @@ services:
     volumes:
     - nocodb_data:/usr/app/data
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/nocodb
     - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
@@ -28,6 +30,8 @@ services:
     container_name: nocodb-init
     profiles:
     - nocodb
+    env_file:
+      - .env
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     command: 'sh -c " psql -h postgres -U postgres -c \"CREATE DATABASE nocodb\" ||

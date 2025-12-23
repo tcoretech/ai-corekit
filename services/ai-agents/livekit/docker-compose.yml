@@ -8,6 +8,8 @@ services:
     volumes:
     - livekit_data:/data
     - ./config/entrypoint.sh:/entrypoint.sh:ro
+    env_file:
+      - .env
     environment:
     - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
     - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
@@ -38,6 +40,8 @@ services:
     volumes:
     - ./agents:/app
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
     environment:
     - LIVEKIT_URL=ws://livekit-server:7880
     - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}

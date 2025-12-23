@@ -10,6 +10,8 @@ services:
     - ./config:/config
     - ./data:/data
     - ./config/plugins:/plugins
+    env_file:
+      - .env
     environment:
     - NEO4J_AUTH=${NEO4J_AUTH_USERNAME:-neo4j}/${NEO4J_AUTH_PASSWORD}
     - NEO4J_server_default__advertised__address=${NEO4J_HOSTNAME}

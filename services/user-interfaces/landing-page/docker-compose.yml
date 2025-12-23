@@ -2,6 +2,8 @@ services:
   landing-page:
     image: nginx:alpine
     container_name: landing-page
+    env_file:
+      - .env
     profiles:
       - landing-page
     restart: unless-stopped

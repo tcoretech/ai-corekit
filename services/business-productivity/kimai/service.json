@@ -5,7 +5,5 @@
   "use_cases": "DSGVO-compliant billing, team timesheets, API, 2FA, invoicing",
   "interface": "time.<yourdomain>.com",
   "source": "https://github.com/kimai/kimai",
-  "depends_on": [
-    "kimai_db"
-  ]
+  "depends_on": []
 }

@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     shm_size: 1g
     env_file:
-    - .env
+      - .env
     deploy:
       resources:
         limits:

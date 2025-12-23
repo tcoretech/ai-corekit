@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     volumes:
     - qdrant_storage:/qdrant/storage
+    env_file:
+      - .env
     environment:
     - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     expose:

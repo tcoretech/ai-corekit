@@ -10,6 +10,8 @@ services:
     volumes:
     - ./data/voices:/app/voices
     - ./config/local/openedai-config:/app/config
+    env_file:
+      - .env
     environment:
     - TTS_HOME=voices
     - HF_HOME=voices
@@ -21,6 +23,8 @@ services:
     restart: unless-stopped
     expose:
     - '8000'
+    env_file:
+      - .env
     environment:
     - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-distil-whisper-large-v3}
     - WHISPER__COMPUTE_TYPE=int8

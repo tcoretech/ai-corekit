@@ -6,7 +6,6 @@
   "interface": "vikunja.<yourdomain>.com",
   "source": "https://github.com/go-vikunja/vikunja",
   "depends_on": [
-    "vikunja-init",
     "postgres",
     "redis"
   ]

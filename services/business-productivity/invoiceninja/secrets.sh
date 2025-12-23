@@ -14,6 +14,8 @@ declare -A SECRETS=(
     ["INVOICENINJA_ADMIN_PASSWORD"]="password:32"
     ["INVOICENINJA_DB_PASSWORD"]="password:32"
     ["INVOICENINJA_DB_ROOT_PASSWORD"]="password:32"
+    ["INVOICENINJA_APP_KEY"]="base64:32"
+    ["REDIS_PASSWORD"]="fixed:"
 )
 
 ############################################

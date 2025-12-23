@@ -1,5 +1,5 @@
 include:
-  - build/repo/docker/docker-compose.yml
+  - ./build/repo/docker/docker-compose.yml
 
 services:
   kong:

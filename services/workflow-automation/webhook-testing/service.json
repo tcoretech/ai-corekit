@@ -5,5 +5,7 @@
   "use_cases": "Receive & inspect webhooks, debug n8n integrations, test external services",
   "interface": "webhook-test.<yourdomain>.com",
   "source": "https://github.com/tarampampam/webhook-tester",
-  "depends_on": []
+  "depends_on": [
+    "mailpit"
+  ]
 }

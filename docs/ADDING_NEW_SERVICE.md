@@ -20,6 +20,7 @@ services/<category>/<service-name>/
 ├── build.sh                # (Optional) Custom build logic
 ├── prepare.sh              # (Optional) PRE-startup (host prep)
 ├── startup.sh              # (Optional) POST-startup (app bootstrapping)
+├── healthcheck.sh          # (Optional) Custom health check logic
 ├── cleanup.sh              # (Optional) On service down tidy up hook
 ├── report.sh               # (Optional) Status/Info reporting
 └── config/                 # Configuration files
@@ -104,6 +105,7 @@ generate_secret "MY_SERVICE_ADMIN_PASSWORD" 32
 
 *   **`prepare.sh`**: Runs before `docker compose up`. Use this to create directories or set permissions.
 *   **`startup.sh`**: Runs after `docker compose up`. Use this to run migrations or API calls to configure the running service.
+*   **`healthcheck.sh`**: Runs after startup. Use this to verify the service is healthy from the host (e.g., `curl` or `dig`).
 *   **`build.sh`**: Runs if the service needs to be built from source.
 *   **`report.sh`**: Outputs connection info after the service starts.
 

@@ -8,8 +8,6 @@ services:
     depends_on:
       odoo-schema-init:
         condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
     environment:
     - HOST=postgres
     - USER=odoo
@@ -35,8 +33,6 @@ services:
     depends_on:
       odoo-init:
         condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
     environment:
     - HOST=postgres
     - USER=odoo
@@ -52,9 +48,6 @@ services:
     container_name: odoo-init
     profiles:
     - odoo
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     command: 'sh -c " psql -h postgres -U postgres -c \"CREATE USER odoo WITH PASSWORD

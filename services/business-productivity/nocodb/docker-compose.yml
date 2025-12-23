@@ -15,10 +15,6 @@ services:
     depends_on:
       nocodb-init:
         condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
     healthcheck:
       test:
       - CMD-SHELL
@@ -32,9 +28,6 @@ services:
     container_name: nocodb-init
     profiles:
     - nocodb
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     command: 'sh -c " psql -h postgres -U postgres -c \"CREATE DATABASE nocodb\" ||

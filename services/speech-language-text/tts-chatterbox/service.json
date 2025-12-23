@@ -5,7 +5,5 @@
   "use_cases": "AI voices with emotional expression, voice synthesis, outperforms ElevenLabs",
   "interface": "chatterbox.<yourdomain>.com",
   "source": "https://github.com/resemble-ai/chatterbox",
-  "depends_on": [
-    "chatterbox-tts"
-  ]
+  "depends_on": []
 }

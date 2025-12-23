@@ -6,6 +6,6 @@
   "interface": "leantime.<yourdomain>.com",
   "source": "https://github.com/Leantime/leantime",
   "depends_on": [
-    "mysql_leantime"
+    "mysql"
   ]
 }

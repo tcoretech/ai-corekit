@@ -16,6 +16,7 @@ done
 SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
 PROJECT_ROOT="$SCRIPT_DIR"
+export PROJECT_ROOT
 cd "$PROJECT_ROOT"
 LIB_DIR="$PROJECT_ROOT/lib"
 CONFIG_DIR="$PROJECT_ROOT/config"
@@ -362,11 +363,262 @@ run_compose_cmd() {
     
     get_stack_compose_files "$stack"
     
-    docker compose -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" "${COMPOSE_FLAGS[@]}" "$cmd" "${compose_args[@]}"
+    if [ "$cmd" == "logs" ]; then
+        docker compose -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" "${COMPOSE_FLAGS[@]}" "$cmd" "${compose_args[@]}" 2> >(grep -v "variable is not set" >&2)
+    else
+        docker compose -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" "${COMPOSE_FLAGS[@]}" "$cmd" "${compose_args[@]}"
+    fi
 }
 
 # Command: Logs
 cmd_logs() {
+    local project=""
+    local other_args=()
+    
+    # Parse args manually to extract -p/--project
+    local i=1
+    while [ $i -le $# ]; do
+        local arg="${!i}"
+        case "$arg" in
+            -p|--project)
+                ((i++))
+                if [ $i -le $# ]; then
+                    project="${!i}"
+                fi
+                ;;
+            *)
+                other_args+=("$arg")
+                ;;
+        esac
+        ((i++))
+    done
+    
+    # Reset positional parameters to other_args
+    set -- "${other_args[@]}"
+
+    # If no service specified (or first arg is a flag), show interactive menu of running services
+    if [ -z "$1" ] || [[ "$1" == -* ]]; then
+        # Only show menu if we are in a TTY or if we can read from /dev/tty
+        if [ -t 0 ] || [ -c /dev/tty ]; then
+            
+            # Get running services from cmd_ps
+            # cmd_ps output format: PROJECT SERVICE ...
+            # We skip the header (first line)
+            local ps_out=$(cmd_ps | tail -n +2)
+            
+            if [ -z "$ps_out" ]; then
+                log_error "No running services found."
+                return 1
+            fi
+
+            # Parse into unique "SERVICE PROJECT" lines
+            local services_list=$(echo "$ps_out" | awk '{print $2, $1}' | sort | uniq)
+            
+            if [ -z "$services_list" ]; then
+                log_error "No running services found."
+                return 1
+            fi
+
+            # Read into array
+            local menu_items=()
+            while read -r line; do
+                if [ -n "$line" ]; then
+                    menu_items+=("$line")
+                fi
+            done <<< "$services_list"
+
+            # Print menu to stderr
+            {
+                echo "Select a running service to view logs:"
+                local j=1
+                for item in "${menu_items[@]}"; do
+                    local svc=$(echo "$item" | awk '{print $1}')
+                    local proj=$(echo "$item" | awk '{print $2}')
+                    echo "$j) $svc ($proj)"
+                    ((j++))
+                done
+                echo "$j) All (via docker compose)"
+            } >&2
+
+            local selection
+            if [ -t 0 ]; then
+                read -p "Select service (default 1): " selection
+            else
+                echo -n "Select service (default 1): " >&2
+                read selection < /dev/tty
+            fi
+
+            if [ -z "$selection" ]; then selection=1; fi
+
+            if [ "$selection" -eq "$j" ]; then
+                # All selected - fall through to run_compose_cmd
+                if [ -n "$project" ]; then
+                    run_compose_cmd logs -p "$project" "$@"
+                else
+                    run_compose_cmd logs "$@"
+                fi
+                return
+            elif [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -lt "$j" ]; then
+                local selected_item="${menu_items[$((selection-1))]}"
+                local svc=$(echo "$selected_item" | awk '{print $1}')
+                local proj=$(echo "$selected_item" | awk '{print $2}')
+                
+                # Recursively call cmd_logs with the selected service and project
+                cmd_logs -p "$proj" "$svc" "$@"
+                return
+            else
+                log_error "Invalid selection"
+                return 1
+            fi
+        fi
+    fi
+
+    # Optimization: If a specific service is requested, only load that service's compose file
+    # This prevents "variable not set" warnings from unrelated services
+    if [[ "$1" != -* ]] && [ -n "$1" ]; then
+        local service_name="$1"
+        
+        # Find the service directory
+        local service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service_name" -type d | head -n 1)
+        
+        if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
+            shift # Remove service name from args
+            
+            # Load environment
+            load_env
+            
+            # Determine project name
+            if [ -n "$project" ]; then
+                PROJECT_NAME="$project"
+            else
+                load_stack_config "core" # Default to core stack if no project specified
+            fi
+
+            # Load service-specific .env to prevent warnings
+            local env_file_args=()
+            if [ -f "$service_dir/.env" ]; then
+                set -a
+                source "$service_dir/.env"
+                set +a
+                env_file_args+=(--env-file "$service_dir/.env")
+            fi
+            
+            # Suppress warnings by filtering stderr
+            # We use process substitution to filter out the specific warning pattern from stderr
+            # while keeping other stderr output (like container logs) intact.
+
+            
+            # Check if --all flag is present
+            local show_all=false
+            local args=()
+            for arg in "$@"; do
+                if [ "$arg" == "--all" ]; then
+                    show_all=true
+                else
+                    args+=("$arg")
+                fi
+            done
+            
+            if [ "$show_all" = true ]; then
+                # Show logs for all containers in this service
+                docker compose "${env_file_args[@]}" -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" -f "$service_dir/docker-compose.yml" logs "${args[@]}" 2> >(grep -v "variable is not set" >&2)
+            else
+                # Try to find the main service name from docker-compose.yml
+                # Heuristic: Look for service name matching directory name, or first service
+                local main_service=""
+                
+                # Get list of services in this compose file
+                # Ensure profiles are active for config command
+                export COMPOSE_PROFILES
+                local services=$(docker compose "${env_file_args[@]}" -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" -f "$service_dir/docker-compose.yml" config --services 2>/dev/null)
+                
+                # Fallback to grep if config returns nothing (e.g. profiles issue or invalid config)
+                if [ -z "$services" ]; then
+                    services=$(grep "^  [a-zA-Z0-9_-]\+:" "$service_dir/docker-compose.yml" | sed 's/^  //;s/://')
+                fi
+                
+                if [ -z "$services" ]; then
+                    log_error "No services found in $service_dir/docker-compose.yml"
+                    return 1
+                fi
+
+                local service_count=$(echo "$services" | wc -l)
+                
+                if [ "$service_count" -eq 1 ]; then
+                    main_service=$(echo "$services" | head -n 1)
+                else
+                    # Sort services: exact match first, then others
+                    local sorted_services=""
+                    if echo "$services" | grep -q "^$service_name$"; then
+                        sorted_services="$service_name"
+                        sorted_services+=$'\n'
+                        sorted_services+=$(echo "$services" | grep -v "^$service_name$")
+                    else
+                        sorted_services="$services"
+                    fi
+
+                    # Parse services into array
+                    local i=1
+                    local service_array=()
+                    while read -r s; do
+                        if [ -n "$s" ]; then
+                            service_array+=("$s")
+                            ((i++))
+                        fi
+                    done <<< "$sorted_services"
+
+                    # Interactive selection
+                    # Print menu to stderr so it is visible even if stdout is piped (e.g. | tail)
+                    {
+                        echo "Multiple containers found for service '$service_name':"
+                        local j=1
+                        for s in "${service_array[@]}"; do
+                            echo "$j) $s"
+                            ((j++))
+                        done
+                        echo "$j) All"
+                    } >&2
+                    
+                    if [ -t 0 ]; then
+                        # Input is a TTY (interactive)
+                        read -p "Select container (default 1): " selection
+                    else
+                        # Input is not a TTY (automated/piped input)
+                        # Still try to read from /dev/tty if available to support piping
+                        if [ -c /dev/tty ]; then
+                            # Prompt to stderr
+                            echo -n "Select container (default 1): " >&2
+                            read selection < /dev/tty
+                        else
+                            read selection
+                        fi
+                    fi
+
+                    if [ -z "$selection" ]; then selection=1; fi
+                    
+                    if [ "$selection" -eq "$i" ]; then
+                        # All selected
+                        docker compose "${env_file_args[@]}" -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" -f "$service_dir/docker-compose.yml" logs "${args[@]}" 2> >(grep -v "variable is not set" >&2)
+                        return
+                    elif [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -lt "$i" ]; then
+                        main_service="${service_array[$((selection-1))]}"
+                    else
+                        log_error "Invalid selection"
+                        return 1
+                    fi
+                fi
+                
+                if [ -n "$main_service" ]; then
+                    docker compose "${env_file_args[@]}" -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" -f "$service_dir/docker-compose.yml" logs "$main_service" "${args[@]}" 2> >(grep -v "variable is not set" >&2)
+                else
+                     # Fallback to all
+                    docker compose "${env_file_args[@]}" -p "$PROJECT_NAME" --project-directory "$PROJECT_ROOT" -f "$service_dir/docker-compose.yml" logs "${args[@]}" 2> >(grep -v "variable is not set" >&2)
+                fi
+            fi
+            return
+        fi
+    fi
+
     run_compose_cmd logs "$@"
 }
 
@@ -374,6 +626,7 @@ cmd_logs() {
 cmd_ps() {
     local stack=""
     local project=""
+    local filter_service=""
     
     # Parse args to find project/stack
     while [[ $# -gt 0 ]]; do
@@ -389,6 +642,9 @@ cmd_ps() {
                 shift
                 ;;
             *)
+                if [ -z "$filter_service" ]; then
+                    filter_service="$1"
+                fi
                 shift
                 ;;
         esac
@@ -456,7 +712,7 @@ cmd_ps() {
 
     # Define processing function to avoid code duplication
     process_ps_output() {
-        awk -F'\t' -v map_file="$map_file" '
+        awk -F'\t' -v map_file="$map_file" -v filter="$filter_service" '
         BEGIN {
             OFS="\t";
             while ((getline line < map_file) > 0) {
@@ -470,6 +726,12 @@ cmd_ps() {
             if ($2 in service_map) {
                 $2 = service_map[$2];
             }
+            
+            # Filter if requested
+            if (filter != "" && $2 != filter) {
+                next;
+            }
+
             print $1, $2, $3, $4, $5, $6
         }' | column -t -s $'\t'
     }

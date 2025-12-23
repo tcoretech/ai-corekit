@@ -17,6 +17,7 @@ services/<category>/<service-name>/
 ├── build.sh                # (Optional) Custom build logic
 ├── prepare.sh              # (Optional) PRE-startup (host prep)
 ├── startup.sh              # (Optional) POST-startup (app bootstrapping)
+├── healthcheck.sh          # (Optional) Custom health check logic
 ├── cleanup.sh              # (Optional) On service down tidy up hook
 ├── report.sh               # (Optional) Status/Info reporting
 ├── scripts/                # (Optional) Any service specific helper scripts
@@ -63,6 +64,10 @@ To avoid confusion about *when* a script runs, we use distinct names:
     *   **When**: Runs **AFTER** `docker compose up` (and potentially waits for healthchecks).
     *   **Purpose**: Application bootstrapping.
     *   **Tasks**: Running database migrations, creating initial admin users via API, seeding data.
+*   **`healthcheck.sh`**:
+    *   **When**: Runs **AFTER** `startup.sh`.
+    *   **Purpose**: Verifying service health from the host perspective.
+    *   **Tasks**: Running `curl`, `dig`, or other tools to verify connectivity when container-internal healthchecks are insufficient.
 *   **`secrets.sh`**:
     *   **Purpose**: Generates secure random values for `.env`.
     *   **Tasks**: Updates `.env` without overwriting existing values.

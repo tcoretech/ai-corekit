@@ -1,6 +1,6 @@
 
 services:
-  cloudflared-ssh:
+  ssh-tunnel:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared-ssh
     profiles:

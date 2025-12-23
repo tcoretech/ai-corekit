@@ -1,5 +1,5 @@
 services:
-  cloudflared:
+  web-tunnel:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared-web
     profiles:

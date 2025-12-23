@@ -265,6 +265,14 @@ for service in "${SERVICES_TO_START[@]}"; do
              log_warning "[$service] Startup hook failed."
         fi
     fi
+
+    # Healthcheck Hook
+    if [ -n "$service_dir" ] && [ -f "$service_dir/healthcheck.sh" ]; then
+        log_info "[$service] Running healthcheck..."
+        if ! (cd "$service_dir" && bash "healthcheck.sh"); then
+             log_warning "[$service] Healthcheck failed."
+        fi
+    fi
 done
 
 if [ ${#FAILED_SERVICES[@]} -gt 0 ]; then

@@ -1,5 +1,5 @@
 include:
-  - build/repo/docker/docker-compose.yaml
+  - ./build/repo/docker/docker-compose.yaml
 
 services:
   api:

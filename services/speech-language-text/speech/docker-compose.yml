@@ -8,8 +8,8 @@ services:
     expose:
     - '8000'
     volumes:
-    - ${PROJECT_ROOT}/openedai-voices:/app/voices
-    - ${PROJECT_ROOT}/openedai-config:/app/config
+    - ./data/voices:/app/voices
+    - ./config/local/openedai-config:/app/config
     environment:
     - TTS_HOME=voices
     - HF_HOME=voices

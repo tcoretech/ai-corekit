@@ -136,9 +136,9 @@ for service in "${SERVICES_TO_REMOVE[@]}"; do
             # We will try to remove from all known projects defined in stacks.
             
             log_info "[$service] No running containers found. Attempting removal from all known stack projects..."
-            
+
             # Get all known projects
-            local all_projects=$(get_all_stack_projects)
+            all_projects=$(get_all_stack_projects)
             
             for proj in $all_projects; do
                 log_info "[$service] Attempting removal from project '$proj'..."

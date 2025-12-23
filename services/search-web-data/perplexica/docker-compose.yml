@@ -16,8 +16,6 @@ services:
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     extra_hosts:
     - host.docker.internal:host-gateway
-    depends_on:
-    - searxng
 volumes:
   perplexica_uploads: {}
   perplexica_data: {}

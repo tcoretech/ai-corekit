@@ -1,5 +1,5 @@
 services:
-  coredns-private:
+  private-dns:
     image: coredns/coredns:latest
     container_name: coredns-private
     profiles:
@@ -14,7 +14,4 @@ services:
       - "${PRIVATE_DNS_TARGET_IP}:53:53/udp"
       - "${PRIVATE_DNS_TARGET_IP}:53:53/tcp"
     healthcheck:
-      test: ["CMD-SHELL", "dig @${PRIVATE_DNS_TARGET_IP} mail.${PRIVATE_BASE_DOMAIN:-example.com} +short | grep -q ${PRIVATE_DNS_TARGET_IP}"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      disable: true

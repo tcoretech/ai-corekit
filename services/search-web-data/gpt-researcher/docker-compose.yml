@@ -37,8 +37,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 40s
-    depends_on:
-    - searxng
   gpt-researcher-ui:
     image: gptresearcher/gptr-nextjs:latest
     container_name: gpt-researcher-ui
@@ -53,4 +51,3 @@ services:
     - gpt-researcher
 volumes:
   gpt_researcher_data: {}
-

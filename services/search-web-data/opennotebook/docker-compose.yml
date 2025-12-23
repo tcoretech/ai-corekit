@@ -17,8 +17,8 @@ services:
     - API_URL=https://${OPENNOTEBOOK_HOSTNAME}
     - OPEN_NOTEBOOK_PASSWORD=${OPENNOTEBOOK_PASSWORD}
     volumes:
-    - ${PROJECT_ROOT}/opennotebook/notebook_data:/app/data
-    - ${PROJECT_ROOT}/opennotebook/surreal_data:/mydata
+    - opennotebook_data:/app/data
+    - opennotebook_surreal:/mydata
     - ${PROJECT_ROOT}/services/shared-resources/shared:/app/shared
     healthcheck:
       test:
@@ -28,3 +28,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+volumes:
+  opennotebook_data: {}
+  opennotebook_surreal: {}

@@ -17,8 +17,9 @@ cd build/docker
 # Update submodule (Cal.com source) - PINNED to v5.8.2
 echo "Updating Cal.com source code (pinned to v5.8.2)..."
 git pull
-git submodule update --init
+git submodule update --init --force
 cd calcom
+git reset --hard
 git fetch --tags
 git checkout v5.8.2
 cd ..

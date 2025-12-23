@@ -18,9 +18,6 @@ services:
     - 7880:7880
     - 7882:7882/tcp
     - 50000-50100:50000-50100/udp
-    depends_on:
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
       - CMD

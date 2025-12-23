@@ -35,8 +35,6 @@ services:
     depends_on:
       formbricks_db:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
       - CMD-SHELL
@@ -70,9 +68,6 @@ services:
     container_name: formbricks-init
     profiles:
     - formbricks
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     command: 'sh -c " psql -h postgres -U postgres -c \"CREATE DATABASE formbricks\"

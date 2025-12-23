@@ -1,43 +1,23 @@
 services:
-  chatterbox-frontend:
+  tts-chatterbox:
     build:
-      context: ./src/frontend
-      dockerfile: Dockerfile
-    container_name: chatterbox-frontend
-    profiles:
-    - tts-chatterbox
-    restart: unless-stopped
-    depends_on:
-    - chatterbox-tts
-    environment:
-    - VITE_API_URL=http://chatterbox-tts:5123
-  chatterbox-tts:
-    build:
-      context: ./src
-      dockerfile: docker/Dockerfile
-    container_name: chatterbox-tts
+      context: ./build
+      dockerfile: ../docker/Dockerfile
+    container_name: tts-chatterbox
     profiles:
     - tts-chatterbox
     restart: unless-stopped
     volumes:
-    - chatterbox_models:/app/models
-    - ${PROJECT_ROOT}/services/shared-resources/shared/tts/voices:/app/voice-samples
+    - chatterbox_models:/root/.cache/huggingface
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
-    - DEVICE=${CHATTERBOX_DEVICE:-cpu}
-    - EXAGGERATION=${CHATTERBOX_EXAGGERATION:-0.5}
-    - API_KEY=${CHATTERBOX_API_KEY}
-    - MAX_LENGTH=${CHATTERBOX_MAX_LENGTH:-500}
-    - DEFAULT_VOICE=${CHATTERBOX_DEFAULT_VOICE:-default}
-    - MEMORY_CLEANUP_INTERVAL=${CHATTERBOX_MEMORY_CLEANUP:-60}
-    - CUDA_CACHE_CLEAR_INTERVAL=${CHATTERBOX_CUDA_CLEANUP:-120}
+    - GRADIO_SERVER_NAME=0.0.0.0
+    ports:
+    - "7860:7860"
     healthcheck:
-      test:
-      - CMD-SHELL
-      - curl -f http://localhost:4123/health || exit 1
+      test: ["CMD", "curl", "-f", "http://localhost:7860/"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
 volumes:
   chatterbox_models: {}

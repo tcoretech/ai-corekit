@@ -20,3 +20,6 @@ declare -A SECRETS=(
 
 # Generate secrets
 generate_secrets SECRETS
+
+# Write .env
+write_service_env "$SCRIPT_DIR"

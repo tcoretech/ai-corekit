@@ -41,7 +41,7 @@ if [[ -n "${SERVICE_ENV_VARS[DEX_ADMIN_PASSWORD]}" && -z "${SERVICE_ENV_VARS[DEX
         if python3 -c "import bcrypt" &> /dev/null; then
             DEX_HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw('${SERVICE_ENV_VARS[DEX_ADMIN_PASSWORD]}'.encode(), bcrypt.gensalt()).decode())")
             if [[ -n "$DEX_HASH" ]]; then
-                update_env_var "DEX_ADMIN_PASSWORD_HASH" "$DEX_HASH" "$SCRIPT_DIR/.env"
+                update_env_var "$SCRIPT_DIR/.env" "DEX_ADMIN_PASSWORD_HASH" "$DEX_HASH"
                 log_success "Generated DEX_ADMIN_PASSWORD_HASH"
             fi
         else

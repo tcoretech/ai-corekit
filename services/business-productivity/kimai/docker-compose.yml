@@ -10,7 +10,7 @@ services:
     - kimai_plugins:/opt/kimai/var/plugins
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
     environment:
-    - ADMINMAIL=${KIMAI_ADMIN_EMAIL:-${USER_EMAIL}}
+    - ADMINMAIL=${KIMAI_ADMIN_EMAIL:-${PRIMARY_EMAIL}}
     - ADMINPASS=${KIMAI_ADMIN_PASSWORD}
     - DATABASE_URL=mysql://${KIMAI_DB_USER}:${KIMAI_DB_PASSWORD}@kimai_db:3306/${KIMAI_DB_NAME}?charset=utf8mb4&serverVersion=8.3.0
     - TRUSTED_HOSTS=${KIMAI_HOSTNAME},localhost,127.0.0.1

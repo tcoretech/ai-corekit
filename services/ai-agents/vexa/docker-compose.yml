@@ -1,2 +1,2 @@
 include:
-  - build/repo/docker-compose.yml
+  - ./build/repo/docker-compose.yml

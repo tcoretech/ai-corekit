@@ -27,10 +27,6 @@ services:
     depends_on:
       baserow-init:
         condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
       - CMD-SHELL
@@ -43,9 +39,6 @@ services:
     container_name: baserow-init
     profiles:
     - baserow
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     command: 'sh -c " psql -h postgres -U postgres -c \"CREATE DATABASE baserow\"

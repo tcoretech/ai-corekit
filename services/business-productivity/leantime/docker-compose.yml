@@ -37,9 +37,6 @@ services:
     - leantime-plugins:/var/www/html/app/Plugins
     - leantime-logs:/var/www/html/storage/logs
     - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
-    depends_on:
-      mysql:
-        condition: service_healthy
     healthcheck:
       test:
       - CMD

@@ -110,8 +110,6 @@ services:
         condition: service_healthy
       hoppscotch-migrate:
         condition: service_completed_successfully
-      mailpit:
-        condition: service_started
     healthcheck:
       test:
       - CMD-SHELL

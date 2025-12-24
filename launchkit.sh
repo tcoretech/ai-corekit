@@ -144,6 +144,15 @@ cmd_enable() {
         exit 1
     fi
     
+    # Validate services exist
+    for s in "${services_to_enable[@]}"; do
+        service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$s" -type d | head -n 1)
+        if [ -z "$service_dir" ]; then
+            log_error "Service '$s' not found. Please check the service name."
+            exit 1
+        fi
+    done
+    
     load_env
     local current_profiles="${COMPOSE_PROFILES:-}"
     local new_profiles="$current_profiles"

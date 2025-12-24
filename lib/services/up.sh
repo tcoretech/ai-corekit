@@ -77,8 +77,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-load_env
-
 # Suppress orphan warnings
 export COMPOSE_IGNORE_ORPHANS=True
 
@@ -136,6 +134,18 @@ if [ "$USE_SPECIFIC" = true ]; then
     done
     SERVICES_TO_START=("${UNIQUE_SERVICES[@]}")
 
+    # Validate services exist before enabling
+    for s in "${SERVICES_TO_START[@]}"; do
+        # Use find to locate service directory
+        service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$s" -type d | head -n 1)
+        if [ -z "$service_dir" ]; then
+            log_error "Service '$s' not found. Please check the service name."
+            exit 1
+        fi
+    done
+
+    load_env
+
     # Update profiles
     log_info "Updating enabled profiles..."
     for s in "${SERVICES_TO_START[@]}"; do
@@ -147,6 +157,8 @@ if [ "$USE_SPECIFIC" = true ]; then
         export COMPOSE_PROFILES=$(grep "^COMPOSE_PROFILES=" "$GLOBAL_ENV" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
     fi
 else
+    load_env
+
     # Use configured profiles
     if [ -z "$COMPOSE_PROFILES" ]; then
         log_warning "No services a in configuration. Use 'launchkit config' or 'launchkit enable'."

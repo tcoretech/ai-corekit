@@ -1,14 +1,5 @@
 services:
   calcom:
-    # build:
-    #   context: ./build/docker
-    #   dockerfile: Dockerfile
-    #   args:
-    #   - MAX_OLD_SPACE_SIZE=8192
-    #   - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/calcom
-    #   - NEXT_PUBLIC_WEBAPP_URL=https://cal.${DOMAIN}
-    #   - NEXT_PUBLIC_API_V2_URL=https://cal.${DOMAIN}/api/v2
-    #   - NEXT_PUBLIC_WEBSITE_URL=https://cal.${DOMAIN}
     image: calcom/cal.com:v5.8.2
     container_name: calcom
     profiles:
@@ -42,12 +33,7 @@ services:
     expose:
     - '3000'
     healthcheck:
-      test:
-      - CMD
-      - wget
-      - -q
-      - --spider
-      - http://localhost:3000/api/health
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || curl -f http://localhost:3000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

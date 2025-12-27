@@ -775,7 +775,64 @@ cmd_ps() {
 
 # Command: Restart
 cmd_restart() {
-    run_compose_cmd restart "$@"
+    local project=""
+    local service_name=""
+    local other_args=()
+    
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -p|--project)
+                shift
+                if [ -n "$1" ]; then project="$1"; fi
+                shift
+                ;;
+            -*)
+                other_args+=("$1")
+                shift
+                ;;
+            *)
+                if [ -z "$service_name" ]; then
+                    service_name="$1"
+                else
+                    other_args+=("$1")
+                fi
+                shift
+                ;;
+        esac
+    done
+    
+    if [ -n "$service_name" ]; then
+        local service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service_name" -type d | head -n 1)
+        
+        if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
+            load_env
+            if [ -n "$project" ]; then
+                PROJECT_NAME="$project"
+            else
+                load_stack_config "core"
+            fi
+            
+            local env_file_args=()
+            if [ -f "$service_dir/.env" ]; then
+                set -a
+                source "$service_dir/.env"
+                set +a
+                env_file_args+=(--env-file "$service_dir/.env")
+            fi
+            
+            log_info "Restarting service: $service_name"
+            docker compose "${env_file_args[@]}" -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" restart "${other_args[@]}"
+            return
+        fi
+    fi
+    
+    # Reconstruct args
+    local args=()
+    if [ -n "$project" ]; then args+=("-p" "$project"); fi
+    if [ -n "$service_name" ]; then args+=("$service_name"); fi
+    args+=("${other_args[@]}")
+    
+    run_compose_cmd restart "${args[@]}"
 }
 
 # Command: Exec

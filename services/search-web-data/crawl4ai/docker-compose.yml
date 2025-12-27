@@ -1,0 +1,16 @@
+services:
+  crawl4ai:
+    image: unclecode/crawl4ai:latest
+    container_name: crawl4ai
+    profiles:
+    - crawl4ai
+    restart: unless-stopped
+    shm_size: 1g
+    env_file:
+      - .env
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 4G
+

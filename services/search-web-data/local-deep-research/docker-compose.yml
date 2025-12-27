@@ -1,0 +1,36 @@
+services:
+  local-deep-research:
+    build:
+      context: https://github.com/langchain-ai/local-deep-researcher.git
+      dockerfile: Dockerfile
+    container_name: local-deep-research
+    profiles:
+    - local-deep-research
+    restart: unless-stopped
+    volumes:
+    - ldr_data:/data
+    - ${PROJECT_ROOT}/services/shared-resources/shared/research:/data/shared
+    env_file:
+      - .env
+    environment:
+    - LLM_PROVIDER=${LDR_LLM_PROVIDER:-ollama}
+    - OLLAMA_BASE_URL=http://ollama:11434
+    - LOCAL_LLM=${LDR_LOCAL_MODEL:-qwen2.5:7b-instruct-q4_K_M}
+    - SEARCH_API=${LDR_SEARCH_API:-searxng}
+    - SEARXNG_URL=http://searxng:8080
+    - MAX_WEB_RESEARCH_LOOPS=${LDR_MAX_LOOPS:-5}
+    - FETCH_FULL_PAGE=${LDR_FETCH_FULL:-false}
+    - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+    - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
+    - LDR_DATA_DIR=/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -fsS http://localhost:2024/health || curl -fsS http://localhost:2024
+        || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+volumes:
+  ldr_data: {}

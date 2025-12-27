@@ -1,0 +1,12 @@
+{
+  "name": "vikunja",
+  "category": "Business Productivity",
+  "description": "Vikunja (Modern Task Management - Todoist/TickTick alternative)",
+  "use_cases": "Kanban boards, Gantt charts, team collaboration, CalDAV",
+  "interface": "vikunja.<yourdomain>.com",
+  "source": "https://github.com/go-vikunja/vikunja",
+  "depends_on": [
+    "postgres",
+    "redis"
+  ]
+}

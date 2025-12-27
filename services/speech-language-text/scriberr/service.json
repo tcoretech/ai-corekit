@@ -1,0 +1,9 @@
+{
+  "name": "scriberr",
+  "category": "Speech, Language & Text",
+  "description": "Scriberr (AI audio transcription with speaker diarization)",
+  "use_cases": "Meeting transcripts, podcast processing, call recordings, speaker identification",
+  "interface": "scriberr.<yourdomain>.com",
+  "source": "https://github.com/rishikanthc/Scriberr",
+  "depends_on": []
+}

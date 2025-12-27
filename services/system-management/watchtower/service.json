@@ -1,0 +1,8 @@
+{
+  "name": "watchtower",
+  "category": "System Management",
+  "description": "Watchtower (Automated Docker container updates)",
+  "use_cases": "Keep containers up-to-date automatically",
+  "interface": "Internal",
+  "source": "https://containrrr.dev/watchtower/"
+}

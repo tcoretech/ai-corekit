@@ -1,0 +1,12 @@
+{
+  "name": "formbricks",
+  "category": "Business Productivity",
+  "description": "Formbricks - Privacy-first surveys & forms (Typeform alternative)",
+  "use_cases": "Customer feedback, NPS surveys, market research, form builder, GDPR-compliant",
+  "interface": "forms.<yourdomain>.com",
+  "source": "https://github.com/formbricks/formbricks",
+  "depends_on": [
+    "postgres",
+    "redis"
+  ]
+}

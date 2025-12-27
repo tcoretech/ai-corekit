@@ -1,0 +1,9 @@
+{
+  "name": "caddy",
+  "category": "System Management",
+  "description": "Caddy (Reverse Proxy)",
+  "use_cases": "Reverse proxy, SSL termination",
+  "interface": "Internal Port 80/443",
+  "source": "https://caddyserver.com/",
+  "depends_on": []
+}

@@ -1,0 +1,62 @@
+services:
+  seafile:
+    image: seafileltd/seafile-mc:latest
+    container_name: seafile
+    profiles:
+    - seafile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - DB_HOST=seafile-db
+    - DB_ROOT_PASSWD=${SEAFILE_DB_ROOT_PASSWORD}
+    - DB_NAME=seafile_db
+    - DB_USER=seafile
+    - DB_PASSWORD=${SEAFILE_DB_PASSWORD}
+    - SEAFILE_SERVER_LETSENCRYPT=false
+    - SEAFILE_ADMIN_EMAIL=${SEAFILE_ADMIN_EMAIL}
+    - SEAFILE_ADMIN_PASSWORD=${SEAFILE_ADMIN_PASSWORD}
+    - SEAFILE_SERVER_HOSTNAME=${SEAFILE_HOSTNAME}
+    - TIME_ZONE=Europe/Berlin
+    - FORCE_HTTPS_IN_CONF=true
+    volumes:
+    - seafile_data:/shared
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/shared/paperless-bridge
+    - ./config/seafile-init.sh:/init-fix.sh:ro
+    depends_on:
+    - seafile-db
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - bash /init-fix.sh && curl -f http://localhost:80
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  seafile-db:
+    image: mariadb:10.11
+    container_name: seafile-mariadb
+    profiles:
+    - seafile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - MYSQL_ROOT_PASSWORD=${SEAFILE_DB_ROOT_PASSWORD}
+    - MYSQL_DATABASE=seafile_db
+    - MYSQL_USER=seafile
+    - MYSQL_PASSWORD=${SEAFILE_DB_PASSWORD}
+    volumes:
+    - seafile_mysql:/var/lib/mysql
+    healthcheck:
+      test:
+      - CMD
+      - mysqladmin
+      - ping
+      - -h
+      - localhost
+      interval: 30s
+      timeout: 5s
+      retries: 5
+volumes:
+  seafile_data: {}
+  seafile_mysql: {}

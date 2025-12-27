@@ -1,0 +1,12 @@
+{
+  "name": "baserow",
+  "category": "Business Productivity",
+  "description": "Baserow (Airtable Alternative)",
+  "use_cases": "Database management, project tracking, collaborative workflows",
+  "interface": "baserow.<yourdomain>.com",
+  "source": "https://github.com/bram2w/baserow",
+  "depends_on": [
+    "postgres",
+    "redis"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "redis",
+  "category": "Data Infrastructure",
+  "description": "Redis Cache (Shared)",
+  "use_cases": "Cache for n8n, etc.",
+  "interface": "Internal Port 6379",
+  "source": "https://hub.docker.com/_/redis",
+  "depends_on": []
+}

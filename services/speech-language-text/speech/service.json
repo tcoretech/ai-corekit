@@ -1,0 +1,9 @@
+{
+  "name": "speech",
+  "category": "Speech, Language & Text",
+  "description": "Speech Stack (Whisper ASR + OpenedAI TTS - CPU optimized)",
+  "use_cases": "Voice assistants, audiobooks, notifications",
+  "interface": "Internal API",
+  "source": "https://github.com/matatonic/openedai-speech",
+  "depends_on": []
+}

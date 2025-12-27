@@ -1,0 +1,9 @@
+{
+  "name": "ocr",
+  "category": "Speech, Language & Text",
+  "description": "OCR Bundle (Tesseract + EasyOCR - Extract text from images/PDFs)",
+  "use_cases": "Extract text from images/PDFs",
+  "interface": "Internal API",
+  "source": "",
+  "depends_on": []
+}

@@ -1,0 +1,12 @@
+{
+  "name": "nocodb",
+  "category": "Business Productivity",
+  "description": "NocoDB (Open-source Airtable alternative, smart spreadsheet UI)",
+  "use_cases": "Smart spreadsheet UI, realtime collaboration, automation",
+  "interface": "nocodb.<yourdomain>.com",
+  "source": "https://github.com/nocodb/nocodb",
+  "depends_on": [
+    "postgres",
+    "redis"
+  ]
+}

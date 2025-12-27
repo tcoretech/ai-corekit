@@ -1,9 +1,0 @@
-. {
-  hosts {
-    ${PRIVATE_DNS_TARGET_IP} ${PRIVATE_DNS_HOSTS}
-    fallthrough
-  }
-  forward . ${PRIVATE_DNS_FORWARD_1:-1.1.1.1} ${PRIVATE_DNS_FORWARD_2:-1.0.0.1}
-  cache 30
-  log
-}

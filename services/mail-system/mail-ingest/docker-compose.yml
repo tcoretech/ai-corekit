@@ -1,0 +1,27 @@
+services:
+  mail-ingest:
+    build: ${PROJECT_ROOT}/services/mail-system/mail-ingest
+    container_name: mail-ingest
+    profiles:
+    - mail-ingest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - MAILGUN_WEBHOOK_SIGNING_KEY=${MAILGUN_WEBHOOK_SIGNING_KEY}
+    - MAILSERVER_HOST=mailserver
+    - MAILSERVER_PORT=25
+    - MAILSERVER_HELO_DOMAIN=mail-ingest.${BASE_DOMAIN}
+    expose:
+    - '3000'
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:3000/healthz')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+    - default

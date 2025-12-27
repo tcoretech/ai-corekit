@@ -1,0 +1,11 @@
+{
+  "name": "snappymail",
+  "category": "Mail System",
+  "description": "SnappyMail (Modern webmail client for Docker-Mailserver)",
+  "use_cases": "Web interface for email access",
+  "interface": "webmail.<yourdomain>.com",
+  "source": "https://github.com/the-djmaze/snappymail",
+  "depends_on": [
+    "mailserver"
+  ]
+}

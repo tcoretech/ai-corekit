@@ -1,0 +1,74 @@
+services:
+  espocrm:
+    image: espocrm/espocrm:latest
+    container_name: espocrm
+    profiles:
+    - espocrm
+    restart: unless-stopped
+    volumes:
+    - espocrm_data:/var/www/html
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
+    environment:
+    - ESPOCRM_DATABASE_PLATFORM=Mysql
+    - ESPOCRM_DATABASE_HOST=espocrm-db
+    - ESPOCRM_DATABASE_NAME=${ESPOCRM_DB_NAME}
+    - ESPOCRM_DATABASE_USER=${ESPOCRM_DB_USER}
+    - ESPOCRM_DATABASE_PASSWORD=${ESPOCRM_DB_PASSWORD}
+    - ESPOCRM_ADMIN_USERNAME=${ESPOCRM_ADMIN_USERNAME}
+    - ESPOCRM_ADMIN_PASSWORD=${ESPOCRM_ADMIN_PASSWORD}
+    - ESPOCRM_SITE_URL=https://${ESPOCRM_HOSTNAME}
+    depends_on:
+      espocrm-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost/index.php || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+  espocrm-db:
+    image: mariadb:latest
+    container_name: espocrm-db
+    profiles:
+    - espocrm
+    restart: unless-stopped
+    volumes:
+    - espocrm_db_data:/var/lib/mysql
+    env_file:
+      - .env
+    environment:
+    - MARIADB_ROOT_PASSWORD=${ESPOCRM_DB_ROOT_PASSWORD}
+    - MARIADB_DATABASE=${ESPOCRM_DB_NAME}
+    - MARIADB_USER=${ESPOCRM_DB_USER}
+    - MARIADB_PASSWORD=${ESPOCRM_DB_PASSWORD}
+    command: --max-allowed-packet=64MB
+    healthcheck:
+      test:
+      - CMD
+      - healthcheck.sh
+      - --connect
+      - --innodb_initialized
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+  espocrm-daemon:
+    image: espocrm/espocrm:latest
+    container_name: espocrm-daemon
+    env_file:
+      - .env
+    profiles:
+    - espocrm
+    restart: unless-stopped
+    volumes:
+    - espocrm_data:/var/www/html
+    entrypoint: docker-daemon.sh
+    depends_on:
+    - espocrm
+volumes:
+  espocrm_data: {}
+  espocrm_db_data: {}

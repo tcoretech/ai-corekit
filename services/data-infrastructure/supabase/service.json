@@ -1,0 +1,9 @@
+{
+  "name": "supabase",
+  "category": "Data Infrastructure",
+  "description": "Supabase (Backend as a Service)",
+  "use_cases": "Database, Auth, Realtime, Storage, Edge Functions",
+  "interface": "supabase.<yourdomain>.com",
+  "source": "https://github.com/supabase/supabase",
+  "depends_on": []
+}

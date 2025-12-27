@@ -1,41 +1,35 @@
+# Global Ignores
 .DS_Store
-.env
+*.env
+**/.env
 .env.bak
 .env.test
-neo4j/
-searxng/settings.yml
-searxng/uwsgi*
-shared-backup/
-shared/
-supabase/
-dify/
-volumes/bolt-data/
-openedai-config/
-openedai-voices/
-perplexica/
-# Mail Services
-postal/config/
-mailpit_data/
-postal_mariadb/
-postal_rabbitmq/
-postal_assets/
-postal_uploads/
-calcom-docker/
-*.backup-postal
-docker-data/
-dkim_generation.log
-dkim_record.txt
-
-# Jitsi configuration directories
-jitsi-jicofo/
-jitsi-jvb/
-jitsi-prosody-config/
-jitsi-prosody-plugins/
-jitsi-web/
-jitsi-transcripts/
-VAULTWARDEN_IMPORT.txt
+.env.global
+.env.backup
+credentials.*.txt
 ai-launchkit-credentials.json
+dkim_*
 
-host-services/dns/Corefile
-host-services/dns/.env
-host-services/ssh/.env
+# Service Data & Logs (Standardized)
+**/data/
+**/logs/
+**/tmp/
+**/build/
+**/repo/
+**/backup/
+**/backups/
+**/storage/
+**/uploads/
+**/db/
+**/database/
+
+# Local Config
+**/config/local/
+
+# Specific Service Data (Legacy/Specific)
+volumes/
+docker-data/
+shared-backup/
+services/shared-resources/shared/
+services/shared-resources/media/
+services/shared-resources/temp/

@@ -1,0 +1,9 @@
+{
+  "name": "gitea",
+  "category": "Workflow Automation",
+  "description": "Gitea (Self-hosted Git service for n8n revisions- GitHub alternative)",
+  "use_cases": "Source code management, issue tracking, CI/CD, GitHub alternative",
+  "interface": "git.<yourdomain>.com",
+  "source": "https://github.com/go-gitea/gitea",
+  "depends_on": []
+}

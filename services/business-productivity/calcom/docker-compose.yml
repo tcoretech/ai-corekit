@@ -1,0 +1,42 @@
+services:
+  calcom:
+    image: calcom/cal.com:v5.8.2
+    container_name: calcom
+    profiles:
+    - calcom
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/calcom
+    - DATABASE_DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/calcom
+    - NEXT_PUBLIC_WEBAPP_URL=https://cal.${DOMAIN}
+    - NEXT_PUBLIC_API_V2_URL=https://cal.${DOMAIN}/api/v2
+    - NEXT_PUBLIC_WEBSITE_URL=https://cal.${DOMAIN}
+    - NEXTAUTH_URL=https://cal.${DOMAIN}
+    - CAL_URL=https://cal.${DOMAIN}
+    - NEXTAUTH_SECRET=${CALCOM_NEXTAUTH_SECRET}
+    - CALENDSO_ENCRYPTION_KEY=${CALCOM_ENCRYPTION_KEY}
+    - EMAIL_FROM=${EMAIL_FROM}
+    - EMAIL_SERVER_HOST=smtp-relay
+    - EMAIL_SERVER_PORT=8025
+    - EMAIL_SERVER_USER=${SMTP_USER:-}
+    - EMAIL_SERVER_PASSWORD=${SMTP_PASSWORD:-}
+    - NODE_TLS_REJECT_UNAUTHORIZED=0
+    - SEND_FEEDBACK_EMAIL=false
+    - NEXT_PUBLIC_DISABLE_SIGNUP=false
+    - TELEMETRY_DISABLED=1
+    - NODE_ENV=production
+    volumes:
+    - calcom_data:/app/data
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    expose:
+    - '3000'
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || curl -f http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+volumes:
+  calcom_data: {}

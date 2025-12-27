@@ -1,0 +1,17 @@
+services:
+  private-dns:
+    image: coredns/coredns:latest
+    container_name: private-dns
+    profiles:
+      - private-dns
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    command: ["-conf", "/etc/coredns/Corefile"]
+    volumes:
+      - ./config/local/Corefile:/etc/coredns/Corefile:ro
+    ports:
+      - "${PRIVATE_DNS_TARGET_IP}:53:53/udp"
+      - "${PRIVATE_DNS_TARGET_IP}:53:53/tcp"
+    healthcheck:
+      disable: true

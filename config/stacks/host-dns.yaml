@@ -1,0 +1,8 @@
+# Host DNS Stack
+# Provides DNS resolution for services.
+
+name: host-dns
+project_name: host-dns
+
+services:
+  - private-dns

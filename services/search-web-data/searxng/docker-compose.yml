@@ -1,0 +1,26 @@
+services:
+  searxng:
+    container_name: searxng
+    image: docker.io/searxng/searxng:latest
+    profiles:
+    - searxng
+    restart: unless-stopped
+    volumes:
+    - ./config/local/settings.yml:/etc/searxng/settings.yml:ro
+    env_file:
+      - .env
+    environment:
+    - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
+    - SEARXNG_SECRET=${SEARXNG_SECRET}
+    - UWSGI_WORKERS=${SEARXNG_UWSGI_WORKERS:-4}
+    - UWSGI_THREADS=${SEARXNG_UWSGI_THREADS:-4}
+    cap_add:
+    - CHOWN
+    - SETGID
+    - SETUID
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: '1'
+

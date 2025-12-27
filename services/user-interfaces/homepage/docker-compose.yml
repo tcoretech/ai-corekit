@@ -1,0 +1,23 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    profiles:
+    - homepage
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - HOMEPAGE_VAR_TITLE=AI LaunchKit Dashboard
+    - HOMEPAGE_VAR_SEARCH_PROVIDER=searxng
+    - HOMEPAGE_VAR_HEADER_STYLE=boxed
+    - HOMEPAGE_VAR_LAYOUT_STYLE=row
+    - HOMEPAGE_VAR_COLOR_PALETTE=slate
+    - PUID=1000
+    - PGID=999
+    - HOMEPAGE_ALLOWED_HOSTS=*
+    volumes:
+    - ./config/local:/app/config
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    user: 1000:999
+

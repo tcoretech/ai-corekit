@@ -1,0 +1,11 @@
+{
+  "name": "livekit",
+  "category": "AI Agents",
+  "description": "LiveKit (Real-time voice & video - WebRTC, REQUIRES UDP 50000-50100!)",
+  "use_cases": "AI voice assistants, conversational AI, ChatGPT-like voice bots, requires UDP 50000-50100",
+  "interface": "livekit.<yourdomain>.com",
+  "source": "https://github.com/livekit/livekit",
+  "depends_on": [
+    "redis"
+  ]
+}

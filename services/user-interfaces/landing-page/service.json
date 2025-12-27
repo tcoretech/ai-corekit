@@ -1,0 +1,8 @@
+{
+  "name": "landing-page",
+  "category": "User Interfaces",
+  "description": "Landing Page (Static website)",
+  "use_cases": "Main entry point",
+  "interface": "<yourdomain>.com",
+  "source": "local"
+}

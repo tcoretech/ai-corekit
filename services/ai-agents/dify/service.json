@@ -1,0 +1,9 @@
+{
+  "name": "dify",
+  "category": "AI Agents",
+  "description": "Dify (LLM App Development Platform)",
+  "use_cases": "Building AI agents, chatbots, and workflows",
+  "interface": "dify.<yourdomain>.com",
+  "source": "https://github.com/langgenius/dify",
+  "depends_on": []
+}

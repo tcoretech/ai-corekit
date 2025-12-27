@@ -1,0 +1,72 @@
+services:
+  paperless-ai:
+    image: clusterzx/paperless-ai:latest
+    container_name: paperless-ai
+    profiles:
+    - paperless-ai
+    restart: unless-stopped
+    cap_drop:
+    - ALL
+    security_opt:
+    - no-new-privileges=true
+    env_file:
+      - .env
+    environment:
+    - PUID=1000
+    - PGID=1000
+    - PAPERLESS_AI_PORT=${PAPERLESS_AI_PORT:-3000}
+    - RAG_SERVICE_URL=http://paperless-ai:8000
+    - RAG_SERVICE_ENABLED=true
+    volumes:
+    - paperless-ai-data:/app/data
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -fsS http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  paperless-gpt:
+    image: ghcr.io/icereed/paperless-gpt:latest
+    container_name: paperless-gpt
+    profiles:
+    - paperless-ai
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - PAPERLESS_BASE_URL=http://paperless-ngx:8000
+    - PAPERLESS_API_TOKEN=${PAPERLESS_API_TOKEN}
+    - PAPERLESS_PUBLIC_URL=https://${PAPERLESS_HOSTNAME}
+    - MANUAL_TAG=paperless-gpt
+    - AUTO_TAG=paperless-gpt-auto
+    - AUTO_OCR_TAG=paperless-gpt-ocr-auto
+    - LLM_PROVIDER=${PAPERLESS_GPT_LLM_PROVIDER:-openai}
+    - LLM_MODEL=${PAPERLESS_GPT_LLM_MODEL:-gpt-4o-mini}
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - LLM_LANGUAGE=${PAPERLESS_GPT_LANGUAGE:-German}
+    - OCR_PROVIDER=llm
+    - VISION_LLM_PROVIDER=${PAPERLESS_GPT_VISION_PROVIDER:-openai}
+    - VISION_LLM_MODEL=${PAPERLESS_GPT_VISION_MODEL:-gpt-4o-mini}
+    - OCR_PROCESS_MODE=image
+    - OCR_LIMIT_PAGES=${PAPERLESS_GPT_OCR_LIMIT:-0}
+    - AUTO_GENERATE_TITLE=true
+    - AUTO_GENERATE_TAGS=true
+    - AUTO_GENERATE_CORRESPONDENTS=true
+    - AUTO_GENERATE_CREATED_DATE=true
+    - TOKEN_LIMIT=${PAPERLESS_GPT_TOKEN_LIMIT:-0}
+    - LOG_LEVEL=info
+    volumes:
+    - paperless-gpt-prompts:/app/prompts
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - wget -q --spider http://localhost:8080/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+volumes:
+  paperless-ai-data: {}
+  paperless-gpt-prompts: {}

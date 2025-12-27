@@ -1,0 +1,57 @@
+services:
+  gpt-researcher:
+    image: gptresearcher/gpt-researcher:latest
+    container_name: gpt-researcher
+    profiles:
+    - gpt-researcher
+    restart: unless-stopped
+    volumes:
+    - gpt_researcher_data:/usr/src/app/outputs
+    - ${PROJECT_ROOT}/services/shared-resources/shared/research:/usr/src/app/my-docs
+    env_file:
+      - .env
+    environment:
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - LLM_PROVIDER=openai
+    - FAST_LLM=openai:gpt-4o-mini
+    - SMART_LLM=openai:gpt-4o-mini
+    - STRATEGIC_LLM=openai:gpt-4o-mini
+    - SUMMARY_LLM=openai:gpt-4o-mini
+    - RETRIEVER=${GPTR_RETRIEVER:-searx}
+    - SEARX_URL=http://searxng:8080
+    - REPORT_FORMAT=${GPTR_REPORT_FORMAT:-APA}
+    - MAX_ITERATIONS=${GPTR_MAX_ITERATIONS:-5}
+    - TOTAL_WORDS=${GPTR_TOTAL_WORDS:-2000}
+    - LANGUAGE=${GPTR_LANGUAGE:-english}
+    - DOC_PATH=/usr/src/app/my-docs
+    - HOST=0.0.0.0
+    - PORT=8000
+    - BACKEND_WS_MODE=none
+    user: root
+    ports:
+    - 8555:8000
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -fsS http://localhost:8000/api/health || curl -fsS http://localhost:8000
+        || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+  gpt-researcher-ui:
+    image: gptresearcher/gptr-nextjs:latest
+    container_name: gpt-researcher-ui
+    profiles:
+    - gpt-researcher
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - NEXT_PUBLIC_GPTR_API_URL=https://${GPTR_HOSTNAME}
+    - CHOKIDAR_USEPOLLING=true
+    - LOGGING_LEVEL=INFO
+    depends_on:
+    - gpt-researcher
+volumes:
+  gpt_researcher_data: {}

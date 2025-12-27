@@ -1,0 +1,9 @@
+{
+  "name": "homepage",
+  "category": "User Interfaces",
+  "description": "Homepage (Dashboard for all services)",
+  "use_cases": "Service overview, Docker integration, quick access",
+  "interface": "dashboard.<yourdomain>.com",
+  "source": "https://github.com/gethomepage/homepage",
+  "depends_on": []
+}

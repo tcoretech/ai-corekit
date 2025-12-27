@@ -1,0 +1,9 @@
+{
+  "name": "searxng",
+  "category": "Search & Web Data",
+  "description": "SearXNG (Private Metasearch Engine)",
+  "use_cases": "Web search for agents, no tracking, multiple sources",
+  "interface": "searxng.<yourdomain>.com",
+  "source": "https://github.com/searxng/searxng",
+  "depends_on": []
+}

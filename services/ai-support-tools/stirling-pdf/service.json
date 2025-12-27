@@ -1,0 +1,9 @@
+{
+  "name": "stirling-pdf",
+  "category": "AI Support Tools",
+  "description": "Stirling-PDF (100+ PDF Tools: Merge, Split, OCR, Sign)",
+  "use_cases": "Split, merge, compress, OCR, sign PDFs",
+  "interface": "pdf.<yourdomain>.com",
+  "source": "https://github.com/Stirling-Tools/Stirling-PDF",
+  "depends_on": []
+}

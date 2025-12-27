@@ -1,0 +1,9 @@
+{
+  "name": "ai-security",
+  "category": "AI Security & Compliance",
+  "description": "AI Security Suite - LLM Guard + Presidio (AI safety & GDPR-compliant PII)",
+  "use_cases": "Prompt injection prevention, toxicity filtering, PII removal",
+  "interface": "Internal API",
+  "source": "https://github.com/protectai/llm-guard",
+  "depends_on": []
+}

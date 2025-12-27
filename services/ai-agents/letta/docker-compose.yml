@@ -1,0 +1,21 @@
+services:
+  letta:
+    image: letta/letta:latest
+    container_name: letta
+    profiles:
+    - letta
+    restart: unless-stopped
+    volumes:
+    - letta_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      SECURE: ${LETTA_SECURE:-true}
+      LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:-}
+    extra_hosts:
+    - host.docker.internal:host-gateway
+volumes:
+  letta_data: {}

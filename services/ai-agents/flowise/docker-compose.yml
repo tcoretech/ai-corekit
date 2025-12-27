@@ -1,0 +1,19 @@
+services:
+  flowise:
+    image: flowiseai/flowise
+    restart: unless-stopped
+    container_name: flowise
+    profiles:
+    - flowise
+    env_file:
+      - .env
+    environment:
+    - PORT=3001
+    - FLOWISE_USERNAME=${FLOWISE_USERNAME}
+    - FLOWISE_PASSWORD=${FLOWISE_PASSWORD}
+    extra_hosts:
+    - host.docker.internal:host-gateway
+    volumes:
+    - ./data:/root/.flowise
+    entrypoint: /bin/sh -c "sleep 3; flowise start"
+

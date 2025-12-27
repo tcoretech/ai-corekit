@@ -1,0 +1,46 @@
+include:
+  - ./build/repo/docker/docker-compose.yml
+
+services:
+  kong:
+    volumes:
+      - ./config/kong/kong.yml:/home/kong/temp.yml:ro,z
+    env_file:
+      - .env
+  storage:
+    volumes:
+      - ./data/storage:/var/lib/storage:z
+    env_file:
+      - .env
+  imgproxy:
+    volumes:
+      - ./data/storage:/var/lib/storage:z
+    env_file:
+      - .env
+  functions:
+    volumes:
+      - ./config/functions:/home/deno/functions:Z
+    env_file:
+      - .env
+  db:
+    volumes:
+      - ./config/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      - ./config/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      - ./config/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      - ./config/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+      - ./data/db:/var/lib/postgresql/data:Z
+      - ./config/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
+      - ./config/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
+      - ./config/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
+    env_file:
+      - .env
+  vector:
+    volumes:
+      - ./config/logs/vector.yml:/etc/vector/vector.yml:ro,z
+    env_file:
+      - .env
+  supavisor:
+    volumes:
+      - ./config/pooler/pooler.exs:/etc/pooler/pooler.exs:ro,z
+    env_file:
+      - .env

@@ -1,0 +1,56 @@
+services:
+  leantime:
+    image: leantime/leantime:latest
+    container_name: leantime
+    profiles:
+    - leantime
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - LEAN_DB_HOST=mysql
+    - LEAN_DB_USER=leantime
+    - LEAN_DB_PASSWORD=${LEANTIME_DB_PASSWORD}
+    - LEAN_DB_DATABASE=leantime
+    - LEAN_DB_PORT=3306
+    - LEAN_APP_URL=https://${LEANTIME_HOSTNAME}
+    - LEAN_SITENAME=Leantime
+    - LEAN_SESSION_PASSWORD=${LEANTIME_SESSION_PASSWORD}
+    - LEAN_SESSION_EXPIRATION=28800
+    - LEAN_DEFAULT_TIMEZONE=${TZ:-UTC}
+    - LEAN_LANGUAGE=en-US
+    - LEAN_DEFAULT_THEME=default
+    - PUID=${PUID:-1000}
+    - PGID=${PGID:-1000}
+    - LEAN_ENABLE_MENU_TYPE=true
+    - LEAN_ENABLE_FOOTER=true
+    - LEAN_EMAIL_RETURN=noreply@${DOMAIN}
+    - LEAN_EMAIL_USE_SMTP=true
+    - LEAN_EMAIL_SMTP_HOSTS=mailserver
+    - LEAN_EMAIL_SMTP_PORT=587
+    - LEAN_EMAIL_SMTP_AUTH=true
+    - LEAN_EMAIL_SMTP_USERNAME=noreply@${DOMAIN}
+    - LEAN_EMAIL_SMTP_PASSWORD=UTUyfeicxqtO5LkdcFz21eTaGdT5w39t
+    - LEAN_EMAIL_SMTP_AUTO_TLS=true
+    - LEAN_EMAIL_SMTP_SECURE=STARTTLS
+    volumes:
+    - leantime-public:/var/www/html/public/userfiles
+    - leantime-userfiles:/var/www/html/userfiles
+    - leantime-plugins:/var/www/html/app/Plugins
+    - leantime-logs:/var/www/html/storage/logs
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8080/health
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+volumes:
+  leantime-userfiles: {}
+  leantime-public: {}
+  leantime-logs: {}
+  leantime-plugins: {}

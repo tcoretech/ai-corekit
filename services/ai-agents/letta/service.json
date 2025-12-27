@@ -1,0 +1,9 @@
+{
+  "name": "letta",
+  "category": "AI Agents",
+  "description": "Letta (Agent Server & SDK)",
+  "use_cases": "Persistent AI assistants, memory management",
+  "interface": "letta.<yourdomain>.com",
+  "source": "https://github.com/letta-ai/letta",
+  "depends_on": []
+}

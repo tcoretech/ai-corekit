@@ -1,0 +1,23 @@
+services:
+  perplexica:
+    image: itzcrazykns1337/perplexica:latest
+    container_name: perplexica
+    profiles:
+    - perplexica
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - SEARXNG_API_URL=http://searxng:8080
+    - DATA_DIR=/home/perplexica
+    - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    volumes:
+    - perplexica_data:/home/perplexica/data
+    - perplexica_uploads:/home/perplexica/uploads
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    extra_hosts:
+    - host.docker.internal:host-gateway
+volumes:
+  perplexica_uploads: {}
+  perplexica_data: {}

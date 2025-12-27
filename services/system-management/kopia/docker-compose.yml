@@ -1,0 +1,45 @@
+services:
+  kopia:
+    image: kopia/kopia:latest
+    container_name: kopia
+    hostname: kopia-server
+    profiles:
+    - kopia
+    restart: unless-stopped
+    volumes:
+    - kopia_config:/app/config
+    - kopia_cache:/app/cache
+    - kopia_logs:/app/logs
+    - /var/lib/docker/volumes:/data/docker-volumes:ro
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared:ro
+    - .:/data/ai-launchkit:ro
+    env_file:
+      - .env
+    environment:
+    - KOPIA_PASSWORD=${KOPIA_PASSWORD}
+    - KOPIA_UI_USERNAME=${KOPIA_UI_USERNAME}
+    - KOPIA_UI_PASSWORD=${KOPIA_UI_PASSWORD}
+    - NEXTCLOUD_WEBDAV_URL=${NEXTCLOUD_WEBDAV_URL}
+    - NEXTCLOUD_USERNAME=${NEXTCLOUD_USERNAME}
+    - NEXTCLOUD_APP_PASSWORD=${NEXTCLOUD_APP_PASSWORD}
+    - KOPIA_PERSIST_CREDENTIALS_ON_CONNECT=true
+    - TZ=${TZ}
+    - KOPIA_LOG_LEVEL=info
+    command: 'server start --address=0.0.0.0:51515 --server-username=${KOPIA_UI_USERNAME}
+      --server-password=${KOPIA_UI_PASSWORD} --disable-csrf-token-checks --insecure
+
+      '
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -fsS
+      - http://localhost:51515
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+volumes:
+  kopia_logs: {}
+  kopia_config: {}
+  kopia_cache: {}

@@ -1,0 +1,9 @@
+{
+  "name": "openui",
+  "category": "AI-Powered Development",
+  "description": "OpenUI (AI Frontend/UI Generator - EXPERIMENTAL, best with Claude/GPT-4)",
+  "use_cases": "Design systems, component libraries, mockups",
+  "interface": "openui.<yourdomain>.com",
+  "source": "https://github.com/wandb/openui",
+  "depends_on": []
+}

@@ -1,0 +1,11 @@
+{
+  "name": "perplexica",
+  "category": "Search & Web Data",
+  "description": "Perplexica (Open-source Deep Resarch/Perplexity AI alternative)",
+  "use_cases": "Deep research, academic search, Perplexity AI alternative",
+  "interface": "perplexica.<yourdomain>.com",
+  "source": "https://github.com/ItzCrazyKns/Perplexica",
+  "depends_on": [
+    "searxng"
+  ]
+}

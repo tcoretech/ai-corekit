@@ -1,0 +1,12 @@
+{
+  "name": "postiz",
+  "category": "User Interfaces",
+  "description": "Postiz (Social publishing platform)",
+  "use_cases": "Content scheduling, analytics, multi-platform posting",
+  "interface": "postiz.<yourdomain>.com",
+  "source": "https://github.com/gitroomhq/postiz-app",
+  "depends_on": [
+    "postgres",
+    "redis"
+  ]
+}

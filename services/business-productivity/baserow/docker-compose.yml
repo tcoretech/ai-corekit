@@ -1,0 +1,54 @@
+services:
+  baserow:
+    image: baserow/baserow:1.35.0
+    container_name: baserow
+    profiles:
+    - baserow
+    privileged: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - BASEROW_PUBLIC_URL=https://${BASEROW_HOSTNAME}
+    - SECRET_KEY=${BASEROW_SECRET_KEY}
+    - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/baserow
+    - REDIS_URL=redis://redis:6379
+    - DISABLE_VOLUME_CHECK=yes
+    - BASEROW_RUN_MINIMAL=yes
+    - BASEROW_AMOUNT_OF_WORKERS=1
+    - FROM_EMAIL=${EMAIL_FROM}
+    - EMAIL_SMTP=${EMAIL_SMTP_HOST}
+    - EMAIL_SMTP_HOST=${EMAIL_SMTP_HOST}
+    - EMAIL_SMTP_USER=${EMAIL_SMTP_USER}
+    - EMAIL_SMTP_PASSWORD=${EMAIL_SMTP_PASSWORD}
+    - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT}
+    - EMAIL_SMTP_USE_TLS=${EMAIL_SMTP_USE_TLS}
+    volumes:
+    - baserow_data:/baserow/data
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    depends_on:
+      baserow-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:80/api/_health/ || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  baserow-init:
+    image: postgres:${POSTGRES_VERSION:-17}
+    container_name: baserow-init
+    profiles:
+    - baserow
+    env_file:
+      - .env
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: 'sh -c " psql -h postgres -U postgres -c \"CREATE DATABASE baserow\"
+      || true && echo ''Baserow database ready'' "
+
+      '
+    restart: 'no'
+volumes:
+  baserow_data: {}

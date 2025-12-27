@@ -1,0 +1,107 @@
+services:
+  ollama-pull-llama-cpu:
+    image: ollama/ollama:latest
+    container_name: ollama-pull-llama
+    env_file:
+      - .env
+    volumes:
+    - ollama_storage:/root/.ollama
+    entrypoint: /bin/sh
+    command:
+    - -c
+    - sleep 3; OLLAMA_HOST=ollama:11434 ollama pull qwen2.5:7b-instruct-q4_K_M; OLLAMA_HOST=ollama:11434
+      ollama pull nomic-embed-text
+    profiles:
+    - ${OLLAMA_CPU_PROFILE:-ollama-cpu-disabled}
+    depends_on:
+    - ollama-cpu
+  ollama-cpu:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-8192}
+    - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
+    - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
+    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
+    volumes:
+    - ollama_storage:/root/.ollama
+    profiles:
+    - ${OLLAMA_CPU_PROFILE:-ollama-cpu-disabled}
+  ollama-pull-llama-gpu:
+    image: ollama/ollama:latest
+    container_name: ollama-pull-llama
+    env_file:
+      - .env
+    volumes:
+    - ollama_storage:/root/.ollama
+    entrypoint: /bin/sh
+    command:
+    - -c
+    - sleep 3; OLLAMA_HOST=ollama:11434 ollama pull qwen2.5:7b-instruct-q4_K_M; OLLAMA_HOST=ollama:11434
+      ollama pull nomic-embed-text
+    profiles:
+    - ${OLLAMA_GPU_PROFILE:-ollama-gpu-disabled}
+    depends_on:
+    - ollama-gpu
+  ollama-gpu:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-8192}
+    - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
+    - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
+    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
+    volumes:
+    - ollama_storage:/root/.ollama
+    profiles:
+    - ${OLLAMA_GPU_PROFILE:-ollama-gpu-disabled}
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities:
+            - gpu
+  ollama-pull-llama-gpu-amd:
+    image: ollama/ollama:rocm
+    container_name: ollama-pull-llama
+    env_file:
+      - .env
+    volumes:
+    - ollama_storage:/root/.ollama
+    entrypoint: /bin/sh
+    command:
+    - -c
+    - sleep 3; OLLAMA_HOST=ollama:11434 ollama pull qwen2.5:7b-instruct-q4_K_M; OLLAMA_HOST=ollama:11434
+      ollama pull nomic-embed-text
+    profiles:
+    - ${OLLAMA_AMD_PROFILE:-ollama-amd-disabled}
+    depends_on:
+    - ollama-gpu-amd
+  ollama-gpu-amd:
+    image: ollama/ollama:rocm
+    container_name: ollama
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-8192}
+    - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
+    - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
+    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
+    volumes:
+    - ollama_storage:/root/.ollama
+    profiles:
+    - ${OLLAMA_AMD_PROFILE:-ollama-amd-disabled}
+    devices:
+    - /dev/kfd
+    - /dev/dri
+volumes:
+  ollama_storage: {}

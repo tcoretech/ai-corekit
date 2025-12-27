@@ -1,0 +1,31 @@
+services:
+  snappymail:
+    image: djmaze/snappymail:latest
+    container_name: snappymail
+    profiles:
+    - snappymail
+    restart: unless-stopped
+    volumes:
+    - snappymail_data:/var/lib/snappymail
+    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    env_file:
+      - .env
+    environment:
+    - UPLOAD_MAX_SIZE=25M
+    - PHP_MEMORY_LIMIT=128M
+    - TZ=${TZ:-UTC}
+    expose:
+    - '8888'
+    - '9000'
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - --spider
+      - http://localhost:8888/
+      interval: 30s
+      timeout: 10s
+      retries: 3
+volumes:
+  snappymail_data: {}

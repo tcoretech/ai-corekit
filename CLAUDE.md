@@ -1,228 +1,549 @@
 # CLAUDE.md
 
-This file provides guidance to Claude (claude.ai) and other AI assistants when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-This is **AI LaunchKit**: a comprehensive Docker Compose-based toolkit that creates a complete self-hosted AI development and automation environment. It transforms any Ubuntu server into a powerful AI development platform with 20+ pre-configured services that can be selectively deployed with a single command.
-
-### Core Features
-- **AI Development Tools**: bolt.diy, OpenHands, OpenUI, ComfyUI, Dify
-- **Automation Platform**: n8n with 300+ pre-configured workflows, Flowise
-- **LLM Infrastructure**: Ollama, Open WebUI, Letta
-- **Vector Databases**: Qdrant, Supabase (with pgvector)
-- **Monitoring & Observability**: Langfuse, Grafana, Prometheus
-- **Media Processing**: ComfyUI (Stable Diffusion), Speech Stack (Whisper STT, OpenedAI TTS)
-- **Development Tools**: SearXNG, Crawl4ai, browserless (planned), LiveKit (planned)
+**AI LaunchKit** is a modular, service-based Docker Compose orchestration system that deploys 50+ self-hosted AI and productivity tools. Unlike monolithic Docker Compose setups, it uses an **iterative context strategy** where each service is self-contained in its own directory with independent `docker-compose.yml` files, and the `launchkit` CLI orchestrates them by switching into each service's directory context.
 
 ## Essential Commands
 
-### Installation and Updates
+### Installation & Setup
 ```bash
-# Main installation (from project root)
-sudo bash ./scripts/install.sh
+# Install CLI globally
+sudo make install
 
-# Update all services to latest versions
-sudo bash ./scripts/update.sh
+# Initialize system (Docker, secrets)
+launchkit init
 
-# Clean up unused Docker resources
-sudo bash ./scripts/cleanup.sh
-```
+# Configure services (interactive wizard)
+launchkit config
 
-### Docker Operations
-```bash
-# View running services
-docker compose ps
+# Start all enabled services
+launchkit up
 
-# View logs for specific service
-docker compose logs [service-name]
-
-# Restart services with specific profiles
-docker compose --profile n8n --profile ai-dev up -d
-
-# Stop all services
-docker compose down
-```
-
-### Python Helper Script
-```bash
-# Start services with automatic profile detection
-python3 start_services.py
+# Update system and services
+launchkit update
 ```
 
 ### Service Management
 ```bash
-# Apply configuration updates to running services
-sudo bash ./scripts/apply_update.sh
+# Enable/disable services
+launchkit enable <service-name>
+launchkit disable <service-name>
 
-# View all available Docker Compose profiles
-grep -E '^\s*profiles:' docker-compose.yml
+# Enable a stack of services
+launchkit enable -s <stack-name>
 
-# Check service health status
-docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+# Start specific services (auto-enables)
+launchkit up <service1> <service2>
+
+# Start all services in a stack
+launchkit up -s <stack-name>
+
+# Stop services (keeps enabled)
+launchkit down
+
+# Stop and disable services
+launchkit down --prune
+
+# Remove stopped containers
+launchkit rm
 ```
 
-## Architecture
+### Monitoring & Debugging
+```bash
+# View running services
+launchkit ps
 
-### Core Installation Flow
-The installation follows a strict 6-step sequence managed by `scripts/install.sh`:
-1. **01_system_preparation.sh** - Updates system, installs dependencies, configures security
-2. **02_install_docker.sh** - Installs Docker Engine and Docker Compose
-3. **03_generate_secrets.sh** - Creates .env file with secure passwords and keys
-4. **04_wizard.sh** - Interactive service selection with whiptail UI (20+ services)
-5. **05_run_services.sh** - Deploys selected services using Docker Compose profiles
-6. **06_final_report.sh** - Displays access URLs and credentials
+# View logs (interactive menu if no service specified)
+launchkit logs [service-name]
 
-### Docker Compose Architecture
-- **Profiles**: Services organized into logical groups (n8n, ai-dev, monitoring, langfuse, ollama, speech, etc.)
-- **Environment**: All configuration through `.env` file generated during installation
-- **Volumes**: Named volumes for data persistence across container rebuilds
-- **Networks**: All services on default Docker network with internal service discovery
+# View logs with options
+launchkit logs <service-name> -f --tail 100
 
-### Key Service Dependencies
-- **n8n**: Requires postgres, redis. Runs in queue mode with configurable worker count
-- **Supabase**: Full stack with postgres, auth, storage, analytics, edge functions
-- **Langfuse**: Requires postgres, redis, clickhouse, minio for LLM observability
-- **Open WebUI**: Integrates with Ollama for local LLMs
-- **ComfyUI**: Requires models downloaded separately (FLUX, SDXL, etc.)
-- **bolt.diy**: Standalone AI-powered full-stack development platform
-- **OpenHands**: AI software engineer with web interface
+# Restart services
+launchkit restart [service-name]
 
-## Important Implementation Details
+# Execute command in container
+launchkit exec <service-name> <command>
 
-### Environment Variable System
-- Generated by `03_generate_secrets.sh` using `openssl rand -hex`
-- Contains service hostnames, passwords, API keys
-- Used by both Docker Compose and Caddy for routing
-- AI-specific keys: OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.
+# Access service-specific CLI (if available)
+launchkit run <service-name> <args>
+```
 
-### Service Selection Wizard
-- `04_wizard.sh` uses whiptail to create interactive checklist
-- Updates `COMPOSE_PROFILES` in `.env` based on selections
-- Service dependencies automatically handled
-- Grouped by category: AI Development, Automation, Databases, Monitoring
+### Credentials Management
+```bash
+# Export credentials to JSON
+launchkit credentials export
 
-### Shared File Access
-- `./shared/` directory is mounted to `/data/shared` in containers
-- Use this path in n8n workflows and AI tools to share files
-- Persistent storage for generated content (images, documents, models)
+# Download credentials for Vaultwarden import
+launchkit credentials download
+```
 
-### AI Service Configuration
-- **ComfyUI**: Models stored in `/var/lib/docker/volumes/localai_comfyui_data/_data/models/`
-- **Ollama**: Models persist in `ollama_data` volume
-- **Speech Stack**: Uses ports 8001 (Whisper) and 5001 (TTS)
-- **Vector DBs**: Qdrant on port 6333, Supabase includes pgvector
+## Critical Architecture Principles
 
-### Custom n8n Configuration
-- Pre-installs Node.js libraries: cheerio, axios, moment, lodash
-- Runs in production mode with PostgreSQL backend
-- Queue mode for parallel workflow processing
-- Community packages and AI runners enabled
-- Configured for tool usage and external function calls
-- Metrics enabled for Prometheus monitoring
+### 1. Modular Service Units
 
-### Network Architecture
-- Caddy handles HTTPS/TLS termination and reverse proxy
-- Services exposed via subdomains: n8n.domain.com, comfyui.domain.com, etc.
-- Internal services (redis, postgres) not exposed externally
-- Supports Cloudflare Tunnel as alternative to port exposure
-- sslip.io domains work without DNS configuration
+**DO NOT create monolithic `docker-compose.yml` at project root.** Each service is self-contained:
 
-## Common Development Tasks
+```
+services/<category>/<service-name>/
+├── docker-compose.yml      # Container definition
+├── service.json            # Metadata (name, category, dependencies)
+├── .env.example            # Config template
+├── .env                    # Generated config (git-ignored)
+├── data/                   # Runtime data (git-ignored)
+├── config/                 # Static config (tracked)
+├── config/local/           # User overrides (git-ignored)
+├── prepare.sh              # Pre-startup hook
+├── entrypoint.sh           # Container internal setup
+├── startup.sh              # Post-startup hook
+├── secrets.sh              # Secret generation
+├── build.sh                # Custom build logic
+├── healthcheck.sh          # Health verification
+└── README.md               # Service documentation
+```
 
-### Testing Profile Changes
-1. Update `COMPOSE_PROFILES` in `.env`
-2. Run `docker compose --profile [profiles] up -d`
-3. Check `docker compose ps` to verify services started
+### 2. Iterative Context Execution
 
-### Adding New AI Services
-1. Define service in `docker-compose.yml` with appropriate profile
-2. Add hostname variables to Caddy environment section
-3. Update `04_wizard.sh` to include in service selection
-4. Add Caddyfile routing if service needs web access
-5. Consider GPU requirements and volume mounts
-6. Document API endpoints and integration points
+The `launchkit up` command works by:
 
-### Working with AI Models
-- ComfyUI models: Download to model directories before use
-- Ollama models: Pull with `docker exec ollama ollama pull [model]`
-- Embeddings: Configure in n8n AI nodes or Flowise chains
-- Vector stores: Initialize indexes in Qdrant or Supabase
+1. Resolving service dependencies from `service.json`
+2. For each service in order:
+   - **Switch directory**: `cd services/<category>/<service>/`
+   - **Load environment**: Source `.env` (inherits globals)
+   - **Run secrets.sh**: Generate missing passwords/keys
+   - **Run prepare.sh**: Create directories, set permissions
+   - **Run build.sh**: Build custom images if needed
+   - **Execute Docker Compose**: `docker compose up -d` (in service directory)
+   - **Run startup.sh**: Database migrations, API initialization
+   - **Run healthcheck.sh**: Verify service is healthy
 
-### Backup/Restore
-- n8n workflows: `./n8n/backup/workflows/`
-- ComfyUI workflows: Export from UI
-- Vector databases: Use respective backup tools
-- All data in Docker volumes: `docker run --rm -v [volume]:/data -v $(pwd):/backup busybox tar czf /backup/[name].tar.gz -C /data .`
+This means services use **relative paths** internally (`./data`, `./config`) and work when run directly with `docker compose up` from their own directory.
 
-### Troubleshooting AI Services
-1. Check service logs: `docker compose logs [service-name] -f`
-2. Verify GPU access (if applicable): `docker exec [container] nvidia-smi`
-3. Monitor resource usage: `docker stats`
-4. Check model loading: Service-specific logs
-5. API connectivity: Test with curl or service UI
+### 3. Path Rules
 
-## Security Considerations
+**Internal Resources (within service directory):**
+- ✅ Use relative paths: `./data/db:/var/lib/postgresql/data`
+- ✅ Use relative paths: `./config/nginx.conf:/etc/nginx/nginx.conf`
+- ❌ Never use absolute host paths: `~/myservice/data` or `/home/user/data`
 
-- All services require authentication (configured during setup)
-- Firewall configured to only allow SSH, HTTP, HTTPS
-- Fail2Ban enabled for brute-force protection
-- SSL certificates managed by Caddy with Let's Encrypt
-- API keys stored in `.env` file (never commit to git)
-- Services isolated in Docker network namespaces
-- Regular security updates via `update.sh`
+**Shared Resources (cross-service):**
+- ✅ Use `${PROJECT_ROOT}/shared`: For truly shared files
+- ✅ Handled by CLI exporting `PROJECT_ROOT` before execution
 
-## File Structure Notes
-- `memory-bank/` - Project documentation and development notes
-- `flowise/` - Flowise workflow templates and custom tools
-- `n8n/` - n8n configurations and community workflows
-- `comfyui/` - ComfyUI custom nodes and workflows (if added)
-- `scripts/` - Installation and utility scripts (all bash)
-- `shared/` - Shared directory accessible by all containers
-- `openedai-config/` - TTS voice configurations
-- `openedai-voices/` - Custom TTS voice models
+**Data Persistence:**
+- ✅ All runtime data goes in `./data/` (git-ignored)
+- ❌ Never pollute service root: `./db:/var/lib/postgresql/data` is wrong
+- ✅ Correct structure: `./data/db:/var/lib/postgresql/data`
 
-## AI LaunchKit Specific Features
+### 4. Environment Variable Hierarchy
 
-### Speech Stack Integration
-- **Whisper (STT)**: OpenAI-compatible API on port 8001
-- **OpenedAI (TTS)**: Multiple voices, OpenAI-compatible API on port 5001
-- Both services integrate seamlessly with n8n HTTP nodes
+```
+1. config/.env.global          # Global settings (domain, email, timezone)
+2. services/<cat>/<svc>/.env   # Service-specific (passwords, ports)
+3. Runtime exports              # CLI sets PROJECT_ROOT, PROJECT_NAME
+```
 
-### Development Platforms
-- **bolt.diy**: Full-stack development with AI assistance
-- **OpenHands**: Autonomous coding agent with web interface
-- **OpenUI**: AI-powered UI component generator
+**Critical Quoting Rule:**
+- All `.env` values MUST use **single quotes** to prevent shell interpolation
+- Example: `PASSWORD='$2a$12$hash'` (safe) vs `PASSWORD="$2a$12$hash"` (breaks)
+- Why: Dollar signs in bcrypt hashes, special characters in passwords
 
-### Planned Additions
-- **LiveKit**: Real-time communication and AI agents
-- **browserless**: Headless Chrome for web automation
-- **PaddleOCR**: Document OCR processing
+### 5. Stack System
+
+**Stacks** (`config/stacks/*.yaml`) define logical service groups:
+
+```yaml
+name: core
+project_name: localai  # Docker Compose project name
+
+services:
+  - postgres
+  - redis
+  - n8n
+  - caddy
+```
+
+**Usage:**
+- Services enabled via `COMPOSE_PROFILES` in `config/.env.global`
+- CLI commands: `launchkit up -s core`, `launchkit enable -s core`
+- Auto-detection: Starting a service auto-enables its profile
+
+### 6. Dependency Management
+
+**Two levels of dependencies:**
+
+1. **Enablement Dependencies** (`service.json`):
+   ```json
+   {
+     "name": "flowise",
+     "depends_on": ["postgres", "redis"]
+   }
+   ```
+   - Ensures required services are enabled when enabling this one
+   - Resolved by `launchkit up` before startup
+
+2. **Runtime Dependencies** (Docker Compose):
+   ```yaml
+   depends_on:
+     postgres:
+       condition: service_healthy
+   ```
+   - Controls startup order within a service's containers
+   - For cross-service deps, use `startup.sh` with wait loops
 
 ## Critical Implementation Notes
 
-- Never modify the installation script sequence (01-06) without understanding dependencies
-- Always use logging functions from `utils.sh` in new scripts
-- The `.env` file contains all secrets and must never be committed
-- Services use Docker health checks - respect dependency conditions
-- Profile-based deployment allows selective service activation
-- When modifying `docker-compose.yml`, maintain the x-templates pattern
-- AI services may require significant resources (RAM, disk, GPU)
-- Community workflows are imported during installation (20-30 minutes)
-- Model downloads for ComfyUI/Ollama happen post-installation
-- Test AI integrations with small workloads before scaling
+### When Adding a New Service
 
-## Contributing Guidelines
+**NEVER:**
+- Add to a root `docker-compose.yml` (doesn't exist)
+- Use absolute host paths in volume mounts
+- Use double quotes for `.env` values with special chars
+- Put runtime data outside `./data/`
 
-When contributing new AI services or features:
-1. Follow existing patterns in docker-compose.yml
-2. Add comprehensive health checks
-3. Document resource requirements
-4. Include example workflows or usage
-5. Test with minimal and full installations
-6. Update this CLAUDE.md file with relevant information
+**ALWAYS:**
+1. Create directory: `services/<category>/<service-name>/`
+2. Follow structure from `docs/SERVICE_STRUCTURE_SPEC.md`
+3. Create `service.json` with metadata and dependencies
+4. Use relative paths in `docker-compose.yml`
+5. Put all persistent data in `./data/`
+6. Put sensitive config in `config/local/` (git-ignored)
+7. Add to a stack in `config/stacks/*.yaml`
+8. Test by running `docker compose up` from the service directory
 
-## Useful Resources
-- Repository: https://github.com/freddy-schuetz/ai-launchkit
-- Based on: n8n-installer by @kossakovsky
-- License: Apache 2.0 (commercial use allowed)
+**See:** `docs/ADDING_NEW_SERVICE.md` for step-by-step guide
+
+### Lifecycle Script Execution Order
+
+```
+launchkit up <service>
+├─ 1. Find service directory
+├─ 2. Load .env (inherits globals)
+├─ 3. Run secrets.sh (generate missing secrets)
+├─ 4. Re-load .env (pick up new secrets)
+├─ 5. Run prepare.sh (mkdir, chown, template rendering)
+├─ 6. Run build.sh (if custom image needed)
+├─ 7. Docker Compose up -d (start containers)
+├─ 8. Run startup.sh (migrations, API calls)
+└─ 9. Run healthcheck.sh (verify from host)
+```
+
+**Script Purposes:**
+- `secrets.sh`: Generate passwords/keys, update `.env`
+- `prepare.sh`: Host preparation (directories, permissions, config from templates)
+- `build.sh`: Build Docker images from source (e.g., clone repo, `docker build`)
+- `startup.sh`: Application bootstrapping (DB migrations, seed data, API initialization)
+- `healthcheck.sh`: Host-side health verification (curl, ping, dig)
+
+### Environment Variable Management
+
+**Utilities available (`lib/utils/secrets.sh`):**
+
+```bash
+# Generate a secret if not already set
+generate_secret "MY_SERVICE_PASSWORD" 32
+
+# Update or add env var
+update_env_var "/path/to/.env" "KEY" "value"
+
+# Load all environments (global + all services)
+load_all_envs
+# Creates associative array: ALL_ENV_VARS[KEY]=value
+```
+
+**Example `secrets.sh`:**
+```bash
+#!/bin/bash
+source "$PROJECT_ROOT/lib/utils/secrets.sh"
+
+# Generate if missing
+generate_secret "FLOWISE_PASSWORD" 32
+generate_secret "FLOWISE_API_KEY" 64
+```
+
+### Logging Functions
+
+**Available utilities (`lib/utils/logging.sh`):**
+
+```bash
+log_info "Starting service..."
+log_success "Service started successfully"
+log_warning "Port conflict detected"
+log_error "Failed to connect to database"
+```
+
+Logs are framed with borders and include timestamps.
+
+### Stack Management
+
+**Utilities available (`lib/utils/stack.sh`):**
+
+```bash
+# Get services in a stack
+get_stack_services "core"
+
+# Get project name for a stack
+get_stack_project_name "core"
+
+# Find which stack a service belongs to
+find_stack_for_service "n8n"
+
+# Enable/disable a service profile
+enable_service_profile "flowise"
+disable_service_profile "flowise"
+
+# Get all project names across all stacks
+get_all_stack_projects
+```
+
+## Common Development Tasks
+
+### Testing a Single Service
+
+```bash
+# Navigate to service directory
+cd services/ai-agents/flowise
+
+# Check environment
+cat .env.example
+
+# Run preparation
+bash prepare.sh
+
+# Start with Docker Compose directly
+docker compose up
+
+# Or use launchkit CLI
+cd /root/ai-launchkit
+launchkit up flowise
+```
+
+### Debugging Service Startup Issues
+
+```bash
+# Check if service directory exists
+ls -la services/ai-agents/flowise/
+
+# Check service.json metadata
+cat services/ai-agents/flowise/service.json
+
+# Check if enabled
+grep COMPOSE_PROFILES config/.env.global
+
+# Enable manually
+launchkit enable flowise
+
+# Check logs
+launchkit logs flowise --tail 100
+
+# Check hooks execution
+bash -x services/ai-agents/flowise/prepare.sh
+bash -x services/ai-agents/flowise/startup.sh
+```
+
+### Modifying Service Configuration
+
+```bash
+# Edit service environment
+nano services/<category>/<service>/.env
+
+# Edit Docker Compose definition
+nano services/<category>/<service>/docker-compose.yml
+
+# Recreate containers with new config
+cd services/<category>/<service>
+docker compose up -d --force-recreate
+
+# Or via CLI
+launchkit up <service> --force-recreate
+```
+
+### Adding a Service to a Stack
+
+```bash
+# Edit stack file
+nano config/stacks/core.yaml
+
+# Add service to list:
+services:
+  - my-new-service
+
+# Enable and start
+launchkit enable -s core
+launchkit up -s core
+```
+
+## Service Discovery & Networking
+
+- All services join the default Docker network (named `<project>_default`)
+- Services communicate using container names as hostnames
+- Example: `n8n` connects to `postgres:5432`, not `localhost:5432`
+- DNS resolution handled by Docker's internal DNS
+- No need to define networks explicitly unless isolating services
+
+## CLI Implementation Details
+
+**Entry Point:** `launchkit.sh`
+
+**Command Structure:**
+```bash
+launchkit <command> [options] [arguments]
+```
+
+**Key Commands Mapping:**
+- `init` → `lib/system/system_prep.sh`, `lib/system/install_docker.sh`, `lib/services/generate_all_secrets.sh`
+- `config` → `lib/config/wizard.sh`
+- `up` → `lib/services/up.sh`
+- `down` → `lib/services/down.sh`
+- `update` → `lib/services/update.sh`
+- `logs` → Direct `docker compose logs` with smart service selection
+- `ps` → Custom Docker PS with service name mapping from `service.json`
+
+**Important Behaviors:**
+
+1. **Interactive Logs:** `launchkit logs` without a service shows menu of running services
+2. **Multi-Container Services:** `launchkit logs <service>` shows menu if service has multiple containers
+3. **Service Name Mapping:** `launchkit ps` shows service names from `service.json`, not container names
+4. **Auto-Enable:** `launchkit up <service>` automatically enables the service profile
+
+## Security & Secrets
+
+**Secret Generation:**
+- Automated via `lib/services/generate_all_secrets.sh` during `launchkit init`
+- Per-service via `secrets.sh` in each service directory
+- Uses `openssl rand -hex` for random generation
+- Stored in `.env` files (git-ignored)
+
+**Critical Security Rules:**
+- `.env` files are NEVER committed to git
+- All passwords/keys in single quotes to prevent interpolation
+- Secrets utility checks if value exists before overwriting
+- `config/local/` is git-ignored for user-specific sensitive configs
+
+## Troubleshooting
+
+### Service Won't Start
+
+```bash
+# 1. Check if directory exists
+ls -la services/<category>/<service>/
+
+# 2. Check service.json
+cat services/<category>/<service>/service.json
+
+# 3. Check if docker-compose.yml is valid
+cd services/<category>/<service>
+docker compose config
+
+# 4. Check environment
+cat .env
+
+# 5. Check logs
+docker compose logs --tail 50
+
+# 6. Run hooks manually
+bash -x prepare.sh
+bash -x startup.sh
+```
+
+### Environment Variables Not Loading
+
+```bash
+# Check global config
+cat config/.env.global
+
+# Check service config
+cat services/<category>/<service>/.env
+
+# Verify quoting (single quotes for special chars)
+grep PASSWORD services/<category>/<service>/.env
+
+# Test loading
+source config/.env.global
+source services/<category>/<service>/.env
+echo $MY_VARIABLE
+```
+
+### Path Issues
+
+```bash
+# Check if paths are relative in docker-compose.yml
+grep "volumes:" services/<category>/<service>/docker-compose.yml
+
+# Should see:
+#   - ./data/db:/var/lib/postgresql/data
+#
+# NOT:
+#   - /home/user/data:/var/lib/postgresql/data
+```
+
+### Dependency Issues
+
+```bash
+# Check service dependencies
+cat services/<category>/<service>/service.json | grep depends_on
+
+# Check if dependencies are enabled
+grep COMPOSE_PROFILES config/.env.global
+
+# Enable dependencies
+launchkit enable <dependency>
+
+# Restart with dependencies
+launchkit up <service>
+```
+
+## Project Structure
+
+```
+ai-launchkit/
+├── launchkit.sh              # Main CLI entrypoint
+├── Makefile                  # Install CLI globally
+├── config/
+│   ├── .env.global           # Global configuration
+│   └── stacks/               # Service group definitions
+│       ├── core.yaml
+│       └── custom/           # User-defined stacks
+├── docs/
+│   ├── ARCHITECTURE.md       # Detailed architecture
+│   ├── SERVICE_STRUCTURE_SPEC.md
+│   └── ADDING_NEW_SERVICE.md
+├── lib/
+│   ├── config/
+│   │   └── wizard.sh         # Interactive service selection
+│   ├── services/
+│   │   ├── up.sh             # Service startup orchestration
+│   │   ├── down.sh           # Service shutdown
+│   │   ├── update.sh         # System update
+│   │   └── generate_all_secrets.sh
+│   ├── system/
+│   │   ├── system_prep.sh    # OS updates, firewall
+│   │   └── install_docker.sh # Docker installation
+│   └── utils/
+│       ├── logging.sh        # Log functions
+│       ├── secrets.sh        # Secret generation
+│       └── stack.sh          # Stack management
+└── services/
+    ├── <category>/
+    │   └── <service-name>/
+    │       ├── docker-compose.yml
+    │       ├── service.json
+    │       ├── .env.example
+    │       ├── data/         # Runtime data
+    │       ├── config/       # Static config
+    │       └── *.sh          # Lifecycle hooks
+    └── custom/               # User services
+```
+
+## Key Files
+
+- `launchkit.sh:56-89` - Command dispatch and help
+- `lib/services/up.sh:47-160` - Service startup logic with dependency resolution
+- `lib/services/up.sh:179-229` - Hook execution (prepare, build, secrets)
+- `lib/services/up.sh:232-248` - Docker Compose execution in service context
+- `lib/utils/stack.sh:57-88` - Service profile enabling
+- `docs/ARCHITECTURE.md` - Complete architecture documentation
+- `docs/SERVICE_STRUCTURE_SPEC.md` - Service structure rules

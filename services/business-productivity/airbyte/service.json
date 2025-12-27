@@ -1,0 +1,9 @@
+{
+  "name": "airbyte",
+  "category": "Business Productivity",
+  "description": "Airbyte (Data Integration - Sync from 600+ sources like Google Ads, Meta, TikTok)",
+  "use_cases": "Sync from Google Ads, Meta, TikTok, GA4, Mailjet to warehouses, perfect with Metabase",
+  "interface": "airbyte.<yourdomain>.com",
+  "source": "https://github.com/airbytehq/airbyte",
+  "depends_on": []
+}

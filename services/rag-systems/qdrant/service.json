@@ -1,0 +1,9 @@
+{
+  "name": "qdrant",
+  "category": "RAG Systems",
+  "description": "Qdrant (Vector Database)",
+  "use_cases": "Semantic search, recommendations, RAG storage",
+  "interface": "qdrant.<yourdomain>.com",
+  "source": "https://github.com/qdrant/qdrant",
+  "depends_on": []
+}

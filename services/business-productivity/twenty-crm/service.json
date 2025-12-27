@@ -1,0 +1,9 @@
+{
+  "name": "twenty-crm",
+  "category": "Business Productivity",
+  "description": "Twenty CRM (Modern Notion-like customer management)",
+  "use_cases": "Customer pipelines, GraphQL API, team collaboration, lightweight CRM for startups",
+  "interface": "twenty.<yourdomain>.com",
+  "source": "https://github.com/twentyhq/twenty",
+  "depends_on": []
+}

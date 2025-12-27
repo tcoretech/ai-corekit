@@ -1,0 +1,32 @@
+issuer: https://DEX_HOSTNAME_PLACEHOLDER
+
+storage:
+  type: sqlite3
+  config:
+    file: /var/dex/dex.db
+
+web:
+  http: 0.0.0.0:5556
+
+telemetry:
+  http: 0.0.0.0:5558
+
+staticClients:
+- id: outline
+  secret: OUTLINE_OIDC_CLIENT_SECRET_PLACEHOLDER
+  name: 'Outline Wiki'
+  redirectURIs:
+  - 'https://OUTLINE_HOSTNAME_PLACEHOLDER/auth/oidc.callback'
+
+connectors: []
+
+oauth2:
+  skipApprovalScreen: true
+
+staticPasswords:
+- email: "ADMIN_EMAIL_PLACEHOLDER"
+  hash: "ADMIN_PASSWORD_HASH_PLACEHOLDER"
+  username: "admin"
+  userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+
+enablePasswordDB: true

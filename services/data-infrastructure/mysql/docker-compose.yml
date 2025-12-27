@@ -1,0 +1,31 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
+    profiles:
+    - mysql
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    - MYSQL_DATABASE=${MYSQL_DATABASE:-leantime}
+    - MYSQL_USER=${MYSQL_USER:-leantime}
+    - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+    - mysql_data:/var/lib/mysql
+    command: --character-set-server=UTF8MB4 --collation-server=UTF8MB4_unicode_ci
+    healthcheck:
+      test:
+      - CMD
+      - mysqladmin
+      - ping
+      - -h
+      - localhost
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mysql_data: {}

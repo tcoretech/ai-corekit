@@ -1,0 +1,9 @@
+{
+  "name": "gotenberg",
+  "category": "AI Support Tools",
+  "description": "Gotenberg (Document Conversion API)",
+  "use_cases": "HTML/Markdown \u2192 PDF, Office \u2192 PDF, merge PDFs",
+  "interface": "Internal API",
+  "source": "https://github.com/gotenberg/gotenberg",
+  "depends_on": []
+}

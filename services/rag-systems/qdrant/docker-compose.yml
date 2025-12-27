@@ -1,0 +1,17 @@
+services:
+  qdrant:
+    image: qdrant/qdrant
+    container_name: qdrant
+    profiles:
+    - qdrant
+    restart: unless-stopped
+    volumes:
+    - qdrant_storage:/qdrant/storage
+    env_file:
+      - .env
+    environment:
+    - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
+    expose:
+    - '6333'
+volumes:
+  qdrant_storage: {}

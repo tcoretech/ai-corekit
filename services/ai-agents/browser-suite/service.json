@@ -1,0 +1,9 @@
+{
+  "name": "browser-suite",
+  "category": "AI Agents",
+  "description": "Browser Automation Suite (Browserless + Skyvern + Browser-use)",
+  "use_cases": "Web scraping, form filling, automated testing",
+  "interface": "Internal API only",
+  "source": "https://github.com/browser-use/browser-use",
+  "depends_on": []
+}

@@ -1,0 +1,9 @@
+{
+  "name": "web-tunnel",
+  "category": "System Management",
+  "description": "Cloudflare Tunnel for web services",
+  "use_cases": "Secure remote access to web services without opening ports",
+  "interface": "N/A",
+  "source": "https://github.com/cloudflare/cloudflared",
+  "depends_on": []
+}

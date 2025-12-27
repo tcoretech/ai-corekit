@@ -1,0 +1,25 @@
+services:
+  comfyui:
+    image: yanwk/comfyui-boot:cu124-slim
+    container_name: comfyui
+    profiles:
+    - comfyui
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - CLI_ARGS=--listen 0.0.0.0 --cpu
+    volumes:
+    - comfyui_data:/home/runner
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO
+      - /dev/null
+      - http://localhost:8188
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  comfyui_data: {}

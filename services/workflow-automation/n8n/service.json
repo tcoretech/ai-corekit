@@ -1,0 +1,12 @@
+{
+  "name": "n8n",
+  "category": "Workflow Automation",
+  "description": "n8n, n8n-worker, n8n-import (Workflow Automation)",
+  "use_cases": "API integrations, data pipelines, business automation",
+  "interface": "n8n.<yourdomain>.com",
+  "source": "https://github.com/n8n-io/n8n",
+  "depends_on": [
+    "postgres",
+    "redis"
+  ]
+}

@@ -19,6 +19,7 @@ services/<category>/<service-name>/
 ├── secrets.sh              # (Optional) Secret generation logic
 ├── build.sh                # (Optional) Custom build logic
 ├── prepare.sh              # (Optional) PRE-startup (host prep)
+├── entrypoint.sh           # (Optional) Container internal setup
 ├── startup.sh              # (Optional) POST-startup (app bootstrapping)
 ├── healthcheck.sh          # (Optional) Custom health check logic
 ├── cleanup.sh              # (Optional) On service down tidy up hook

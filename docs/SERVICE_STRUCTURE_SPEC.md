@@ -16,6 +16,7 @@ services/<category>/<service-name>/
 ├── secrets.sh              # (Optional) Secret generation logic
 ├── build.sh                # (Optional) Custom build logic
 ├── prepare.sh              # (Optional) PRE-startup (host prep)
+├── entrypoint.sh           # (Optional) Container internal setup (runs inside Docker)
 ├── startup.sh              # (Optional) POST-startup (app bootstrapping)
 ├── healthcheck.sh          # (Optional) Custom health check logic
 ├── cleanup.sh              # (Optional) On service down tidy up hook
@@ -60,6 +61,10 @@ To avoid confusion about *when* a script runs, we use distinct names:
     *   **When**: Runs **BEFORE** `docker compose up`.
     *   **Purpose**: Host preparation.
     *   **Tasks**: Creating directories (`mkdir -p data/db`), setting permissions (`chown`), generating initial config files from templates.
+*   **`entrypoint.sh` (Container Internal)**:
+    *   **When**: Runs **INSIDE** the container at startup (defined in Dockerfile).
+    *   **Purpose**: Internal environment setup.
+    *   **Tasks**: Creating users, setting internal file permissions, generating host keys, configuring `.bashrc`.
 *   **`startup.sh` (Post-Up)**:
     *   **When**: Runs **AFTER** `docker compose up` (and potentially waits for healthchecks).
     *   **Purpose**: Application bootstrapping.

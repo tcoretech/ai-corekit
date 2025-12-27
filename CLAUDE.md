@@ -97,6 +97,7 @@ services/<category>/<service-name>/
 ├── config/                 # Static config (tracked)
 ├── config/local/           # User overrides (git-ignored)
 ├── prepare.sh              # Pre-startup hook
+├── entrypoint.sh           # Container internal setup
 ├── startup.sh              # Post-startup hook
 ├── secrets.sh              # Secret generation
 ├── build.sh                # Custom build logic

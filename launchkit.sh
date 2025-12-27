@@ -790,7 +790,11 @@ cmd_pull() {
 
 # Command: Build
 cmd_build() {
-    run_compose_cmd build "$@"
+    if [ -f "$LIB_DIR/services/build.sh" ]; then
+        bash "$LIB_DIR/services/build.sh" "$@"
+    else
+        log_error "Build script not found."
+    fi
 }
 
 # Command: Stop
@@ -805,6 +809,28 @@ cmd_rm() {
     else
         log_error "Rm script not found."
     fi
+}
+
+# Command: List
+cmd_list() {
+    echo "Available Services:"
+    echo "-------------------"
+    printf "%-20s %-20s %-40s\n" "SERVICE" "CATEGORY" "DESCRIPTION"
+    echo "--------------------------------------------------------------------------------"
+    
+    find "$PROJECT_ROOT/services" -mindepth 3 -maxdepth 3 -name "service.json" | while read -r json_file; do
+        # Extract fields using grep/sed since jq might not be available
+        local name=$(grep -o '"name": *"[^"]*"' "$json_file" | cut -d'"' -f4)
+        local category=$(grep -o '"category": *"[^"]*"' "$json_file" | cut -d'"' -f4)
+        local desc=$(grep -o '"description": *"[^"]*"' "$json_file" | cut -d'"' -f4)
+        
+        # Fallback if name is missing (use directory name)
+        if [ -z "$name" ]; then
+            name=$(basename "$(dirname "$json_file")")
+        fi
+        
+        printf "%-20s %-20s %-40s\n" "$name" "${category:0:20}" "${desc:0:40}..."
+    done | sort
 }
 
 # Command: Help
@@ -830,6 +856,7 @@ cmd_help() {
     echo "  update        Update the system"
     echo "  credentials   Manage credentials (download|export)"
     echo "  run <service> Run a service-specific command (e.g., launchkit run ssh ...)"
+    echo "  list          List all available services"
     echo "  help          Show this help message"
 }
 
@@ -888,6 +915,9 @@ case "$COMMAND" in
         ;;
     run)
         cmd_run "$@"
+        ;;
+    list)
+        cmd_list "$@"
         ;;
     help|--help|-h)
         cmd_help

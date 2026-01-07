@@ -49,6 +49,7 @@ SERVICES_TO_START=()
 USE_SPECIFIC=false
 STACK_NAME="core"
 PROJECT_OVERRIDE=""
+FORCE_RECREATE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -67,6 +68,10 @@ while [[ $# -gt 0 ]]; do
             shift
             if [ -z "$1" ]; then log_error "Project name required"; exit 1; fi
             PROJECT_OVERRIDE="$1"
+            shift
+            ;;
+        --force-recreate)
+            FORCE_RECREATE=true
             shift
             ;;
         *)
@@ -179,7 +184,6 @@ fi
 log_info "Starting services: ${SERVICES_TO_START[*]}"
 
 # Load project name
-PROJECT_NAME="localai" # Default
 if [ -n "$PROJECT_OVERRIDE" ]; then
     PROJECT_NAME="$PROJECT_OVERRIDE"
 else
@@ -252,7 +256,12 @@ for service in "${SERVICES_TO_START[@]}"; do
         log_info "[$service] Starting..."
         # Run docker compose with project directory set to service directory
         # This allows relative paths in docker-compose.yml to work correctly
-        if ! docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" up -d; then
+        COMPOSE_ARGS="-d"
+        if [ "$FORCE_RECREATE" = true ]; then
+            COMPOSE_ARGS="$COMPOSE_ARGS --force-recreate"
+        fi
+        
+        if ! docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" up $COMPOSE_ARGS; then
             log_error "[$service] Failed to start."
             FAILED_SERVICES+=("$service")
         fi

@@ -35,6 +35,7 @@ load_env() {
 SERVICES_TO_BUILD=()
 USE_SPECIFIC=false
 STACK_NAME="core"
+NO_CACHE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -47,6 +48,10 @@ while [[ $# -gt 0 ]]; do
                 for s in $stack_services; do SERVICES_TO_BUILD+=("$s"); done
             fi
             USE_SPECIFIC=true
+            shift
+            ;;
+        --no-cache)
+            NO_CACHE=true
             shift
             ;;
         *)
@@ -63,7 +68,30 @@ if [ ${#SERVICES_TO_BUILD[@]} -eq 0 ]; then
     exit 1
 fi
 
+# Suppress orphan warnings
+export COMPOSE_IGNORE_ORPHANS=True
+
+# Auto-detect stack if using specific services and default stack
+if [ "$USE_SPECIFIC" = true ] && [ "$STACK_NAME" = "core" ] && [ ${#SERVICES_TO_BUILD[@]} -gt 0 ]; then
+    # Check the first service
+    first_service="${SERVICES_TO_BUILD[0]}"
+    detected_stack=$(find_stack_for_service "$first_service")
+    if [ -n "$detected_stack" ] && [ "$detected_stack" != "core" ]; then
+        log_info "Auto-detected stack '$detected_stack' for service '$first_service'. Switching context."
+        STACK_NAME="$detected_stack"
+    fi
+fi
+
 load_env
+
+# Determine project name (consistent with up.sh)
+if [ -n "$PROJECT_OVERRIDE" ]; then
+    PROJECT_NAME="$PROJECT_OVERRIDE"
+else
+    # Try to detect via stack if possible, otherwise default
+    PROJECT_NAME=$(get_stack_project_name "$STACK_NAME")
+fi
+export PROJECT_NAME
 
 log_info "Building services: ${SERVICES_TO_BUILD[*]}"
 
@@ -100,7 +128,11 @@ for service in "${SERVICES_TO_BUILD[@]}"; do
         bash "build.sh"
     else
         log_info "[$service] Running docker compose build..."
-        docker compose build
+        if [ "$NO_CACHE" = true ]; then
+             docker compose -p "$PROJECT_NAME" build --no-cache
+        else
+             docker compose -p "$PROJECT_NAME" build
+        fi
     fi
     
     popd > /dev/null

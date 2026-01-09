@@ -106,7 +106,7 @@ generate_secret "MY_SERVICE_ADMIN_PASSWORD" 32
 
 *   **`prepare.sh`**: Runs before `docker compose up`. Use this to create directories or set permissions.
 *   **`startup.sh`**: Runs after `docker compose up`. Use this to run migrations or API calls to configure the running service.
-*   **`healthcheck.sh`**: Runs after startup. Use this to verify the service is healthy from the host (e.g., `curl` or `dig`).
+*   **`healthcheck.sh`**: Runs after startup on the **HOST**. Use this to verify the service is reachable (e.g., `curl localhost:port`). Use `docker exec` for internal checks.
 *   **`build.sh`**: Runs if the service needs to be built from source.
 *   **`report.sh`**: Outputs connection info after the service starts.
 

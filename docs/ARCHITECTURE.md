@@ -22,6 +22,7 @@ Located at: `services/<category>/<service-name>/`
 | `config/local/` | Local overrides | **Git-ignored**. Place for user-specific or sensitive config files. |
 | `prepare.sh` | Pre-startup hook | Runs *before* `docker compose up`. Handles `mkdir`, permissions, template rendering. |
 | `startup.sh` | Post-startup hook | Runs *after* containers are up. Handles DB migrations, API initialization. |
+| `healthcheck.sh` | Verification hook | Runs on **HOST** after startup. Verifies service availability (e.g. via `curl`). |
 
 ### Data Persistence Rule
 **All runtime data must reside in `./data`**.

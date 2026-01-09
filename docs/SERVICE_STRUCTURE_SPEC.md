@@ -71,8 +71,9 @@ To avoid confusion about *when* a script runs, we use distinct names:
     *   **Tasks**: Running database migrations, creating initial admin users via API, seeding data.
 *   **`healthcheck.sh`**:
     *   **When**: Runs **AFTER** `startup.sh`.
-    *   **Purpose**: Verifying service health from the host perspective.
-    *   **Tasks**: Running `curl`, `dig`, or other tools to verify connectivity when container-internal healthchecks are insufficient.
+    *   **Context**: Runs on the **HOST** machine (not inside the container).
+    *   **Purpose**: Verifying service health from the host/network perspective.
+    *   **Tasks**: Running `curl localhost:8080`, `dig`, or `docker exec ... curl ...` to verify connectivity. Only return exit code 0 if the service is truly ready.
 *   **`secrets.sh`**:
     *   **Purpose**: Generates secure random values for `.env`.
     *   **Tasks**: Updates `.env` without overwriting existing values.

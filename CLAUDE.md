@@ -236,7 +236,7 @@ launchkit up <service>
 - `prepare.sh`: Host preparation (directories, permissions, config from templates)
 - `build.sh`: Build Docker images from source (e.g., clone repo, `docker build`)
 - `startup.sh`: Application bootstrapping (DB migrations, seed data, API initialization)
-- `healthcheck.sh`: Host-side health verification (curl, ping, dig)
+- `healthcheck.sh`: Host-side health verification (curl, ping). Runs on HOST. Use `docker exec` for internal checks.
 
 ### Environment Variable Management
 
@@ -547,3 +547,12 @@ ai-launchkit/
 - `lib/utils/stack.sh:57-88` - Service profile enabling
 - `docs/ARCHITECTURE.md` - Complete architecture documentation
 - `docs/SERVICE_STRUCTURE_SPEC.md` - Service structure rules
+
+### Healthcheck Utilities
+
+**Available in `lib/utils/healthcheck.sh`:**
+
+```bash
+# Check internal service via sidecar or container exec
+check_internal_service_http <service-name> <port> [sidecar-name]
+```

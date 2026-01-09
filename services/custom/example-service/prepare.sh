@@ -1,15 +1,25 @@
 #!/bin/bash
-# prepare.sh
-# Runs BEFORE docker compose up.
-# Use this for host preparation: creating directories, setting permissions, generating config files.
 
-set -e
+# Ensure data directories exist
+mkdir -p ./data/repo
 
-# Example: Create data directories
-# mkdir -p data/db
-# mkdir -p config/local
+# Ensure config/local exists for any overrides
+mkdir -p ./config/local
 
-# Example: Set permissions
-# chown -R 1000:1000 data/
+# Set permissions if needed (usually docker handles this, but good practice)
+chmod 755 ./data
 
-echo "Preparation complete for example-service."
+# Bootstrap: If the service image doesn't exist, create a dummy one.
+# This ensures docker-compose doesn't fail on startup.
+# The updater will build the real image and restart the service.
+source .env
+IMG=${SERVICE_IMAGE_NAME:-example-service:latest}
+if ! docker image inspect "$IMG" > /dev/null 2>&1; then
+    echo "[Bootstrap] Image $IMG not found. Creating placeholder..."
+    
+    # Check if we have internet to pull alpine, if not try to use any local image? 
+    # LaunchKit assumes internet.
+    docker pull alpine:latest
+    docker tag alpine:latest "$IMG"
+    echo "[Bootstrap] Placeholder image created."
+fi

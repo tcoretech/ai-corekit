@@ -1,7 +1,32 @@
 services:
-  example:
-    image: nginx:alpine
+  example-service:
+    image: ${SERVICE_IMAGE_NAME:-example-service:latest}
+    container_name: example-service
+    restart: always
+    pull_policy: never
     env_file:
       - .env
-    ports:
-      - '8080:80'
+    environment:
+      - PORT=${SERVICE_PORT:-3000}
+    expose:
+      - "${SERVICE_PORT:-3000}"
+    command: ${SERVICE_COMMAND:-}
+
+  example-service-updater:
+    image: example-service-updater:latest
+    build: ./updater
+    container_name: example-service-updater
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/repo:/app/repo
+      - ./:/app/config
+    env_file:
+      - .env
+    environment:
+      - GIT_REPO_URL=${SERVICE_GIT_REPO}
+      - GIT_BRANCH=${SERVICE_GIT_BRANCH:-main}
+      - GIT_TOKEN=${SERVICE_GIT_TOKEN}
+      - IMAGE_NAME=${SERVICE_IMAGE_NAME:-example-service:latest}
+      - SERVICE_NAME=example-service
+      - COMPOSE_PROJECT_NAME=${PROJECT_NAME:-localai}

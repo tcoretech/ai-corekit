@@ -626,7 +626,7 @@ Wenn UDP-Test fehlschlägt und dein Anbieter UDP blockiert:
 **Option 1: TCP-Fallback verwenden** (höhere Latenz)
 ```bash
 # Konfiguriere LiveKit zur Verwendung von TCP-Port 7882
-# Bereits in AI LaunchKit konfiguriert
+# Bereits in AI CoreKit konfiguriert
 # Aber erwarte ~50-100ms zusätzliche Latenz
 ```
 
@@ -689,7 +689,7 @@ Konfiguriere Webhooks, um Echtzeit-Events zu empfangen:
 - `track_unpublished` - Audio/Video-Stream stoppt
 - `recording_finished` - Aufzeichnung abgeschlossen
 
-### Integration mit AI LaunchKit-Services
+### Integration mit AI CoreKit-Services
 
 **LiveKit + Whisper (STT):**
 - Streame Audio aus LiveKit-Räumen

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**AI LaunchKit** is a modular, service-based Docker Compose orchestration system that deploys 50+ self-hosted AI and productivity tools. Unlike monolithic Docker Compose setups, it uses an **iterative context strategy** where each service is self-contained in its own directory with independent `docker-compose.yml` files, and the `launchkit` CLI orchestrates them by switching into each service's directory context.
+**AI CoreKit** is a modular, service-based Docker Compose orchestration system that deploys 50+ self-hosted AI and productivity tools. Unlike monolithic Docker Compose setups, it uses an **iterative context strategy** where each service is self-contained in its own directory with independent `docker-compose.yml` files, and the `corekit` CLI orchestrates them by switching into each service's directory context.
 
 ## Essential Commands
 
@@ -14,71 +14,71 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 sudo make install
 
 # Initialize system (Docker, secrets)
-launchkit init
+corekit init
 
 # Configure services (interactive wizard)
-launchkit config
+corekit config
 
 # Start all enabled services
-launchkit up
+corekit up
 
 # Update system and services
-launchkit update
+corekit update
 ```
 
 ### Service Management
 ```bash
 # Enable/disable services
-launchkit enable <service-name>
-launchkit disable <service-name>
+corekit enable <service-name>
+corekit disable <service-name>
 
 # Enable a stack of services
-launchkit enable -s <stack-name>
+corekit enable -s <stack-name>
 
 # Start specific services (auto-enables)
-launchkit up <service1> <service2>
+corekit up <service1> <service2>
 
 # Start all services in a stack
-launchkit up -s <stack-name>
+corekit up -s <stack-name>
 
 # Stop services (keeps enabled)
-launchkit down
+corekit down
 
 # Stop and disable services
-launchkit down --prune
+corekit down --prune
 
 # Remove stopped containers
-launchkit rm
+corekit rm
 ```
 
 ### Monitoring & Debugging
 ```bash
 # View running services
-launchkit ps
+corekit ps
 
 # View logs (interactive menu if no service specified)
-launchkit logs [service-name]
+corekit logs [service-name]
 
 # View logs with options
-launchkit logs <service-name> -f --tail 100
+corekit logs <service-name> -f --tail 100
 
 # Restart services
-launchkit restart [service-name]
+corekit restart [service-name]
 
 # Execute command in container
-launchkit exec <service-name> <command>
+corekit exec <service-name> <command>
 
 # Access service-specific CLI (if available)
-launchkit run <service-name> <args>
+corekit run <service-name> <args>
 ```
 
 ### Credentials Management
 ```bash
 # Export credentials to JSON
-launchkit credentials export
+corekit credentials export
 
 # Download credentials for Vaultwarden import
-launchkit credentials download
+corekit credentials download
 ```
 
 ## Critical Architecture Principles
@@ -107,7 +107,7 @@ services/<category>/<service-name>/
 
 ### 2. Iterative Context Execution
 
-The `launchkit up` command works by:
+The `corekit up` command works by:
 
 1. Resolving service dependencies from `service.json`
 2. For each service in order:
@@ -168,7 +168,7 @@ services:
 
 **Usage:**
 - Services enabled via `COMPOSE_PROFILES` in `config/.env.global`
-- CLI commands: `launchkit up -s core`, `launchkit enable -s core`
+- CLI commands: `corekit up -s core`, `corekit enable -s core`
 - Auto-detection: Starting a service auto-enables its profile
 
 ### 6. Dependency Management
@@ -183,7 +183,7 @@ services:
    }
    ```
    - Ensures required services are enabled when enabling this one
-   - Resolved by `launchkit up` before startup
+   - Resolved by `corekit up` before startup
 
 2. **Runtime Dependencies** (Docker Compose):
    ```yaml
@@ -219,7 +219,7 @@ services:
 ### Lifecycle Script Execution Order
 
 ```
-launchkit up <service>
+corekit up <service>
 ├─ 1. Find service directory
 ├─ 2. Load .env (inherits globals)
 ├─ 3. Run secrets.sh (generate missing secrets)
@@ -316,9 +316,9 @@ bash prepare.sh
 # Start with Docker Compose directly
 docker compose up
 
-# Or use launchkit CLI
-cd /root/ai-launchkit
-launchkit up flowise
+# Or use corekit CLI
+cd /root/ai-corekit
+corekit up flowise
 ```
 
 ### Debugging Service Startup Issues
@@ -334,10 +334,10 @@ cat services/ai-agents/flowise/service.json
 grep COMPOSE_PROFILES config/.env.global
 
 # Enable manually
-launchkit enable flowise
+corekit enable flowise
 
 # Check logs
-launchkit logs flowise --tail 100
+corekit logs flowise --tail 100
 
 # Check hooks execution
 bash -x services/ai-agents/flowise/prepare.sh
@@ -358,7 +358,7 @@ cd services/<category>/<service>
 docker compose up -d --force-recreate
 
 # Or via CLI
-launchkit up <service> --force-recreate
+corekit up <service> --force-recreate
 ```
 
 ### Adding a Service to a Stack
@@ -372,8 +372,8 @@ services:
   - my-new-service
 
 # Enable and start
-launchkit enable -s core
-launchkit up -s core
+corekit enable -s core
+corekit up -s core
 ```
 
 ## Service Discovery & Networking
@@ -386,11 +386,11 @@ launchkit up -s core
 
 ## CLI Implementation Details
 
-**Entry Point:** `launchkit.sh`
+**Entry Point:** `corekit.sh`
 
 **Command Structure:**
 ```bash
-launchkit <command> [options] [arguments]
+corekit <command> [options] [arguments]
 ```
 
 **Key Commands Mapping:**
@@ -404,15 +404,15 @@ launchkit <command> [options] [arguments]
 
 **Important Behaviors:**
 
-1. **Interactive Logs:** `launchkit logs` without a service shows menu of running services
-2. **Multi-Container Services:** `launchkit logs <service>` shows menu if service has multiple containers
-3. **Service Name Mapping:** `launchkit ps` shows service names from `service.json`, not container names
-4. **Auto-Enable:** `launchkit up <service>` automatically enables the service profile
+1. **Interactive Logs:** `corekit logs` without a service shows menu of running services
+2. **Multi-Container Services:** `corekit logs <service>` shows menu if service has multiple containers
+3. **Service Name Mapping:** `corekit ps` shows service names from `service.json`, not container names
+4. **Auto-Enable:** `corekit up <service>` automatically enables the service profile
 
 ## Security & Secrets
 
 **Secret Generation:**
-- Automated via `lib/services/generate_all_secrets.sh` during `launchkit init`
+- Automated via `lib/services/generate_all_secrets.sh` during `corekit init`
 - Per-service via `secrets.sh` in each service directory
 - Uses `openssl rand -hex` for random generation
 - Stored in `.env` files (git-ignored)
@@ -490,17 +490,17 @@ cat services/<category>/<service>/service.json | grep depends_on
 grep COMPOSE_PROFILES config/.env.global
 
 # Enable dependencies
-launchkit enable <dependency>
+corekit enable <dependency>
 
 # Restart with dependencies
-launchkit up <service>
+corekit up <service>
 ```
 
 ## Project Structure
 
 ```
-ai-launchkit/
-├── launchkit.sh              # Main CLI entrypoint
+ai-corekit/
+├── corekit.sh              # Main CLI entrypoint
 ├── Makefile                  # Install CLI globally
 ├── config/
 │   ├── .env.global           # Global configuration
@@ -540,7 +540,7 @@ ai-launchkit/
 
 ## Key Files
 
-- `launchkit.sh:56-89` - Command dispatch and help
+- `corekit.sh:56-89` - Command dispatch and help
 - `lib/services/up.sh:47-160` - Service startup logic with dependency resolution
 - `lib/services/up.sh:179-229` - Hook execution (prepare, build, secrets)
 - `lib/services/up.sh:232-248` - Docker Compose execution in service context

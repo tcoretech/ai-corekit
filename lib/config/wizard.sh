@@ -151,7 +151,7 @@ fi
 # Run Whiptail
 # Note: Running in foreground to ensure TTY access. 
 # Dynamic resizing during execution is not supported by whiptail in this mode.
-SELECTED_SERVICES=$(whiptail --title "AI LaunchKit Service Selection" \
+SELECTED_SERVICES=$(whiptail --title "AI CoreKit Service Selection" \
     --separate-output \
     --checklist "Select services to enable (Space to toggle, Enter to confirm):" \
     "$box_height" "$max_width" "$list_height" \
@@ -181,7 +181,7 @@ if [ $exit_status -eq 0 ]; then
     
     log_success "Configuration updated in $GLOBAL_ENV"
     log_info "Enabled profiles: $NEW_PROFILES"
-    log_info "Run 'launchkit up' to apply changes."
+    log_info "Run 'corekit up' to apply changes."
 else
     log_warning "Selection cancelled. No changes made."
 fi

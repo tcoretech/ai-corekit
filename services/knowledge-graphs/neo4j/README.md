@@ -30,7 +30,7 @@ https://neo4j.yourdomain.com
 
 ```bash
 # Check password from server
-grep NEO4J_AUTH /root/ai-launchkit/.env
+grep NEO4J_AUTH /root/ai-corekit/.env
 # Example output: NEO4J_AUTH=neo4j/your-password-here
 ```
 
@@ -398,14 +398,14 @@ Detect suspicious patterns in transaction networks.
 
 ```bash
 # Check if Neo4j is running
-launchkit ps | grep neo4j
+corekit ps | grep neo4j
 
 # Check logs for errors
-launchkit logs neo4j --tail 100
+corekit logs neo4j --tail 100
 
 # Check if ports are accessible
-launchkit port neo4j 7474
-launchkit port neo4j 7687
+corekit port neo4j 7474
+corekit port neo4j 7687
 ```
 
 **Solution:**
@@ -417,17 +417,17 @@ launchkit port neo4j 7687
 
 ```bash
 # Check current password in .env
-grep NEO4J_AUTH /root/ai-launchkit/.env
+grep NEO4J_AUTH /root/ai-corekit/.env
 
 # If password was changed in Neo4j but not in .env:
 # Option 1: Update .env file
-nano /root/ai-launchkit/.env
+nano /root/ai-corekit/.env
 # Change NEO4J_AUTH=neo4j/your-new-password
 
 # Option 2: Reset Neo4j completely (WARNING: Deletes all data)
-launchkit down neo4j
-docker volume rm ai-launchkit_neo4j_data
-launchkit up -d neo4j
+corekit down neo4j
+docker volume rm ai-corekit_neo4j_data
+corekit up -d neo4j
 ```
 
 **Solution:**
@@ -468,7 +468,7 @@ SHOW INDEXES
 docker stats neo4j
 
 # View Neo4j configuration
-launchkit exec neo4j cat /var/lib/neo4j/conf/neo4j.conf | grep memory
+corekit exec neo4j cat /var/lib/neo4j/conf/neo4j.conf | grep memory
 ```
 
 **Solution:**
@@ -481,7 +481,7 @@ launchkit exec neo4j cat /var/lib/neo4j/conf/neo4j.conf | grep memory
   ```
 - Restart Neo4j:
   ```bash
-  launchkit restart neo4j
+  corekit restart neo4j
   ```
 
 **Issue 5: Cannot Delete Node (Relationship Constraint)**

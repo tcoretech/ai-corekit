@@ -497,7 +497,7 @@ agent = Agent(
 )
 ```
 
-### Integration mit AI LaunchKit Diensten
+### Integration mit AI CoreKit Diensten
 
 **Browser-use + Qdrant:**
 - Scrape Websites und speichere Embeddings in Qdrant
@@ -1061,7 +1061,7 @@ curl -X DELETE http://localhost:8000/v1/tasks/old  # Alte Aufgabendaten löschen
 - Nutze separate API-Keys pro Umgebung
 - Rotiere API-Keys regelmäßig
 
-### Integration mit AI LaunchKit Diensten
+### Integration mit AI CoreKit Diensten
 
 **Skyvern + Browser-use:**
 - Nutze Skyvern für komplexe visuelle Aufgaben (CAPTCHAs, dynamische Inhalte)
@@ -1744,7 +1744,7 @@ BROWSERLESS_DEBUGGER=false
 - Prüfe `/metrics`-Endpoint für Diagnostik
 - Speichere Screenshots bei Fehlern
 
-### Integration mit AI LaunchKit Diensten
+### Integration mit AI CoreKit Diensten
 
 **Browserless + Browser-use:**
 - Browser-use verbindet via WebSocket: `ws://browserless:3000`

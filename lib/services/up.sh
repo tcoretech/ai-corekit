@@ -35,7 +35,7 @@ load_env() {
     done
     
     # Mark environment as loaded to prevent re-scanning in subprocesses
-    export LAUNCHKIT_ENV_LOADED=true
+    export COREKIT_ENV_LOADED=true
     
     # Restore PROJECT_ROOT if it was clobbered
     if [ -z "$PROJECT_ROOT" ] && [ -n "$SAVED_PROJECT_ROOT" ]; then
@@ -166,7 +166,7 @@ else
 
     # Use configured profiles
     if [ -z "$COMPOSE_PROFILES" ]; then
-        log_warning "No services a in configuration. Use 'launchkit config' or 'launchkit enable'."
+        log_warning "No services a in configuration. Use 'corekit config' or 'corekit enable'."
         exit 0
     fi
     IFS=',' read -ra SERVICES_TO_START <<< "$COMPOSE_PROFILES"

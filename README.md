@@ -1,4 +1,4 @@
-# 🚀 AI LaunchKit
+# 🚀 AI CoreKit
 
 <div align="center">
 
@@ -7,39 +7,39 @@
 *Deploy your complete AI stack in minutes, not weeks*
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/freddy-schuetz/ai-launchkit?style=social)](https://github.com/freddy-schuetz/ai-launchkit)
-[![Repository Views](https://komarev.com/ghpvc/?username=freddy-schuetz&repo=ai-launchkit&label=Views&color=brightgreen)](https://github.com/freddy-schuetz/ai-launchkit)
-[![GitHub last commit](https://img.shields.io/github/last-commit/freddy-schuetz/ai-launchkit)](https://github.com/freddy-schuetz/ai-launchkit/commits/main)
-[![Contributors](https://img.shields.io/github/contributors/freddy-schuetz/ai-launchkit)](https://github.com/freddy-schuetz/ai-launchkit/graphs/contributors)
+[![GitHub Stars](https://img.shields.io/github/stars/tcoretech/ai-corekit?style=social)](https://github.com/tcoretech/ai-corekit)
+[![Repository Views](https://komarev.com/ghpvc/?username=freddy-schuetz&repo=ai-corekit&label=Views&color=brightgreen)](https://github.com/tcoretech/ai-corekit)
+[![GitHub last commit](https://img.shields.io/github/last-commit/tcoretech/ai-corekit)](https://github.com/tcoretech/ai-corekit/commits/main)
+[![Contributors](https://img.shields.io/github/contributors/tcoretech/ai-corekit)](https://github.com/tcoretech/ai-corekit/graphs/contributors)
 
 [![GDPR Compliant](https://img.shields.io/badge/GDPR-Compliant-00A67E?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTEyIDFMMyA1djZjMCA1LjU1IDMuODQgMTAuNzQgOSAxMiA1LjE2LTEuMjYgOS02LjQ1IDktMTJWNWwtOS00eiIvPjwvc3ZnPg==)](https://gdpr.eu/)
-[![Self Hosted](https://img.shields.io/badge/Self--Hosted-Yes-brightgreen)](https://github.com/freddy-schuetz/ai-launchkit)
+[![Self Hosted](https://img.shields.io/badge/Self--Hosted-Yes-brightgreen)](https://github.com/tcoretech/ai-corekit)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Made in Europe](https://img.shields.io/badge/Made_in-Europe-003399)](https://github.com/freddy-schuetz/ai-launchkit)
+[![Made in Europe](https://img.shields.io/badge/Made_in-Europe-003399)](https://github.com/tcoretech/ai-corekit)
 
 [![Based on](https://img.shields.io/badge/Based%20on-n8n--installer-green)](https://github.com/kossakovsky/n8n-installer)
 
 [Installation](#-quick-start) • [Features](#-whats-included) • [Documentation](#-services) • [Support](#common-issues)
 
-German version: [German README](https://github.com/freddy-schuetz/ai-launchkit/blob/main/README_GERMAN.md)
+German version: [German README](https://github.com/tcoretech/ai-corekit/blob/main/README_GERMAN.md)
 
 </div>
 
 ---
 
-## 🎯 What is AI LaunchKit?
+## 🎯 What is AI CoreKit?
 
-AI LaunchKit is a comprehensive, self-hosted AI development environment that deploys **50+ pre-configured tools** with a single command. Build AI applications, automate workflows, generate images, and develop with AI assistance - all running on your own infrastructure.
+AI CoreKit is a comprehensive, self-hosted AI development environment that deploys **50+ pre-configured tools** with a single command. Build AI applications, automate workflows, generate images, and develop with AI assistance - all running on your own infrastructure.
 
-Originally forked from [n8n-installer](https://github.com/kossakovsky/n8n-installer), AI LaunchKit has evolved into a complete AI development platform, maintained by [Friedemann Schuetz](https://www.linkedin.com/in/friedemann-schuetz).
+Originally forked from [n8n-installer](https://github.com/kossakovsky/n8n-installer), AI CoreKit has evolved into a complete AI development platform, maintained by [Friedemann Schuetz](https://www.linkedin.com/in/friedemann-schuetz).
 
 ### 🔒 Privacy-First & GDPR Compliant by Design
 
-AI LaunchKit was built with **European data protection regulations** at its core. Unlike cloud AI services that send your data to US servers, everything runs on your infrastructure.
+AI CoreKit was built with **European data protection regulations** at its core. Unlike cloud AI services that send your data to US servers, everything runs on your infrastructure.
 
 #### Why Self-Hosted AI Matters
 
-| Challenge | Cloud AI Services | AI LaunchKit |
+| Challenge | Cloud AI Services | AI CoreKit |
 |-----------|-------------------|--------------|
 | **Data Location** | USA, third-party servers | Your infrastructure, your country |
 | **GDPR Compliance** | Complex DPAs, risk assessment | Compliant by design ✅ |
@@ -51,7 +51,7 @@ AI LaunchKit was built with **European data protection regulations** at its core
 
 #### 🇪🇺 Built for European Data Protection
 
-| Regulation | How AI LaunchKit Helps |
+| Regulation | How AI CoreKit Helps |
 |------------|------------------------|
 | **GDPR Art. 5** (Data Minimization) | No data collection, no external storage |
 | **GDPR Art. 25** (Privacy by Design) | Self-hosted architecture, no cloud dependencies |
@@ -72,12 +72,12 @@ AI LaunchKit was built with **European data protection regulations** at its core
 
 ```bash
 # One command to rule them all
-git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && sudo bash ./scripts/install.sh
+git clone https://github.com/tcoretech/ai-corekit && cd ai-corekit && sudo bash ./scripts/install.sh
 ```
 
 **That's it!** Your AI development stack is ready in ~10-15 minutes (or several hours with optional workflow import).
 
-**ATTENTION!** The AI LaunchKit is currently in development. It is regularly tested and updated. However, use is at your own risk!
+**ATTENTION!** The AI CoreKit is currently in development. It is regularly tested and updated. However, use is at your own risk!
 
 ---
 
@@ -205,7 +205,7 @@ git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit && s
 | **[Scriberr](https://github.com/rishikanthc/Scriberr)** | AI audio transcription with WhisperX & speaker diarization | Meeting transcripts, podcast processing, call recordings, speaker identification | `scriberr.yourdomain.com` |
 | **[Vexa](https://github.com/Vexa-ai/vexa)** | Real-time meeting transcription API | Live transcription for Google Meet & Teams, speaker identification, 99 languages, n8n integration | Internal API |
 
-*If you have troubles installing or updating Vexa, please view this guide:* **[Vexa Workaround](https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md)**
+*If you have troubles installing or updating Vexa, please view this guide:* **[Vexa Workaround](https://github.com/tcoretech/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md)**
 
 ### 🔍 Search & Web Data
 
@@ -288,11 +288,11 @@ Pre-installed in the n8n container for seamless media manipulation:
 ### Installation Command
 
 ```bash
-git clone https://github.com/freddy-schuetz/ai-launchkit && cd ai-launchkit
+git clone https://github.com/tcoretech/ai-corekit && cd ai-corekit
 sudo make install
-launchkit init
-launchkit config
-launchkit up
+corekit init
+corekit config
+corekit up
 ```
 
 ### What the Installer Does
@@ -332,7 +332,7 @@ launchkit up
 ### Update Command
 
 ```bash
-cd ai-launchkit && launchkit update
+cd ai-corekit && corekit update
 ```
 
 ### What the Update Does
@@ -362,7 +362,7 @@ cd ai-launchkit && launchkit update
 
 ### Prerequisites
 
-Before installing AI LaunchKit, ensure you have:
+Before installing AI CoreKit, ensure you have:
 
 1. **Server:** Ubuntu 22.04/24.04 or Debian 11/12 LTS
    - 4GB RAM minimum (8GB+ recommended for AI workloads)
@@ -391,11 +391,11 @@ ssh -i ~/.ssh/your-key.pem user@YOUR_SERVER_IP
 #### Step 2: Clone Repository
 
 ```bash
-# Clone AI LaunchKit
-git clone https://github.com/freddy-schuetz/ai-launchkit
+# Clone AI CoreKit
+git clone https://github.com/tcoretech/ai-corekit
 
 # Navigate into directory
-cd ai-launchkit
+cd ai-corekit
 ```
 
 #### Step 3: Run Installer
@@ -493,7 +493,7 @@ sudo bash ./scripts/download_credentials.sh
 1. Open `https://vault.yourdomain.com`
 2. Click "Create Account"
 3. Set master password (very strong!)
-4. Import AI LaunchKit credentials:
+4. Import AI CoreKit credentials:
    ```bash
    sudo bash ./scripts/download_credentials.sh
    ```
@@ -618,7 +618,7 @@ docker exec mailserver cat /tmp/docker-mailserver/opendkim/keys/yourdomain.com/m
 sudo systemctl status docker
 
 # Check specific service logs
-launchkit logs [service-name] --tail 50
+corekit logs [service-name] --tail 50
 
 # Common issues:
 # - Not enough RAM: Reduce services or upgrade server
@@ -631,13 +631,13 @@ launchkit logs [service-name] --tail 50
 ```bash
 # Caddy might take a few minutes to get certificates
 # Check Caddy logs:
-launchkit logs caddy --tail 50
+corekit logs caddy --tail 50
 
 # If problems persist:
 # 1. Verify DNS is correct
 # 2. Check firewall allows 80/443
 # 3. Restart Caddy
-launchkit restart caddy
+corekit restart caddy
 ```
 
 #### Docker Issues
@@ -650,8 +650,8 @@ sudo systemctl restart docker
 docker network prune -f
 
 # Restart all services
-cd ai-launchkit
-launchkit restart
+cd ai-corekit
+corekit restart
 ```
 
 </details>
@@ -665,7 +665,7 @@ launchkit restart
 
 ### When to Update
 
-Update AI LaunchKit when:
+Update AI CoreKit when:
 - New features are released
 - Security patches are available
 - Bug fixes are published
@@ -673,7 +673,7 @@ Update AI LaunchKit when:
 
 **Check for updates:**
 ```bash
-cd ai-launchkit
+cd ai-corekit
 git fetch origin
 git log HEAD..origin/main --oneline
 ```
@@ -683,8 +683,8 @@ git log HEAD..origin/main --oneline
 **CRITICAL:** Always backup before updating!
 
 ```bash
-# Navigate to AI LaunchKit
-cd ai-launchkit
+# Navigate to AI CoreKit
+cd ai-corekit
 
 # Backup all Docker volumes
 tar czf backup-$(date +%Y%m%d).tar.gz \
@@ -703,14 +703,14 @@ cp docker-compose.yml docker-compose.yml.backup
 **Move backups to safe location:**
 ```bash
 # Create backup directory
-mkdir -p ~/ai-launchkit-backups
+mkdir -p ~/ai-corekit-backups
 
 # Move backups
-mv backup-*.tar.gz ~/ai-launchkit-backups/
-mv backup-*.sql ~/ai-launchkit-backups/
+mv backup-*.tar.gz ~/ai-corekit-backups/
+mv backup-*.sql ~/ai-corekit-backups/
 
 # Verify backups exist
-ls -lh ~/ai-launchkit-backups/
+ls -lh ~/ai-corekit-backups/
 ```
 
 ### Update Procedure
@@ -718,8 +718,8 @@ ls -lh ~/ai-launchkit-backups/
 #### Standard Update Process
 
 ```bash
-# 1. Navigate to AI LaunchKit
-cd ai-launchkit
+# 1. Navigate to AI CoreKit
+cd ai-corekit
 
 # 2. Run update script
 sudobash ./scripts/update.sh
@@ -727,15 +727,15 @@ sudobash ./scripts/update.sh
 💡 **Tip:** If you encounter Docker Hub rate limit errors (`toomanyrequests: Rate exceeded`) during installation/update, run `docker login` first (free account required) - this gives you individual rate limits instead of sharing with all VPS users, significantly reducing timeout issues. If that doesn't work, I recommend not installing all services with one installation, but only a maximum of 15-20 at first and then gradually installing the others via updates!
 
 # 3. Check service status
-launchkit ps
+corekit ps
 
 # 4. Monitor logs for issues
-launchkit logs -f --tail 100
+corekit logs -f --tail 100
 ```
 
 ### PostgreSQL Version Handling
 
-**Important:** AI LaunchKit pins PostgreSQL to version 17 to prevent automatic upgrades.
+**Important:** AI CoreKit pins PostgreSQL to version 17 to prevent automatic upgrades.
 
 #### Check Current PostgreSQL Version
 
@@ -767,7 +767,7 @@ If you see "database files are incompatible" errors:
 docker exec postgres pg_dumpall -U postgres > emergency-backup.sql
 
 # 2. Stop all services
-launchkit down
+corekit down
 
 # 3. Remove incompatible volume
 docker volume rm ${PROJECT_NAME:-localai}_postgres_data
@@ -776,14 +776,14 @@ docker volume rm ${PROJECT_NAME:-localai}_postgres_data
 git pull
 
 # 5. Start PostgreSQL (now pinned to v17)
-launchkit up postgres
+corekit up postgres
 sleep 10
 
 # 6. Restore your data
 docker exec -i postgres psql -U postgres < emergency-backup.sql
 
 # 7. Start all services
-launchkit up
+corekit up
 ```
 
 </details>
@@ -803,11 +803,11 @@ docker exec postgres postgres --version
 
 ```bash
 # View all services
-launchkit ps
+corekit ps
 
 # All should show: STATUS = Up
 # If any show "Restarting" wait 2-3 minutes, then check logs:
-launchkit logs [service-name] --tail 50
+corekit logs [service-name] --tail 50
 ```
 
 #### Test Key Services
@@ -854,8 +854,8 @@ If the update causes issues, rollback to the previous version:
 #### Quick Rollback
 
 ```bash
-# 1. Navigate to AI LaunchKit
-cd ai-launchkit
+# 1. Navigate to AI CoreKit
+cd ai-corekit
 
 # 2. View commit history
 git log --oneline -10
@@ -867,26 +867,26 @@ git reset --hard [previous-commit-hash]
 cp .env.backup .env
 
 # 5. Restart with old version
-launchkit down
-launchkit up
+corekit down
+corekit up
 ```
 
 #### Full Rollback with Data Restore
 
 ```bash
 # 1. Stop services
-launchkit down
+corekit down
 
 # 2. Restore volumes from backup
 tar xzf volumes-backup-YYYYMMDD.tar.gz
 
 # 3. Restore PostgreSQL
-launchkit up postgres
+corekit up postgres
 sleep 10
 docker exec -i postgres psql -U postgres < backup-YYYYMMDD.sql
 
 # 4. Start all services
-launchkit up
+corekit up
 ```
 
 ### Service-Specific Updates
@@ -916,16 +916,16 @@ docker exec ollama ollama pull mistral
 docker exec n8n npm update -g n8n
 
 # Restart n8n
-launchkit restart n8n
+corekit restart n8n
 ```
 
 #### Supabase
 
 ```bash
 # Supabase has multiple components
-# All update together with launchkit pull
-launchkit pull supabase-kong supabase-auth supabase-rest supabase-storage
-launchkit up supabase-kong supabase-auth supabase-rest supabase-storage
+# All update together with corekit pull
+corekit pull supabase-kong supabase-auth supabase-rest supabase-storage
+corekit up supabase-kong supabase-auth supabase-rest supabase-storage
 ```
 
 ### Update Troubleshooting
@@ -934,16 +934,16 @@ launchkit up supabase-kong supabase-auth supabase-rest supabase-storage
 
 ```bash
 # Check logs for specific error
-launchkit logs [service-name] --tail 100
+corekit logs [service-name] --tail 100
 
 # Common fixes:
 # 1. Recreate service
-launchkit up --force-recreate [service-name]
+corekit up --force-recreate [service-name]
 
 # 2. Clear cache and restart
-launchkit down
+corekit down
 docker system prune -f
-launchkit up
+corekit up
 
 # 3. Restore from backup if needed
 ```
@@ -952,7 +952,7 @@ launchkit up
 
 ```bash
 # PostgreSQL not starting
-launchkit logs postgres --tail 100
+corekit logs postgres --tail 100
 
 # Common causes:
 # - Incompatible data format (see PostgreSQL section)
@@ -1044,7 +1044,7 @@ Stay informed about updates:
 If you encounter issues:
 
 1. **Check Logs**: `docker compose logs [service]`
-2. **Search Issues**: [GitHub Issues](https://github.com/freddy-schuetz/ai-launchkit/issues)
+2. **Search Issues**: [GitHub Issues](https://github.com/tcoretech/ai-corekit/issues)
 3. **Community Forum**: Ask for help
 4. **Rollback**: Use the procedure above if needed
 
@@ -1313,7 +1313,7 @@ If problems persist after trying these solutions:
 <details>
 <summary><b>📧 Mail System Issues</b></summary>
 
-AI LaunchKit includes Mailpit (always active), optional Docker-Mailserver (production), and SnappyMail (webmail). Here's how to troubleshoot common email issues.
+AI CoreKit includes Mailpit (always active), optional Docker-Mailserver (production), and SnappyMail (webmail). Here's how to troubleshoot common email issues.
 
 ### Mailpit Issues
 
@@ -1388,7 +1388,7 @@ docker exec [service-name] env | grep SMTP
 # Should show: SMTP_HOST=mailpit, SMTP_PORT=1025
 
 # 2. Check Docker network
-docker network inspect ai-launchkit_default | grep mailpit
+docker network inspect ai-corekit_default | grep mailpit
 
 # 3. Test connection from service container
 docker exec [service-name] nc -zv mailpit 1025
@@ -1705,7 +1705,7 @@ docker compose up -d
 **Diagnosis:**
 ```bash
 # 1. Check if containers are on same network
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 
 # Should show all service containers in "Containers" section
 
@@ -1797,7 +1797,7 @@ docker stats --no-stream
 docker compose restart [service-name]
 
 # Solution 2: Check MTU settings
-docker network inspect ai-launchkit_default | grep MTU
+docker network inspect ai-corekit_default | grep MTU
 
 # Solution 3: Reduce DNS lookup time
 # Add to docker-compose.yml for services with issues:
@@ -2645,8 +2645,8 @@ If you need to create a GitHub issue or ask for help, collect diagnostic informa
 
 ```bash
 # Create diagnostic report
-mkdir ~/launchkit-diagnostics
-cd ~/launchkit-diagnostics
+mkdir ~/corekit-diagnostics
+cd ~/corekit-diagnostics
 
 # 1. System information
 uname -a > system-info.txt
@@ -2660,7 +2660,7 @@ docker compose version >> system-info.txt
 docker ps -a > container-status.txt
 
 # 3. Environment variables (REDACT PASSWORDS!)
-cp ~/.ai-launchkit/.env env-backup.txt
+cp ~/.ai-corekit/.env env-backup.txt
 # Edit env-backup.txt and replace password values with "REDACTED"
 
 # 4. Service logs
@@ -2674,16 +2674,16 @@ docker compose config > docker-compose-processed.yml
 
 # 6. Network information
 docker network ls > networks.txt
-docker network inspect ai-launchkit_default > network-details.txt 2>&1
+docker network inspect ai-corekit_default > network-details.txt 2>&1
 
 # 7. Resource usage
 docker stats --no-stream > resource-usage.txt
 
 # Create archive
 cd ~
-tar -czf launchkit-diagnostics.tar.gz launchkit-diagnostics/
+tar -czf corekit-diagnostics.tar.gz corekit-diagnostics/
 
-echo "Diagnostic archive created: ~/launchkit-diagnostics.tar.gz"
+echo "Diagnostic archive created: ~/corekit-diagnostics.tar.gz"
 echo "Upload this file when creating a GitHub issue"
 ```
 
@@ -2695,22 +2695,22 @@ echo "Upload this file when creating a GitHub issue"
 # Make backups first!
 
 # 1. Stop all services
-cd ~/.ai-launchkit
+cd ~/.ai-corekit
 docker compose down -v
 
 # 2. Remove all containers, images, volumes
 docker system prune -a --volumes
 
-# 3. Remove AI LaunchKit directory
+# 3. Remove AI CoreKit directory
 cd ~
-rm -rf ~/.ai-launchkit
+rm -rf ~/.ai-corekit
 
 # 4. Re-run installer
-curl -sSL https://raw.githubusercontent.com/freddy-schuetz/ai-launchkit/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/tcoretech/ai-corekit/main/install.sh | sudo bash
 
 # Or clone and run manually:
-git clone https://github.com/freddy-schuetz/ai-launchkit.git
-cd ai-launchkit
+git clone https://github.com/tcoretech/ai-corekit.git
+cd ai-corekit
 chmod +x install.sh
 ./install.sh
 ```
@@ -2718,14 +2718,14 @@ chmod +x install.sh
 **Selective Service Reset:**
 ```bash
 # Reset specific service without affecting others
-cd ~/.ai-launchkit
+cd ~/.ai-corekit
 
 # 1. Stop and remove container
 docker compose stop [service-name]
 docker compose rm [service-name]
 
 # 2. Remove service volume (if exists)
-docker volume rm ai-launchkit_[service-name]-data
+docker volume rm ai-corekit_[service-name]-data
 
 # 3. Remove service configuration from .env
 nano .env
@@ -2737,7 +2737,7 @@ docker compose up -d [service-name]
 # Example: Reset n8n
 docker compose stop n8n
 docker compose rm n8n
-docker volume rm ai-launchkit_n8n-data
+docker volume rm ai-corekit_n8n-data
 docker compose up -d n8n
 ```
 
@@ -2746,7 +2746,7 @@ docker compose up -d n8n
 **Before Creating a GitHub Issue:**
 
 1. **Search Existing Issues:**
-   - Check [GitHub Issues](https://github.com/freddy-schuetz/ai-launchkit/issues)
+   - Check [GitHub Issues](https://github.com/tcoretech/ai-corekit/issues)
    - Check [Community Forum](https://thinktank.ottomator.ai/c/local-ai/18)
    - Search for your error message
 
@@ -2772,7 +2772,7 @@ docker compose up -d n8n
    - Include any error messages
 
 **Community Resources:**
-- **GitHub Issues:** [Report a bug](https://github.com/freddy-schuetz/ai-launchkit/issues/new)
+- **GitHub Issues:** [Report a bug](https://github.com/tcoretech/ai-corekit/issues/new)
 
 </details>
 
@@ -2780,7 +2780,7 @@ docker compose up -d n8n
 
 **Community Resources:**
 - **LinkedIn**: [Friedemann Schuetz at LinkedIn](https://www.linkedin.com/in/friedemann-schuetz)
-- **Issues**: [GitHub Issues](https://github.com/freddy-schuetz/ai-launchkit/issues)
+- **Issues**: [GitHub Issues](https://github.com/tcoretech/ai-corekit/issues)
 
 **Before Creating an Issue:**
 1. Check existing GitHub Issues
@@ -2861,7 +2861,7 @@ Created and maintained by [Friedemann Schuetz](https://www.linkedin.com/in/fried
 - [self-hosted-ai-starter-kit](https://github.com/n8n-io/self-hosted-ai-starter-kit) by n8n team
 - [local-ai-packaged](https://github.com/coleam00/local-ai-packaged) by coleam00
 
-[View all contributors](https://github.com/freddy-schuetz/ai-launchkit/graphs/contributors)
+[View all contributors](https://github.com/tcoretech/ai-corekit/graphs/contributors)
 
 ---
 
@@ -2875,6 +2875,6 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 **Ready to launch your AI projects?**
 
-[⭐ Star this repo](https://github.com/freddy-schuetz/ai-launchkit) • [🐛 Report issues](https://github.com/freddy-schuetz/ai-launchkit/issues) • [🤝 Contribute](https://github.com/freddy-schuetz/ai-launchkit/pulls)
+[⭐ Star this repo](https://github.com/tcoretech/ai-corekit) • [🐛 Report issues](https://github.com/tcoretech/ai-corekit/issues) • [🤝 Contribute](https://github.com/tcoretech/ai-corekit/pulls)
 
 </div>

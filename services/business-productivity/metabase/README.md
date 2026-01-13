@@ -2,7 +2,7 @@
 
 ### What is Metabase?
 
-Metabase is the most user-friendly open-source business intelligence platform that transforms raw data into actionable insights. Unlike complex BI tools, Metabase features a no-code visual query builder that allows anyone on your team to create dashboards and analyze data. It's perfect for monitoring your entire AI LaunchKit stack, tracking business metrics, and making data-driven decisions without requiring SQL knowledge (though SQL support is available for power users).
+Metabase is the most user-friendly open-source business intelligence platform that transforms raw data into actionable insights. Unlike complex BI tools, Metabase features a no-code visual query builder that allows anyone on your team to create dashboards and analyze data. It's perfect for monitoring your entire AI CoreKit stack, tracking business metrics, and making data-driven decisions without requiring SQL knowledge (though SQL support is available for power users).
 
 ### Features
 
@@ -33,9 +33,9 @@ Metabase is the most user-friendly open-source business intelligence platform th
 
 **Important:** Metabase has its own complete user management system with groups and SSO support, so no Basic Auth is configured in Caddy.
 
-### Connect AI LaunchKit Databases
+### Connect AI CoreKit Databases
 
-Metabase can connect to all databases in your AI LaunchKit installation for comprehensive analytics:
+Metabase can connect to all databases in your AI CoreKit installation for comprehensive analytics:
 
 #### n8n Workflows Database (PostgreSQL)
 

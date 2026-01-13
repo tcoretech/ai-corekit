@@ -2,7 +2,7 @@
 
 ### Was ist n8n?
 
-n8n ist eine leistungsstarke, erweiterbare Workflow-Automatisierungsplattform, die es dir ermöglicht, alles mit allem über ihr offenes, Fair-Code-Modell zu verbinden. Sie ist das Herz des AI LaunchKit und orchestriert alle Integrationen zwischen den 50+ Services.
+n8n ist eine leistungsstarke, erweiterbare Workflow-Automatisierungsplattform, die es dir ermöglicht, alles mit allem über ihr offenes, Fair-Code-Modell zu verbinden. Sie ist das Herz des AI CoreKit und orchestriert alle Integrationen zwischen den 50+ Services.
 
 ### Features
 
@@ -32,7 +32,7 @@ n8n ist eine leistungsstarke, erweiterbare Workflow-Automatisierungsplattform, d
 
 ### n8n-Integrations-Setup
 
-n8n integriert sich mit sich selbst und anderen AI LaunchKit Services:
+n8n integriert sich mit sich selbst und anderen AI CoreKit Services:
 
 #### Mit internen Services verbinden
 
@@ -308,7 +308,7 @@ Nachricht: |
 
 **⚠️ BREAKING CHANGES von Pyodide**
 
-AI LaunchKit nutzt jetzt n8n's **Native Python Task Runner** statt der alten Pyodide (WebAssembly) Implementierung. Das bietet:
+AI CoreKit nutzt jetzt n8n's **Native Python Task Runner** statt der alten Pyodide (WebAssembly) Implementierung. Das bietet:
 
 - ✅ **10-20x schneller** Python-Ausführung
 - ✅ **Volle Python-Paket-Unterstützung** (pandas, numpy, scikit-learn, etc.)
@@ -392,7 +392,7 @@ docker ps | grep [dienst-name]
 docker exec n8n ping [dienst-name]
 
 # 3. Prüfe Docker-Netzwerk
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 
 # 4. Überprüfe ob Port korrekt ist
 docker port [dienst-name]

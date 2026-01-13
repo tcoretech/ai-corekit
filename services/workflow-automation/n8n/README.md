@@ -2,7 +2,7 @@
 
 ### What is n8n?
 
-n8n is a powerful, extendable workflow automation platform that lets you connect anything to everything via its open, fair-code model. It's the heart of AI LaunchKit, orchestrating all integrations between the 50+ services.
+n8n is a powerful, extendable workflow automation platform that lets you connect anything to everything via its open, fair-code model. It's the heart of AI CoreKit, orchestrating all integrations between the 50+ services.
 
 ### Features
 
@@ -32,7 +32,7 @@ n8n is a powerful, extendable workflow automation platform that lets you connect
 
 ### n8n Integration Setup
 
-n8n integrates with itself and other AI LaunchKit services:
+n8n integrates with itself and other AI CoreKit services:
 
 #### Connect to Internal Services
 
@@ -367,7 +367,7 @@ docker ps | grep [service-name]
 docker exec n8n ping [service-name]
 
 # 3. Check Docker network
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 
 # 4. Verify port is correct
 docker port [service-name]
@@ -1309,7 +1309,7 @@ docker stats flowise
 # Cache embeddings for frequently accessed docs
 ```
 
-### Integration with AI LaunchKit Services
+### Integration with AI CoreKit Services
 
 **Flowise + Qdrant:**
 - Use Qdrant as vector store for RAG
@@ -1410,7 +1410,7 @@ n8n Container ← WebSocket → n8nio/runners Container
 
 ### Initial Setup
 
-Python Runner is **already configured in AI LaunchKit** if you installed with the latest version. Verify it's enabled:
+Python Runner is **already configured in AI CoreKit** if you installed with the latest version. Verify it's enabled:
 
 #### Step 1: Check if Python Runner is Enabled
 
@@ -1993,14 +1993,14 @@ The n8n service uses a structured approach for managing workflows and credential
 
 **CLI Commands:**
 
-You can manage data using the `launchkit run` command:
+You can manage data using the `corekit run` command:
 
 *   **Import**: Imports workflows and credentials from `config/`.
     ```bash
-    launchkit run n8n import
+    corekit run n8n import
     ```
 
 *   **Export**: Exports current workflows and credentials to `data/backups/`.
     ```bash
-    launchkit run n8n export
+    corekit run n8n export
     ```

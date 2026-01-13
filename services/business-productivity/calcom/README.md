@@ -580,7 +580,7 @@ docker stats calcom
 
 ## Initial Setup
 
-After AI LaunchKit installation, Cal.com is available at `https://cal.yourdomain.com`
+After AI CoreKit installation, Cal.com is available at `https://cal.yourdomain.com`
 
 ### First Steps
 1. **Create Admin Account**: The first user to register becomes the admin
@@ -589,7 +589,7 @@ After AI LaunchKit installation, Cal.com is available at `https://cal.yourdomain
 4. **Share Booking Link**: `https://cal.yourdomain.com/YOUR-USERNAME`
 
 ### Email Configuration
-Cal.com uses AI LaunchKit's mail system automatically:
+Cal.com uses AI CoreKit's mail system automatically:
 - **Development**: Mailpit captures all emails locally
 - **Production**: Postal sends real emails (requires DNS setup)
 
@@ -659,7 +659,7 @@ Google Calendar integration allows:
 
 1. Stop Cal.com:
    ```bash
-   sudo launchkit stop calcom
+   sudo corekit stop calcom
    ```
 
 2. Add to your `.env` file:
@@ -670,7 +670,7 @@ Google Calendar integration allows:
 
 3. Update build script to include Google credentials:
    ```bash
-   cd ~/ai-launchkit
+   cd ~/ai-corekit
    nano scripts/build_calcom.sh
    ```
 
@@ -689,8 +689,8 @@ Google Calendar integration allows:
 4. Rebuild Cal.com:
    ```bash
    sudo bash scripts/build_calcom.sh
-   sudo launchkit build --no-cache calcom
-   sudo launchkit up -d calcom
+   sudo corekit build --no-cache calcom
+   sudo corekit up -d calcom
    ```
 
 ##### Method B: Database Update (Advanced)
@@ -804,10 +804,10 @@ sudo docker logs -f calcom --tail 100
 sudo docker exec postgres psql -U postgres -d calcom -c "\dt"
 
 # Restart Cal.com
-sudo launchkit restart calcom
+sudo corekit restart calcom
 
 # Force rebuild
-sudo launchkit build --no-cache calcom
+sudo corekit build --no-cache calcom
 ```
 
 ## Configuration Options
@@ -837,7 +837,7 @@ STRIPE_PRIVATE_KEY=
 MS_GRAPH_CLIENT_ID=
 MS_GRAPH_CLIENT_SECRET=
 
-# Email Configuration (uses AI LaunchKit mail system)
+# Email Configuration (uses AI CoreKit mail system)
 EMAIL_FROM=noreply@yourdomain.com
 EMAIL_SERVER_HOST=mailpit  # or postal for production
 EMAIL_SERVER_PORT=1025      # or 25 for postal
@@ -872,12 +872,12 @@ sudo docker exec -i postgres psql -U postgres calcom < calcom_backup_20250903.sq
 - [Cal.com Documentation](https://cal.com/docs)
 - [Cal.com GitHub](https://github.com/calcom/cal.com)
 - [Cal.com Discord Community](https://discord.gg/calcom)
-- [AI LaunchKit Repository](https://github.com/freddy-schuetz/ai-launchkit)
+- [AI CoreKit Repository](https://github.com/freddy-schuetz/ai-corekit)
 
 ## Support
 
-For AI LaunchKit specific issues:
-- Open issue on [GitHub](https://github.com/freddy-schuetz/ai-launchkit/issues)
+For AI CoreKit specific issues:
+- Open issue on [GitHub](https://github.com/freddy-schuetz/ai-corekit/issues)
 
 For Cal.com specific issues:
 - Check [Cal.com GitHub Issues](https://github.com/calcom/cal.com/issues)

@@ -831,7 +831,7 @@ docker stats flowise
 # Cache embeddings for frequently accessed docs
 ```
 
-### Integration with AI LaunchKit Services
+### Integration with AI CoreKit Services
 
 **Flowise + Qdrant:**
 - Use Qdrant as vector store for RAG

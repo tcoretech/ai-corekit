@@ -18,7 +18,7 @@ Ollama is an open-source framework that allows you to run large language models 
 
 ### Initial Setup
 
-**Ollama is Pre-Configured in AI LaunchKit:**
+**Ollama is Pre-Configured in AI CoreKit:**
 
 Ollama is already running and accessible at `http://ollama:11434` internally. You can interact with it from n8n, Open WebUI, and other services immediately.
 
@@ -513,7 +513,7 @@ docker exec ollama ollama pull qwen2.5:3b        # Fast generation
 **Connection refused from n8n:**
 ```bash
 # Check Docker network
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 # Verify ollama and n8n are on same network
 
 # Test internal URL
@@ -576,7 +576,7 @@ docker compose restart ollama n8n
 - If processing >1M tokens/month, Ollama pays for itself quickly
 - Best ROI: Use Ollama for high-volume, low-stakes tasks
 
-### Integration with AI LaunchKit Services
+### Integration with AI CoreKit Services
 
 **Ollama + Open WebUI:**
 - Open WebUI auto-detects all Ollama models

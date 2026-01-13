@@ -44,7 +44,7 @@ if [ ! -r "$ENV_FILE" ]; then
     echo "This script requires access to the .env file which is owned by root."
     echo
     echo "Please run with sudo:"
-    echo "  sudo launchkit credentials export"
+    echo "  sudo corekit credentials export"
     echo
     exit 1
 fi
@@ -72,7 +72,7 @@ OUTPUT_FILE="$OUTPUT_DIR/credentials.${BASE_DOMAIN}.txt"
 
 echo
 log_info "============================================"
-log_info "   AI LaunchKit Credentials Export"
+log_info "   AI CoreKit Credentials Export"
 log_info "============================================"
 echo
 
@@ -147,7 +147,7 @@ echo
 echo "💾 Credentials file saved to: $OUTPUT_FILE"
 echo
 echo "To download this file securely (encrypted zip):"
-echo "   launchkit credentials download"
+echo "   corekit credentials download"
 echo
 echo "Remember to delete the file after use:"
 echo "   rm $OUTPUT_FILE"

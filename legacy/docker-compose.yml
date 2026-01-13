@@ -2173,7 +2173,7 @@ services:
       # Mount shared directory for backup (read-only)
       - ./shared:/data/shared:ro
       # Mount AI LaunchKit configuration (read-only)
-      - .:/data/ai-launchkit:ro
+      - .:/data/ai-corekit:ro
     environment:
       # Repository encryption password (different from Nextcloud password!)
       - KOPIA_PASSWORD=${KOPIA_PASSWORD}
@@ -2532,7 +2532,7 @@ services:
       - easyocr_models:/root/.EasyOCR/model
       - ./shared:/data/shared
     environment:
-      - SECRET_KEY=${EASYOCR_SECRET_KEY:-launchkit}
+      - SECRET_KEY=${EASYOCR_SECRET_KEY:-corekit}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2000/health"]
       interval: 30s

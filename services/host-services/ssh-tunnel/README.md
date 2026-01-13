@@ -59,13 +59,13 @@ Optional deployment of  **web + ssh** Cloudflare Tunnel services:
 2. Navigate to **Access** → **Tunnels**
 3. Click **Create a tunnel**
 4. Choose **Cloudflared** connector
-5. Name your tunnel: **"ai-launchkit-web"**
+5. Name your tunnel: **"ai-corekit-web"**
 6. Copy the tunnel token (save as `CLOUDFLARE_TUNNEL_TOKEN` in your .env)
 
 ##### SSH Management Tunnel (Highly Recommended)
 1. In the same dashboard, click **Create a tunnel** again
 2. Choose **Cloudflared** connector  
-3. Name your tunnel: **"ai-launchkit-ssh"**
+3. Name your tunnel: **"ai-corekit-ssh"**
 4. Copy this tunnel token (save as `CLOUDFLARE_SSH_TUNNEL_TOKEN` in your .env)
 
 
@@ -131,7 +131,7 @@ When you create public hostnames in the tunnel configuration, Cloudflare automat
 Note: Providing the token alone does not auto-enable the tunnel; you must enable the "cloudflare-tunnel" profile in the wizard (or add it to `COMPOSE_PROFILES`).
 
 #### SSH Management Tunnel Configuration
-In your **SSH tunnel** (ai-launchkit-ssh) configuration:
+In your **SSH tunnel** (ai-corekit-ssh) configuration:
 
 - **Service Type**: TCP
 - **Public hostname**: `ssh.yourdomain.com` 

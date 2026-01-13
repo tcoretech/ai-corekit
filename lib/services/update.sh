@@ -61,7 +61,7 @@ for arg in "$@"; do
     esac
 done
 
-log_info "Starting AI LaunchKit update..."
+log_info "Starting AI CoreKit update..."
 
 # 1. Self Update (Git)
 if [ "$NO_RESET" = true ]; then
@@ -85,7 +85,7 @@ else
                 echo ""
                 read -p "⚠️  WARNING: Update will DISCARD all local changes. Proceed? [y/N]: " CONFIRM
                 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-                    log_info "Update aborted. Use 'launchkit update --no-reset' to pull changes without resetting."
+                    log_info "Update aborted. Use 'corekit update --no-reset' to pull changes without resetting."
                     exit 0
                 fi
             else

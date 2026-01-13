@@ -7,7 +7,7 @@
 .env.global
 .env.backup
 credentials.*.txt
-ai-launchkit-credentials.json
+ai-corekit-credentials.json
 dkim_*
 
 # Service Data & Logs (Standardized)

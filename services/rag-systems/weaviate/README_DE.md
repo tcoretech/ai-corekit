@@ -18,7 +18,7 @@ Weaviate (ausgesprochen "we-vee-eight") ist eine Open-Source, KI-native Vektor-D
 
 **Zugriff auf Weaviate:**
 
-Weaviate ist vorinstalliert und läuft auf deiner AI LaunchKit Instanz.
+Weaviate ist vorinstalliert und läuft auf deiner AI CoreKit Instanz.
 
 1. **GraphQL Playground:** `https://weaviate.deinedomain.com/v1/graphql`
    - Interaktiver Query-Builder und Test-Oberfläche
@@ -649,7 +649,7 @@ curl -X PATCH http://localhost:8080/v1/schema/Document \
 - Verwende Filter statt Cross-References für einfache Beziehungen
 - Beispiel: Speichere Autorennamen im Book-Objekt, nicht als Referenz
 
-### Integration mit anderen AI LaunchKit Services
+### Integration mit anderen AI CoreKit Services
 
 **Weaviate + RAGApp:**
 - RAGApp kann konfiguriert werden, um Weaviate als Vektor-Store zu nutzen

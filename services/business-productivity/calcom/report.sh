@@ -22,11 +22,11 @@ echo "  Using: ${MAIL_MODE:-mailpit} (${SMTP_HOST}:${SMTP_PORT})"
 echo "  Bookings will be captured in Mailpit"
 echo
 echo "📚 Documentation:"
-echo "  Setup Guide: ~/ai-launchkit/docs/CALCOM_SETUP.md"
+echo "  Setup Guide: ~/ai-corekit/docs/CALCOM_SETUP.md"
 echo "  - Google Calendar integration instructions"
 echo "  - Zoom, Stripe, MS365 integrations"
 echo "  - Troubleshooting guide"
-echo "  Online: https://github.com/freddy-schuetz/ai-launchkit/blob/main/docs/CALCOM_SETUP.md"  
+echo "  Online: https://github.com/tcoretech/ai-corekit/blob/main/docs/CALCOM_SETUP.md"  
 echo
 echo "n8n Integration:"
 echo "  Base URL: http://calcom:3000/api/v2"

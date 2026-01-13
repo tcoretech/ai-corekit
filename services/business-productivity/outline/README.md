@@ -64,7 +64,7 @@ staticPasswords:
 
 3. Restart Dex:
 ```bash
-launchkit restart dex
+corekit restart dex
 ```
 
 ### n8n Integration
@@ -387,7 +387,7 @@ sed -i "s/^OUTLINE_SECRET_KEY=.*/OUTLINE_SECRET_KEY=\"$(openssl rand -hex 32)\"/
 sed -i "s/^OUTLINE_UTILS_SECRET=.*/OUTLINE_UTILS_SECRET=\"$(openssl rand -hex 32)\"/" .env
 
 # Restart Outline
-launchkit restart outline
+corekit restart outline
 ```
 
 #### Database Connection Issues
@@ -442,9 +442,9 @@ file dex/config.yaml
 # Should output: "dex/config.yaml: ASCII text"
 
 # IMPORTANT: Container must be recreated, not just restarted
-launchkit stop dex
-launchkit rm -f dex
-launchkit up -d dex
+corekit stop dex
+corekit rm -f dex
+corekit up -d dex
 
 # Verify Dex is running
 docker logs dex --tail 10

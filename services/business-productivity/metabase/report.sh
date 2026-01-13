@@ -13,7 +13,7 @@ echo "     - Create admin account"
 echo "     - Add your first data source"
 echo "     - Invite team members"
 echo
-echo "Connect to AI LaunchKit Databases:"
+echo "Connect to AI CoreKit Databases:"
 echo "  ┌─────────────────────────────────────────────────┐"
 echo "  │ n8n PostgreSQL:                                │"
 echo "  │   Host: postgres                               │"

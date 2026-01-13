@@ -753,7 +753,7 @@ docker exec n8n curl -k http://portainer:9000/api/status
 # Should return: {"Version":"..."}
 
 # 2. Verify services are on same Docker network
-docker network inspect ai-launchkit_default | grep -E "n8n|portainer"
+docker network inspect ai-corekit_default | grep -E "n8n|portainer"
 
 # 3. Check if Portainer is exposed internally
 docker inspect portainer | grep "IPAddress"

@@ -187,9 +187,9 @@ load_all_env() {
     log_info "Loading environment for $(basename "$service_dir")..."
 
     # Load all environment context if not already loaded
-    # Optimization: If LAUNCHKIT_ENV_LOADED is true, we assume variables are already in the environment
+    # Optimization: If COREKIT_ENV_LOADED is true, we assume variables are already in the environment
     # and we skip the expensive file scan.
-    if [[ ${#ALL_ENV_VARS[@]} -eq 0 && "$LAUNCHKIT_ENV_LOADED" != "true" ]]; then
+    if [[ ${#ALL_ENV_VARS[@]} -eq 0 && "$COREKIT_ENV_LOADED" != "true" ]]; then
         load_all_envs
     fi
     

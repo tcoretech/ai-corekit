@@ -21,7 +21,7 @@ The update script detected that Vexa was selected, but the Vexa repository was n
 
 **1. Check if Vexa is in COMPOSE_PROFILES:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 grep "COMPOSE_PROFILES=" .env
 ```
 
@@ -37,7 +37,7 @@ COMPOSE_PROFILES=n8n,vexa,...
 
 **2. Check if Vexa directory exists:**
 ```bash
-ls -la ~/ai-launchkit/vexa
+ls -la ~/ai-corekit/vexa
 ```
 
 **Possible outputs:**
@@ -48,7 +48,7 @@ ls -la ~/ai-launchkit/vexa
 
 **3. Run setup script manually:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/04a_setup_vexa.sh
 ```
 
@@ -68,7 +68,7 @@ sudo bash scripts/04a_setup_vexa.sh
 
 **4. Generate secrets for Vexa:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/03_generate_secrets.sh
 ```
 
@@ -81,7 +81,7 @@ sudo bash scripts/03_generate_secrets.sh
 
 **5. Start Vexa services:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/05_run_services.sh
 ```
 
@@ -96,7 +96,7 @@ sudo bash scripts/05_run_services.sh
 
 **6. Initialize Vexa (create user & token):**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/05a_init_vexa.sh
 ```
 
@@ -158,7 +158,7 @@ The API token exists in the `.env` file but was not inserted into the database. 
 
 **1. Get admin token from .env:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 ADMIN_TOKEN=$(sudo grep "VEXA_ADMIN_TOKEN=" .env | cut -d= -f2 | tr -d '"')
 echo "Admin Token: $ADMIN_TOKEN"
 ```
@@ -191,7 +191,7 @@ curl -s http://localhost:8057/admin/users \
 
 **3. Check if token exists in database:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT token, user_id, created_at FROM api_tokens;"
 ```
@@ -204,7 +204,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 
 **4. Check what token is in .env:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 OLD_TOKEN=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 echo "Current token in .env: $OLD_TOKEN"
 ```
@@ -216,7 +216,7 @@ echo "Current token in .env: $OLD_TOKEN"
 This is the critical step! If the init script incorrectly thinks the token is valid, we need to clear it first.
 
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # Clear the token value (keep the key name)
 sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
@@ -230,7 +230,7 @@ sudo grep "VEXA_API_KEY=" .env | head -1
 
 **6. Run init script to generate NEW token:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/05a_init_vexa.sh
 ```
 
@@ -250,7 +250,7 @@ sudo bash scripts/05a_init_vexa.sh
 
 **7. Get the NEW token:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 NEW_TOKEN=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 echo "New token: $NEW_TOKEN"
 ```
@@ -259,7 +259,7 @@ echo "New token: $NEW_TOKEN"
 
 **8. Verify token is NOW in database:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT token, user_id, created_at FROM api_tokens;"
 ```
@@ -306,7 +306,7 @@ Headers:
 **10. Test the workflow:**
 ```bash
 # Test from server:
-cd ~/ai-launchkit
+cd ~/ai-corekit
 API_KEY=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 
 curl -X POST http://localhost:8056/bots \
@@ -353,7 +353,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 **FORCE regeneration by clearing token first (same as step 5 above):**
 
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # 1. Clear token in .env
 sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
@@ -444,7 +444,7 @@ hostname -f
 
 **5. Test Vexa API from server:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 API_KEY=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
@@ -540,7 +540,7 @@ Headers:
 **After all fixes, this complete test should work:**
 
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # 1. Collect all required values
 API_KEY=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
@@ -569,7 +569,7 @@ curl -s http://localhost:8057/admin/users \
 # 4. Check token in DB
 echo ""
 echo "Checking tokens in database..."
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT LEFT(token, 20) || '...' as token, user_id FROM api_tokens;"
 
@@ -665,7 +665,7 @@ sudo grep "VEXA_API_KEY=" .env | head -1
 
 **3. Verify token is in database after updates:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT COUNT(*) FROM api_tokens;"
 # Should show: 1 (not 0!)
@@ -680,7 +680,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 cat > ~/check_vexa.sh << 'EOF'
 #!/bin/bash
 echo "Checking Vexa status..."
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # Container status
 echo "1. Containers:"
@@ -713,7 +713,7 @@ chmod +x ~/check_vexa.sh
 **As absolute last resort (DELETES ALL TRANSCRIPTS!):**
 
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # 1. Backup .env
 sudo cp .env .env.backup
@@ -726,7 +726,7 @@ sudo docker compose down
 sudo docker volume rm vexa_dev_postgres_data vexa_dev_redis_data 2>/dev/null || true
 
 # 4. Delete Vexa directory
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo rm -rf vexa
 
 # 5. Complete fresh setup
@@ -742,7 +742,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 # MUST show 1 row!
 
 # 7. Get new token for n8n
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo grep "VEXA_API_KEY=" .env | head -1
 
 # 8. Ensure firewall is open
@@ -759,11 +759,11 @@ sudo ufw reload
 **For further problems:**
 
 **1. Open GitHub issue:**
-https://github.com/freddy-schuetz/ai-launchkit/issues
+https://github.com/freddy-schuetz/ai-corekit/issues
 
 **2. Collect and attach logs:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 
 # All relevant logs
 sudo docker compose logs bot-manager --tail 50 > ~/vexa_bot_manager.log
@@ -789,7 +789,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 
 **3. Quick diagnostic command:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker compose ps
 sudo docker compose logs --tail 20
 ```
@@ -798,7 +798,7 @@ sudo docker compose logs --tail 20
 
 ## Summary - Quick Checklist
 
-- [ ] Problem 1: Vexa directory exists? → `ls -la ~/ai-launchkit/vexa`
+- [ ] Problem 1: Vexa directory exists? → `ls -la ~/ai-corekit/vexa`
 - [ ] Setup executed? → `sudo bash scripts/04a_setup_vexa.sh`
 - [ ] Services running? → `sudo docker ps | grep vexa` (5 containers)
 - [ ] Problem 2: Token in DB? → `sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa -c "SELECT COUNT(*) FROM api_tokens;"`
@@ -836,7 +836,7 @@ Das Update-Script hat erkannt, dass Vexa ausgewählt wurde, aber das Vexa-Reposi
 
 **1. Prüfen ob Vexa in COMPOSE_PROFILES ist:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 grep "COMPOSE_PROFILES=" .env
 ```
 
@@ -852,7 +852,7 @@ COMPOSE_PROFILES=n8n,vexa,...
 
 **2. Prüfen ob Vexa-Verzeichnis existiert:**
 ```bash
-ls -la ~/ai-launchkit/vexa
+ls -la ~/ai-corekit/vexa
 ```
 
 **Mögliche Ausgaben:**
@@ -863,7 +863,7 @@ ls -la ~/ai-launchkit/vexa
 
 **3. Setup-Script manuell ausführen:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/04a_setup_vexa.sh
 ```
 
@@ -883,7 +883,7 @@ sudo bash scripts/04a_setup_vexa.sh
 
 **4. Secrets für Vexa generieren:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/03_generate_secrets.sh
 ```
 
@@ -896,7 +896,7 @@ sudo bash scripts/03_generate_secrets.sh
 
 **5. Vexa Services starten:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/05_run_services.sh
 ```
 
@@ -911,7 +911,7 @@ sudo bash scripts/05_run_services.sh
 
 **6. Vexa initialisieren (User & Token erstellen):**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/05a_init_vexa.sh
 ```
 
@@ -973,7 +973,7 @@ Der API Token existiert in der `.env` Datei, wurde aber nicht in die Datenbank e
 
 **1. Admin Token aus .env holen:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 ADMIN_TOKEN=$(sudo grep "VEXA_ADMIN_TOKEN=" .env | cut -d= -f2 | tr -d '"')
 echo "Admin Token: $ADMIN_TOKEN"
 ```
@@ -1006,7 +1006,7 @@ curl -s http://localhost:8057/admin/users \
 
 **3. Prüfen ob Token in Datenbank existiert:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT token, user_id, created_at FROM api_tokens;"
 ```
@@ -1019,7 +1019,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 
 **4. Prüfen welcher Token in .env ist:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 OLD_TOKEN=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 echo "Aktueller Token in .env: $OLD_TOKEN"
 ```
@@ -1031,7 +1031,7 @@ echo "Aktueller Token in .env: $OLD_TOKEN"
 Dies ist der kritische Schritt! Wenn das Init-Script fälschlicherweise denkt, der Token sei gültig, müssen wir ihn zuerst löschen.
 
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # Token-Wert löschen (Key-Name behalten)
 sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
@@ -1045,7 +1045,7 @@ sudo grep "VEXA_API_KEY=" .env | head -1
 
 **6. Init-Script ausführen um NEUEN Token zu generieren:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo bash scripts/05a_init_vexa.sh
 ```
 
@@ -1065,7 +1065,7 @@ sudo bash scripts/05a_init_vexa.sh
 
 **7. Den NEUEN Token abrufen:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 NEW_TOKEN=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 echo "Neuer Token: $NEW_TOKEN"
 ```
@@ -1074,7 +1074,7 @@ echo "Neuer Token: $NEW_TOKEN"
 
 **8. Verifizieren dass Token JETZT in Datenbank ist:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT token, user_id, created_at FROM api_tokens;"
 ```
@@ -1121,7 +1121,7 @@ Headers:
 **10. Workflow testen:**
 ```bash
 # Test vom Server aus:
-cd ~/ai-launchkit
+cd ~/ai-corekit
 API_KEY=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 
 curl -X POST http://localhost:8056/bots \
@@ -1168,7 +1168,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 **Regenerierung ERZWINGEN durch vorheriges Löschen des Tokens (gleich wie Schritt 5 oben):**
 
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # 1. Token in .env löschen
 sudo sed -i 's/^VEXA_API_KEY=.*/VEXA_API_KEY=""/' .env
@@ -1259,7 +1259,7 @@ hostname -f
 
 **5. Vexa API vom Server aus testen:**
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 API_KEY=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
@@ -1355,7 +1355,7 @@ Headers:
 **Nach allen Fixes sollte dieser komplette Test funktionieren:**
 
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # 1. Alle benötigten Werte sammeln
 API_KEY=$(sudo grep "VEXA_API_KEY=" .env | head -1 | cut -d= -f2 | tr -d '"')
@@ -1384,7 +1384,7 @@ curl -s http://localhost:8057/admin/users \
 # 4. Token in DB prüfen
 echo ""
 echo "Prüfe Tokens in Datenbank..."
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT LEFT(token, 20) || '...' as token, user_id FROM api_tokens;"
 
@@ -1480,7 +1480,7 @@ sudo grep "VEXA_API_KEY=" .env | head -1
 
 **3. Verifizieren dass Token nach Updates in Datenbank ist:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
   -c "SELECT COUNT(*) FROM api_tokens;"
 # Sollte zeigen: 1 (nicht 0!)
@@ -1495,7 +1495,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 cat > ~/check_vexa.sh << 'EOF'
 #!/bin/bash
 echo "Prüfe Vexa Status..."
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # Container Status
 echo "1. Container:"
@@ -1528,7 +1528,7 @@ chmod +x ~/check_vexa.sh
 **Als absolut letzter Ausweg (LÖSCHT ALLE TRANSKRIPTE!):**
 
 ```bash
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # 1. Backup von .env erstellen
 sudo cp .env .env.backup
@@ -1541,7 +1541,7 @@ sudo docker compose down
 sudo docker volume rm vexa_dev_postgres_data vexa_dev_redis_data 2>/dev/null || true
 
 # 4. Vexa-Verzeichnis löschen
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo rm -rf vexa
 
 # 5. Komplett neu aufsetzen
@@ -1557,7 +1557,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 # MUSS 1 Zeile zeigen!
 
 # 7. Neuen Token für n8n abrufen
-cd ~/ai-launchkit
+cd ~/ai-corekit
 sudo grep "VEXA_API_KEY=" .env | head -1
 
 # 8. Firewall sicherstellen
@@ -1574,11 +1574,11 @@ sudo ufw reload
 **Bei weiteren Problemen:**
 
 **1. GitHub Issue öffnen:**
-https://github.com/freddy-schuetz/ai-launchkit/issues
+https://github.com/freddy-schuetz/ai-corekit/issues
 
 **2. Logs sammeln und mitschicken:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 
 # Alle relevanten Logs
 sudo docker compose logs bot-manager --tail 50 > ~/vexa_bot_manager.log
@@ -1604,7 +1604,7 @@ sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa \
 
 **3. Quick Diagnostic Command:**
 ```bash
-cd ~/ai-launchkit/vexa
+cd ~/ai-corekit/vexa
 sudo docker compose ps
 sudo docker compose logs --tail 20
 ```
@@ -1613,7 +1613,7 @@ sudo docker compose logs --tail 20
 
 ## Zusammenfassung - Schnell-Checkliste
 
-- [ ] Problem 1: Vexa Verzeichnis existiert? → `ls -la ~/ai-launchkit/vexa`
+- [ ] Problem 1: Vexa Verzeichnis existiert? → `ls -la ~/ai-corekit/vexa`
 - [ ] Setup ausgeführt? → `sudo bash scripts/04a_setup_vexa.sh`
 - [ ] Services laufen? → `sudo docker ps | grep vexa` (5 Container)
 - [ ] Problem 2: Token in DB? → `sudo docker exec vexa_dev-postgres-1 psql -U postgres -d vexa -c "SELECT COUNT(*) FROM api_tokens;"`
@@ -1639,7 +1639,7 @@ sudo docker compose logs --tail 20
 
 Vexa is a real-time meeting transcription service that drops AI bots into online meetings (Google Meet & Microsoft Teams) to capture live conversations with speaker identification. Unlike post-meeting transcription, Vexa bots join meetings as participants and provide real-time transcripts with sub-second latency via WebSocket streaming. Perfect for automated meeting notes, sales call analysis, and compliance recording.
 
-⚠️ **Important:** If you experience installation or update issues with Vexa, see the [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md)
+⚠️ **Important:** If you experience installation or update issues with Vexa, see the [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md)
 
 ### Features
 
@@ -1669,7 +1669,7 @@ During installation, Vexa generates:
 
 ```bash
 # View your Vexa API key from installation logs
-cd ~/ai-launchkit
+cd ~/ai-corekit
 grep "VEXA_API_KEY" .env
 
 # Or check installation report
@@ -2186,7 +2186,7 @@ docker logs vexa-api | grep -i "whisper\|transcription"
 
 ```bash
 # Find your Vexa API key
-cd ~/ai-launchkit
+cd ~/ai-corekit
 grep "VEXA_API_KEY" .env
 
 # Or check admin API for users
@@ -2232,7 +2232,7 @@ grep VEXA_WHISPER_MODEL .env
 
 ```bash
 # If you experienced installation issues, see the workaround guide:
-# https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md
+# https://github.com/freddy-schuetz/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md
 
 # Common issues during install:
 # - Docker network conflicts
@@ -2240,11 +2240,11 @@ grep VEXA_WHISPER_MODEL .env
 # - Whisper model download timeout
 
 # Check Vexa logs during installation
-tail -f /var/log/ai-launchkit-install.log | grep -i vexa
+tail -f /var/log/ai-corekit-install.log | grep -i vexa
 ```
 
 **Solution:**
-- Follow [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md)
+- Follow [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md)
 - Most issues resolve with the documented workarounds
 - If problems persist, Vexa is optional and can be skipped
 
@@ -2335,7 +2335,7 @@ POST http://localhost:8057/admin/users/{user_id}/tokens
 ### Resources
 
 - **GitHub:** https://github.com/Vexa-ai/vexa
-- **Troubleshooting Guide:** https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md
+- **Troubleshooting Guide:** https://github.com/freddy-schuetz/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md
 - **Whisper Model Info:** https://github.com/openai/whisper#available-models-and-languages
 - **Language Support:** 99 languages supported
 

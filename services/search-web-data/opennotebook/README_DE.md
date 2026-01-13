@@ -407,7 +407,7 @@ docker logs -f opennotebook
 **Problem 2: Kann nicht von Browser auf Web-UI zugreifen**
 ```bash
 # Caddy-Konfiguration prüfen
-cat ~/ai-launchkit/Caddyfile | grep -A 5 "notebook."
+cat ~/ai-corekit/Caddyfile | grep -A 5 "notebook."
 
 # Caddy-Logs prüfen
 docker logs caddy | grep notebook
@@ -434,7 +434,7 @@ docker exec caddy caddy list-certificates
 # In Web-UI: Einstellungen → Modelle
 
 # API-Schlüssel prüfen (.env Datei)
-grep -E "OPENAI_API_KEY|ANTHROPIC_API_KEY|GROQ_API_KEY" ~/ai-launchkit/.env
+grep -E "OPENAI_API_KEY|ANTHROPIC_API_KEY|GROQ_API_KEY" ~/ai-corekit/.env
 
 # Ollama-Verbindung testen (für lokale Modelle)
 docker exec opennotebook curl http://ollama:11434/api/tags
@@ -456,11 +456,11 @@ docker logs opennotebook | grep -i "model\|api"
 df -h
 
 # Open Notebook Speicherverzeichnis prüfen
-du -sh ~/ai-launchkit/opennotebook/
+du -sh ~/ai-corekit/opennotebook/
 
 # Dateiberechtigungen prüfen
-ls -la ~/ai-launchkit/opennotebook/
-chmod -R 755 ~/ai-launchkit/opennotebook/
+ls -la ~/ai-corekit/opennotebook/
+chmod -R 755 ~/ai-corekit/opennotebook/
 
 # Docker-Volume prüfen
 docker volume inspect ${PROJECT_NAME:-localai}_opennotebook_data
@@ -553,7 +553,7 @@ Open Notebook unterstützt 16+ KI-Anbieter. Konfiguriere sie in der Web-UI (Eins
 
 **Speicher-Konfiguration:**
 ```bash
-# Datenverzeichnisse (relativ zu ~/ai-launchkit)
+# Datenverzeichnisse (relativ zu ~/ai-corekit)
 ./opennotebook/notebook_data/  # Notizbücher und Inhalte
 ./opennotebook/surreal_data/   # Eingebettete SurrealDB
 ./shared/                      # Geteilt mit anderen Services

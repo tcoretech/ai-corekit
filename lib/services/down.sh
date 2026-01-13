@@ -102,22 +102,22 @@ if [ "$PRUNE_MODE" = true ]; then
         CHECK_PROJECT_NAME=$(get_stack_project_name "$STACK_NAME")
     fi
 
-    # 1. Build Map: Docker Service Name -> Launchkit Service Name
-    declare -A DOCKER_TO_LAUNCHKIT
+    # 1. Build Map: Docker Service Name -> Corekit Service Name
+    declare -A DOCKER_TO_COREKIT
     
     # Find all docker-compose.yml files
     # We use a loop to handle paths with spaces safely, though unlikely here
     while IFS= read -r file; do
-        # Extract launchkit service name from path
+        # Extract corekit service name from path
         # Path: .../services/<category>/<service_name>/docker-compose.yml
-        launchkit_svc=$(basename "$(dirname "$file")")
+        corekit_svc=$(basename "$(dirname "$file")")
         
         # Extract docker service names from file
         # Look for lines starting with 2 spaces and a name followed by colon
         docker_svcs=$(grep "^  [a-zA-Z0-9_-]\+:" "$file" | sed 's/^  //;s/://')
         
         for d_svc in $docker_svcs; do
-            DOCKER_TO_LAUNCHKIT["$d_svc"]="$launchkit_svc"
+            DOCKER_TO_COREKIT["$d_svc"]="$corekit_svc"
         done
     done < <(find "$PROJECT_ROOT/services" -mindepth 3 -maxdepth 3 -name "docker-compose.yml")
 
@@ -128,7 +128,7 @@ if [ "$PRUNE_MODE" = true ]; then
     declare -A SERVICES_TO_STOP_MAP
     
     for d_svc in $RUNNING_DOCKER_SVCS; do
-        lk_svc="${DOCKER_TO_LAUNCHKIT[$d_svc]}"
+        lk_svc="${DOCKER_TO_COREKIT[$d_svc]}"
         
         if [ -n "$lk_svc" ]; then
             # Check if enabled

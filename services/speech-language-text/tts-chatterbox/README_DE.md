@@ -273,11 +273,11 @@ Eine der leistungsstärksten Funktionen von Chatterbox ist die Fähigkeit, Stimm
 ssh user@deinedomain.com
 
 # Stimmenverzeichnis erstellen
-mkdir -p ~/ai-launchkit/shared/tts/voices
+mkdir -p ~/ai-corekit/shared/tts/voices
 
 # Lade dein Stimmen-Sample hoch (10-30 Sekunden empfohlen)
 # Hochladen via SCP oder direkt speichern:
-# scp voice_sample.wav user@deinedomain.com:~/ai-launchkit/shared/tts/voices/
+# scp voice_sample.wav user@deinedomain.com:~/ai-corekit/shared/tts/voices/
 ```
 
 **Anforderungen für beste Ergebnisse:**
@@ -427,7 +427,7 @@ Chatterbox unterstützt über 22 Sprachen mit sprachbewusster Synthese:
 
 ```bash
 # Bearbeite docker-compose.yml
-nano ~/ai-launchkit/docker-compose.yml
+nano ~/ai-corekit/docker-compose.yml
 
 # Finde chatterbox-tts Service, füge hinzu:
 deploy:

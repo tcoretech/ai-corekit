@@ -1,10 +1,10 @@
 install:
-	@echo "Installing launchkit to /usr/local/bin/launchkit..."
-	@ln -sf $(PWD)/launchkit.sh /usr/local/bin/launchkit
-	@chmod +x /usr/local/bin/launchkit
-	@echo "Done. You can now run 'launchkit <command>'."
+	@echo "Installing corekit to /usr/local/bin/corekit..."
+	@ln -sf $(PWD)/corekit.sh /usr/local/bin/corekit
+	@chmod +x /usr/local/bin/corekit
+	@echo "Done. You can now run 'corekit <command>'."
 
 uninstall:
-	@echo "Removing launchkit from /usr/local/bin/launchkit..."
-	@rm -f /usr/local/bin/launchkit
+	@echo "Removing corekit from /usr/local/bin/corekit..."
+	@rm -f /usr/local/bin/corekit
 	@echo "Done."

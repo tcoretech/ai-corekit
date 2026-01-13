@@ -1,9 +1,9 @@
 {
   "name": "smtp-relay",
   "category": "Mail System",
-  "description": "",
-  "use_cases": "",
-  "interface": "",
-  "source": "",
+  "description": "SMTP Relay (Outbound email relay for transactional mail)",
+  "use_cases": "External email delivery, SMTP forwarding, transactional emails",
+  "interface": "Internal only",
+  "source": "https://github.com/docker-mailserver/docker-mailserver",
   "depends_on": []
 }

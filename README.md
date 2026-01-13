@@ -81,204 +81,189 @@ git clone https://github.com/tcoretech/ai-corekit && cd ai-corekit && sudo bash 
 
 ---
 
+<!-- SERVICES_SECTION_START -->
 ## ✨ What's Included
 
-### 📧 Mail System
-
-| Tool | Description | Always Active | Access | Purpose |
-|------|-------------|---------------|---------|----------|
-| **[Mailpit](https://github.com/axllent/mailpit)** | Mail catcher with web UI | ✅ Yes | `mailpit.yourdomain.com` | Development/Testing - captures all emails |
-| **[Docker-Mailserver](https://github.com/docker-mailserver/docker-mailserver)** | Production SMTP/IMAP server | ⚡ Optional | `mail.yourdomain.com` | Send/receive real emails |
-| **Mailgun Intake (mail-ingest)** | Mailgun webhook -> Docker-Mailserver forwarder | ⚡ Optional | `mail-ingest.yourdomain.com` | Receive inbound email via Mailgun + Cloudflare tunnel |
-| **[SnappyMail](https://github.com/the-djmaze/snappymail)** | Modern webmail client | ⚡ Optional | `webmail.yourdomain.com` | Web interface for email access |
-
-**Mail Configuration:**
-- **Mailpit:** Always active for development - captures emails from all services
-- **Docker-Mailserver:** Optional production email server with full SMTP/IMAP support
-- **Mailgun Intake:** Optional webhook endpoint that verifies Mailgun signatures and injects inbound mail into Docker-Mailserver over SMTP
-- **SnappyMail:** Optional webmail interface (requires Docker-Mailserver)
-- Each service uses a dedicated hostname for easy management
+> **78+ self-hosted services** organized into 19 categories.
+> Each service includes its own README with detailed setup instructions, n8n integration examples, and troubleshooting guides.
 
 ### 🔧 Workflow Automation
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[n8n](https://github.com/n8n-io/n8n)** | Visual workflow automation platform | API integrations, data pipelines, business automation | `n8n.yourdomain.com` |
-| **[n8n-MCP](https://github.com/czlonkowski/n8n-mcp)** | AI workflow generator for n8n | Claude/Cursor integration, 525+ node docs, workflow validation | `n8nmcp.yourdomain.com` |
-| **[Webhook Tester](https://github.com/tarampampam/webhook-tester)** | Webhook debugging tool | Receive & inspect webhooks, debug n8n integrations, test external services | `webhook-test.yourdomain.com` |
-| **[Hoppscotch](https://github.com/hoppscotch/hoppscotch)** | API testing platform | Test n8n webhook triggers, REST/GraphQL/WebSocket, team collaboration | `api-test.yourdomain.com` |
-| **[Gitea](https://github.com/go-gitea/gitea)** | Lightweight self-hosted Git service | Source code management, issue tracking, CI/CD, GitHub alternative | `git.yourdomain.com` |
-| **300+ Workflows** | Pre-built n8n templates | Email automation, social media, data sync, AI workflows | Imported on install |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Gitea **](https://github.com/go-gitea/gitea) | Self-hosted Git service for n8n revisions- GitHub alternative | `git.<yourdomain>.com` |
+| [**n8n-MCP **](https://github.com/czlonkowski/n8n-mcp) | AI workflow generation for Claude/Cursor | `n8nmcp.<yourdomain>.com` |
+| [**n8n, n8n-worker, n8n-import **](https://github.com/n8n-io/n8n) | Workflow Automation | `n8n.<yourdomain>.com` |
+| [**Webhook Tester + Hoppscotch **](https://github.com/tarampampam/webhook-tester) | API & Webhook Testing/Debugging Suite | `webhook-test.<yourdomain>.com` |
 
 ### 🎯 User Interfaces
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Homepage](https://github.com/gethomepage/homepage)** | Customizable dashboard for all your services | Service overview, Docker integration, quick access | `dashboard.yourdomain.com` |
-| **[Open WebUI](https://github.com/open-webui/open-webui)** | ChatGPT-like interface for LLMs | AI chat, model switching, conversation management | `webui.yourdomain.com` |
-| **[Postiz](https://github.com/gitroomhq/postiz-app)** | Social media management platform | Content scheduling, analytics, multi-platform posting | `postiz.yourdomain.com` |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Homepage **](https://github.com/gethomepage/homepage) | Dashboard for all services | `dashboard.<yourdomain>.com` |
+| **Landing Page ** | Static website | `<yourdomain>.com` |
+| [**Open WebUI **](https://github.com/open-webui/open-webui) | ChatGPT-like Interface | `webui.<yourdomain>.com` |
+| [**Postiz **](https://github.com/gitroomhq/postiz-app) | Social publishing platform | `postiz.<yourdomain>.com` |
+
+### 📧 Mail System
+
+| Service | Description | Access |
+|---------|-------------|--------|
+| **Mailgun ingest forwarder ** | webhook -> Docker-Mailserver SMTP | `mail-ingest.<yourdomain>.com` |
+| [**Mailpit **](https://github.com/axllent/mailpit) | Development mail catcher with web UI | `mailpit.<yourdomain>.com` |
+| [**Docker-Mailserver **](https://github.com/docker-mailserver/docker-mailserver) | + Mailgun ingest webhook for inbound mail | `mail.<yourdomain>.com` |
+| [**SMTP Relay **](https://github.com/docker-mailserver/docker-mailserver) | Outbound email relay for transactional mail | Internal |
+| [**SnappyMail **](https://github.com/the-djmaze/snappymail) | Modern webmail client for Docker-Mailserver | `webmail.<yourdomain>.com` |
 
 ### 📹 Video Conferencing
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Jitsi Meet](https://github.com/jitsi/jitsi-meet)** ⚠️ | Professional video conferencing platform | Client meetings, team calls, webinars, Cal.com integration | `meet.yourdomain.com` |
-
-**⚠️ Jitsi Meet Requirements:**
-- **CRITICAL:** Requires UDP Port 10000 for WebRTC audio/video
-- Many VPS providers block UDP traffic by default
-- Without UDP 10000: Only chat works, no audio/video!
-- Test UDP connectivity before production use
-- Alternative: Use external services (Zoom, Google Meet) with Cal.com
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Jitsi Meet **](https://github.com/jitsi/jitsi-meet) | Video conferencing - REQUIRES UDP 10000! | `meet.<yourdomain>.com` |
 
 ### 📁 File & Document Management
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Seafile](https://github.com/haiwen/seafile)** | Professional file sync & share platform | Team collaboration, file versioning, WebDAV, mobile sync | `files.yourdomain.com` |
-| **[Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx)** | Intelligent document management with OCR | Document archiving, AI auto-tagging, GDPR compliance, full-text search | `docs.yourdomain.com` |
-| **[paperless-gpt](https://github.com/icereed/paperless-gpt)** | LLM-powered OCR for paperless-ngx | Superior text extraction, vision models, searchable PDFs, auto-tagging | `paperless-gpt.yourdomain.com` |
-| **[paperless-ai](https://github.com/clusterzx/paperless-ai)** | RAG Chat & semantic search for paperless-ngx | Natural language queries, document Q&A, intelligent search | `paperless-ai.yourdomain.com` |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Paperless AI Suite **](https://github.com/clusterzx/paperless-ai) | GPT+AI - Superior OCR & RAG Chat for documents | `paperless-ai.<yourdomain>.com` |
+| [**Paperless-ngx **](https://github.com/paperless-ngx/paperless-ngx) | Document management with OCR & AI tagging | `docs.<yourdomain>.com` |
+| [**Seafile **](https://github.com/haiwen/seafile) | File sync & share like Dropbox/Google Drive/OneDrive | `files.<yourdomain>.com` |
 
-### 💼 Business & Productivity
+### 💼 Business Productivity
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Cal.com](https://github.com/calcom/cal.com)** | Open-source scheduling platform | Meeting bookings, team calendars, payment integrations | `cal.yourdomain.com` |
-| **[Vikunja](https://github.com/go-vikunja/vikunja)** | Modern task management platform | Kanban boards, Gantt charts, team collaboration, CalDAV | `vikunja.yourdomain.com` |
-| **[Leantime](https://github.com/Leantime/leantime)** | Goal-oriented project management suite | ADHD-friendly PM, time tracking, sprints, strategy tools | `leantime.yourdomain.com` |
-| **[Kimai](https://github.com/kimai/kimai)** | Professional time tracking | DSGVO-compliant billing, team timesheets, API, 2FA, invoicing | `time.yourdomain.com` |
-| **[Invoice Ninja](https://github.com/invoiceninja/invoiceninja)** | Professional invoicing & payment platform | Multi-currency invoices, 40+ payment gateways, recurring billing, client portal | `invoices.yourdomain.com` |
-| **[Baserow](https://github.com/bram2w/baserow)** | Airtable Alternative with real-time collaboration | Database management, project tracking, collaborative workflows | `baserow.yourdomain.com` |
-| **[NocoDB](https://github.com/nocodb/nocodb)** | Open-source Airtable alternative with API & webhooks | Smart spreadsheet UI, realtime collaboration, automation | `nocodb.yourdomain.com` |
-| **[Formbricks](https://github.com/formbricks/formbricks)** | Privacy-first survey platform | Customer feedback, NPS surveys, market research, form builder, GDPR-compliant | `forms.yourdomain.com` |
-| **[Metabase](https://github.com/metabase/metabase)** | User-friendly business intelligence platform | No-code dashboards, automated reports, data exploration, team analytics | `analytics.yourdomain.com` |
-| **[Airbyte](https://github.com/airbytehq/airbyte)** | Data integration platform (600+ connectors) | Sync from Google Ads, Meta, TikTok, GA4, Mailjet to warehouses, perfect with Metabase | `airbyte.yourdomain.com` |
-| **[Odoo 18](https://github.com/odoo/odoo)** | Open Source ERP/CRM with AI features | Sales automation, inventory, accounting, AI lead scoring | `odoo.yourdomain.com` |
-| **[Twenty CRM](https://github.com/twentyhq/twenty)** | Modern Notion-like CRM | Customer pipelines, GraphQL API, team collaboration, lightweight CRM for startups | `twenty.yourdomain.com` |
-| **[EspoCRM](https://github.com/espocrm/espocrm)** | Full-featured CRM platform | Email campaigns, workflow automation, advanced reporting, role-based access | `espocrm.yourdomain.com` |
-| **[Mautic](https://github.com/mautic/mautic)** | Marketing automation platform | Lead scoring, email campaigns, landing pages, multi-channel marketing, automation workflows | `mautic.yourdomain.com` |
-| **[Outline](https://github.com/outline/outline)** | Modern wiki platform with real-time collaboration | Team documentation, knowledge base, Notion-like editor | `outline.yourdomain.com` |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Airbyte **](https://github.com/airbytehq/airbyte) | Data Integration - Sync from 600+ sources like Google Ads, Meta, TikTok | `airbyte.<yourdomain>.com` |
+| [**Baserow **](https://github.com/bram2w/baserow) | Airtable Alternative | `baserow.<yourdomain>.com` |
+| [**Cal.com **](https://github.com/calcom/cal.com) | Open Source Scheduling Platform | `cal.<yourdomain>.com` |
+| [**EspoCRM **](https://github.com/espocrm/espocrm) | Full-featured CRM with workflows & automation | `espocrm.<yourdomain>.com` |
+| [**Formbricks - Privacy-first surveys & forms **](https://github.com/formbricks/formbricks) | Typeform alternative | `forms.<yourdomain>.com` |
+| [**invoiceninja**](https://github.com/invoiceninja/invoiceninja) | Invoice Ninja - Professional invoicing platform | `invoices.<yourdomain>.com` |
+| [**Kimai **](https://github.com/kimai/kimai) | Professional Time Tracking - DSGVO-compliant, 2FA, invoicing | `time.<yourdomain>.com` |
+| [**Leantime - Full project management suite **](https://github.com/Leantime/leantime) | Asana/Monday alternative | `leantime.<yourdomain>.com` |
+| [**Mautic 6.0 - Marketing Automation Platform **](https://github.com/mautic/mautic) | Email, Leads, Campaigns | `mautic.<yourdomain>.com` |
+| [**Metabase - Business intelligence **](https://github.com/metabase/metabase) | No-code dashboards, groups, ETL-ready | `analytics.<yourdomain>.com` |
+| [**NocoDB **](https://github.com/nocodb/nocodb) | Open-source Airtable alternative, smart spreadsheet UI | `nocodb.<yourdomain>.com` |
+| [**Odoo 18 **](https://github.com/odoo/odoo) | Open Source ERP/CRM with AI features | `odoo.<yourdomain>.com` |
+| [**Outline **](https://github.com/outline/outline) | Wiki/Documentation - Notion alternative | `outline.<yourdomain>.com` |
+| [**Twenty CRM **](https://github.com/twentyhq/twenty) | Modern Notion-like customer management | `twenty.<yourdomain>.com` |
+| [**Vikunja **](https://github.com/go-vikunja/vikunja) | Modern Task Management - Todoist/TickTick alternative | `vikunja.<yourdomain>.com` |
 
 ### 🎨 AI Content Generation
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** | Node-based Stable Diffusion interface | Image generation, AI art, photo editing, workflows | `comfyui.yourdomain.com` |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**ComfyUI **](https://github.com/comfyanonymous/ComfyUI) | Node-based Stable Diffusion UI | `comfyui.<yourdomain>.com` |
 
-### 💻 AI-Powered Development / Vibe Coding
+### 💻 AI-Powered Development
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[bolt.diy](https://github.com/stackblitz-labs/bolt.diy)** | Build full-stack apps with prompts | Rapid prototyping, MVP creation, learning to code | `bolt.yourdomain.com` |
-| **[OpenUI](https://github.com/wandb/openui)** 🧪 | AI-powered UI component generation | Design systems, component libraries, mockups | `openui.yourdomain.com` |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**bolt.diy **](https://github.com/stackblitz-labs/bolt.diy) | AI Web Development | `bolt.<yourdomain>.com` |
+| [**OpenUI **](https://github.com/wandb/openui) | AI Frontend/UI Generator - EXPERIMENTAL, best with Claude/GPT-4 | `openui.<yourdomain>.com` |
 
 ### 🤖 AI Agents
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Flowise](https://github.com/FlowiseAI/Flowise)** | Visual AI agent builder | Chatbots, customer support, AI workflows | `flowise.yourdomain.com` |
-| **[LiveKit](https://github.com/livekit/livekit)** + Agents | Real-time voice agents with WebRTC (auto-uses Whisper/TTS/Ollama or OpenAI) | AI voice assistants, conversational AI, ChatGPT-like voice bots, requires UDP 50000-50100 | `livekit.yourdomain.com` |
-| **[Dify](https://github.com/langgenius/dify)** | LLMOps platform for AI apps | Production AI apps, model management, prompt engineering | `dify.yourdomain.com` |
-| **[Letta](https://github.com/letta-ai/letta)** | Stateful agent server | Persistent AI assistants, memory management | `letta.yourdomain.com` |
-| **[Browser-use](https://github.com/browser-use/browser-use)** | LLM-powered browser control | Web scraping, form filling, automated testing | Internal API only |
-| **[Skyvern](https://github.com/Skyvern-AI/skyvern)** | Vision-based browser automation | Complex web tasks, CAPTCHA handling, dynamic sites | Internal API only |
-| **[Browserless](https://github.com/browserless/browserless)** | Headless Chrome service | Puppeteer/Playwright hub, PDF generation, screenshots | Internal WebSocket |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Browser Automation Suite **](https://github.com/browser-use/browser-use) | Browserless + Skyvern + Browser-use | Internal API only |
+| [**Dify **](https://github.com/langgenius/dify) | LLM App Development Platform | `dify.<yourdomain>.com` |
+| [**Flowise **](https://github.com/FlowiseAI/Flowise) | AI Agent Builder | `flowise.<yourdomain>.com` |
+| **Langfuse Suite ** | AI Observability - includes Clickhouse, Minio | Internal |
+| [**Letta **](https://github.com/letta-ai/letta) | Agent Server & SDK | `letta.<yourdomain>.com` |
+| [**LiveKit **](https://github.com/livekit/livekit) | Real-time voice & video - WebRTC, REQUIRES UDP 50000-50100! | `livekit.<yourdomain>.com` |
+| [**Vexa **](https://github.com/Vexa-ai/vexa) | Real-time meeting transcription API | Internal |
 
 ### 📚 RAG Systems
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[RAGApp](https://github.com/ragapp/ragapp)** | Build RAG assistants over your data | Knowledge bases, document Q&A, research tools | `ragapp.yourdomain.com` |
-| **[Qdrant](https://github.com/qdrant/qdrant)** | High-performance vector database | Semantic search, recommendations, RAG storage | `qdrant.yourdomain.com` |
-| **[Weaviate](https://github.com/weaviate/weaviate)** | AI-native vector database | Hybrid search, multi-modal data, GraphQL API | `weaviate.yourdomain.com` |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Qdrant **](https://github.com/qdrant/qdrant) | Vector Database | `qdrant.<yourdomain>.com` |
+| [**RAGApp **](https://github.com/ragapp/ragapp) | Open-source RAG UI + API | `ragapp.<yourdomain>.com` |
+| [**Weaviate **](https://github.com/weaviate/weaviate) | Vector Database with API Key Auth | `weaviate.<yourdomain>.com` |
 
-### 🎙️ Speech, Language & Text Processing
+### 🎙️ Speech, Language & Text
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Faster-Whisper](https://github.com/SYSTRAN/faster-whisper)** | OpenAI-compatible Speech-to-Text | Transcription, voice commands, meeting notes | Internal API |
-| **[OpenedAI-Speech](https://github.com/matatonic/openedai-speech)** | OpenAI-compatible Text-to-Speech | Voice assistants, audiobooks, notifications | Internal API |
-| **[TTS Chatterbox](https://github.com/resemble-ai/chatterbox)** | State-of-the-art TTS with emotion control & voice cloning | AI voices with emotional expression, voice synthesis, outperforms ElevenLabs | `chatterbox.yourdomain.com` |
-| **[LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)** | Self-hosted translation API | 50+ languages, document translation, privacy-focused | `translate.yourdomain.com` |
-| **OCR Bundle: [Tesseract](https://github.com/tesseract-ocr/tesseract) & [EasyOCR](https://github.com/JaidedAI/EasyOCR)** | Dual OCR engines: Tesseract (fast) + EasyOCR (quality) | Text extraction from images/PDFs, receipt scanning, document digitization | Internal API |
-| **[Scriberr](https://github.com/rishikanthc/Scriberr)** | AI audio transcription with WhisperX & speaker diarization | Meeting transcripts, podcast processing, call recordings, speaker identification | `scriberr.yourdomain.com` |
-| **[Vexa](https://github.com/Vexa-ai/vexa)** | Real-time meeting transcription API | Live transcription for Google Meet & Teams, speaker identification, 99 languages, n8n integration | Internal API |
-
-*If you have troubles installing or updating Vexa, please view this guide:* **[Vexa Workaround](https://github.com/tcoretech/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md)**
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**LibreTranslate **](https://github.com/LibreTranslate/LibreTranslate) | Self-hosted translation API - 50+ languages | `translate.<yourdomain>.com` |
+| **OCR Bundle ** | Tesseract + EasyOCR - Extract text from images/PDFs | Internal |
+| [**Scriberr **](https://github.com/rishikanthc/Scriberr) | AI audio transcription with speaker diarization | `scriberr.<yourdomain>.com` |
+| [**Speech Stack **](https://github.com/matatonic/openedai-speech) | Whisper ASR + OpenedAI TTS - CPU optimized | Internal |
+| [**TTS Chatterbox **](https://github.com/resemble-ai/chatterbox) | State-of-the-art TTS - ElevenLabs alternative | `chatterbox.<yourdomain>.com` |
 
 ### 🔍 Search & Web Data
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[SearXNG](https://github.com/searxng/searxng)** | Privacy-respecting metasearch engine | Web search for agents, no tracking, multiple sources | `searxng.yourdomain.com` |
-| **[Perplexica](https://github.com/ItzCrazyKns/Perplexica)** | Open-source AI-powered search engine | Deep research, academic search, Perplexity AI alternative | `perplexica.yourdomain.com` |
-| **[Crawl4Ai](https://github.com/unclecode/crawl4ai)** | AI-optimized web crawler | Web scraping, data extraction, site monitoring | Internal API |
-| **[GPT Researcher](https://github.com/assafelovic/gpt-researcher)** | Autonomous research agent (2000+ word reports) | Comprehensive research reports, multi-source analysis, citations | `research.yourdomain.com` |
-| **[Local Deep Research](https://github.com/langchain-ai/local-deep-researcher)** | LangChain's iterative deep research (~95% accuracy) | Fact-checking, detailed analysis, research loops with reflection | Internal API |
-| **[Open Notebook](https://github.com/lfnovo/open-notebook)** | AI-powered knowledge management & research platform | NotebookLM alternative, multi-modal content, podcast generation, 16+ AI models | `notebook.yourdomain.com` |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Crawl4ai **](https://github.com/unclecode/crawl4ai) | Web Crawler for AI | Internal |
+| [**GPT Researcher **](https://github.com/assafelovic/gpt-researcher) | Autonomous research agent - 2000+ word reports with citations | `research.<yourdomain>.com` |
+| [**Local Deep Research **](https://github.com/langchain-ai/local-deep-researcher) | LangChain's iterative research - ~95% accuracy | Internal |
+| [**Open Notebook **](https://github.com/lfnovo/open-notebook) | AI Knowledge Management - NotebookLM alternative, 16+ models | `notebook.<yourdomain>.com` |
+| [**Perplexica **](https://github.com/ItzCrazyKns/Perplexica) | Open-source Deep Resarch/Perplexity AI alternative | `perplexica.<yourdomain>.com` |
+| [**SearXNG **](https://github.com/searxng/searxng) | Private Metasearch Engine | `searxng.<yourdomain>.com` |
 
 ### 🧠 Knowledge Graphs
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Neo4j](https://github.com/neo4j/neo4j)** | Graph database platform | Knowledge graphs, entity relationships, fraud detection, recommendations | `neo4j.yourdomain.com` |
-| **[LightRAG](https://github.com/HKUDS/LightRAG)** | Graph-based RAG with entity extraction | Automatic knowledge graph creation, relationship mapping, complex queries | `lightrag.yourdomain.com` |
-
-### 🎬 Media Processing Suite
-
-Pre-installed in the n8n container for seamless media manipulation:
-
-| Tool | Description | Use Cases |
-|------|-------------|-----------|
-| **[FFmpeg](https://github.com/FFmpeg/FFmpeg)** | Industry-standard multimedia framework | Video conversion, streaming, audio extraction |
-| **[ImageMagick](https://github.com/ImageMagick/ImageMagick)** | Image manipulation toolkit | Format conversion, resizing, effects, thumbnails |
-| **[ExifTool](https://github.com/exiftool/exiftool)** | Metadata management | Read/write EXIF, IPTC, XMP metadata |
-| **[MediaInfo](https://github.com/MediaArea/MediaInfo)** | Media file analyzer | Codec detection, bitrate analysis, format info |
-| **[SoX](http://sox.sourceforge.net/)** | Sound processing utility | Audio format conversion, effects, resampling |
-| **[Ghostscript](https://github.com/ArtifexSoftware/ghostscript)** | PDF/PostScript processor | PDF manipulation, conversion, optimization |
-| **Python3 + Libraries** | Pillow, OpenCV, NumPy, Pandas | Image processing, data analysis, automation |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**LightRAG **](https://github.com/HKUDS/LightRAG) | Graph-based RAG with entity extraction | `lightrag.<yourdomain>.com` |
+| [**Neo4j **](https://github.com/neo4j/neo4j) | Graph Database | `neo4j.<yourdomain>.com` |
 
 ### 🗄️ Data Infrastructure
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Supabase](https://github.com/supabase/supabase)** | Open-source Firebase alternative | Instant APIs, auth, realtime, storage, edge functions | `supabase.yourdomain.com` |
-| **[PostgreSQL 17](https://www.postgresql.org/)** | Advanced relational database | Primary database for n8n, Cal.com, and other services | Internal only |
-| **[Redis](https://github.com/redis/redis)** | In-memory data store | Queue management, caching, session storage | Internal only |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**MySQL Database **](https://hub.docker.com/_/mysql) | Shared | Internal Port 3306 |
+| [**PostgreSQL Database **](https://hub.docker.com/_/postgres) | Shared | Internal Port 5432 |
+| [**Redis Cache **](https://hub.docker.com/_/redis) | Shared | Internal Port 6379 |
+| [**Supabase **](https://github.com/supabase/supabase) | Backend as a Service | `supabase.<yourdomain>.com` |
 
 ### ⚙️ System Management
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Vaultwarden](https://github.com/dani-garcia/vaultwarden)** | Bitwarden-compatible password manager | Credential management, team password sharing, auto-fill | `vault.yourdomain.com` |
-| **[Caddy](https://github.com/caddyserver/caddy)** | Automatic HTTPS reverse proxy | SSL certificates, load balancing, routing | Automatic |
-| **[Cloudflare Tunnel](https://github.com/cloudflare/cloudflared)** | Secure tunnel without port forwarding | Zero-trust access, DDoS protection, firewall bypass | Optional |
-| **[Kopia](https://github.com/kopia/kopia)** | Encrypted backup solution | Automated backups, WebDAV integration, deduplication, compression | `backup.yourdomain.com` |
-| **[Python Runner](https://github.com/n8n-io/n8n)** | Isolated Python environment | Execute Python scripts from n8n workflows | Internal only |
-| **[Grafana](https://github.com/grafana/grafana)** | Metrics visualization platform | System monitoring, performance dashboards, alerting | `grafana.yourdomain.com` |
-| **[Prometheus](https://github.com/prometheus/prometheus)** | Metrics collection & alerting | Time-series database, service monitoring, resource tracking | Internal only |
-| **[Uptime Kuma](https://github.com/louislam/uptime-kuma)** | Uptime monitoring & status pages | Service uptime tracking, public status pages, multi-protocol monitoring, 90+ notifications | `status.yourdomain.com` |
-| **[Portainer](https://github.com/portainer/portainer)** | Docker management interface | Container monitoring, logs, restart services | `portainer.yourdomain.com` |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Caddy **](https://caddyserver.com/) | Reverse Proxy | Internal Port 80/443 |
+| [**Kopia **](https://github.com/kopia/kopia) | Fast and secure backup with Cloud and WebDAV storage | `backup.<yourdomain>.com` |
+| [**Monitoring Suite **](https://github.com/grafana/grafana) | Prometheus, Grafana, cAdvisor, Node-Exporter | `grafana.<yourdomain>.com` |
+| [**Portainer **](https://github.com/portainer/portainer) | Docker management UI | `portainer.<yourdomain>.com` |
+| [**Uptime Kuma **](https://github.com/louislam/uptime-kuma) | Uptime Monitoring & Status Pages | `status.<yourdomain>.com` |
+| [**Vaultwarden **](https://github.com/dani-garcia/vaultwarden) | Self-hosted Bitwarden-compatible password manager | `vault.<yourdomain>.com` |
+| [**Watchtower **](https://containrrr.dev/watchtower/) | Automated Docker container updates | Internal |
+| [**web-tunnel**](https://github.com/cloudflare/cloudflared) | Cloudflare Tunnel for web services | N/A |
 
 ### 🧰 AI Support Tools
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[Ollama](https://github.com/ollama/ollama)** | Local LLM runtime | Run Llama, Mistral, Phi locally, API-compatible | `ollama.yourdomain.com` |
-| **[Gotenberg](https://github.com/gotenberg/gotenberg)** | Universal document converter | HTML/Markdown → PDF, Office → PDF, merge PDFs | Internal API |
-| **[Stirling-PDF](https://github.com/Stirling-Tools/Stirling-PDF)** | PDF toolkit | Split, merge, compress, OCR, sign PDFs | `pdf.yourdomain.com` |
-| **[DocuSeal](https://github.com/docusealco/docuseal)** | Open-source e-signature platform | Document signing, contract workflows, DocuSign alternative | `sign.yourdomain.com` |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**DocuSeal **](https://github.com/docusealco/docuseal) | E-Signatures platform - DocuSign alternative | `sign.<yourdomain>.com` |
+| [**Gotenberg **](https://github.com/gotenberg/gotenberg) | Document Conversion API | Internal |
+| [**Ollama **](https://github.com/ollama/ollama) | Local LLM Runner - select hardware in next step | `ollama.<yourdomain>.com` |
+| [**Stirling-PDF **](https://github.com/Stirling-Tools/Stirling-PDF) | 100+ PDF Tools: Merge, Split, OCR, Sign | `pdf.<yourdomain>.com` |
 
 ### 🛡️ AI Security & Compliance
 
-| Tool | Description | Use Cases | Access |
-|------|-------------|-----------|--------|
-| **[LLM Guard](https://github.com/protectai/llm-guard)** | Input/output filtering for LLMs | Prompt injection prevention, toxicity filtering, PII removal | Internal API |
-| **[Microsoft Presidio](https://github.com/microsoft/presidio)** | PII detection & anonymization (English) | GDPR compliance, data protection, sensitive data handling | Internal API |
-| **[Flair NER](https://github.com/flairNLP/flair)** | German PII detection | DSGVO compliance, German text processing, entity recognition | Internal API |
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**AI Security Suite - LLM Guard + Presidio **](https://github.com/protectai/llm-guard) | AI safety & GDPR-compliant PII | Internal |
+
+### 🐍 Python
+
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**Python Runner **](https://github.com/n8n-io/n8n) | Run your custom Python code from ./python-runner | Internal |
+
+### 🖥️ Host Services
+
+| Service | Description | Access |
+|---------|-------------|--------|
+| [**private-dns**](https://github.com/coredns/coredns) | CoreDNS for private DNS resolution | N/A |
+| [**ssh-tunnel**](https://github.com/cloudflare/cloudflared) | Cloudflare Tunnel for SSH access | `ssh.<yourdomain>.com` |
 
 ---
+
+> 📖 **For detailed documentation**, see each service's README in `services/<category>/<service>/README.md`
+<!-- SERVICES_SECTION_END -->
 
 ## 🚀 Quick Start
 

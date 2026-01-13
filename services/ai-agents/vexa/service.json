@@ -1,8 +1,9 @@
 {
   "name": "vexa",
   "category": "AI Agents",
-  "description": "",
-  "use_cases": "",
-  "interface": "",
-  "source": ""
+  "description": "Vexa (Real-time meeting transcription API)",
+  "use_cases": "Live transcription for Google Meet & Teams, speaker identification, 99 languages",
+  "interface": "Internal API",
+  "source": "https://github.com/Vexa-ai/vexa",
+  "depends_on": []
 }

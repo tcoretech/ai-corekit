@@ -1,0 +1,129 @@
+{
+  "servers": {
+    "filesystem": {
+      "enabled": true,
+      "description": "Secure file operations with configurable access controls",
+      "type": "builtin",
+      "config": {
+        "allowed_paths": ["${FASTMCP_ALLOWED_PATHS}"],
+        "read_only": false
+      }
+    },
+    "memory": {
+      "enabled": true,
+      "description": "Knowledge graph-based persistent memory system",
+      "type": "builtin",
+      "config": {
+        "storage_path": "/app/memory/knowledge.json"
+      }
+    },
+    "time": {
+      "enabled": true,
+      "description": "Time and timezone conversion capabilities",
+      "type": "builtin",
+      "config": {}
+    },
+    "fetch": {
+      "enabled": true,
+      "description": "Web content fetching and conversion for efficient LLM usage",
+      "type": "builtin",
+      "config": {
+        "max_content_length": 100000,
+        "timeout": 30
+      }
+    },
+    "brave_search": {
+      "enabled": false,
+      "description": "Web and local search using Brave's Search API",
+      "type": "external",
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      },
+      "requires_api_key": "BRAVE_API_KEY"
+    },
+    "github": {
+      "enabled": false,
+      "description": "Tools to read, search, and manage GitHub repositories",
+      "type": "external",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "requires_api_key": "GITHUB_TOKEN"
+    },
+    "sequential_thinking": {
+      "enabled": false,
+      "description": "Dynamic and reflective problem-solving through thought sequences",
+      "type": "external",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "env": {}
+    },
+    "postgres": {
+      "enabled": false,
+      "description": "PostgreSQL database query and management tools",
+      "type": "external",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/postgres}"
+      }
+    },
+    "sqlite": {
+      "enabled": false,
+      "description": "SQLite database query and management tools",
+      "type": "builtin",
+      "config": {
+        "database_path": "/app/data/sqlite.db"
+      }
+    },
+    "puppeteer": {
+      "enabled": false,
+      "description": "Browser automation and web scraping capabilities",
+      "type": "external",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "env": {}
+    },
+    "slack": {
+      "enabled": false,
+      "description": "Slack workspace integration for messaging and channel management",
+      "type": "external",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN:-}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID:-}"
+      },
+      "requires_api_key": "SLACK_BOT_TOKEN"
+    },
+    "google_drive": {
+      "enabled": false,
+      "description": "Google Drive file management and search",
+      "type": "external",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gdrive"],
+      "env": {},
+      "note": "Requires OAuth configuration in config/local/"
+    },
+    "everart": {
+      "enabled": false,
+      "description": "AI image generation capabilities",
+      "type": "external",
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-server-everart"],
+      "env": {
+        "EVERART_API_KEY": "${EVERART_API_KEY:-}"
+      },
+      "requires_api_key": "EVERART_API_KEY"
+    }
+  },
+  "defaults": {
+    "timeout": 30000,
+    "retry_attempts": 3,
+    "retry_delay": 1000
+  }
+}

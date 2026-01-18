@@ -31,7 +31,7 @@ German version: [German README](https://github.com/freddy-schuetz/ai-launchkit/b
 
 AI LaunchKit is a comprehensive, self-hosted AI development environment that deploys **50+ pre-configured tools** with a single command. Build AI applications, automate workflows, generate images, and develop with AI assistance - all running on your own infrastructure.
 
-Originally forked from [n8n-installer](https://github.com/kossakovsky/n8n-installer), AI LaunchKit has evolved into a complete AI development platform, maintained by [Friedemann Schuetz](https://www.linkedin.com/in/friedemann-schuetz).
+Originally forked from [n8n-installer](https://github.com/kossakovsky/n8n-installer), AI LaunchKit has evolved into a complete AI development platform.
 
 ### 🔒 Privacy-First & GDPR Compliant by Design
 
@@ -2854,14 +2854,17 @@ graph TD
 
 ## 👥 Contributors
 
-Created and maintained by [Friedemann Schuetz](https://www.linkedin.com/in/friedemann-schuetz)
+Currently maintained by [tcoretech](https://github.com/tcoretech)
 
-**Based on:**
+**Forked from:**
+- [ai-launchkit](https://github.com/freddy-schuetz/ai-launchkit) by [Friedemann Schuetz](https://www.linkedin.com/in/friedemann-schuetz)
+
+**Originally based on:**
 - [n8n-installer](https://github.com/kossakovsky/n8n-installer) by kossakovsky
 - [self-hosted-ai-starter-kit](https://github.com/n8n-io/self-hosted-ai-starter-kit) by n8n team
 - [local-ai-packaged](https://github.com/coleam00/local-ai-packaged) by coleam00
 
-[View all contributors](https://github.com/freddy-schuetz/ai-launchkit/graphs/contributors)
+[View all contributors](https://github.com/tcoretech/ai-corekit/graphs/contributors)
 
 ---
 

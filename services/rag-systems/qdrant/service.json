@@ -1,8 +1,9 @@
 {
   "name": "qdrant",
+  "display_name": "Qdrant",
   "category": "RAG Systems",
-  "description": "Qdrant (Vector Database)",
-  "use_cases": "Semantic search, recommendations, RAG storage",
+  "rank": 100,
+  "description": "High-performance vector database optimized for semantic search, recommendation engines, and RAG storage.",
   "interface": "qdrant.<yourdomain>.com",
   "source": "https://github.com/qdrant/qdrant",
   "depends_on": []

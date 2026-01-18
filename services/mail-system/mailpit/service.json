@@ -1,8 +1,9 @@
 {
   "name": "mailpit",
+  "display_name": "Mailpit",
   "category": "Mail System",
-  "description": "Mailpit (Development mail catcher with web UI)",
-  "use_cases": "Email testing, development SMTP, debugging email flows",
+  "rank": 100,
+  "description": "Development email capture tool with a web UI for testing and debugging SMTP flows without sending real emails.",
   "interface": "mailpit.<yourdomain>.com",
   "source": "https://github.com/axllent/mailpit",
   "depends_on": []

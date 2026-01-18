@@ -1,8 +1,9 @@
 {
   "name": "scriberr",
+  "display_name": "Scriberr",
   "category": "Speech, Language & Text",
-  "description": "Scriberr (AI audio transcription with speaker diarization)",
-  "use_cases": "Meeting transcripts, podcast processing, call recordings, speaker identification",
+  "rank": 100,
+  "description": "AI-powered audio transcription tool featuring speaker diarization, ideal for creating meeting transcripts, processing podcasts, and analyzing call recordings.",
   "interface": "scriberr.<yourdomain>.com",
   "source": "https://github.com/rishikanthc/Scriberr",
   "depends_on": []

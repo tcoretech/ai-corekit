@@ -1,8 +1,9 @@
 {
   "name": "metabase",
+  "display_name": "Metabase",
   "category": "Business Productivity",
-  "description": "Metabase - Business intelligence (No-code dashboards, groups, ETL-ready)",
-  "use_cases": "No-code dashboards, automated reports, data exploration, team analytics",
+  "rank": 100,
+  "description": "Business intelligence platform enabling no-code dashboards, automated reports, data exploration, and team analytics.",
   "interface": "analytics.<yourdomain>.com",
   "source": "https://github.com/metabase/metabase",
   "depends_on": []

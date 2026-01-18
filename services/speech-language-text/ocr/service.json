@@ -1,9 +1,10 @@
 {
   "name": "ocr",
+  "display_name": "OCR Bundle",
   "category": "Speech, Language & Text",
-  "description": "OCR Bundle (Tesseract + EasyOCR - Extract text from images/PDFs)",
-  "use_cases": "Extract text from images/PDFs",
-  "interface": "Internal API",
+  "rank": 100,
+  "description": "OCR bundle combining Tesseract and EasyOCR to reliably extract text from images and PDF documents.",
+  "interface": "internal: http://tesseract-ocr:8884",
   "source": "",
   "depends_on": []
 }

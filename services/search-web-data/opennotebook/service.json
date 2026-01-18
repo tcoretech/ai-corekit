@@ -1,8 +1,9 @@
 {
   "name": "opennotebook",
+  "display_name": "Open Notebook",
   "category": "Search & Web Data",
-  "description": "Open Notebook (AI Knowledge Management - NotebookLM alternative, 16+ models)",
-  "use_cases": "NotebookLM alternative, multi-modal content, podcast generation, 16+ AI models",
+  "rank": 100,
+  "description": "AI-powered knowledge management tool (NotebookLM alternative) supporting multi-modal content, podcast generation, and 16+ AI models.",
   "interface": "notebook.<yourdomain>.com",
   "source": "https://github.com/lfnovo/open-notebook",
   "depends_on": []

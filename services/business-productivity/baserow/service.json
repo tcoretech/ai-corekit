@@ -1,8 +1,9 @@
 {
   "name": "baserow",
+  "display_name": "Baserow",
   "category": "Business Productivity",
-  "description": "Baserow (Airtable Alternative)",
-  "use_cases": "Database management, project tracking, collaborative workflows",
+  "rank": 100,
+  "description": "Open-source no-code database and Airtable alternative for database management, project tracking, and building collaborative workflows.",
   "interface": "baserow.<yourdomain>.com",
   "source": "https://github.com/bram2w/baserow",
   "depends_on": [

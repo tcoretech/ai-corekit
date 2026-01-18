@@ -1,8 +1,9 @@
 {
   "name": "flowise",
+  "display_name": "Flowise",
   "category": "AI Agents",
-  "description": "Flowise (AI Agent Builder)",
-  "use_cases": "Chatbots, customer support, AI workflows",
+  "rank": 100,
+  "description": "Drag-and-drop AI agent builder for creating chatbots, customer support assistants, and complex AI workflows.",
   "interface": "flowise.<yourdomain>.com",
   "source": "https://github.com/FlowiseAI/Flowise",
   "depends_on": []

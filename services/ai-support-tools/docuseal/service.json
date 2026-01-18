@@ -1,8 +1,9 @@
 {
   "name": "docuseal",
+  "display_name": "DocuSeal",
   "category": "AI Support Tools",
-  "description": "DocuSeal (E-Signatures platform - DocuSign alternative)",
-  "use_cases": "Document signing, contract workflows, DocuSign alternative",
+  "rank": 100,
+  "description": "Open-source e-signature platform serving as a DocuSign alternative for document signing and managing contract workflows.",
   "interface": "sign.<yourdomain>.com",
   "source": "https://github.com/docusealco/docuseal",
   "depends_on": []

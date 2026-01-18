@@ -7,6 +7,15 @@
       "type": "string",
       "description": "Unique identifier for the service"
     },
+    "display_name": {
+      "type": "string",
+      "description": "Human-readable name for documentation"
+    },
+    "rank": {
+      "type": "integer",
+      "description": "Sort order (lower is higher in list). Default: 100",
+      "default": 100
+    },
     "category": {
       "type": "string",
       "description": "Display category for the service"
@@ -14,10 +23,6 @@
     "description": {
       "type": "string",
       "description": "Short description of the service"
-    },
-    "use_cases": {
-      "type": "string",
-      "description": "Common use cases"
     },
     "interface": {
       "type": "string",

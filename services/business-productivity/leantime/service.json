@@ -1,8 +1,9 @@
 {
   "name": "leantime",
+  "display_name": "Leantime",
   "category": "Business Productivity",
-  "description": "Leantime - Full project management suite (Asana/Monday alternative)",
-  "use_cases": "ADHD-friendly PM, time tracking, sprints, strategy tools",
+  "rank": 100,
+  "description": "ADHD-friendly project management suite comparable to Asana or Monday, featuring time tracking, sprint planning, and strategy tools.",
   "interface": "leantime.<yourdomain>.com",
   "source": "https://github.com/Leantime/leantime",
   "depends_on": [

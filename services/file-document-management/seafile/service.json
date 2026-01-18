@@ -1,8 +1,9 @@
 {
   "name": "seafile",
+  "display_name": "Seafile",
   "category": "File & Document Management",
-  "description": "Seafile (File sync & share like Dropbox/Google Drive/OneDrive)",
-  "use_cases": "Team collaboration, file versioning, WebDAV, mobile sync",
+  "rank": 100,
+  "description": "Enterprise-grade file synchronization and sharing platform (Dropbox/Google Drive alternative) featuring file versioning, WebDAV support, and mobile sync.",
   "interface": "files.<yourdomain>.com",
   "source": "https://github.com/haiwen/seafile",
   "depends_on": []

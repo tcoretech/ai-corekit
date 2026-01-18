@@ -1,8 +1,9 @@
 {
   "name": "stirling-pdf",
+  "display_name": "Stirling-PDF",
   "category": "AI Support Tools",
-  "description": "Stirling-PDF (100+ PDF Tools: Merge, Split, OCR, Sign)",
-  "use_cases": "Split, merge, compress, OCR, sign PDFs",
+  "rank": 100,
+  "description": "Comprehensive PDF manipulation tool offering over 100 features including merging, splitting, compressing, OCR, and signing documents.",
   "interface": "pdf.<yourdomain>.com",
   "source": "https://github.com/Stirling-Tools/Stirling-PDF",
   "depends_on": []

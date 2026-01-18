@@ -1,0 +1,38 @@
+name: catalogue-services
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - 'services/**/service.json'
+      - 'config/service_categories.json'
+      - 'scripts/generate*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-catalogue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate Service Catalogue
+        run: |
+          chmod +x ./scripts/generate-service-catalogue.sh
+          ./scripts/generate-service-catalogue.sh
+
+      - name: Update README
+        run: |
+          chmod +x ./scripts/generate-services-readme.sh
+          ./scripts/generate-services-readme.sh --update
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: update services catalogue and README"
+          file_pattern: 'docs/SERVICES_CATALOGUE.md README.md'

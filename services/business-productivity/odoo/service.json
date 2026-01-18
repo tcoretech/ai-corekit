@@ -1,8 +1,9 @@
 {
   "name": "odoo",
+  "display_name": "Odoo",
   "category": "Business Productivity",
-  "description": "Odoo 18 (Open Source ERP/CRM with AI features)",
-  "use_cases": "Sales automation, inventory, accounting, AI lead scoring",
+  "rank": 100,
+  "description": "Comprehensive ERP and CRM suite with AI features for sales automation, inventory management, accounting, and lead scoring.",
   "interface": "odoo.<yourdomain>.com",
   "source": "https://github.com/odoo/odoo",
   "depends_on": [

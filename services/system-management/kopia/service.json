@@ -1,8 +1,9 @@
 {
   "name": "kopia",
+  "display_name": "Kopia",
   "category": "System Management",
-  "description": "Kopia (Fast and secure backup with Cloud and WebDAV storage)",
-  "use_cases": "Automated backups, WebDAV integration, deduplication, compression",
+  "rank": 100,
+  "description": "Fast and secure backup solution supporting deduction, encryption, and compression with Cloud and WebDAV storage backends.",
   "interface": "backup.<yourdomain>.com",
   "source": "https://github.com/kopia/kopia",
   "depends_on": [

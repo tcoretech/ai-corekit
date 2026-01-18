@@ -1,8 +1,9 @@
 {
   "name": "espocrm",
+  "display_name": "EspoCRM",
   "category": "Business Productivity",
-  "description": "EspoCRM (Full-featured CRM with workflows & automation)",
-  "use_cases": "Email campaigns, workflow automation, advanced reporting, role-based access",
+  "rank": 100,
+  "description": "Full-featured Customer Relationship Management (CRM) system offering email campaigns, workflow automation, advanced reporting, and role-based access.",
   "interface": "espocrm.<yourdomain>.com",
   "source": "https://github.com/espocrm/espocrm",
   "depends_on": []

@@ -1,8 +1,9 @@
 {
   "name": "letta",
+  "display_name": "Letta",
   "category": "AI Agents",
-  "description": "Letta (Agent Server & SDK)",
-  "use_cases": "Persistent AI assistants, memory management",
+  "rank": 100,
+  "description": "Agent Server and SDK enabling the creation of persistent AI assistants with advanced memory management capabilities.",
   "interface": "letta.<yourdomain>.com",
   "source": "https://github.com/letta-ai/letta",
   "depends_on": []

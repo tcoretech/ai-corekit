@@ -1,8 +1,9 @@
 {
   "name": "calcom",
+  "display_name": "Cal.com",
   "category": "Business Productivity",
-  "description": "Cal.com (Open Source Scheduling Platform)",
-  "use_cases": "Meeting bookings, team calendars, payment integrations",
+  "rank": 100,
+  "description": "Open-source scheduling platform streamlining meeting bookings, team calendars, and payment integrations.",
   "interface": "cal.<yourdomain>.com",
   "source": "https://github.com/calcom/cal.com",
   "depends_on": [

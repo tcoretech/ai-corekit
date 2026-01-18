@@ -9,52 +9,18 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG_FILE="$PROJECT_ROOT/config/service_categories.json"
 
-# Category display order and icons
-declare -A CATEGORY_ICONS=(
-    ["Workflow Automation"]="🔧"
-    ["User Interfaces"]="🎯"
-    ["Mail System"]="📧"
-    ["Video Conferencing"]="📹"
-    ["File & Document Management"]="📁"
-    ["Business Productivity"]="💼"
-    ["AI Content Generation"]="🎨"
-    ["AI-Powered Development"]="💻"
-    ["AI Agents"]="🤖"
-    ["RAG Systems"]="📚"
-    ["Speech, Language & Text"]="🎙️"
-    ["Search & Web Data"]="🔍"
-    ["Knowledge Graphs"]="🧠"
-    ["Data Infrastructure"]="🗄️"
-    ["System Management"]="⚙️"
-    ["AI Support Tools"]="🧰"
-    ["AI Security & Compliance"]="🛡️"
-    ["Python"]="🐍"
-    ["Host Services"]="🖥️"
-)
+# Check requirements
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is required for this script" >&2
+    exit 1
+fi
 
-# Category display order (controls section order in output)
-CATEGORY_ORDER=(
-    "Workflow Automation"
-    "User Interfaces"
-    "Mail System"
-    "Video Conferencing"
-    "File & Document Management"
-    "Business Productivity"
-    "AI Content Generation"
-    "AI-Powered Development"
-    "AI Agents"
-    "RAG Systems"
-    "Speech, Language & Text"
-    "Search & Web Data"
-    "Knowledge Graphs"
-    "Data Infrastructure"
-    "System Management"
-    "AI Support Tools"
-    "AI Security & Compliance"
-    "Python"
-    "Host Services"
-)
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "Error: Configuration file not found at $CONFIG_FILE" >&2
+    exit 1
+fi
 
 # Temp file for collecting services
 SERVICES_DATA=$(mktemp)
@@ -65,13 +31,18 @@ find "$PROJECT_ROOT/services" -name "service.json" -not -path "*/custom/*" | whi
     # Skip if file doesn't exist or is empty
     [[ ! -s "$json_file" ]] && continue
 
-    # Extract fields using grep/sed (portable, no jq dependency)
-    name=$(grep -o '"name": *"[^"]*"' "$json_file" 2>/dev/null | head -1 | sed 's/"name": *"//;s/"$//')
-    category=$(grep -o '"category": *"[^"]*"' "$json_file" 2>/dev/null | head -1 | sed 's/"category": *"//;s/"$//')
-    description=$(grep -o '"description": *"[^"]*"' "$json_file" 2>/dev/null | head -1 | sed 's/"description": *"//;s/"$//')
-    use_cases=$(grep -o '"use_cases": *"[^"]*"' "$json_file" 2>/dev/null | head -1 | sed 's/"use_cases": *"//;s/"$//')
-    interface=$(grep -o '"interface": *"[^"]*"' "$json_file" 2>/dev/null | head -1 | sed 's/"interface": *"//;s/"$//')
-    source=$(grep -o '"source": *"[^"]*"' "$json_file" 2>/dev/null | head -1 | sed 's/"source": *"//;s/"$//')
+    # Extract fields using jq
+    match=$(jq -r '[
+        .category // "",
+        .name // "",
+        .display_name // .name,
+        .rank // 100,
+        .description // "",
+        .interface // "",
+        .source // ""
+    ] | @tsv' "$json_file")
+
+    IFS=$'\t' read -r category name display_name rank description interface source <<< "$match"
 
     # Skip services with empty required fields
     [[ -z "$name" || -z "$category" ]] && continue
@@ -79,8 +50,12 @@ find "$PROJECT_ROOT/services" -name "service.json" -not -path "*/custom/*" | whi
     # Skip example service
     [[ "$name" == "example-service" ]] && continue
 
+    # Get relative path to service directory
+    service_dir=$(dirname "$json_file")
+    rel_path=${service_dir#"$PROJECT_ROOT/"}
+
     # Use pipe delimiter (assuming no pipes in data)
-    echo "${category}|${name}|${description}|${use_cases}|${interface}|${source}" >> "$SERVICES_DATA"
+    echo "${rank}|${category}|${name}|${display_name}|${description}|${interface}|${source}|${rel_path}" >> "$SERVICES_DATA"
 done
 
 # Count total services
@@ -90,65 +65,64 @@ total_services=$(wc -l < "$SERVICES_DATA" | tr -d ' ')
 generate_services_section() {
     echo "## ✨ What's Included"
     echo ""
-    echo "> **${total_services}+ self-hosted services** organized into ${#CATEGORY_ORDER[@]} categories."
+    echo "> **${total_services}+ self-hosted services** organized into categories."
     echo "> Each service includes its own README with detailed setup instructions, n8n integration examples, and troubleshooting guides."
     echo ""
 
-    for category in "${CATEGORY_ORDER[@]}"; do
+    # Read categories from config and iterate
+    jq -c '.[]' "$CONFIG_FILE" | while read -r cat_json; do
+        category=$(echo "$cat_json" | jq -r '.name')
+        icon=$(echo "$cat_json" | jq -r '.icon')
+        description=$(echo "$cat_json" | jq -r '.description')
+
         # Get services in this category
-        category_services=$(grep "^${category}|" "$SERVICES_DATA" | sort -t'|' -k2)
+        # Format: rank|category|name|display_name|description|interface|source
+        category_services=$(grep "^[^|]*|${category}|" "$SERVICES_DATA" | sort -t'|' -k1n -k4)
 
         # Skip empty categories
         [[ -z "$category_services" ]] && continue
 
-        # Get icon
-        icon="${CATEGORY_ICONS[$category]:-📦}"
-
         echo "### ${icon} ${category}"
+        if [[ -n "$description" ]]; then
+            echo "$description"
+        fi
         echo ""
-        echo "| Service | Description | Access |"
-        echo "|---------|-------------|--------|"
+        echo "| Service | Name | Description |"
+        echo "| --- | --- | ------ |"
 
-        while IFS='|' read -r cat name desc use_cases interface source_url; do
+        while IFS='|' read -r rank cat name display_name desc interface source_url rel_path; do
             # Clean up description - extract tool name if in format "ToolName (description)"
             if [[ "$desc" =~ ^([^(]+)\(([^)]+)\)$ ]]; then
-                tool_name="${BASH_REMATCH[1]}"
                 tool_desc="${BASH_REMATCH[2]}"
             else
-                tool_name="$name"
                 tool_desc="$desc"
             fi
 
-            # Format tool name with link if source available
+            # Format tool name with link to local service directory
+            # rel_path is already correct from the data collection phase
+            tool_display="[**${display_name}**](${rel_path})"
+
+            # Add source link if available
             if [[ -n "$source_url" && "$source_url" != "Local" && "$source_url" =~ ^https?:// ]]; then
-                tool_display="[**${tool_name}**](${source_url})"
-            else
-                tool_display="**${tool_name}**"
+                tool_display="${tool_display} [↗](${source_url})"
             fi
+            
+            # Name column
+            name_display="\`${name}\`"
 
-            # Format interface/access
-            if [[ -z "$interface" || "$interface" == "Internal only" || "$interface" == "Internal API" ]]; then
-                access="Internal"
-            elif [[ "$interface" =~ \<yourdomain\> ]]; then
-                access="\`${interface}\`"
-            else
-                access="$interface"
-            fi
-
-            # Use use_cases as description if desc is empty, otherwise combine
-            if [[ -z "$tool_desc" && -n "$use_cases" ]]; then
-                final_desc="$use_cases"
-            elif [[ -n "$tool_desc" ]]; then
+            # Description handling
+            if [[ -n "$tool_desc" ]]; then
                 final_desc="$tool_desc"
             else
                 final_desc="$name service"
             fi
 
-            echo "| ${tool_display} | ${final_desc} | ${access} |"
+            echo "| ${tool_display} | ${name_display} | ${final_desc} |"
         done <<< "$category_services"
 
         echo ""
     done
+
 
     echo "---"
     echo ""

@@ -1,8 +1,9 @@
 {
   "name": "uptime-kuma",
+  "display_name": "Uptime Kuma",
   "category": "System Management",
-  "description": "Uptime Kuma (Uptime Monitoring & Status Pages)",
-  "use_cases": "Service uptime tracking, public status pages, multi-protocol monitoring, 90+ notifications",
+  "rank": 100,
+  "description": "Self-hosted monitoring tool for tracking service uptime in real-time, featuring status pages and multi-protocol notifications.",
   "interface": "status.<yourdomain>.com",
   "source": "https://github.com/louislam/uptime-kuma",
   "depends_on": []

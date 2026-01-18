@@ -1,0 +1,10 @@
+{
+  "name": "scriberr",
+  "display_name": "Scriberr",
+  "category": "Voice & Multimodal",
+  "rank": 100,
+  "description": "AI-powered audio transcription tool featuring speaker diarization, ideal for creating meeting transcripts, processing podcasts, and analyzing call recordings.",
+  "interface": "scriberr.<yourdomain>.com",
+  "source": "https://github.com/rishikanthc/Scriberr",
+  "depends_on": []
+}

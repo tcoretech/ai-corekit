@@ -25,7 +25,7 @@ SERVICES_DATA=$(mktemp)
 trap "rm -f $SERVICES_DATA" EXIT
 
 # Collect all service data
-find "$PROJECT_ROOT/services" -name "service.json" -not -path "*/custom/*" | while read -r json_file; do
+find "$PROJECT_ROOT/services" -name "service.json" | while read -r json_file; do
     # Skip if file doesn't exist or is empty
     [[ ! -s "$json_file" ]] && continue
 
@@ -46,8 +46,10 @@ find "$PROJECT_ROOT/services" -name "service.json" -not -path "*/custom/*" | whi
     # Skip services with empty required fields
     [[ -z "$name" || -z "$category" ]] && continue
 
-    # Skip example service
-    [[ "$name" == "example-service" ]] && continue
+    # Only include example-service from Custom Services category
+    if [[ "$category" == "Custom Services" && "$name" != "example-service" ]]; then
+        continue
+    fi
 
     # Get relative path to service directory
     dir_path=$(dirname "$json_file")
@@ -75,8 +77,18 @@ total_services=$(wc -l < "$SERVICES_DATA" | tr -d ' ')
         
         # Check if category has services. Data format: rank|category|...
         if grep -q "|${category}|" "$SERVICES_DATA"; then
-            anchor=$(echo "$category" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
-            echo "- [${icon} ${category}](#${icon}-${anchor})"
+            # Generate anchor: remove ampersands, lowercase, replace non-alphanumeric with hyphens
+            anchor=$(echo "$category" | sed 's/&//g' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
+            
+            # Check for VS16 (Variation Selector-16) in icon using hex sequence
+            vs16=$(printf '\xef\xb8\x8f')
+            if [[ "$icon" == *"$vs16"* ]]; then
+                # Multi-code point emoji: Start with encoded VS16
+                echo "- [${icon} ${category}](#%EF%B8%8F-${anchor})"
+            else
+                # Standard emoji: Start with leading hyphen
+                echo "- [${icon} ${category}](#-${anchor})"
+            fi
         fi
     done
     echo ""
@@ -109,18 +121,18 @@ total_services=$(wc -l < "$SERVICES_DATA" | tr -d ' ')
         echo "|---------|-------------|-----------|--------------|"
 
         while IFS='|' read -r rank cat name display_name desc interface source_url rel_path depends_on; do
-            # Service Name (linked to folder) + Technical Name
+            # Service Name (linked to folder)
             service_col="[**${display_name}**](../${rel_path})"
             
-            # Add External Link if available
-            if [[ -n "$source_url" && "$source_url" != "Local" && "$source_url" =~ ^https?:// ]]; then
-                 service_col="${service_col} [↗](${source_url})"
-            fi
-            
+            # Technical name
             service_col="${service_col} <br> [\`${name}\`]"
 
             # Description
             desc_col="${desc}"
+            # Add External Link to description if available
+            if [[ -n "$source_url" && "$source_url" != "Local" && "$source_url" =~ ^https?:// ]]; then
+                 desc_col="${desc_col} [[↗](${source_url})]"
+            fi
 
             # Interface
             if [[ -z "$interface" || "$interface" == "Internal only" || "$interface" == "Internal API" ]]; then

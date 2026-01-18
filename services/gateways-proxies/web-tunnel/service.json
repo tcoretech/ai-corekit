@@ -1,0 +1,10 @@
+{
+  "name": "web-tunnel",
+  "display_name": "Cloudflare Web Tunnel",
+  "category": "Gateways & Proxies",
+  "rank": 100,
+  "description": "Cloudflare Tunnel configuration for securely exposing local web services to the internet without opening public ports.",
+  "interface": "N/A",
+  "source": "https://github.com/cloudflare/cloudflared",
+  "depends_on": []
+}

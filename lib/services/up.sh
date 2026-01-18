@@ -99,7 +99,7 @@ fi
 # Helper: Resolve Dependencies
 resolve_dependencies() {
     local service="$1"
-    local service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+    local service_dir=$(find_service_path "$service")
     
     if [ -n "$service_dir" ] && [ -f "$service_dir/service.json" ]; then
         # Extract depends_on array using grep/sed/tr since we don't have jq guaranteed
@@ -142,7 +142,7 @@ if [ "$USE_SPECIFIC" = true ]; then
     # Validate services exist before enabling
     for s in "${SERVICES_TO_START[@]}"; do
         # Use find to locate service directory
-        service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$s" -type d | head -n 1)
+        service_dir=$(find_service_path "$s")
         if [ -z "$service_dir" ]; then
             log_error "Service '$s' not found. Please check the service name."
             exit 1
@@ -202,7 +202,7 @@ for service in "${SERVICES_TO_START[@]}"; do
         exit 1
     fi
     
-    service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+    service_dir=$(find_service_path "$service")
     
     if [ -z "$service_dir" ]; then
         log_warning "Service directory not found for: $service"
@@ -251,7 +251,7 @@ FAILED_SERVICES=()
 set +e # Disable exit on error to capture failures
 
 for service in "${SERVICES_TO_START[@]}"; do
-    service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+    service_dir=$(find_service_path "$service")
     if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
         log_info "[$service] Starting..."
         # Run docker compose with project directory set to service directory
@@ -279,7 +279,7 @@ for service in "${SERVICES_TO_START[@]}"; do
         continue
     fi
 
-    service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+    service_dir=$(find_service_path "$service")
     if [ -n "$service_dir" ] && [ -f "$service_dir/startup.sh" ]; then
         log_info "[$service] Running startup hook..."
         if ! (cd "$service_dir" && bash "startup.sh"); then

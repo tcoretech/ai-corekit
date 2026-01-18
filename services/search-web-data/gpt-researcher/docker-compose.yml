@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - gpt_researcher_data:/usr/src/app/outputs
-    - ${PROJECT_ROOT}/services/shared-resources/shared/research:/usr/src/app/my-docs
+    - ${PROJECT_ROOT}/services/.shared-resources/shared/research:/usr/src/app/my-docs
     env_file:
       - .env
     environment:

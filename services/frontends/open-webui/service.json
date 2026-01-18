@@ -1,0 +1,10 @@
+{
+  "name": "open-webui",
+  "display_name": "Open WebUI",
+  "category": "Frontends",
+  "rank": 100,
+  "description": "Feature-rich, self-hosted web interface (ChatGPT alternative) for interacting with local Large Language Models.",
+  "interface": "webui.<yourdomain>.com",
+  "source": "https://github.com/open-webui/open-webui",
+  "depends_on": []
+}

@@ -1,0 +1,27 @@
+services:
+  lightrag:
+    image: ghcr.io/hkuds/lightrag:latest
+    container_name: lightrag
+    profiles:
+    - lightrag
+    restart: unless-stopped
+    volumes:
+    - lightrag_data:/app/data/rag_storage
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/app/data/inputs
+    env_file:
+      - .env
+    environment:
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - LLM_BINDING=openai
+    - LLM_BINDING_HOST=https://api.openai.com/v1
+    - EMBEDDING_BINDING=openai
+    - EMBEDDING_BINDING_HOST=https://api.openai.com/v1
+    - LLM_MODEL=gpt-4o-mini
+    - EMBEDDING_MODEL=text-embedding-3-small
+    - EMBEDDING_DIM=1536
+    - WORKSPACE=${LIGHTRAG_WORKSPACE:-default}
+    - AUTH_ACCOUNTS=${LIGHTRAG_AUTH_ACCOUNTS}
+    - TOKEN_SECRET=${LIGHTRAG_TOKEN_SECRET}
+    - TIMEOUT=600
+volumes:
+  lightrag_data: {}

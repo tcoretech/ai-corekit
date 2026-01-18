@@ -15,7 +15,7 @@ services:
     volumes:
     - perplexica_data:/home/perplexica/data
     - perplexica_uploads:/home/perplexica/uploads
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     extra_hosts:
     - host.docker.internal:host-gateway
 volumes:

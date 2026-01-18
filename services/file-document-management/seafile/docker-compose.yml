@@ -21,7 +21,7 @@ services:
     - FORCE_HTTPS_IN_CONF=true
     volumes:
     - seafile_data:/shared
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/shared/paperless-bridge
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/shared/paperless-bridge
     - ./config/seafile-init.sh:/init-fix.sh:ro
     depends_on:
     - seafile-db

@@ -141,7 +141,7 @@ if [ "$UPDATE_CONTAINERS" = true ]; then
         log_info "Updating service: $service"
         
         # Find service directory
-        service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+        service_dir=$(find_service_path "$service")
         
         if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
              log_info "Pulling images for $service..."

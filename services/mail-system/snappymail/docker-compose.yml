@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - snappymail_data:/var/lib/snappymail
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     env_file:
       - .env
     environment:

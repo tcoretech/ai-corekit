@@ -28,7 +28,7 @@ services:
         condition: service_healthy
     volumes:
     - mautic_data:/var/www/html
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     env_file:
       - .env
     environment:
@@ -83,7 +83,7 @@ services:
         condition: service_healthy
     volumes:
     - mautic_data:/var/www/html
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     env_file:
       - .env
     environment:

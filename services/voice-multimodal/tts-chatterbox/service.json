@@ -1,0 +1,10 @@
+{
+  "name": "tts-chatterbox",
+  "display_name": "TTS Chatterbox",
+  "category": "Voice & Multimodal",
+  "rank": 100,
+  "description": "State-of-the-art Text-to-Speech system serving as a high-quality alternative to ElevenLabs, providing AI voices with rich emotional expression.",
+  "interface": "chatterbox.<yourdomain>.com",
+  "source": "https://github.com/resemble-ai/chatterbox",
+  "depends_on": []
+}

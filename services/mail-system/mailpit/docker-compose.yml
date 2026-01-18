@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     volumes:
     - mailpit_data:/data
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     env_file:
       - .env
     environment:

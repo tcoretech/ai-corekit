@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     volumes:
     - ldr_data:/data
-    - ${PROJECT_ROOT}/services/shared-resources/shared/research:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared/research:/data/shared
     env_file:
       - .env
     environment:

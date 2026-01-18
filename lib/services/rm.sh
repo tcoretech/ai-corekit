@@ -61,7 +61,7 @@ log_info "Removing services: ${SERVICES_TO_REMOVE[*]}"
 for service in "${SERVICES_TO_REMOVE[@]}"; do
     # Find service directory
     # Try to find exact match first
-    service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+    service_dir=$(find_service_path "$service")
     
     # If not found, try to find by service name in docker-compose.yml
     if [ -z "$service_dir" ]; then

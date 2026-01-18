@@ -1,0 +1,10 @@
+{
+  "name": "weaviate",
+  "display_name": "Weaviate",
+  "category": "Data Services",
+  "rank": 100,
+  "description": "Cloud-native vector database with API key authentication, supporting hybrid search, multi-modal data, and GraphQL APIs.",
+  "interface": "weaviate.<yourdomain>.com",
+  "source": "https://github.com/weaviate/weaviate",
+  "depends_on": []
+}

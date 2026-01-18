@@ -27,7 +27,7 @@ SERVICES_DATA=$(mktemp)
 trap "rm -f $SERVICES_DATA" EXIT
 
 # Collect all service data
-find "$PROJECT_ROOT/services" -name "service.json" -not -path "*/custom/*" | while read -r json_file; do
+find "$PROJECT_ROOT/services" -name "service.json" | while read -r json_file; do
     # Skip if file doesn't exist or is empty
     [[ ! -s "$json_file" ]] && continue
 
@@ -47,8 +47,10 @@ find "$PROJECT_ROOT/services" -name "service.json" -not -path "*/custom/*" | whi
     # Skip services with empty required fields
     [[ -z "$name" || -z "$category" ]] && continue
 
-    # Skip example service
-    [[ "$name" == "example-service" ]] && continue
+    # Only include example-service from Custom Services category
+    if [[ "$category" == "Custom Services" && "$name" != "example-service" ]]; then
+        continue
+    fi
 
     # Get relative path to service directory
     service_dir=$(dirname "$json_file")
@@ -127,6 +129,12 @@ generate_services_section() {
 
 
     echo "---"
+    echo ""
+    echo "### 🛠️ Creating Custom Services"
+    echo ""
+    echo "You can easily add your own services to AI LaunchKit using the custom services directory. This allows you to integrate your own tools or proprietary software while keeping them separate from the core repository."
+    echo ""
+    echo "👉 **[Learn how to add custom services](services/custom-services/README.md)**"
     echo ""
 }
 

@@ -1,0 +1,27 @@
+services:
+  bolt:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: bolt
+    profiles:
+    - bolt
+    expose:
+    - '5173'
+    env_file:
+      - .env
+    environment:
+    - BOLT_HOSTNAME=${BOLT_HOSTNAME}
+    - OLLAMA_API_BASE_URL=http://ollama:11434
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    - GROQ_API_KEY=${GROQ_API_KEY:-}
+    volumes:
+    - ./data:/app/data
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/workspace
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'

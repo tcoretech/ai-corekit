@@ -3,6 +3,8 @@
 # AI CoreKit CLI
 # Usage: corekit <command> [args]
 
+VERSION="0.0.1"
+
 set -e
 
 # Resolve paths

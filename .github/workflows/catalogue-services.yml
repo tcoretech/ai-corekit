@@ -6,7 +6,7 @@ on:
     paths:
       - 'services/**/service.json'
       - 'config/service_categories.json'
-      - 'scripts/generate*'
+      - '.github/scripts/generate*'
   workflow_dispatch:
 
 permissions:
@@ -23,13 +23,13 @@ jobs:
 
       - name: Generate Service Catalogue
         run: |
-          chmod +x ./scripts/generate-service-catalogue.sh
-          ./scripts/generate-service-catalogue.sh
+          chmod +x .github/scripts/generate-service-catalogue.sh
+          ./.github/scripts/generate-service-catalogue.sh
 
       - name: Update README
         run: |
-          chmod +x ./scripts/generate-services-readme.sh
-          ./scripts/generate-services-readme.sh --update
+          chmod +x .github/scripts/generate-services-readme.sh
+          ./.github/scripts/generate-services-readme.sh --update
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5

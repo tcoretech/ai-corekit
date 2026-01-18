@@ -4,13 +4,13 @@ on:
   push:
     paths:
       - 'services/**/service.json'
-      - 'scripts/generate-services-readme.sh'
+      - '.github/scripts/generate-services-readme.sh'
     branches:
       - main
   pull_request:
     paths:
       - 'services/**/service.json'
-      - 'scripts/generate-services-readme.sh'
+      - '.github/scripts/generate-services-readme.sh'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -29,8 +29,8 @@ jobs:
       - name: Generate Services Section
         id: generate
         run: |
-          chmod +x scripts/generate-services-readme.sh
-          ./scripts/generate-services-readme.sh --update
+          chmod +x .github/scripts/generate-services-readme.sh
+          ./.github/scripts/generate-services-readme.sh --update
 
       - name: Check for changes
         id: check-changes
@@ -63,7 +63,7 @@ jobs:
 
             // Generate preview
             const { execSync } = require('child_process');
-            const preview = execSync('./scripts/generate-services-readme.sh 2>/dev/null | head -100').toString();
+            const preview = execSync('./.github/scripts/generate-services-readme.sh 2>/dev/null | head -100').toString();
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -94,5 +94,5 @@ jobs:
           fi
 
           # Count services mentioned
-          service_count=$(./scripts/generate-services-readme.sh 2>/dev/null | grep -c "^\|" || echo "0")
+          service_count=$(./.github/scripts/generate-services-readme.sh 2>/dev/null | grep -c "^\|" || echo "0")
           echo "📊 Total services in generated section: $service_count"

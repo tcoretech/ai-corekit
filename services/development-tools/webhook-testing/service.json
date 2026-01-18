@@ -1,7 +1,7 @@
 {
   "name": "webhook-testing",
   "display_name": "Webhook Tester + Hoppscotch",
-  "category": "Workflow Automation",
+  "category": "Development Tools",
   "rank": 100,
   "description": "Debugging suite combining Webhook Tester and Hoppscotch for inspecting incoming webhooks and testing external service integrations.",
   "interface": "webhook-test.<yourdomain>.com",

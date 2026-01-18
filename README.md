@@ -50,8 +50,9 @@ corekit up
 <!-- SERVICES_SECTION_START -->
 ## ✨ What's Included
 
-> **78+ self-hosted services** organized into categories.
-> Each service includes its own README with detailed setup instructions, n8n integration examples, and troubleshooting guides.
+**78+ self-hosted services** pre-configured and wrapped for easy deployment.
+
+Each service includes its own config, secrets handling and detailed setup instructions. Navigate to each modular service definition below.
 
 ### 🔧 Workflow Automation
 Orchestrate processes and integrate services

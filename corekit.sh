@@ -3,7 +3,7 @@
 # AI CoreKit CLI
 # Usage: corekit <command> [args]
 
-VERSION="0.0.1"
+VERSION="1.0.0"
 
 set -e
 

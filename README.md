@@ -247,8 +247,6 @@ Core host-level services
 | [**SSH Tunnel**](services/host-services/ssh-tunnel) | `ssh-tunnel` | Cloudflare Tunnel configuration enabling secure remote SSH access via Cloudflare Zero Trust. [[↗](https://github.com/cloudflare/cloudflared)] |
 
 ---
-
-
 <!-- SERVICES_SECTION_END -->
 
 ## 💻 CLI Reference
@@ -292,8 +290,6 @@ corekit <command> [arguments]
 | `run` | Run a service-specific command (e.g., corekit run ssh ...). |
 | `list` | List all available services. |
 | `help` | Show this help message. |
-
-[Configuration](#-configuration-and-customisation)
 
 ## 🔧 Configuration and Customisation
 

@@ -102,10 +102,6 @@ generate_services_section() {
             # rel_path is already correct from the data collection phase
             tool_display="[**${display_name}**](${rel_path})"
 
-            # Add source link if available
-            if [[ -n "$source_url" && "$source_url" != "Local" && "$source_url" =~ ^https?:// ]]; then
-                tool_display="${tool_display} [↗](${source_url})"
-            fi
             
             # Name column
             name_display="\`${name}\`"
@@ -117,6 +113,11 @@ generate_services_section() {
                 final_desc="$name service"
             fi
 
+            # Add source link if available
+            if [[ -n "$source_url" && "$source_url" != "Local" && "$source_url" =~ ^https?:// ]]; then
+                final_desc="${final_desc} [[↗](${source_url})]"
+            fi
+
             echo "| ${tool_display} | ${name_display} | ${final_desc} |"
         done <<< "$category_services"
 
@@ -126,7 +127,9 @@ generate_services_section() {
 
     echo "---"
     echo ""
+    echo "<br>"
     echo "> 📖 **For detailed documentation**, see each service's README in \`services/<category>/<service>/README.md\`"
+    echo ""
 }
 
 # Main execution

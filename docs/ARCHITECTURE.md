@@ -100,3 +100,60 @@ The system handles dependencies at two distinct levels:
 *   **Mechanism**: Standard Docker Compose `depends_on`.
 *   **Limitation**: Since services are isolated, `depends_on` works best for containers defined within the *same* `docker-compose.yml`.
 *   **Cross-Service**: For dependencies on other services (e.g., `flowise` waiting for `postgres`), use `startup.sh` scripts with wait loops (e.g., `wait-for-it` or `pg_isready`) rather than relying solely on Docker Compose, as the services might be started independently.
+
+## 9. System Diagram
+
+```mermaid
+graph TD
+    A[Caddy - Reverse Proxy] --> B[n8n - Automation]
+    A --> C[bolt.diy - AI Dev]
+    A --> D[ComfyUI - Image Gen]
+    A --> E[Open WebUI - Chat]
+    A --> F[Other Services]
+    A --> MP[Mailpit - Mail UI]
+    A --> CAL[Cal.com - Scheduling]
+    A --> SM[SnappyMail - Webmail]
+    A --> JM[Jitsi Meet - Video]
+    A --> VW[Vaultwarden - Passwords]
+    
+    CF[Cloudflare Tunnel] -.-> A
+    
+    B --> G[PostgreSQL]
+    B --> H[Redis Queue]
+    B --> I[Shared Storage]
+    B --> PR[Python Runner]
+    B --> M[Whisper ASR]
+    B --> N[OpenedAI TTS]
+    B --> O[Qdrant/Weaviate - Vectors]
+    B --> P[Neo4j - Knowledge Graph]
+    B --> LR[LightRAG - Graph RAG]
+    B --> SMTP[Mail System]
+    B --> CAL2[Cal.com API]
+    
+    CAL --> G
+    CAL --> H
+    CAL --> SMTP
+    CAL --> JM[Jitsi Integration]
+    
+    JM --> JP[Jitsi Prosody - XMPP]
+    JM --> JF[Jitsi Jicofo - Focus]
+    JM --> JV[Jitsi JVB - WebRTC]
+    JV -.-> |UDP 10000| INET[Internet]
+    
+    SMTP --> MP2[Mailpit SMTP]
+    SMTP -.-> MS[Docker-Mailserver]
+    
+    SM --> MS[Docker-Mailserver IMAP/SMTP]
+    
+    VW --> I[Shared Storage]
+    VW --> SMTP[Mail System]
+    
+    C --> J[Ollama - Local LLMs]
+    D --> J
+    E --> J
+    
+    K[Grafana] --> L[Prometheus]
+    L --> B
+    L --> G
+    L --> H
+```

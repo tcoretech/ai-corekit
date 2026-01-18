@@ -1,8 +1,9 @@
 {
   "name": "perplexica",
+  "display_name": "Perplexica",
   "category": "Search & Web Data",
-  "description": "Perplexica (Open-source Deep Resarch/Perplexity AI alternative)",
-  "use_cases": "Deep research, academic search, Perplexity AI alternative",
+  "rank": 100,
+  "description": "Open-source AI search engine and Deep Research tool, serving as a privacy-focused alternative to Perplexity AI.",
   "interface": "perplexica.<yourdomain>.com",
   "source": "https://github.com/ItzCrazyKns/Perplexica",
   "depends_on": [

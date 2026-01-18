@@ -1,8 +1,9 @@
 {
   "name": "ragapp",
+  "display_name": "RAGApp",
   "category": "RAG Systems",
-  "description": "RAGApp (Open-source RAG UI + API)",
-  "use_cases": "Knowledge bases, document Q&A, research tools",
+  "rank": 100,
+  "description": "Open-source UI and API for Retrieval-Augmented Generation (RAG), enabling easy creation of knowledge bases and document Q&A tools.",
   "interface": "ragapp.<yourdomain>.com",
   "source": "https://github.com/ragapp/ragapp",
   "depends_on": []

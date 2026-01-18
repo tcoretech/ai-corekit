@@ -347,10 +347,10 @@ Monitor published content and verify accuracy continuously.
 
 ```bash
 # Check container status
-launchkit ps | grep local-deep-research
+corekit ps | grep local-deep-research
 
 # View logs for stalled processes
-launchkit logs local-deep-research --tail 100 --follow
+corekit logs local-deep-research --tail 100 --follow
 ```
 
 **Solution:**
@@ -358,14 +358,14 @@ launchkit logs local-deep-research --tail 100 --follow
 - Simplify query: be more specific
 - Check if search backend (SearXNG) is responsive:
   ```bash
-  launchkit exec n8n curl http://searxng:8080/search?q=test
+  corekit exec n8n curl http://searxng:8080/search?q=test
   ```
 
 **Issue 2: Low Confidence Scores**
 
 ```bash
 # Check if LLM provider is working
-launchkit logs local-deep-research | grep -i "llm\|error"
+corekit logs local-deep-research | grep -i "llm\|error"
 ```
 
 **Solution:**
@@ -378,10 +378,10 @@ launchkit logs local-deep-research | grep -i "llm\|error"
 
 ```bash
 # Test search backend
-launchkit exec local-deep-research curl http://searxng:8080/health
+corekit exec local-deep-research curl http://searxng:8080/health
 
 # Check search logs
-launchkit logs searxng --tail 50
+corekit logs searxng --tail 50
 ```
 
 **Solution:**
@@ -389,7 +389,7 @@ launchkit logs searxng --tail 50
 - Check Docker network connectivity
 - Restart search service:
   ```bash
-  launchkit restart searxng local-deep-research
+  corekit restart searxng local-deep-research
   ```
 
 **Issue 4: Conflicting Information Found**
@@ -421,10 +421,10 @@ This is actually a GOOD sign - shows thorough research.
 
 ```bash
 # Check environment variables
-launchkit exec local-deep-research printenv | grep -E "OPENAI|OLLAMA|SEARXNG"
+corekit exec local-deep-research printenv | grep -E "OPENAI|OLLAMA|SEARXNG"
 
 # Check for rate limiting
-launchkit logs local-deep-research | grep -i "rate\|limit\|quota"
+corekit logs local-deep-research | grep -i "rate\|limit\|quota"
 ```
 
 **Solution:**

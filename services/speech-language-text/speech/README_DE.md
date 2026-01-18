@@ -219,8 +219,8 @@ OpenedAI-Speech verwendet Piper TTS, welches über 50 Sprachen unterstützt. So 
 # Auf deinen Server zugreifen
 ssh user@deinedomain.com
 
-# Zum AI LaunchKit navigieren
-cd ~/ai-launchkit
+# Zum AI CoreKit navigieren
+cd ~/ai-corekit
 
 # Stimmen-Konfiguration bearbeiten
 nano openedai-config/voice_to_speaker.yaml

@@ -1,7 +1,7 @@
-# AI LaunchKit Architecture & Principles
+# AI CoreKit Architecture & Principles
 
 ## 1. Core Philosophy
-The AI LaunchKit architecture is built on the principle of **Modular Service Units**. Instead of a monolithic `docker-compose.yml` at the root, the system is composed of independent, self-contained service directories. This approach ensures:
+The AI CoreKit architecture is built on the principle of **Modular Service Units**. Instead of a monolithic `docker-compose.yml` at the root, the system is composed of independent, self-contained service directories. This approach ensures:
 - **Scalability**: Adding new services does not clutter the root configuration.
 - **Portability**: Each service can be run independently using native Docker tools.
 - **Maintainability**: Service-specific logic (scripts, config, envs) is co-located with the service definition.
@@ -35,7 +35,7 @@ Located at: `services/<category>/<service-name>/`
 ### Hierarchy
 1.  **Global Configuration** (`config/.env.global`):
     - Shared variables (Domain, Email, Timezone, PUID/PGID).
-    - Loaded first by the LaunchKit CLI.
+    - Loaded first by the CoreKit CLI.
 2.  **Service Configuration** (`services/.../.env`):
     - Service-specific secrets and overrides.
     - Inherits global variables at runtime.
@@ -46,12 +46,12 @@ Located at: `services/<category>/<service-name>/`
     - **Why?** To prevent Shell and Docker Compose from attempting to interpolate special characters (like `$` in bcrypt hashes).
     - **Example**: `PASSWORD_HASH='$2a$12$...'` (Safe) vs `PASSWORD_HASH="$2a$12$..."` (Unsafe).
 
-## 4. Execution Model (LaunchKit CLI)
+## 4. Execution Model (CoreKit CLI)
 
-The `launchkit` CLI (`launchkit.sh`) is the orchestration layer, but it respects the independence of services.
+The `corekit` CLI (`corekit.sh`) is the orchestration layer, but it respects the independence of services.
 
 ### The "Iterative Context" Strategy
-Unlike a monolithic `docker-compose -f ... -f ... up`, LaunchKit iterates through selected services and executes them **in their own directory context**.
+Unlike a monolithic `docker-compose -f ... -f ... up`, CoreKit iterates through selected services and executes them **in their own directory context**.
 
 **Logic Flow (`lib/services/up.sh`):**
 1.  Resolve list of services (from Stack or Arguments).
@@ -92,7 +92,7 @@ The system handles dependencies at two distinct levels:
 
 ### 1. Service Enablement (`service.json`)
 *   **Purpose**: Defines which services must be *enabled* and *configured* for the current service to function.
-*   **Mechanism**: The `launchkit` CLI checks the `dependencies` array in `service.json` when enabling a service.
+*   **Mechanism**: The `corekit` CLI checks the `dependencies` array in `service.json` when enabling a service.
 *   **Example**: If `flowise` depends on `postgres`, enabling `flowise` should prompt or ensure `postgres` is also enabled.
 
 ### 2. Runtime Startup (`docker-compose.yml`)
@@ -100,3 +100,60 @@ The system handles dependencies at two distinct levels:
 *   **Mechanism**: Standard Docker Compose `depends_on`.
 *   **Limitation**: Since services are isolated, `depends_on` works best for containers defined within the *same* `docker-compose.yml`.
 *   **Cross-Service**: For dependencies on other services (e.g., `flowise` waiting for `postgres`), use `startup.sh` scripts with wait loops (e.g., `wait-for-it` or `pg_isready`) rather than relying solely on Docker Compose, as the services might be started independently.
+
+## 9. System Diagram
+
+```mermaid
+graph TD
+    A[Caddy - Reverse Proxy] --> B[n8n - Automation]
+    A --> C[bolt.diy - AI Dev]
+    A --> D[ComfyUI - Image Gen]
+    A --> E[Open WebUI - Chat]
+    A --> F[Other Services]
+    A --> MP[Mailpit - Mail UI]
+    A --> CAL[Cal.com - Scheduling]
+    A --> SM[SnappyMail - Webmail]
+    A --> JM[Jitsi Meet - Video]
+    A --> VW[Vaultwarden - Passwords]
+    
+    CF[Cloudflare Tunnel] -.-> A
+    
+    B --> G[PostgreSQL]
+    B --> H[Redis Queue]
+    B --> I[Shared Storage]
+    B --> PR[Python Runner]
+    B --> M[Whisper ASR]
+    B --> N[OpenedAI TTS]
+    B --> O[Qdrant/Weaviate - Vectors]
+    B --> P[Neo4j - Knowledge Graph]
+    B --> LR[LightRAG - Graph RAG]
+    B --> SMTP[Mail System]
+    B --> CAL2[Cal.com API]
+    
+    CAL --> G
+    CAL --> H
+    CAL --> SMTP
+    CAL --> JM[Jitsi Integration]
+    
+    JM --> JP[Jitsi Prosody - XMPP]
+    JM --> JF[Jitsi Jicofo - Focus]
+    JM --> JV[Jitsi JVB - WebRTC]
+    JV -.-> |UDP 10000| INET[Internet]
+    
+    SMTP --> MP2[Mailpit SMTP]
+    SMTP -.-> MS[Docker-Mailserver]
+    
+    SM --> MS[Docker-Mailserver IMAP/SMTP]
+    
+    VW --> I[Shared Storage]
+    VW --> SMTP[Mail System]
+    
+    C --> J[Ollama - Local LLMs]
+    D --> J
+    E --> J
+    
+    K[Grafana] --> L[Prometheus]
+    L --> B
+    L --> G
+    L --> H
+```

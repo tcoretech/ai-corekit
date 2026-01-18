@@ -30,7 +30,7 @@ Prometheus ist ein Open-Source-System zur Überwachung und Alarmierung, das Metr
 
 1. Gehe zu **Status** → **Targets**
 2. Prüfe dass Ziele als **UP** (grün) angezeigt werden
-3. Häufige Ziele im AI LaunchKit:
+3. Häufige Ziele im AI CoreKit:
    - `prometheus` - Prometheus selbst
    - `node-exporter` - System-Metriken (falls installiert)
    - `cadvisor` - Container-Metriken (falls installiert)
@@ -880,7 +880,7 @@ docker exec prometheus wget -O- http://cadvisor:8080/metrics
 
 # Häufige Probleme:
 # 1. Target nicht im selben Docker-Netzwerk
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 
 # 2. Target-Port nicht intern exponiert
 docker ps | grep node-exporter
@@ -963,7 +963,7 @@ up{job="prometheus"}   # Sollte Daten zurückgeben
 docker exec n8n curl http://prometheus:9090/api/v1/query?query=up
 
 # 3. Prüfen ob Services im selben Netzwerk sind
-docker network inspect ai-launchkit_default | grep -E "n8n|prometheus"
+docker network inspect ai-corekit_default | grep -E "n8n|prometheus"
 
 # 4. PromQL-Syntax verifizieren
 # Query zuerst in Prometheus UI testen bevor in n8n verwendet

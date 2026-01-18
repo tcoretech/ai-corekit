@@ -1,8 +1,9 @@
 {
   "name": "searxng",
+  "display_name": "SearXNG",
   "category": "Search & Web Data",
-  "description": "SearXNG (Private Metasearch Engine)",
-  "use_cases": "Web search for agents, no tracking, multiple sources",
+  "rank": 100,
+  "description": "Privacy-respecting metasearch engine allowing search queries across multiple sources without tracking, ideal for AI agents.",
   "interface": "searxng.<yourdomain>.com",
   "source": "https://github.com/searxng/searxng",
   "depends_on": []

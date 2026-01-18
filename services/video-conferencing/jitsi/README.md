@@ -325,7 +325,7 @@ grep JICOFO_AUTH_PASSWORD .env
 grep JVB_AUTH_PASSWORD .env
 
 # If any are missing, regenerate secrets:
-cd ai-launchkit
+cd ai-corekit
 sudo bash ./scripts/03_generate_secrets.sh
 
 # Restart all Jitsi services

@@ -1,8 +1,9 @@
 {
   "name": "private-dns",
+  "display_name": "Private DNS",
   "category": "Host Services",
-  "description": "CoreDNS for private DNS resolution",
-  "use_cases": "Internal DNS resolution for mail server and other services",
+  "rank": 100,
+  "description": "CoreDNS instance providing private DNS resolution for internal services and mail server routing.",
   "interface": "N/A",
   "source": "https://github.com/coredns/coredns",
   "depends_on": []

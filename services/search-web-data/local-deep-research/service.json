@@ -1,9 +1,10 @@
 {
   "name": "local-deep-research",
+  "display_name": "Local Deep Research",
   "category": "Search & Web Data",
-  "description": "Local Deep Research (LangChain's iterative research - ~95% accuracy)",
-  "use_cases": "Fact-checking, detailed analysis, research loops with reflection",
-  "interface": "Internal API",
+  "rank": 100,
+  "description": "LangChain-based iterative research agent capable of fact-checking and detailed analysis with high accuracy.",
+  "interface": "internal: http://local-deep-research:2024",
   "source": "https://github.com/langchain-ai/local-deep-researcher",
   "depends_on": [
     "searxng"

@@ -28,7 +28,7 @@ Prometheus is an open-source systems monitoring and alerting toolkit that collec
 
 1. Go to **Status** → **Targets**
 2. Check that targets show as **UP** (green)
-3. Common targets in AI LaunchKit:
+3. Common targets in AI CoreKit:
    - `prometheus` - Prometheus itself
    - `node-exporter` - System metrics (if installed)
    - `cadvisor` - Container metrics (if installed)
@@ -878,7 +878,7 @@ docker exec prometheus wget -O- http://cadvisor:8080/metrics
 
 # Common issues:
 # 1. Target not in same Docker network
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 
 # 2. Target port not exposed internally
 docker ps | grep node-exporter
@@ -961,7 +961,7 @@ up{job="prometheus"}   # Should return data
 docker exec n8n curl http://prometheus:9090/api/v1/query?query=up
 
 # 3. Check if services are on same network
-docker network inspect ai-launchkit_default | grep -E "n8n|prometheus"
+docker network inspect ai-corekit_default | grep -E "n8n|prometheus"
 
 # 4. Verify PromQL syntax
 # Test query in Prometheus UI first before using in n8n

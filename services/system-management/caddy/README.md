@@ -1,6 +1,6 @@
 ### What is Caddy?
 
-Caddy is a modern, powerful web server written in Go that serves as the **automatic HTTPS reverse proxy** for all AI LaunchKit services. It handles SSL certificate provisioning, renewal, and routing - completely automatically with zero manual configuration required.
+Caddy is a modern, powerful web server written in Go that serves as the **automatic HTTPS reverse proxy** for all AI CoreKit services. It handles SSL certificate provisioning, renewal, and routing - completely automatically with zero manual configuration required.
 
 Caddy automatically obtains, renews, and manages SSL/TLS certificates from Let's Encrypt using the ACME protocol, ensuring all your services are secured with HTTPS by default. Unlike traditional web servers like Nginx or Apache, Caddy requires no manual certificate management - it just works.
 
@@ -17,7 +17,7 @@ Caddy automatically obtains, renews, and manages SSL/TLS certificates from Let's
 
 ### Initial Setup
 
-**Caddy in AI LaunchKit is fully automated - no manual setup required!**
+**Caddy in AI CoreKit is fully automated - no manual setup required!**
 
 When you run the installer, Caddy automatically:
 
@@ -40,7 +40,7 @@ cat Caddyfile
 docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 ```
 
-### How Caddy Works in AI LaunchKit
+### How Caddy Works in AI CoreKit
 
 **1. Automatic SSL Certificates:**
 Caddy communicates with Let's Encrypt via the ACME protocol, automatically obtaining certificates during the first request to each domain. Certificates are stored in Docker volumes and renewed automatically before expiration.

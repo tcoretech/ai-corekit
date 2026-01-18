@@ -335,7 +335,7 @@ Automatically add monitors when new services are deployed:
 // Or Schedule Trigger - Runs hourly to sync
 
 // 2. Execute Command Node - Get running Docker services
-Command: launchkit ps --format json
+Command: corekit ps --format json
 
 // 3. Code Node - Parse services and prepare monitor configs
 const services = JSON.parse($input.first().json.stdout);
@@ -681,9 +681,9 @@ docker cp /path/to/backup/kuma.db uptime-kuma:/app/data/kuma.db
 docker restart uptime-kuma
 
 # Or start fresh (WARNING: Deletes all monitors!)
-launchkit down uptime-kuma
-docker volume rm ai-launchkit_uptime-kuma_data
-launchkit up -d uptime-kuma
+corekit down uptime-kuma
+docker volume rm ai-corekit_uptime-kuma_data
+corekit up -d uptime-kuma
 ```
 
 #### Monitors Showing False "Down" Alerts

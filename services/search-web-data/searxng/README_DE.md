@@ -32,7 +32,7 @@ Die JSON-API ist **standardmäßig deaktiviert** und muss aktiviert werden:
 
 ```bash
 # Navigiere zu deiner SearXNG-Konfiguration
-cd ~/ai-launchkit
+cd ~/ai-corekit
 
 # Bearbeite die settings.yml Datei
 nano searxng/settings.yml
@@ -472,7 +472,7 @@ docker exec searxng cat /etc/searxng/settings.yml | grep -A5 "formats:"
 #   - json    # Muss vorhanden sein
 
 # Falls fehlend, zu settings.yml hinzufügen
-nano ~/ai-launchkit/searxng/settings.yml
+nano ~/ai-corekit/searxng/settings.yml
 
 # json zu formats-Abschnitt hinzufügen, speichern und neu starten
 docker compose restart searxng

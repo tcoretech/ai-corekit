@@ -38,7 +38,7 @@ nano homepage_config/settings.yaml
 nano homepage_config/widgets.yaml
 
 # Restart to apply changes
-launchkit restart homepage
+corekit restart homepage
 ```
 
 ### Configuration Files
@@ -89,7 +89,7 @@ launchkit restart homepage
 
 #### settings.yaml Options
 ```yaml
-title: AI LaunchKit Dashboard
+title: AI CoreKit Dashboard
 theme: dark
 color: slate
 layout: grid

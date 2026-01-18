@@ -251,7 +251,7 @@ docker exec n8n curl -H "Authorization: Bearer YOUR_TOKEN" \
 # User Settings → API Tokens → Create New Token
 
 # 4. Check Vikunja container network
-docker network inspect ai-launchkit_default | grep vikunja
+docker network inspect ai-corekit_default | grep vikunja
 ```
 
 **CalDAV sync not working:**

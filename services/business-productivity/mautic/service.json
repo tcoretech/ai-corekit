@@ -1,8 +1,9 @@
 {
   "name": "mautic",
+  "display_name": "Mautic",
   "category": "Business Productivity",
-  "description": "Mautic 6.0 - Marketing Automation Platform (Email, Leads, Campaigns)",
-  "use_cases": "Lead scoring, email campaigns, landing pages, multi-channel marketing, automation workflows",
+  "rank": 100,
+  "description": "Open-source marketing automation platform for lead scoring, email campaigns, landing pages, and multi-channel marketing workflows.",
   "interface": "mautic.<yourdomain>.com",
   "source": "https://github.com/mautic/mautic",
   "depends_on": []

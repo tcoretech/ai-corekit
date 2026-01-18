@@ -1,8 +1,9 @@
 {
   "name": "ssh-tunnel",
+  "display_name": "SSH Tunnel",
   "category": "Host Services",
-  "description": "Cloudflare Tunnel for SSH access",
-  "use_cases": "Secure remote SSH access via Cloudflare Zero Trust",
+  "rank": 100,
+  "description": "Cloudflare Tunnel configuration enabling secure remote SSH access via Cloudflare Zero Trust.",
   "interface": "ssh.<yourdomain>.com",
   "source": "https://github.com/cloudflare/cloudflared",
   "depends_on": []

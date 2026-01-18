@@ -90,17 +90,17 @@ for service in "${SERVICES_TO_REMOVE[@]}"; do
         
         # Strategy:
         # 1. Try to stop/remove using the standard project name logic if possible?
-        # No, 'launchkit rm' implies we want to nuke it.
+        # No, 'corekit rm' implies we want to nuke it.
         # We will use 'docker compose down' with the service's compose file.
         # We need to know the project name it was started with.
         # If we don't know, we might miss it.
         
-        # However, 'launchkit up' uses stack project names.
+        # However, 'corekit up' uses stack project names.
         # If we don't know the stack, we might have trouble finding the running containers.
         
         # Let's try to find running containers for this service to guess the project name.
         # We search for containers with the label com.docker.compose.service matching the service name
-        # OR matching the service name defined in the compose file (which might be different from the launchkit service name)
+        # OR matching the service name defined in the compose file (which might be different from the corekit service name)
         
         # Get the internal docker service name from the compose file
         # Assuming it's the first service defined or we can grep it?

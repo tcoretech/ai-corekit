@@ -231,10 +231,10 @@ Viele Seiten haben Anti-Bot-Schutz. Stealth-Modus und Proxys nutzen.
 
 ```bash
 # Prüfen, ob Crawl4AI-Service läuft
-launchkit ps | grep crawl4ai
+corekit ps | grep crawl4ai
 
 # Crawl4AI-Logs auf Blockierungs-Indikatoren prüfen
-launchkit logs crawl4ai | grep -i "blocked\|captcha\|403\|429"
+corekit logs crawl4ai | grep -i "blocked\|captcha\|403\|429"
 ```
 
 **Lösung:**
@@ -255,7 +255,7 @@ Moderne SPAs benötigen möglicherweise Zeit für JavaScript-Ausführung.
 
 ```bash
 # Crawler-Logs auf Timeout-Fehler prüfen
-launchkit logs crawl4ai --tail 100
+corekit logs crawl4ai --tail 100
 ```
 
 **Lösung:**
@@ -308,7 +308,7 @@ Das gleichzeitige Crawlen vieler Seiten kann ressourcenintensiv sein.
 docker stats crawl4ai
 
 # Verfügbaren Speicher prüfen
-launchkit exec crawl4ai free -h
+corekit exec crawl4ai free -h
 ```
 
 **Lösung:**

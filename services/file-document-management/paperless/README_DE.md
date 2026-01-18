@@ -54,7 +54,7 @@ Der Consume-Ordner (`./shared`) wird auf neue Dokumente überwacht:
 ```bash
 # Dokumente hochladen via:
 # 1. Direktes Kopieren zum Server
-scp rechnung.pdf user@server:~/ai-launchkit/shared/
+scp rechnung.pdf user@server:~/ai-corekit/shared/
 
 # 2. Via Seafile (wenn installiert)
 # Upload zu Seafile → paperless-bridge Ordner

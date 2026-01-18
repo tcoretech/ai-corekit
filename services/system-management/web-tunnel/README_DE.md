@@ -37,7 +37,7 @@ Der leichtgewichtige `cloudflared`-Daemon läuft in deiner Infrastruktur und eta
 - Du Latenz minimieren willst (fügt ~20-50ms über Cloudflare-Routing hinzu)
 - Du sensible Daten verarbeitest, die nicht durch Drittanbieter-Netzwerke gehen dürfen
 
-**Hinweis:** Im AI LaunchKit ist Cloudflare Tunnel **optional**. Das Standard-Setup nutzt Caddy für automatisches HTTPS, was für die meisten Anwendungsfälle perfekt funktioniert. Nutze Cloudflare Tunnel nur wenn du spezifische Anforderungen wie IP-Versteckung oder Zero Trust Authentifizierung benötigst.
+**Hinweis:** Im AI CoreKit ist Cloudflare Tunnel **optional**. Das Standard-Setup nutzt Caddy für automatisches HTTPS, was für die meisten Anwendungsfälle perfekt funktioniert. Nutze Cloudflare Tunnel nur wenn du spezifische Anforderungen wie IP-Versteckung oder Zero Trust Authentifizierung benötigst.
 
 ### Ersteinrichtung
 
@@ -61,7 +61,7 @@ Cloudflare Tunnel erfordert einen Cloudflare-Account und eine von Cloudflare ver
    - Klicke **Next**
 
 3. **Tunnel benennen:**
-   - Gib einen Namen ein (z.B. `ai-launchkit-prod`)
+   - Gib einen Namen ein (z.B. `ai-corekit-prod`)
    - Klicke **Save tunnel**
 
 4. **Tunnel-Token abrufen:**

@@ -591,10 +591,10 @@ docker exec n8n curl http://opennotebook:5055/docs
 **Issue 2: Password Not Working**
 ```bash
 # Check password in .env
-grep OPENNOTEBOOK_PASSWORD ~/ai-launchkit/.env
+grep OPENNOTEBOOK_PASSWORD ~/ai-corekit/.env
 
 # Regenerate password
-cd ~/ai-launchkit
+cd ~/ai-corekit
 bash scripts/03_generate_secrets.sh
 
 # Restart Open Notebook
@@ -630,11 +630,11 @@ docker exec opennotebook curl http://ollama:11434/api/tags
 df -h
 
 # Check Open Notebook storage directory
-du -sh ~/ai-launchkit/opennotebook/
+du -sh ~/ai-corekit/opennotebook/
 
 # Check file permissions
-ls -la ~/ai-launchkit/opennotebook/
-chmod -R 755 ~/ai-launchkit/opennotebook/
+ls -la ~/ai-corekit/opennotebook/
+chmod -R 755 ~/ai-corekit/opennotebook/
 
 # Check Docker volume
 docker volume inspect ${PROJECT_NAME:-localai}_opennotebook_data
@@ -727,7 +727,7 @@ Open Notebook supports 16+ AI providers. Configure in Web UI (Settings → Model
 
 **Storage Configuration:**
 ```bash
-# Data directories (relative to ~/ai-launchkit)
+# Data directories (relative to ~/ai-corekit)
 ./opennotebook/notebook_data/  # Notebooks and content
 ./opennotebook/surreal_data/   # Embedded SurrealDB
 ./shared/                      # Shared with other services

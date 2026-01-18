@@ -1,8 +1,9 @@
 {
   "name": "comfyui",
+  "display_name": "ComfyUI",
   "category": "AI Content Generation",
-  "description": "ComfyUI (Node-based Stable Diffusion UI)",
-  "use_cases": "Image generation, AI art, photo editing, workflows",
+  "rank": 100,
+  "description": "Node-based user interface for Stable Diffusion, enabling complex image generation workflows, AI art creation, and photo editing.",
   "interface": "comfyui.<yourdomain>.com",
   "source": "https://github.com/comfyanonymous/ComfyUI",
   "depends_on": []

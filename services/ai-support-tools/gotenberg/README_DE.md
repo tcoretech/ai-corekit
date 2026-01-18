@@ -19,7 +19,7 @@ Gotenberg ist eine containerisierte, zustandslose API für nahtlose PDF-Konverti
 
 ### Ersteinrichtung
 
-**Gotenberg ist im AI LaunchKit vorkonfiguriert:**
+**Gotenberg ist im AI CoreKit vorkonfiguriert:**
 
 Gotenberg läuft bereits und ist intern unter `http://gotenberg:3000` erreichbar. Du kannst sofort mit der Konvertierung von Dokumenten von n8n oder jedem anderen Dienst beginnen.
 
@@ -559,7 +559,7 @@ services:
 **n8n Verbindung abgelehnt:**
 ```bash
 # Prüfe Docker-Netzwerk
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 # Verifiziere dass gotenberg und n8n im selben Netzwerk sind
 
 # Teste interne Verbindung vom n8n-Container
@@ -581,7 +581,7 @@ Header:
   Gotenberg-Pdf-Metadata-Title: Monthly Sales Report
   Gotenberg-Pdf-Metadata-Subject: Sales Analytics
   Gotenberg-Pdf-Metadata-Keywords: sales, report, analytics
-  Gotenberg-Pdf-Metadata-Creator: AI LaunchKit n8n
+  Gotenberg-Pdf-Metadata-Creator: AI CoreKit n8n
 ```
 
 **Webhook für asynchrone Verarbeitung:**
@@ -664,7 +664,7 @@ Header:
 - Setze Speicherlimits in docker-compose.yml für Produktion
 - Räume temporäre Dateien bei benutzerdefinierter Bereitstellung auf (nicht nötig mit Docker)
 
-### Integration mit AI LaunchKit Services
+### Integration mit AI CoreKit Services
 
 **Gotenberg + n8n:**
 - Automatisiere Dokumentengenerierungs-Workflows

@@ -23,7 +23,7 @@ echo
 echo "Backup Sources:"
 echo "  - Docker Volumes: /data/docker-volumes (read-only)"
 echo "  - Shared Directory: /data/shared (read-only)"
-echo "  - AI LaunchKit Config: /data/ai-launchkit (read-only)"
+echo "  - AI CoreKit Config: /data/ai-corekit (read-only)"
 echo
 echo "First Steps:"
 echo "  1. Access https://${KOPIA_HOSTNAME:-<hostname_not_set>}"

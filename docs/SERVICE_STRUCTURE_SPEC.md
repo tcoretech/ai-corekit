@@ -1,7 +1,7 @@
 # Service Structure Specification
 
 ## Overview
-This document outlines the standardized folder structure and principles for all services within the AI LaunchKit. Adhering to this structure ensures consistency, simplifies automation, and enforces security best practices.
+This document outlines the standardized folder structure and principles for all services within the AI CoreKit. Adhering to this structure ensures consistency, simplifies automation, and enforces security best practices.
 
 ## Folder Structure
 Each service resides in `services/<category>/<service-name>/`.

@@ -25,7 +25,7 @@ load_env() {
     for key in "${!ALL_ENV_VARS[@]}"; do
         export "$key"="${ALL_ENV_VARS[$key]}"
     done
-    export LAUNCHKIT_ENV_LOADED=true
+    export COREKIT_ENV_LOADED=true
     if [ -z "$PROJECT_ROOT" ] && [ -n "$SAVED_PROJECT_ROOT" ]; then
         PROJECT_ROOT="$SAVED_PROJECT_ROOT"
     fi
@@ -64,7 +64,7 @@ done
 
 # If no services specified, show usage
 if [ ${#SERVICES_TO_BUILD[@]} -eq 0 ]; then
-    log_error "No services specified. Usage: launchkit build <service>... or launchkit build -s <stack>"
+    log_error "No services specified. Usage: corekit build <service>... or corekit build -s <stack>"
     exit 1
 fi
 

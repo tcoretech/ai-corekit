@@ -18,7 +18,7 @@ Qdrant (pronounced "quadrant") is a high-performance, open-source vector databas
 
 **Access Qdrant:**
 
-Qdrant is pre-installed and running on your AI LaunchKit instance.
+Qdrant is pre-installed and running on your AI CoreKit instance.
 
 1. **Web UI:** `https://qdrant.yourdomain.com`
    - View collections, browse points, inspect vectors
@@ -511,7 +511,7 @@ curl -X PUT http://localhost:6333/collections/documents/snapshots/upload \
   --data-binary @snapshot.snapshot
 ```
 
-### Integration with Other AI LaunchKit Services
+### Integration with Other AI CoreKit Services
 
 **Qdrant + RAGApp:**
 - RAGApp uses Qdrant as its default vector store

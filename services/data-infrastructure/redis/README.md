@@ -1,6 +1,6 @@
 ### What is Redis?
 
-Redis (REmote DIctionary Server) is an open-source, in-memory data structure store used as a database, cache, message broker, and streaming engine. Unlike traditional databases that store data on disk, Redis keeps everything in RAM, enabling sub-millisecond response times and handling millions of requests per second. In AI LaunchKit, Redis powers caching layers, session storage, job queues, and real-time features across multiple services.
+Redis (REmote DIctionary Server) is an open-source, in-memory data structure store used as a database, cache, message broker, and streaming engine. Unlike traditional databases that store data on disk, Redis keeps everything in RAM, enabling sub-millisecond response times and handling millions of requests per second. In AI CoreKit, Redis powers caching layers, session storage, job queues, and real-time features across multiple services.
 
 Redis supports rich data types including strings, hashes, lists, sets, sorted sets, bitmaps, and streams. With atomic operations and Lua scripting, Redis enables complex workflows while maintaining blazing-fast performance.
 
@@ -19,7 +19,7 @@ Redis supports rich data types including strings, hashes, lists, sets, sorted se
 
 ### Initial Setup
 
-Redis is automatically installed and configured during AI LaunchKit installation.
+Redis is automatically installed and configured during AI CoreKit installation.
 
 **Access Redis:**
 

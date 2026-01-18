@@ -1,9 +1,10 @@
 {
   "name": "caddy",
+  "display_name": "Caddy Reverse Proxy",
   "category": "System Management",
-  "description": "Caddy (Reverse Proxy)",
-  "use_cases": "Reverse proxy, SSL termination",
-  "interface": "Internal Port 80/443",
+  "rank": 10,
+  "description": "Advanced Reverse Proxy and Web Server providing automatic SSL termination and routing for all hosted services.",
+  "interface": "internal: http://caddy:80",
   "source": "https://caddyserver.com/",
   "depends_on": []
 }

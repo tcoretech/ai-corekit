@@ -2,9 +2,9 @@
 
 ### Was ist Vaultwarden?
 
-Vaultwarden ist ein leichtgewichtiger, selbst gehosteter Passwort-Manager, der zu 100% kompatibel mit Bitwarden-Clients ist. In Rust geschrieben, bietet er die gleichen Funktionen wie der offizielle Bitwarden-Server, jedoch mit deutlich geringeren Ressourcenanforderungen. Perfekt zur sicheren Verwaltung aller Zugangsdaten, API-Schlüssel und Team-Passwörter deiner AI LaunchKit-Services.
+Vaultwarden ist ein leichtgewichtiger, selbst gehosteter Passwort-Manager, der zu 100% kompatibel mit Bitwarden-Clients ist. In Rust geschrieben, bietet er die gleichen Funktionen wie der offizielle Bitwarden-Server, jedoch mit deutlich geringeren Ressourcenanforderungen. Perfekt zur sicheren Verwaltung aller Zugangsdaten, API-Schlüssel und Team-Passwörter deiner AI CoreKit-Services.
 
-Mit über 40 Services im AI LaunchKit, die eindeutige Passwörter und API-Schlüssel generieren, wird Credential-Management essentiell. Vaultwarden bietet einen zentralen, verschlüsselten Tresor, der über Browser-Erweiterungen, Mobile Apps und Desktop-Clients zugänglich ist.
+Mit über 40 Services im AI CoreKit, die eindeutige Passwörter und API-Schlüssel generieren, wird Credential-Management essentiell. Vaultwarden bietet einen zentralen, verschlüsselten Tresor, der über Browser-Erweiterungen, Mobile Apps und Desktop-Clients zugänglich ist.
 
 ### Funktionen
 
@@ -46,7 +46,7 @@ Mit über 40 Services im AI LaunchKit, die eindeutige Passwörter und API-Schlü
 
 ### Automatischer Zugangsdaten-Import
 
-AI LaunchKit generiert automatisch eine Bitwarden-kompatible JSON-Datei mit allen Service-Zugangsdaten:
+AI CoreKit generiert automatisch eine Bitwarden-kompatible JSON-Datei mit allen Service-Zugangsdaten:
 
 ```bash
 # Zugangsdaten generieren und herunterladen (nach Installation)
@@ -68,7 +68,7 @@ sudo bash ./scripts/download_credentials.sh
 5. Wähle die heruntergeladene Datei
 6. Klicke auf **Daten importieren**
 
-Alle Zugangsdaten werden in einem Ordner "AI LaunchKit Services" organisiert mit:
+Alle Zugangsdaten werden in einem Ordner "AI CoreKit Services" organisiert mit:
 - Service-URLs
 - Benutzernamen/E-Mails
 - Passwörtern
@@ -111,12 +111,12 @@ Alle Zugangsdaten werden in einem Ordner "AI LaunchKit Services" organisiert mit
 5. Klicke auf **"Speichern"**
 6. Melde dich mit deinen Zugangsdaten an
 
-### AI LaunchKit Zugangsdaten organisieren
+### AI CoreKit Zugangsdaten organisieren
 
 **Empfohlene Ordnerstruktur:**
 
 ```
-📁 AI LaunchKit Services (Hauptordner aus Import)
+📁 AI CoreKit Services (Hauptordner aus Import)
 ├── 📁 Kern-Services
 │   ├── 🔑 n8n Admin (https://n8n.deinedomain.com)
 │   ├── 🔑 Supabase Dashboard

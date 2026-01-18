@@ -1,0 +1,97 @@
+[
+  {
+    "name": "Workflow Automation",
+    "icon": "🔧",
+    "description": "Orchestrate processes and integrate services"
+  },
+  {
+    "name": "User Interfaces",
+    "icon": "🎯",
+    "description": "Front-end interfaces and dashboards"
+  },
+  {
+    "name": "Mail System",
+    "icon": "📧",
+    "description": "Email sending, receiving, and management"
+  },
+  {
+    "name": "Video Conferencing",
+    "icon": "📹",
+    "description": "Real-time video and audio communication"
+  },
+  {
+    "name": "File & Document Management",
+    "icon": "📁",
+    "description": "Storage, organization, and document processing"
+  },
+  {
+    "name": "Business Productivity",
+    "icon": "💼",
+    "description": "Tools for business operations and management"
+  },
+  {
+    "name": "AI Content Generation",
+    "icon": "🎨",
+    "description": "Generate images, text, and other media"
+  },
+  {
+    "name": "AI-Powered Development",
+    "icon": "💻",
+    "description": "Coding assistance and development tools"
+  },
+  {
+    "name": "AI Agents",
+    "icon": "🤖",
+    "description": "Autonomous agents and assistants"
+  },
+  {
+    "name": "RAG Systems",
+    "icon": "📚",
+    "description": "Retrieval-Augmented Generation systems"
+  },
+  {
+    "name": "Speech, Language & Text",
+    "icon": "🎙️",
+    "description": "Speech recognition and text processing"
+  },
+  {
+    "name": "Search & Web Data",
+    "icon": "🔍",
+    "description": "Search engines and data scraping"
+  },
+  {
+    "name": "Knowledge Graphs",
+    "icon": "🧠",
+    "description": "Structure and query complex data relationships"
+  },
+  {
+    "name": "Data Infrastructure",
+    "icon": "🗄️",
+    "description": "Databases and data management systems"
+  },
+  {
+    "name": "System Management",
+    "icon": "⚙️",
+    "description": "Monitoring, logging, and infrastructure tools"
+  },
+  {
+    "name": "AI Support Tools",
+    "icon": "🧰",
+    "description": "Utilities and supporting services for AI"
+  },
+  {
+    "name": "AI Security & Compliance",
+    "icon": "🛡️",
+    "description": "Security auditing and compliance tools"
+  },
+  {
+    "name": "Python",
+    "icon": "🐍",
+    "description": "Python environments and script runners"
+  },
+  {
+    "name": "Host Services",
+    "icon": "🖥️",
+    "description": "Core host-level services"
+  }
+]

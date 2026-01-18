@@ -305,7 +305,7 @@ URL: http://letta:8283/v1/blocks
 Body:
 {
   "label": "project_knowledge",
-  "value": "Projekt: AI LaunchKit\nStatus: Aktiv\nTeammitglieder: Alice, Bob\nSchlüsselentscheidungen: ..."
+  "value": "Projekt: AI CoreKit\nStatus: Aktiv\nTeammitglieder: Alice, Bob\nSchlüsselentscheidungen: ..."
 }
 
 // Antwort: { "id": "block-shared-123" }

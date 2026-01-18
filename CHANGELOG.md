@@ -1,0 +1,729 @@
+# Changelog
+
+All notable changes to AI CoreKit will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2026-01-18
+
+### Added
+-  changelog and version handling
+-  Update service metadata and add document generation
+-  add CI/CD workflow to auto-generate README services section
+-  enhance service healthcheck and auto-deployment example service
+-  add no-cache and force-recreate options to build and up scripts
+-  added a down --prune comand which is performed on update and up
+-  added reset git guard during update
+-  disable, run to the cli
+-  add --no-reset option to update script for preserving local changes
+-  private dns and mailgun ingest
+-  Complete paperless-ai suite with all fixes and documentation
+-  Add paperless-ai suite (paperless-gpt + paperless-ai) for enhanced document AI
+- mautic): Add database credentials and email config to final report
+-  Add integrated download to Vaultwarden JSON export
+-  Add credentials export script with download functionality
+-  Complete Airbyte integration with Metabase connectivity
+-  Add Airbyte data integration platform
+-  Add Uptime Kuma integration & update landing page
+-  Add Uptime Kuma monitoring service
+-  Add Webhook Testing Suite (Webhook Tester + Hoppscotch)
+- perplexica): migrate to official Docker image
+-  Add Open Notebook - AI Knowledge Management Platform
+-  Add Seafile and Paperless-ngx document management services
+-  Complete native Python task runner implementation
+-  Auto-detect n8n runners version from Docker Hub
+-  Add native Python task runner support for n8n
+-  Add GPT Researcher and Local Deep Research integration
+-  Add GPT Researcher & Local Deep Research
+-  Add GPT Researcher & Local Deep Research tools
+-  Add Browser Automation Suite & n8n-MCP
+-  add browser automation suite and n8n-MCP
+-  Add Vexa support to update.sh and open port 8056 in firewall
+-  Add Vexa auto-setup to update.sh script
+-  Add Vexa with bridge network to fix Postgres auth
+-  Clean Vexa integration with Postgres 17 and API-based user management
+-  Add Flair NER for German PII detection to AI Security Suite
+-  Add AI Security Suite (LLM Guard + Microsoft Presidio)
+-  expose n8n service for localhost on port 5678
+-  Add dynamic landing page for main domain
+-  Add SSH tunnel service through cloudflare for host connectivity and fully closed ports
+-  Add Chatterbox TTS with automatic frontend setup
+-  Add TTS Chatterbox and Evolution API integration
+-  Add Scriberr AI audio transcription service with speaker diarization
+-  Add Mautic 6.0 marketing automation platform
+-  Add Twenty CRM and EspoCRM as optional services
+-  Add Stirling-PDF service with 100+ PDF tools
+-  Add OCR Bundle (Tesseract + EasyOCR) for text extraction
+-  Add NocoDB - Open-source Airtable alternative
+-  Add Metabase Business Intelligence platform
+-  Add Formbricks survey platform with dedicated PostgreSQL
+-  Add Formbricks survey platform integration
+-  Add Invoice Ninja professional invoicing platform
+-  Add Kimai time tracking service
+-  Add Kopia backup service with Nextcloud WebDAV and Mailpit Basic Auth
+-  Add user-friendly download script for Vaultwarden credentials
+-  Add Vaultwarden with automated credential export
+-  Add Vaultwarden self-hosted password manager
+-  Add Jitsi Meet video conferencing with automatic configuration
+-  Add Jitsi Meet video conferencing service
+-  Add SnappyMail webmail with auto-configuration
+-  Add Snappymail to AILaunchkit
+-  Configure Cal.com and Baserow for smtp-relay mail delivery
+-  Add Docker-Mailserver as production mail option
+-  Add Docker-Mailserver as production mail option
+-  Add optional Google Calendar setup to Cal.com wizard
+-  Add working Google Calendar integration for Cal.com
+-  Add documentation reference to Cal.com final report
+-  Add Cal.com build step to update script
+-  Add Cal.com scheduling platform integration
+-  Add Cal.com email variables to force_update_email_variables()
+-  Add dual mail system with Mailpit and optional Postal
+-  Add Leantime project management with automatic MySQL 8.4
+-  Add Vikunja task management with PostgreSQL init
+-  Add Vikunja task management service
+-  Add Baserow (Airtable Alternative) - step 4 of 5 complete
+-  Add automatic Odoo schema initialization
+-  Add Odoo 18 ERP/CRM integration
+-  Add Odoo 18 ERP/CRM with AI features
+-  Add Perplexica AI-powered search engine integration
+-  Add LightRAG graph-based RAG service with authentication
+-  Add automatic Ollama connection to Open WebUI
+-  Add Basic Auth protection for Bolt.diy service
+-  Add LibreTranslate self-hosted translation service
+-  Add Anthropic and Groq API key configuration
+-  Complete Speech auth implementation in scripts
+-  Add Basic Auth to Speech services for security
+-  Replace Wyoming-Piper with OpenedAI-Speech for TTS
+-  Add Speech Stack (Whisper ASR + Piper TTS) - CPU optimized
+-  Add OpenUI experimental AI UI generator
+-  Add enhanced media processing capabilities
+-  Complete bolt.diy integration with dynamic hostname support
+-  Add bolt.diy integration with dynamic hostname configuration
+-  Add OpenHands to final installation report
+-  Add OPENHANDS_HOSTNAME to environment template
+-  Add OpenHands AI coding assistant integration
+-  Add OpenHands AI autonomous developer service
+
+### Fixed
+-  minor tweaks to readme
+-  remove redundant documentation reference from README and script
+-  enhance README generation output for services section
+-  update project root path in service generation scripts
+-  minor readme tweaks
+-  source link handling
+-  heading links
+-  launchkit restart working
+-  entrypoint.sh and build
+-  calcom direct from image
+-  path and directory management
+-  git behaviours
+-  loading environment optimisations
+- vexa): add SQL type mismatch patch for transcription-collector
+-  Use docker image label for n8n runners version detection
+-  mail ingest logging and fail2ban whitelist
+-  supabase pull conflicts
+-  public ports
+-  dns wizard
+-  dns core file
+-  double env regen
+-  base domain handling
+-  dns asking
+-  dns env substitution
+-  dns env detection
+-  dns env detection
+-  dns corefile creation
+-  dns env handling
+-  autostart dns
+-  tld handling on dns
+-  tld with dns service for .local
+-  wizard fix
+-  wizard fixes and path tweaks
+-  Correct paperless service dependencies
+-  Correct Airbyte final report and networking
+-  Airbyte networking and system requirements
+-  Use port 8001 for Airbyte to avoid Supabase conflicts
+-  Use port 5433 for airbyte_destination_db to avoid conflicts
+-  double Airbyte hostname in .env.example
+-  Use Docker bridge IP and expose PostgreSQL for Kind cluster
+-  Use host IP instead of host.docker.internal for Kind compatibility
+-  Remove --host flag from abctl install (not needed for localhost)
+-  Remove networks definition from airbyte_postgres (use default)
+-  Complete webhook testing suite integration
+-  Add Hoppscotch database migration service
+-  Webhook-Hash Generation
+-  Pin Cal.com to v5.8.2 to avoid Prisma 6.16.0 build timeout
+-  Update landing page and improve Seafile workaround
+-  Add Seafile HTTPS/CSRF workaround in install and update scripts
+-  Add Seafile HTTPS/CSRF workaround for reverse proxy setup
+-  Use consistent SEAFILE_ADMIN_EMAIL and PAPERLESS_ADMIN_EMAIL variables
+-  Wrong docker.compose.yml syntax
+-  Remove deploy.replicas from n8n-runner (conflicts with container_name)
+-  Add complete n8n-task-runners.json config
+-  docker-compose runner section
+-  docker-compose.yml syntax
+-  Use official n8n image for task runner
+-  n8n-MCP build configuration
+-  Preserve Vexa API token on updates to maintain workflow compatibility
+-  Force Playwright Docker image to v1.56.0 to match runtime
+-  Add jq to system preparation for Vexa init script
+- vexa): Increase wait times and fix password setup order
+- vexa): Move password reset after service restart
+- vexa): Add postgres password initialization workaround
+- vexa): Use make migrate-or-init for smart DB initialization
+-  Run alembic in container instead of make migrate-or-init
+-  Complete Vexa installation automation
+-  Use init script for pg_hba.conf instead of mount
+-  Use scram-sha-256 with mounted pg_hba.conf and correct WHISPER_LIVE_URL
+-  Correct sed pattern for postgres command insertion
+-  Postgres md5 from first boot via command override
+-  Configure Postgres AFTER make up to prevent override
+-  Apply password_encryption BEFORE changing password
+-  Start Postgres first, configure md5 BEFORE other services
+-  Configure Postgres md5 BEFORE migrations
+-  Move PostgreSQL md5 setup to after container start
+-  Correct pg_hba.conf mount location in docker-compose.yml
+-  Vexa PostgreSQL md5 authentication setup
+-  Pin PostgreSQL versions to prevent v18 breaking changes
+-  Pin PostgreSQL to version 17 to prevent v18 breaking changes
+-  disable TLS on Neo4j to allow Cloudflare Tunnel to handle encryption
+-  enhance Neo4j configuration for Cloudflare Tunnel and TLS support
+-  twenty crm db name from default to configured name
+-  update SSL certificate paths for mailserver configuration
+-  simplify mailserver certificate generation logic
+-  check if SSH tunnel is already running before starting to prevent cut off if changed
+-  update cloudflared tunnel health checks
+-  ssh tunnel prevent session termination affecting restart
+-  update mail server hostnames and certificate handling for mail receipt
+-  use OOM score resource protection instead of flag
+-  enable ssh tunnel management error logging
+-  working directory for SSH tunnel management
+-  Enable mail server receipt through update to mailserver SMTP and IMAP config
+-  Correct description for Cloudflare SSH Tunnel in service selection wizard
+-  Actually copy landing page template to website directory
+-  Replace echo_info with log_info in generate_secrets script
+-  Remove inline comments from Chatterbox env vars
+-  Evolution API integration working correctly
+-  Ensure Chatterbox and Evolution API start after build
+-  Add Yarn 3 compatibility patch for Cal.com Docker build
+-  Remove Basic Auth from Scriberr - uses own authentication
+-  Remove cron container, optimize worker for Mautic 6
+-  Adjust EspoCRM healthcheck to non-auth endpoint
+-  Simplify Stirling-PDF setup - uses fixed initial credentials
+-  Add missing Stirling-PDF service block to docker-compose.yml
+-  Add quotes to Stirling-PDF variables with spaces
+-  Add nocodb-init container to create database automatically
+-  Correct JSON formatting in Vaultwarden credential export
+-  Correct JSON formatting in Vaultwarden credential export
+-  Simplify Metabase configuration for compatibility
+-  Complete DNS and startup order fixes for Invoice Ninja
+-  Use latest tag for Metabase Docker image
+-  Make Formbricks SMTP config work with both Mailpit and Docker-Mailserver
+-  Make Formbricks SMTP config work with both Mailpit and Docker-Mailserver
+-  Replace invalid is_profile_active with COMPOSE_PROFILES check
+-  Finalize Invoice Ninja integration with nginx container
+-  Increase Kimai PHP memory limit for production
+-  Remove kopia_tmp volume - not needed for standard operations
+-  Correct is_profile_active function to use comma-separated profiles
+-  Ensure DOMAIN variable is written to .env file
+-  Add smtp-relay support for Cal.com to handle Docker-internal mail delivery
+-  Add DOMAIN variable for backward compatibility with Cal.com
+-  SMTP relay for Baserow
+-  Add SMTP relay for Baserow email functionality
+-  Remove broken Postal mail server implementation
+-  Remove basic auth from Postal web interface
+-  Use Postal v2 config format for proper secret_key handling
+-  Complete working Postal mail server setup
+-  Cal.com domain extraction and DOMAIN variable generation
+-  Force EMAIL_* variables to always mirror SMTP_* settings
+-  Add EMAIL_* variable generation for Baserow compatibility
+-  Dynamic wizard height with scrolling for many services
+-  Add Vikunja to Caddyfile for HTTPS access
+-  Complete Baserow database initialization and Docker networking
+-  Improve Odoo initialization with database setup
+-  Ensure Dify database initialization works correctly
+-  Update Perplexica to single container architecture
+-  Add automatic Perplexica repository setup during installation
+-  Complete LightRAG block with proper fi statement in final report script
+-  LightRAG Ollama integration
+-  Remove unnecessary Basic Auth for LightRAG
+-  Add missing LIGHTRAG environment variables to Caddy
+-  Add missing apikey case in secret generation
+-  Correct indentation for lightrag service in docker-compose.yml
+-  Add missing plain password variables for Speech Stack
+-  Resolve Caddy crashes with unselected services
+-  Dynamic height and increased width for service selection wizard
+-  Dynamic height for service selection wizard
+-  Add service restart workarounds to install and update scripts
+-  Add workaround to ensure LibreTranslate starts properly after installation
+-  Remove broken command from LibreTranslate service
+-  Remove network reference from libretranslate service
+-  Add workaround to ensure Supabase DB container starts
+-  Add warning about existing Supabase data and ensure DB starts
+-  Ensure Supabase DB container starts properly
+-  Complete Supabase auth fix - map all required credentials
+-  Restore executable permissions for start_services.py
+-  Supabase authentication issue - properly set database passwords
+-  bolt.diy vite config patch - correct sed pattern for defineConfig
+-  bolt.diy patch only first occurrence and remove hardcoded domain
+-  Address testing issues for bolt.diy and Speech auth
+-  Make bolt.diy vite config patch idempotent
+-  Clean up SearXNG cap_drop formatting issue
+-  Remove unnecessary port exposures for security
+-  Complete Piper to OpenedAI-Speech migration
+-  Remove OpenHands service (security issues)
+-  Change Whisper port from 8000 to 8001 to avoid conflicts
+-  Complete OpenUI integration fixes
+-  Create media directories with correct permissions before Docker start
+-  Correct media directory permissions for node user
+- start_services): improve SearXNG container detection and startup clarity
+-  clean up startup process by including Supabase compose and improving container handling
+
+### Documentation
+-  update readme with cli details and offload documentation to /docs
+-  rename from AI LaunchKit to AI CoreKit
+-  Add comprehensive Airbyte documentation to README_Services
+-  Update Vexa documentation with correct endpoints and usage
+-  Add PostgreSQL v18 pinning instructions
+-  Add instructions for PostgreSQL 18 users
+-  Update PostgreSQL warning to reflect fixed issue
+-  Add comprehensive Cal.com setup and integration guide
+-  Add clarification for automatic EMAIL_* variable synchronization
+-  Add LightRAG OpenAI configuration guide for large document processing
+-  Add minimal documentation for new services (bolt.diy, Speech Stack)
+-  Complete rebrand to AI LaunchKit with modernized README
+-  Add comprehensive README with AI tools documentation and LinkedIn profile
+-  Add Docker Desktop requirement warning for OpenHands
+
+### Maintenance
+- release): bump version to 1.0.0
+-  Add website/ to .gitignore
+-  Add Jitsi runtime directories to .gitignore
+-  Remove unused get-docker.sh script
+
+### Other Changes
+- Docs: Update contributor credits and maintainer references
+- refactor: n8n import now via cli instead of as a run-once service
+- refactor: logs capability and general fixes across all services
+- refactor: tweaks to service launching and prepare / secrets management
+- refactor: tweaks to compose paths
+- refactor: remove hardcoded localai
+- refactor: lib clarity and removing legacy
+- refactor: german readme into service locations
+- refactor: local service definition
+- refactor: Service secrets generation scripts and preparation scripts
+- refactor: initial services carve up
+- Remove specific UFW allow rules
+- Fix postgres volume mount for PG18 images
+- mailgun-ingest (#1)
+- Document Dex config file directory issue and solution
+- Update README_Services.md (4 Tools)
+- Fix Homepage permissions - set ownership to uid 1000
+- Fix Outline authentication with Dex - working solution
+- Fix Homepage service generation script
+- Add Homepage dashboard with auto-config, improve Outline auth with Dex
+- Add Homepage, Outline (with Dex auth), Gitea and DocuSeal services
+- Add Homepage, Outline, Gitea and DocuSeal services
+- Document Kopia backup solution in README
+- Add Kopia to the list of tools in README
+- Update links for Skyvern and Browserless in README
+- Revise setup instructions for paperless services
+- Add note about intermittent bug in abctl installation
+- Document installation failure workaround for airbyte-abctl
+- refactor: Simplify Airbyte to use built-in PostgreSQL
+- Enhance README with Webhook Testing Suite details
+- Change section title and add Open Notebook entry
+- Update footer version and add new service (Open Notebook)
+- Add opennotebook/ to .gitignore
+- Fix Open Notebook: Add API_URL and Caddy routing for /api/*
+- Fix badge text in README for Made in Europe
+- Enhance README with additional badges
+- Enhance README with privacy-first features
+- Enhance README_GERMAN.md with file management tools
+- Update links for Seafile and Paperless-ngx
+- Remove example workflows and configuration options
+- Add link to German version of README
+- Update README_GERMAN.md
+- README_GERMAN.md: Finalized
+- Add LinkedIn link to community resources
+- Added a german README (not finished)
+- Enhance tips for Docker Hub rate limit issues
+- Update support link in README.md
+- Update README links for installation and documentation
+- Add tips for Docker Hub rate limit errors
+- Update README with services section and resources
+- Outsourced Services to new README_Services.md
+- Outsourced Services section to README_Services.md
+- Rename README_NEW.md to README.md
+- Delete README.md
+- New README: Finalized document
+- New README: Fix error
+- New README: Updated support section
+- New README: Added new services + support section
+- New README: Added services
+- New README: Added services
+- New README: Added services
+- New README: Added services
+- New README: Added new services
+- Update README_NEW.md
+- New README: Added services
+- New README: Added services
+- New README: Added services
+- New README: Added services
+- New README: Added services
+- New README: Added services
+- New README: Added services
+- New README: Added services
+- New README: Added services
+- New README: Added sections
+- New README: Added different sections
+- New README: Added n8n-mcp section
+- New README: Added n8n Section
+- New README: Updated Mail services section
+- New README: Added Mail section
+- New README: Added Update Section
+- New README: Added Detailed Installation section
+- New README: Added Quick Start
+- Restructure README - Part 1
+- Updated README.md
+- README.md: Added Vexa troubleshooting guide
+- Update vexa-troubleshooting-workarounds.md
+- Create vexa-troubleshooting-workarounds.md
+- Add automatic database initialization for Vexa
+- Add Vexa integration with external network bridge
+- Add Vexa meeting transcription service
+- README: Updated AI Security & Compliance Section
+- Update README.md
+- Fix LiveKit server configuration - remove duplicate sfu, use entrypoint.sh
+- Document CLI helper script for LiveKit token generation
+- Add LiveKit token generator helper script
+- Create entrypoint.sh
+- Add LiveKit voice agent integration
+- Fixed WebRTC problems
+- Fix LiveKit server authentication with dynamic config generation
+- Add LiveKit Agents framework for voice AI
+- Add LiveKit real-time communication service
+- Fix: Perplexica database persistence using named volume
+- CRITICAL: Add PostgreSQL 18 breaking change warning and emergency fix
+- 🚨 Add emergency warning for PostgreSQL 18 incompatibility
+- refactor: Implement seperate SSH tunnel management stack to prevent session closure during update scripts
+- Removed Evolution API entries - not working in productional environment
+- Removed Evolution API - not working in productional environment
+- Change to v1.7.4 for functional qr code
+- Update README.md
+- Update README.md
+- Fixed NocoDB Database Connection Error
+- Update build_calcom.sh
+- Update download_credentials.sh
+- Update download_credentials.sh
+- Update download_credentials.sh
+- Update download_credentials.sh
+- Update 08_generate_vaultwarden_json.sh
+- Delete scripts/setup_postal.sh
+- Added Vaultwarten Automatic Credential Import Possibility
+- Update README.md
+- Changed prerequisites
+- Update README.md
+- Github Links for Leantime/Vikunja
+- Update README.md
+- Update README.md
+- Update README.md
+- Update README.md
+- Update .env.example
+- Update apply_update.sh
+- Update README.md
+- Update README.md
+- Create ADDING_NEW_SERVICE.md
+- Create CLAUDE.md
+- Update .env.example
+- Update docker-compose.yml
+- Update README.md
+- Refactor Cloudflare Tunnel integration in scripts
+- Add 'postiz' profile to docker-compose.yml for service categorization
+- Update README.md
+- Update README.md
+- Update README.md
+- Update README.md
+- Delete testing-report.md
+- Delete README.ai-launchkit.bak
+- Update README.md
+- test: Add comprehensive testing report
+- refactor: bolt.diy Dockerfile to eliminate runtime modifications
+- Update 06_final_report.sh
+- Update README.md
+- Update README.md
+- Update README.md
+- Update Caddyfile
+- Update Cloudflare Tunnel instructions and README for clarity
+- Refactor Cloudflare Tunnel configuration and update prompts
+- cloudflared should be run with --no-autoupdate to prevent in-container self-updates that can break the running service
+- resolve conflicts
+- Removed a few incorrect comments
+- Remove N8N_BINARY_DATA_TTL environment variable from docker-compose.yml to simplify configuration and enhance clarity.
+- Remove POSTIZ_USERNAME from secret generation script to streamline configuration following the removal of Postiz service authentication variables.
+- Remove Postiz authentication variables and related configurations
+- Update service dependencies in docker-compose.yml
+- Refactor Postiz service configuration in docker-compose.yml
+- Update Postiz environment variables for registration control
+- Add additional environment variables for Postiz service in docker-compose.yml
+- Add Postiz configuration and environment variables
+- Add environment variables for Postiz service in docker-compose.yml
+- Increase the number of options in the whiptail checklist for the service selection wizard to enhance user experience
+- Add health check dependencies for Postiz service in docker-compose.yml
+- Add Postiz service integration and configuration
+- Add troubleshooting section to README.md for site loading issues
+- Add N8N_PAYLOAD_SIZE_MAX environment variable to n8n service in docker-compose.yml
+- Update n8n service configuration in docker-compose.yml
+- Increase whiptail checklist options in service selection wizard for enhanced user experience
+- Add Python Runner service and documentation
+- Add RAGApp documentation and internal access details
+- Add RAGApp integration into configuration
+- Adding cloudflare instructions + editing readme to remove them
+- Update docker-compose.yml
+- Update 04_wizard.sh
+- Adding cloudflare tunnel mod
+- Add n8n-installer Developer Documentation
+- Add automated n8n workflow for GitHub backup with deletion tracking
+- Update DIFY_EXPOSE_NGINX_SSL_PORT in .env.example to 9443 for consistency with new configuration
+- Increase whiptail checklist dimensions in service selection wizard for improved usability
+- Add ComfyUI credentials and integration into configuration
+- Update ComfyUI CLI arguments in docker-compose.yml to include CPU support
+- Add ComfyUI as an optional service in the installer
+- Add Portainer documentation to README
+- Remove Portainer credentials from configuration files and scripts
+- Add Portainer integration as an optional service
+- Update reverse proxy configuration for Dify in Caddyfile
+- Refactor Dify environment setup and configuration
+- Update Dify environment configuration to support new NGINX exposure ports
+- Enhance Dify environment preparation in start_services.py
+- Update Dify configuration in .env.example and Caddyfile
+- Reduce Dify initialization wait time from 15 to 10 seconds in start_services.py. Update apply_update.sh to include checks for Dify's Docker Compose file, ensuring it is pulled if available.
+- Update Dify configuration in .env.example and Caddyfile
+- Refactor Dify environment preparation in start_services.py
+- Enhance Dify integration in n8n-installer project
+- Update .gitignore to include Dify directory for exclusion from version control
+- Add Dify AI Platform integration to n8n-installer project
+- Remove Gotenberg external access and update documentation for internal use only
+- Add Gotenberg service integration to n8n-installer project
+- Add initial documentation files for n8n-installer project
+- Add optimized isolation rules and visual maps for Memory Bank system
+- Enhance docker_cleanup.sh with logging and error handling
+- Add Docker cleanup script and update README
+- Add system package update step in update.sh script
+- Refactor start_local_ai function to build and start services separately
+- Update start_services.py to rebuild local AI services on startup
+- Update docker-compose.yml to enable image pulling for N8N service
+- Refactor Dockerfile to use Alpine package manager for ffmpeg installation
+- Update docker-compose.yml to build N8N from local context and add Dockerfile for N8N service
+- Remove outdated documentation for project structure and business logic from ai-docs
+- Update docker-compose.yml to enable N8N_TRUST_PROXY and adjust WEBHOOK_URL format
+- Add functionality to retrieve all profiles from docker-compose file
+- Enhance stop_existing_containers function to conditionally include Supabase Docker Compose file
+- Add Langsmith configuration to .env.example and docker-compose.yml
+- Update SearXNG configuration in Caddyfile
+- Refactor Caddyfile for SearXNG configuration
+- Update README.md
+- Update README.md
+- Remove Logflare API key generation from secrets script as tokens are not in use
+- Update .env.example to indicate Logflare tokens are not in use
+- Update .env.example
+- Add Kids Story Building System workflow
+- Add new workflow for generating and auto-posting AI videos to social media
+- Update README.md
+- Enhance Qdrant reporting in final report script
+- Add Qdrant configuration to environment and Caddyfile
+- Caddy addon folder for deploying agents with the Local AI Package
+- Adding addon override (optional) for Caddy
+- Note on SearXNG
+- Small doc fixes
+- Trim whitespaces from files. (#92)
+- Note in README for deploying to VPS without Docker Compose
+- Updating .env.example to go along with Supabase .env changes
+- Update secret generation script to reflect non-use of Logflare tokens and improve value handling
+- Remove hotfix logic for vector configuration in start_services.py
+- Update Logflare access tokens in .env.example to indicate non-use
+- Apply hotfix to vector configuration in start_services.py
+- Add Logflare access tokens to secret generation script
+- Add SEARXNG and Logflare tokens to .env.example
+- Update .env.example
+- Update README.md
+- Refactor n8n import logic in secret generation script
+- Update multiple n8n workflows set ID
+- Fix Caddy configuration to use container names and not localhost
+- Comment out endpoints without authentication in Caddyfile
+- Update README.md to include explanation of environment argument
+- Open ports on localhost, when in private environment
+- Remove network_mode host from Caddy service
+- Add concept of environment and reset Supabase ports in public environment
+- Add expose elements for informative purposes
+- Remove all port mappings between the host machine and the containers
+- Add monitoring service to base services data in wizard script
+- Refine n8n import decision logic in secret generation script
+- Enhance Neo4j reporting in final report script
+- Update COMPOSE_PROFILES in .env.example to include additional services
+- Enhance email and OpenAI API key prompts in secret generation script
+- Fix empty 'then' block in OpenAI API Key check in secret generation script
+- Enhance README.md for Quick Start and Usage instructions
+- Refactor logging in secret generation and wizard scripts
+- Remove Weaviate password handling from configuration files and scripts
+- Fix reverse proxy configuration for Neo4j in Caddyfile
+- Add Neo4j username handling in secret generation script
+- Update Caddyfile and Docker Compose for Neo4j integration
+- Update .env.example to include new password hash variables
+- Add functions for environment variable management and password hashing in secret generation script
+- Update Docker Compose handling in start_services.py for security compliance
+- Refactor secret generation script to improve variable management
+- Implement n8n workflow import logic in secret generation script
+- Enhance domain name handling in secret generation script
+- Refactor logging messages in scripts for clarity
+- Add contributors section to README.md
+- Update environment configuration and enhance logging in scripts
+- Enhance Weaviate configuration in docker-compose and secret generation script
+- Update Neo4j username handling in configuration files
+- Add documentation for pre-installed libraries in n8n's Custom JavaScript
+- Update configuration files to enhance Weaviate and Neo4j integration
+- Add new n8n grafana dashboard & fix  dashboard datasource  for provisioning
+- Added Neo4j (Knowledge Graph Engine) to the Local AI Package
+- Enhance domain input handling in 03_generate_secrets.sh and update apply_update.sh
+- Add Weaviate service configuration and update documentation
+- Remove redundant log messages in scripts for improved clarity
+- Refactor logging and user prompts in installation and wizard scripts
+- Update .env.example to include LETTA_SERVER_PASSWORD placeholder and add section separator
+- Update Qdrant service configuration in docker-compose.yml and final_report.sh
+- Add gRPC and HTTP REST API ports to Qdrant service in docker-compose.yml
+- Update Supabase reporting in final_report.sh to enhance clarity
+- Temporarily remove comment on cap_drop in docker-compose.yml for SearXNG service
+- Refactor apply_update.sh to streamline service update process
+- Remove container removal command from apply_update.sh for 'localai' project to streamline shutdown process and improve error handling.
+- Refactor service management in start_services.py and scripts
+- Add .env.bak to .gitignore
+- Refactor Supabase compose file handling in start_services.py
+- Temporarily comment out cap_drop in docker-compose.yml for SearXNG service
+- Add entrypoint script to docker-compose.yml for SearXNG service
+- Add force stop functionality for lingering containers in start_services.py
+- Refactor environment handling in stop_existing_containers function in start_services.py
+- Refactor container shutdown process in start_services.py to improve clarity and functionality
+- Enhance run_command function in start_services.py to accept environment variables
+- Refactor shutdown process in start_services.py to always include Supabase compose file
+- Improve container shutdown process in start_services.py
+- Enhance environment variable handling in start_services.py
+- Refactor installation summary logging in final report generation
+- Add final report display in apply_update.sh to show service credentials
+- Refactor service selection in wizard script and integrate into update process
+- Enhance n8n import handling in apply_update.sh and update secrets generation
+- Add new n8n workflow for AI-powered video generation and multi-platform publishing
+- Add PostgreSQL configuration for n8n and Langfuse in final report script
+- Add Ollama service configuration to docker-compose.yml and update related files
+- Add new n8n workflow for backing up all workflows to Google Drive every 4 hours
+- Add new n8n workflow for automated backup to Google Drive with email and Discord notifications
+- Add new n8n workflow for automatic documentation and backup of workflows
+- Enhance TMP_ENV_FILE handling in 03_generate_secrets.sh
+- Refactor install.sh to streamline utilities sourcing
+- Implement nested n8n-installer directory check in install.sh
+- Add LETTA_HOSTNAME environment variable to docker-compose.yml for Letta service configuration
+- Add Letta service configuration and update documentation
+- Update DATABASE_URL in docker-compose.yml to point to langfuse database
+- Add new n8n workflow for automated YouTube video scheduling and AI-generated metadata
+- Add new n8n workflow for automating YouTube uploads with AI-generated metadata
+- Remove logging of current n8n worker count in apply_update.sh to streamline user prompts and enhance clarity during input collection.
+- Improve user prompts in 03_generate_secrets.sh and apply_update.sh
+- Refine n8n workflow import prompt in apply_update.sh
+- Enhance user prompts in 03_generate_secrets.sh and apply_update.sh
+- Enhance user prompts in 03_generate_secrets.sh and apply_update.sh
+- Refactor n8n workflow import prompt in apply_update.sh
+- Enhance update script with git reset functionality
+- Enhance n8n workflow import handling in apply_update.sh
+- Update n8n service configuration in docker-compose.yml
+- Change file permissions for start_services.py to make it executable
+- Update n8n command in docker-compose.yml to simplify syntax
+- Add npm install command for cheerio in n8n service
+- Add temporary "Dangerous Site" warning section to README.md
+- Add Redis configuration output for n8n and langfuse profiles in final report script
+- Update system preparation script to include python3-pip installation
+- Update README.md to require sudo for installation and update scripts
+- Add path to apply_update.sh in update script
+- Add apply_update.sh script to streamline update process
+- Enhance update script to allow user input for n8n worker count
+- Refactor langfuse profile output in final report script
+- Update README.md to reorganize automation categories
+- Update README.md to include detailed community workflows section
+- Update .env.example
+- Enhance unquoting logic in secrets generation script
+- Add server requirements note to README.md
+- Add general issues section to README.md
+- Delete .gitignore
+- gitignore
+- Update README.md to enhance installation instructions and clarify server requirements
+- Remove container_name from n8n-worker service in Docker Compose for consistency with service naming conventions.
+- Add container_name to n8n-worker and postgres services in Docker Compose for clarity
+- Remove container_name from n8n-worker service in Docker Compose for consistency with service naming conventions.
+- Update run services script path in update.sh
+- Add n8n worker count configuration to Docker Compose and secrets generation script
+- Update README.md to refine server requirements and clarify service configurations
+- Update Docker Compose configuration and enhance final report script
+- Consolidate python-dotenv installation in system preparation script
+- Refactor python-dotenv installation in system preparation script
+- Enhance system preparation script to include python-dotenv installation
+- Update README.md to clarify service offerings and installation process
+- Implement Supabase service management in start_services.py and update 04_wizard.sh
+- Refactor quoting in 03_generate_secrets.sh for consistency
+- Enhance 04_wizard.sh to manage DEBIAN_FRONTEND environment variable for whiptail compatibility
+- Fix regex for email validation and correct comment formatting in 03_generate_secrets.sh
+- Change permissions of 04_wizard.sh to make it executable
+- Update install.sh to reflect script renaming and reordering
+- Add service profiles to docker-compose.yml and implement service selection wizard
+- Added flowise Authentication
+- Update README.md for improved clarity and organization
+- Refactor README.md to improve clarity and update terminology
+- Update README.md to enhance clarity and include optional workflow import feature
+- Add business logic documentation for n8n Ecosystem Installer
+- Add basic structure documentation for n8n Ecosystem Installer
+- Add .supercode/def.json to define project tags for improved organization
+- Update server system requirements in README.md for accuracy
+- Update README.md for clarity and consistency
+- Remove outdated monitoring section from README.md to streamline content and improve clarity. This change eliminates unnecessary details about Prometheus and Grafana setup, focusing on essential project information.
+- Refactor README.md to streamline installation instructions and clarify service hostnames
+- Enhance .env file generation in 03_generate_secrets.sh
+- Add LANGFUSE initialization variables to .env.example and docker-compose.yml
+- Add PostgreSQL connection details to final report script
+- Refine DNS configuration and installation instructions in README.md
+- Add AUTH_DISABLE_SIGNUP environment variable to docker-compose.yml for enhanced configuration options
+- Remove outdated extra steps from README.md to streamline installation instructions and improve clarity. Focus on essential prerequisites for setting up the environment.
+- Refine DNS configuration instructions in README.md for clarity and formatting
+- Update README.md to clarify project details and improve content consistency
+- Enhance installation instructions in README.md with detailed prerequisites and updated script usage
+- Fix NEXTAUTH_URL syntax in docker-compose.yml for correct environment variable interpolation
+- Refactor caddy check in 03_generate_secrets.sh
+- Update installation instructions in README.md to reflect new script usage for setup
+- Remove outdated demo GIF and streamline README.md content for clarity
+- Update README.md to reflect project rebranding and enhancements
+- Refactor docker-compose.yml for improved service management
+- Update Caddyfile to use service names for reverse proxy
+- Update .env.example with new credential placeholders and organization defaults
+- Refactor local AI service startup in start_services.py
+- Add .DS_Store to .gitignore
+- Add installation and setup scripts for automated environment configuration
+- Update n8n import script and workflows
+- Add Prometheus configuration for monitoring services
+- Add Grafana provisioning files for dashboards and datasources
+- Fixing Langfuse port or Caddy env var
+- Fixing issue where webhook URL is always localhost for n8n even if deployed in the cloud with a domain
+- Adding Langfuse instructions for cloud deployment of the local AI stack
+- Updating README and .env.example with Langfuse instructions
+- Quick port update for Langfuse
+- Adding Langfuse!
+- (More coming soon) Ollama context length and README fix
+- Couple small corrections
+- Fixing domain examples in .env.example
+- Cloud deploy extra steps
+- Updating documentation
+- Fixing base settings for SearXNG
+- Initial addition of SearXNG and Caddy
+- Update V3_Local_Agentic_RAG_AI_Agent.json
+- Local Agentic RAG Agent
+- Adding links to documentation and creating issue templates
+- Troubleshooting step in README for "Supabase Service Unavailable"
+- Update .gitignore
+- Initial Commit for Revamped Local AI Package with Supabase
+- Initial commit
+

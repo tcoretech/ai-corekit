@@ -577,7 +577,7 @@ docker exec grafana curl -v http://prometheus:9090
 docker exec grafana curl -v http://postgres:5432
 
 # If connection fails, check Docker network
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 
 # Ensure services are on same network
 docker inspect grafana | grep NetworkMode

@@ -2,9 +2,9 @@
 
 ### What is Vaultwarden?
 
-Vaultwarden is a lightweight, self-hosted password manager that's 100% compatible with Bitwarden clients. Written in Rust, it provides the same features as the official Bitwarden server but with significantly lower resource requirements. Perfect for managing all your AI LaunchKit service credentials, API keys, and team passwords securely.
+Vaultwarden is a lightweight, self-hosted password manager that's 100% compatible with Bitwarden clients. Written in Rust, it provides the same features as the official Bitwarden server but with significantly lower resource requirements. Perfect for managing all your AI CoreKit service credentials, API keys, and team passwords securely.
 
-With 40+ services in AI LaunchKit generating unique passwords and API keys, credential management becomes critical. Vaultwarden provides a central, encrypted vault accessible via browser extensions, mobile apps, and desktop clients.
+With 40+ services in AI CoreKit generating unique passwords and API keys, credential management becomes critical. Vaultwarden provides a central, encrypted vault accessible via browser extensions, mobile apps, and desktop clients.
 
 ### Features
 
@@ -46,7 +46,7 @@ With 40+ services in AI LaunchKit generating unique passwords and API keys, cred
 
 ### Automatic Credential Import
 
-AI LaunchKit automatically generates a Bitwarden-compatible JSON file with all your service credentials:
+AI CoreKit automatically generates a Bitwarden-compatible JSON file with all your service credentials:
 
 ```bash
 # Generate and download credentials (after installation)
@@ -68,7 +68,7 @@ sudo bash ./scripts/download_credentials.sh
 5. Choose the downloaded file
 6. Click **Import Data**
 
-All credentials will be organized in an "AI LaunchKit Services" folder with:
+All credentials will be organized in an "AI CoreKit Services" folder with:
 - Service URLs
 - Usernames/emails
 - Passwords
@@ -111,12 +111,12 @@ All credentials will be organized in an "AI LaunchKit Services" folder with:
 5. Click **"Save"**
 6. Login with your credentials
 
-### Organizing AI LaunchKit Credentials
+### Organizing AI CoreKit Credentials
 
 **Recommended Folder Structure:**
 
 ```
-📁 AI LaunchKit Services (root folder from import)
+📁 AI CoreKit Services (root folder from import)
 ├── 📁 Core Services
 │   ├── 🔑 n8n Admin (https://n8n.yourdomain.com)
 │   ├── 🔑 Supabase Dashboard

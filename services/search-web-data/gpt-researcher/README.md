@@ -301,10 +301,10 @@ Deep research on competitors with comparative analysis.
 
 ```bash
 # Check if service is running
-launchkit ps | grep gpt-researcher
+corekit ps | grep gpt-researcher
 
 # Check service logs
-launchkit logs gpt-researcher --tail 100
+corekit logs gpt-researcher --tail 100
 
 # Monitor active research tasks
 curl http://gpt-researcher:8000/api/tasks/active
@@ -333,10 +333,10 @@ curl http://gpt-researcher:8000/api/result/{task_id} | jq '.sources'
 
 ```bash
 # Test internal connectivity
-launchkit exec n8n curl http://gpt-researcher:8000/health
+corekit exec n8n curl http://gpt-researcher:8000/health
 
 # Check Docker network
-docker network inspect ai-launchkit_default | grep gpt-researcher
+docker network inspect ai-corekit_default | grep gpt-researcher
 ```
 
 **Solution:**
@@ -344,14 +344,14 @@ docker network inspect ai-launchkit_default | grep gpt-researcher
 - Check if service is in same Docker network
 - Restart both services:
   ```bash
-  launchkit restart gpt-researcher n8n
+  corekit restart gpt-researcher n8n
   ```
 
 **Issue 4: Task Status Shows "Failed"**
 
 ```bash
 # Check detailed error logs
-launchkit logs gpt-researcher | grep ERROR
+corekit logs gpt-researcher | grep ERROR
 
 # Check task status with error details
 curl http://gpt-researcher:8000/api/status/{task_id}

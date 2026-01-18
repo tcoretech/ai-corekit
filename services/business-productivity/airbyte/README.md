@@ -18,7 +18,7 @@ Airbyte is the leading open-source data integration platform that syncs data fro
 - **Multi-Destination:** Sync one source to multiple destinations
 - **Open Source:** Full control, no vendor lock-in
 
-### Architecture in AI LaunchKit
+### Architecture in AI CoreKit
 
 Airbyte runs via `abctl` (Airbyte Command Line Tool) which creates a Kind (Kubernetes in Docker) cluster:
 ```
@@ -186,7 +186,7 @@ docker network inspect ${PROJECT_NAME:-localai}_default | grep Gateway
 **If you get 502 errors after installation:**
 1. Find gateway IP: `docker network inspect ${PROJECT_NAME:-localai}_default | grep Gateway`
 2. Update `Caddyfile` with the correct IP
-3. Restart Caddy: `launchkit restart caddy`
+3. Restart Caddy: `corekit restart caddy`
 
 ### Destination Database Setup
 
@@ -814,7 +814,7 @@ airbyte_destination_db:
   command: postgres -c max_connections=200  # Default: 100
 
 # 2. Restart database
-launchkit restart airbyte_destination_db
+corekit restart airbyte_destination_db
 
 # 3. Verify
 docker exec airbyte_destination_db psql -U airbyte -c "SHOW max_connections;"

@@ -328,7 +328,7 @@ curl -X POST http://localhost:8000/api/chat \
   }'
 
 # 4. Check Docker network
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 # Verify ragapp and n8n are on same network
 
 # 5. Restart RAGApp if needed
@@ -385,7 +385,7 @@ curl http://localhost:11434/api/generate \
 - Implement rate limiting
 - Audit document access logs
 
-### Integration with Other AI LaunchKit Services
+### Integration with Other AI CoreKit Services
 
 **RAGApp + Qdrant:**
 - Qdrant is pre-configured as vector store

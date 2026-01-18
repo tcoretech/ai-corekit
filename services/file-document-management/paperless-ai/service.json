@@ -1,8 +1,9 @@
 {
   "name": "paperless-ai",
+  "display_name": "Paperless AI Suite",
   "category": "File & Document Management",
-  "description": "Paperless AI Suite (GPT+AI - Superior OCR & RAG Chat for documents)",
-  "use_cases": "Natural language queries, document Q&A, intelligent search",
+  "rank": 100,
+  "description": "Advanced document management suite enhanced with AI, enabling superior OCR, RAG-based Chat, and natural language queries for document Q&A.",
   "interface": "paperless-ai.<yourdomain>.com",
   "source": "https://github.com/clusterzx/paperless-ai",
   "depends_on": [

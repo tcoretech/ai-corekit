@@ -100,7 +100,7 @@ Result: Complete React app with:
 **Scenario**: Build a custom admin dashboard for your team
 
 ```
-Prompt: "Create an admin dashboard for managing AI LaunchKit services:
+Prompt: "Create an admin dashboard for managing AI CoreKit services:
 - Service status overview (running/stopped)
 - Resource usage charts (CPU, RAM, disk)
 - Quick actions (restart services, view logs)
@@ -251,7 +251,7 @@ docker stats bolt
 docker logs bolt | grep -i error
 ```
 
-### Integration with AI LaunchKit Services
+### Integration with AI CoreKit Services
 
 **bolt.diy + Supabase:**
 - Generate complete CRUD apps with Supabase backend

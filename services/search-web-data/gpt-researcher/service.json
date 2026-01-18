@@ -1,8 +1,9 @@
 {
   "name": "gpt-researcher",
+  "display_name": "GPT Researcher",
   "category": "Search & Web Data",
-  "description": "GPT Researcher (Autonomous research agent - 2000+ word reports with citations)",
-  "use_cases": "Comprehensive research reports, multi-source analysis, citations",
+  "rank": 100,
+  "description": "Autonomous research agent capable of generating comprehensive 2000+ word reports with citations from multiple sources.",
   "interface": "research.<yourdomain>.com",
   "source": "https://github.com/assafelovic/gpt-researcher",
   "depends_on": [

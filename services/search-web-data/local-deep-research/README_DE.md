@@ -349,10 +349,10 @@ Veröffentlichte Inhalte überwachen und Genauigkeit kontinuierlich verifizieren
 
 ```bash
 # Container-Status prüfen
-launchkit ps | grep local-deep-research
+corekit ps | grep local-deep-research
 
 # Logs auf festgefahrene Prozesse ansehen
-launchkit logs local-deep-research --tail 100 --follow
+corekit logs local-deep-research --tail 100 --follow
 ```
 
 **Lösung:**
@@ -360,14 +360,14 @@ launchkit logs local-deep-research --tail 100 --follow
 - Anfrage vereinfachen: spezifischer sein
 - Prüfen, ob Such-Backend (SearXNG) reagiert:
   ```bash
-  launchkit exec n8n curl http://searxng:8080/search?q=test
+  corekit exec n8n curl http://searxng:8080/search?q=test
   ```
 
 **Problem 2: Niedrige Konfidenz-Scores**
 
 ```bash
 # Prüfen, ob LLM-Provider funktioniert
-launchkit logs local-deep-research | grep -i "llm\|error"
+corekit logs local-deep-research | grep -i "llm\|error"
 ```
 
 **Lösung:**
@@ -380,10 +380,10 @@ launchkit logs local-deep-research | grep -i "llm\|error"
 
 ```bash
 # Such-Backend testen
-launchkit exec local-deep-research curl http://searxng:8080/health
+corekit exec local-deep-research curl http://searxng:8080/health
 
 # Such-Logs prüfen
-launchkit logs searxng --tail 50
+corekit logs searxng --tail 50
 ```
 
 **Lösung:**
@@ -391,7 +391,7 @@ launchkit logs searxng --tail 50
 - Docker-Netzwerk-Konnektivität prüfen
 - Such-Service neu starten:
   ```bash
-  launchkit restart searxng local-deep-research
+  corekit restart searxng local-deep-research
   ```
 
 **Problem 4: Widersprüchliche Informationen gefunden**
@@ -423,10 +423,10 @@ Dies ist tatsächlich ein GUTES Zeichen - zeigt gründliche Recherche.
 
 ```bash
 # Umgebungsvariablen prüfen
-launchkit exec local-deep-research printenv | grep -E "OPENAI|OLLAMA|SEARXNG"
+corekit exec local-deep-research printenv | grep -E "OPENAI|OLLAMA|SEARXNG"
 
 # Auf Rate-Limiting prüfen
-launchkit logs local-deep-research | grep -i "rate\|limit\|quota"
+corekit logs local-deep-research | grep -i "rate\|limit\|quota"
 ```
 
 **Lösung:**

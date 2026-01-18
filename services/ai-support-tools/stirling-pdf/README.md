@@ -602,7 +602,7 @@ SYSTEM_MAXFILESIZE=512  # Increase from default 256MB
 docker exec n8n curl http://stirling-pdf:8080/api/v1/info/status
 
 # Check Docker network
-docker network inspect ai-launchkit_default
+docker network inspect ai-corekit_default
 # Verify both stirling-pdf and n8n are on same network
 
 # Restart both services
@@ -685,7 +685,7 @@ stirling-pdf:
     - DOCKER_ENABLE_SECURITY=true
     - SYSTEM_MAXFILESIZE=512  # Max file size in MB
     - SYSTEM_CONNECTIONTIMEOUTMINUTES=10  # Timeout for operations
-    - UI_APPNAME=AI LaunchKit PDF Tools
+    - UI_APPNAME=AI CoreKit PDF Tools
     - UI_HOMEDESCRIPTION=PDF Processing for Workflows
   deploy:
     resources:
@@ -725,7 +725,7 @@ stirling-pdf:
 - **n8n Community Examples:** https://n8n.io/workflows?search=stirling
 - **Docker Hub:** https://hub.docker.com/r/stirlingtools/s-pdf
 
-### Integration with AI LaunchKit Services
+### Integration with AI CoreKit Services
 
 **Stirling-PDF + Gotenberg:**
 - Use Gotenberg for HTML → PDF generation

@@ -1,6 +1,6 @@
 # Example Custom Service
 
-This is a **template** for adding your own custom services to AI LaunchKit. It includes an **auto-updater** sidecar that monitors a Git repository, rebuilds the Docker image on changes, and redeploys the service automatically.
+This is a **template** for adding your own custom services to AI CoreKit. It includes an **auto-updater** sidecar that monitors a Git repository, rebuilds the Docker image on changes, and redeploys the service automatically.
 
 ## How to Use This Template
 
@@ -32,7 +32,7 @@ This is a **template** for adding your own custom services to AI LaunchKit. It i
 
 4.  **Enable and Start**:
     ```bash
-    launchkit up my-cool-app
+    corekit up my-cool-app
     ```
 
 ## Features
@@ -67,5 +67,5 @@ If your repo has a `Dockerfile`, it is used. If not, the system attempts to auto
 *   `config/`: Configuration files.
 
 ## Troubleshooting
-*   **Logs**: `launchkit logs my-cool-app`
-*   **Updater Logs**: `launchkit logs my-cool-app-updater`
+*   **Logs**: `corekit logs my-cool-app`
+*   **Updater Logs**: `corekit logs my-cool-app-updater`

@@ -1,5 +1,5 @@
 # Example Custom Stack Configuration
-# These services will be started when 'launchkit up core' is run.
+# These services will be started when 'corekit up core' is run.
 
 name: monitoring
 project_name: localai

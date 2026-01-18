@@ -251,7 +251,7 @@ docker exec n8n curl -H "Authorization: Bearer DEIN_TOKEN" \
 # Benutzereinstellungen → API-Tokens → Neuen Token erstellen
 
 # 4. Vikunja-Container-Netzwerk prüfen
-docker network inspect ai-launchkit_default | grep vikunja
+docker network inspect ai-corekit_default | grep vikunja
 ```
 
 **CalDAV-Sync funktioniert nicht:**

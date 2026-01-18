@@ -1,9 +1,10 @@
 {
   "name": "redis",
+  "display_name": "Redis Cache",
   "category": "Data Infrastructure",
-  "description": "Redis Cache (Shared)",
-  "use_cases": "Cache for n8n, etc.",
-  "interface": "Internal Port 6379",
+  "rank": 100,
+  "description": "Shared Redis instance providing caching and message brokering for services like n8n.",
+  "interface": "internal: tcp://redis:6379",
   "source": "https://hub.docker.com/_/redis",
   "depends_on": []
 }

@@ -12,7 +12,7 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/tcoretech/ai-corekit)](https://github.com/tcoretech/ai-corekit/commits/main)
 [![Contributors](https://img.shields.io/github/contributors/tcoretech/ai-corekit)](https://github.com/tcoretech/ai-corekit/graphs/contributors)
 
-[Installation](#quick-start) • [Services](#whats-included) • [CLI Reference](#cli-reference) • [Configuration](#configuration-and-customisation) • [Documentation](#documentation--support)
+[Installation](#-quick-start) • [Services](#-whats-included) • [CLI Reference](#-cli-reference) • [Configuration](#-configuration-and-customisation) • [Documentation](#-documentation--support)
 
 </div>
 
@@ -32,7 +32,7 @@ corekit up n8n
 corekit up ollama
 
 # Launch a knowledge base
-corekit up ragflow
+corekit up supabase
 ```
 
 ### 🚀 Quick Start
@@ -250,7 +250,7 @@ Core host-level services
 > 📖 **For detailed documentation**, see each service's README in `services/<category>/<service>/README.md`
 <!-- SERVICES_SECTION_END -->
 
-## ⌨️ CLI Reference
+## 💻 CLI Reference
 
 CoreKit includes a powerful CLI tool to manage your AI stack.
 
@@ -292,7 +292,9 @@ corekit <command> [arguments]
 | `list` | List all available services. |
 | `help` | Show this help message. |
 
-## ⚙️ Configuration and Customisation
+[Configuration](#-configuration-and-customisation)
+
+## 🔧 Configuration and Customisation
 
 ### Stacks
 Stacks are pre-defined groups of services designed to work together.

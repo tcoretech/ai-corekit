@@ -100,7 +100,7 @@ Ergebnis: Vollständige React-App mit:
 **Szenario**: Benutzerdefiniertes Admin-Dashboard für dein Team erstellen
 
 ```
-Prompt: "Erstelle ein Admin-Dashboard zur Verwaltung von AI LaunchKit Services:
+Prompt: "Erstelle ein Admin-Dashboard zur Verwaltung von AI CoreKit Services:
 - Service-Status-Übersicht (läuft/gestoppt)
 - Ressourcennutzungs-Charts (CPU, RAM, Disk)
 - Schnellaktionen (Services neu starten, Logs ansehen)
@@ -251,7 +251,7 @@ docker stats bolt
 docker logs bolt | grep -i error
 ```
 
-### Integration mit AI LaunchKit Services
+### Integration mit AI CoreKit Services
 
 **bolt.diy + Supabase:**
 - Vollständige CRUD-Apps mit Supabase-Backend generieren
@@ -1127,7 +1127,7 @@ docker stats flowise
 # Embeddings für häufig abgerufene Dokumente cachen
 ```
 
-### Integration mit AI LaunchKit-Services
+### Integration mit AI CoreKit-Services
 
 **Flowise + Qdrant:**
 - Verwende Qdrant als Vector Store für RAG

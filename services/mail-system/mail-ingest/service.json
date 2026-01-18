@@ -1,8 +1,9 @@
 {
   "name": "mail-ingest",
+  "display_name": "Mail Ingest",
   "category": "Mail System",
-  "description": "Mailgun ingest forwarder (webhook -> Docker-Mailserver SMTP)",
-  "use_cases": "Forwarding incoming emails from Mailgun to local mailserver",
+  "rank": 100,
+  "description": "Webhook forwarder that ingests incoming emails from Mailgun and routes them to the local docker-mailserver.",
   "interface": "mail-ingest.<yourdomain>.com",
   "source": "Local",
   "depends_on": [

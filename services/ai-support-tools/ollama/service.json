@@ -1,8 +1,9 @@
 {
   "name": "ollama",
+  "display_name": "Ollama",
   "category": "AI Support Tools",
-  "description": "Ollama (Local LLM Runner - select hardware in next step)",
-  "use_cases": "Run Llama, Mistral, Phi locally, API-compatible",
+  "rank": 100,
+  "description": "Local Large Language Model (LLM) runner enabling the execution of models like Llama, Mistral, and Phi locally with an API-compatible interface.",
   "interface": "ollama.<yourdomain>.com",
   "source": "https://github.com/ollama/ollama",
   "depends_on": []

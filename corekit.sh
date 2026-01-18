@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# AI LaunchKit CLI
-# Usage: launchkit <command> [args]
+# AI CoreKit CLI
+# Usage: corekit <command> [args]
+
+VERSION="0.0.1"
 
 set -e
 
@@ -54,7 +56,7 @@ load_env() {
 
 # Command: Init
 cmd_init() {
-    log_info "Initializing AI LaunchKit System..."
+    log_info "Initializing AI CoreKit System..."
     
     # Run System Prep
     if [ -f "$LIB_DIR/system/system_prep.sh" ]; then
@@ -109,7 +111,7 @@ cmd_credentials() {
             fi
             ;;
         *)
-            echo "Usage: launchkit credentials <download|export>"
+            echo "Usage: corekit credentials <download|export>"
             exit 1
             ;;
     esac
@@ -668,7 +670,7 @@ cmd_ps() {
         split($1, parts, "/"); 
         for (i=1; i<=length(parts); i++) {
             if (parts[i] == "services") {
-                launchkit_service = parts[i+2];
+                corekit_service = parts[i+2];
                 break;
             }
         }
@@ -698,18 +700,18 @@ cmd_ps() {
         }
 
         if (json_name != "") {
-            launchkit_service = json_name;
+            corekit_service = json_name;
         }
 
-        if (launchkit_service == service_name) {
-            best_map[service_name] = launchkit_service;
+        if (corekit_service == service_name) {
+            best_map[service_name] = corekit_service;
         } else {
             if (!(service_name in best_map)) {
-                best_map[service_name] = launchkit_service;
+                best_map[service_name] = corekit_service;
             }
             # If we have a json name, it should probably override?
             if (json_name != "") {
-                 best_map[service_name] = launchkit_service;
+                 best_map[service_name] = corekit_service;
             }
         }
     }
@@ -892,8 +894,8 @@ cmd_list() {
 
 # Command: Help
 cmd_help() {
-    echo "AI LaunchKit CLI"
-    echo "Usage: launchkit <command> [args]"
+    echo "AI CoreKit CLI"
+    echo "Usage: corekit <command> [args]"
     echo ""
     echo "Commands:"
     echo "  init          Initialize the system (install dependencies)"
@@ -912,7 +914,7 @@ cmd_help() {
     echo "  pull          Pull service images"
     echo "  update        Update the system"
     echo "  credentials   Manage credentials (download|export)"
-    echo "  run <service> Run a service-specific command (e.g., launchkit run ssh ...)"
+    echo "  run <service> Run a service-specific command (e.g., corekit run ssh ...)"
     echo "  list          List all available services"
     echo "  help          Show this help message"
 }

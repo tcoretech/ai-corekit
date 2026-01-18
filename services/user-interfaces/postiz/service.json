@@ -1,8 +1,9 @@
 {
   "name": "postiz",
+  "display_name": "Postiz",
   "category": "User Interfaces",
-  "description": "Postiz (Social publishing platform)",
-  "use_cases": "Content scheduling, analytics, multi-platform posting",
+  "rank": 100,
+  "description": "Open-source social media scheduling and publishing platform with analytics and multi-account support.",
   "interface": "postiz.<yourdomain>.com",
   "source": "https://github.com/gitroomhq/postiz-app",
   "depends_on": [

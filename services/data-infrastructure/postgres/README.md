@@ -1,6 +1,6 @@
 ### What is PostgreSQL?
 
-PostgreSQL (also known as Postgres) is the world's most advanced open-source relational database. AI LaunchKit uses PostgreSQL 17, which brings significant performance improvements, enhanced JSON capabilities, and better support for AI workloads through extensions like pgvector. PostgreSQL serves as the primary database for n8n, Cal.com, Supabase, and many other services in the stack.
+PostgreSQL (also known as Postgres) is the world's most advanced open-source relational database. AI CoreKit uses PostgreSQL 17, which brings significant performance improvements, enhanced JSON capabilities, and better support for AI workloads through extensions like pgvector. PostgreSQL serves as the primary database for n8n, Cal.com, Supabase, and many other services in the stack.
 
 PostgreSQL 17 includes overhauled memory management (up to 20x less RAM for vacuum operations), 2x faster bulk exports, improved logical replication for high availability, and SQL/JSON support with the JSON_TABLE function for converting JSON to relational tables.
 
@@ -19,7 +19,7 @@ PostgreSQL 17 includes overhauled memory management (up to 20x less RAM for vacu
 
 ### Initial Setup
 
-PostgreSQL is automatically installed and configured during AI LaunchKit installation.
+PostgreSQL is automatically installed and configured during AI CoreKit installation.
 
 **Access PostgreSQL:**
 
@@ -478,7 +478,7 @@ docker compose restart postgres
 # Check your PostgreSQL version
 docker exec postgres postgres --version
 
-# AI LaunchKit pins to PostgreSQL 17 by default
+# AI CoreKit pins to PostgreSQL 17 by default
 # If you have PostgreSQL 18 and want to keep it:
 echo "POSTGRES_VERSION=18" >> .env
 

@@ -1,0 +1,98 @@
+name: Update README Services Section
+
+on:
+  push:
+    paths:
+      - 'services/**/service.json'
+      - '.github/scripts/generate-services-readme.sh'
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'services/**/service.json'
+      - '.github/scripts/generate-services-readme.sh'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Services Section
+        id: generate
+        run: |
+          chmod +x .github/scripts/generate-services-readme.sh
+          ./.github/scripts/generate-services-readme.sh --update
+
+      - name: Check for changes
+        id: check-changes
+        run: |
+          if git diff --quiet README.md; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.check-changes.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add README.md
+          git commit -m "docs: auto-update services section in README
+
+          Updated based on changes to service.json files.
+
+          [skip ci]"
+          git push
+
+      - name: Create PR comment (for PRs)
+        if: steps.check-changes.outputs.changed == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Generate preview
+            const { execSync } = require('child_process');
+            const preview = execSync('./.github/scripts/generate-services-readme.sh 2>/dev/null | head -100').toString();
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 📋 Services Section Preview
+
+            This PR modifies service definitions. Here's a preview of the updated services section:
+
+            <details>
+            <summary>Click to expand preview (first 100 lines)</summary>
+
+            \`\`\`markdown
+            ${preview}
+            \`\`\`
+
+            </details>
+
+            The full README will be automatically updated when this PR is merged.`
+            });
+
+      - name: Verify README structure
+        run: |
+          # Ensure markers exist
+          if ! grep -q "<!-- SERVICES_SECTION_START -->" README.md; then
+            echo "⚠️  Warning: SERVICES_SECTION_START marker not found"
+            echo "Add <!-- SERVICES_SECTION_START --> and <!-- SERVICES_SECTION_END --> markers to README.md"
+          fi
+
+          # Count services mentioned
+          service_count=$(./.github/scripts/generate-services-readme.sh 2>/dev/null | grep -c "^\|" || echo "0")
+          echo "📊 Total services in generated section: $service_count"

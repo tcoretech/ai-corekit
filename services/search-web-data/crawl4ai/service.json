@@ -1,8 +1,9 @@
 {
   "name": "crawl4ai",
+  "display_name": "Crawl4ai",
   "category": "Search & Web Data",
-  "description": "Crawl4ai (Web Crawler for AI)",
-  "use_cases": "Web scraping, data extraction, site monitoring",
+  "rank": 100,
+  "description": "AI-optimized web crawler designed for efficient web scraping, data extraction, and site monitoring.",
   "interface": "Internal API",
   "source": "https://github.com/unclecode/crawl4ai",
   "depends_on": []

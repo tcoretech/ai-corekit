@@ -1,8 +1,9 @@
 {
   "name": "monitoring",
+  "display_name": "Monitoring Suite",
   "category": "System Management",
-  "description": "Monitoring Suite (Prometheus, Grafana, cAdvisor, Node-Exporter)",
-  "use_cases": "System monitoring, performance dashboards, alerting",
+  "rank": 100,
+  "description": "Comprehensive monitoring stack (Prometheus, Grafana, cAdvisor, Node-Exporter) for system performance tracking, dashboards, and alerting.",
   "interface": "grafana.<yourdomain>.com",
   "source": "https://github.com/grafana/grafana",
   "depends_on": []

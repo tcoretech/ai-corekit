@@ -4,7 +4,7 @@
 
 Vexa ist ein Echtzeit-Meeting-Transkriptionsdienst, der KI-Bots in Online-Meetings (Google Meet & Microsoft Teams) schickt, um Live-Konversationen mit Sprecheridentifikation zu erfassen. Im Gegensatz zu Post-Meeting-Transkription treten Vexa-Bots Meetings als Teilnehmer bei und liefern Echtzeit-Transkripte mit Sub-Sekunden-Latenz über WebSocket-Streaming. Perfekt für automatisierte Meeting-Notizen, Vertriebsanruf-Analyse und Compliance-Aufzeichnung.
 
-⚠️ **Wichtig:** Bei Problemen mit Installation oder Aktualisierung von Vexa, siehe [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md)
+⚠️ **Wichtig:** Bei Problemen mit Installation oder Aktualisierung von Vexa, siehe [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md)
 
 ### Funktionen
 
@@ -34,7 +34,7 @@ Während der Installation generiert Vexa:
 
 ```bash
 # Vexa API-Schlüssel aus Installationslogs anzeigen
-cd ~/ai-launchkit
+cd ~/ai-corekit
 grep "VEXA_API_KEY" .env
 
 # Oder Installationsbericht prüfen
@@ -551,7 +551,7 @@ docker logs vexa-api | grep -i "whisper\|transcription"
 
 ```bash
 # Vexa-API-Key finden
-cd ~/ai-launchkit
+cd ~/ai-corekit
 grep "VEXA_API_KEY" .env
 
 # Oder Admin-API für Benutzer prüfen
@@ -597,7 +597,7 @@ grep VEXA_WHISPER_MODEL .env
 
 ```bash
 # Bei Installationsproblemen, siehe Workaround-Leitfaden:
-# https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md
+# https://github.com/freddy-schuetz/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md
 
 # Häufige Probleme während Installation:
 # - Docker-Netzwerk-Konflikte
@@ -605,11 +605,11 @@ grep VEXA_WHISPER_MODEL .env
 # - Whisper-Modell-Download-Timeout
 
 # Vexa-Logs während Installation prüfen
-tail -f /var/log/ai-launchkit-install.log | grep -i vexa
+tail -f /var/log/ai-corekit-install.log | grep -i vexa
 ```
 
 **Lösung:**
-- [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md) folgen
+- [Vexa Troubleshooting Guide](https://github.com/freddy-schuetz/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md) folgen
 - Die meisten Probleme lösen sich mit den dokumentierten Workarounds
 - Falls Probleme bestehen bleiben, ist Vexa optional und kann übersprungen werden
 
@@ -700,7 +700,7 @@ POST http://localhost:8057/admin/users/{user_id}/tokens
 ### Ressourcen
 
 - **GitHub:** https://github.com/Vexa-ai/vexa
-- **Troubleshooting-Guide:** https://github.com/freddy-schuetz/ai-launchkit/blob/main/vexa-troubleshooting-workarounds.md
+- **Troubleshooting-Guide:** https://github.com/freddy-schuetz/ai-corekit/blob/main/vexa-troubleshooting-workarounds.md
 - **Whisper-Modell-Info:** https://github.com/openai/whisper#available-models-and-languages
 - **Sprachunterstützung:** 99 Sprachen unterstützt
 

@@ -138,7 +138,7 @@ Body: {
   "result": [
     {
       "id": 1,
-      "name": "AI LaunchKit Entwicklung",
+      "name": "AI CoreKit Entwicklung",
       "clientId": 1,
       "state": 0
     }
@@ -191,7 +191,7 @@ Nachricht: |
   Deine Aufgabe wurde erstellt:
   
   Titel: {{$json.headline}}
-  Projekt: AI LaunchKit Entwicklung
+  Projekt: AI CoreKit Entwicklung
   Status: Neu
   
   In Leantime anzeigen: https://leantime.deinedomain.com

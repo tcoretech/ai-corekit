@@ -35,7 +35,7 @@ Perplexica ist standardmäßig für die Nutzung von Ollama (lokal) vorkonfigurie
 
 ```bash
 # Aktuelle Konfiguration prüfen
-cd ~/ai-launchkit
+cd ~/ai-corekit
 cat perplexica-config.toml
 
 # Standard nutzt Ollama mit llama3.2
@@ -651,7 +651,7 @@ docker network inspect ${PROJECT_NAME:-localai}_default | grep -E "perplexica|n8
 
 **Modellauswahl:**
 
-`~/ai-launchkit/perplexica-config.toml` bearbeiten:
+`~/ai-corekit/perplexica-config.toml` bearbeiten:
 
 ```toml
 [CHAT]

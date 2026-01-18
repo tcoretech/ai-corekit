@@ -1,8 +1,9 @@
 {
   "name": "invoiceninja",
+  "display_name": "Invoice Ninja",
   "category": "Business Productivity",
-  "description": "Invoice Ninja - Professional invoicing platform",
-  "use_cases": "Multi-currency invoices, 40+ payment gateways, recurring billing, client portal",
+  "rank": 100,
+  "description": "Professional invoicing platform supporting multi-currency invoices, recurring billing, client portals, and over 40 payment gateways.",
   "interface": "invoices.<yourdomain>.com",
   "source": "https://github.com/invoiceninja/invoiceninja",
   "depends_on": [

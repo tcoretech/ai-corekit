@@ -4,7 +4,7 @@
 
 Supabase ist eine umfassende Open-Source Backend-as-a-Service (BaaS) Plattform, die auf PostgreSQL basiert. Sie bietet alles, was du zum Erstellen produktionsreifer Anwendungen brauchst: Datenbank, Authentifizierung, Echtzeit-Abonnements, Speicher, Edge Functions und Vektor-Embeddings für KI-Funktionen. Oft als "Open-Source Firebase-Alternative" bezeichnet, gibt dir Supabase die volle Kontrolle über deine Daten bei gleichzeitiger Benutzerfreundlichkeit wie bei verwalteten Diensten.
 
-Der selbst gehostete Supabase-Stack im AI LaunchKit umfasst PostgreSQL 17 mit pgvector-Erweiterung, PostgREST (automatisch generierte REST-API), GoTrue (JWT-basierte Authentifizierung), Realtime-Server (WebSocket-Abonnements), Storage-API (S3-kompatible Dateispeicherung) und Supabase Studio (Web-Dashboard).
+Der selbst gehostete Supabase-Stack im AI CoreKit umfasst PostgreSQL 17 mit pgvector-Erweiterung, PostgREST (automatisch generierte REST-API), GoTrue (JWT-basierte Authentifizierung), Realtime-Server (WebSocket-Abonnements), Storage-API (S3-kompatible Dateispeicherung) und Supabase Studio (Web-Dashboard).
 
 ### Features
 
@@ -80,7 +80,7 @@ Deine Tabelle ist sofort über die REST-API verfügbar!
 
 ### E-Mail-Konfiguration
 
-Supabase integriert sich automatisch mit dem Mail-System des AI LaunchKit für authentifizierungsbezogene E-Mails:
+Supabase integriert sich automatisch mit dem Mail-System des AI CoreKit für authentifizierungsbezogene E-Mails:
 
 **Automatisierte E-Mail-Funktionen:**
 - ✅ **Benutzerregistrierungs-Bestätigungen** - Willkommens-E-Mails mit Verifizierungslinks
@@ -654,12 +654,12 @@ curl -X POST 'http://localhost:8000/storage/v1/object/documents/test.txt' \
 docker exec supabase-db psql -U postgres -c "SELECT * FROM supabase_migrations.schema_migrations;"
 
 # Migrationen manuell ausführen
-cd ai-launchkit
+cd ai-corekit
 docker exec -i supabase-db psql -U postgres < supabase/migrations/deine_migration.sql
 
 # Datenbank zurücksetzen (WARNUNG: Löscht alle Daten!)
 docker compose down supabase-db
-docker volume rm ai-launchkit_supabase_db_data
+docker volume rm ai-corekit_supabase_db_data
 docker compose up -d supabase-db
 ```
 
@@ -690,7 +690,7 @@ docker logs supabase-pooler --tail 100
 
 # Lösung: Analytics-Daten zurücksetzen
 docker compose down supabase-analytics
-docker volume rm ai-launchkit_supabase_analytics_data
+docker volume rm ai-corekit_supabase_analytics_data
 docker compose up -d supabase-analytics
 
 # Alternative: Altes Passwort für Postgres behalten

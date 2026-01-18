@@ -4,7 +4,7 @@
 # Generate Vaultwarden JSON & Download Script
 # ============================================================================
 # This script generates a Vaultwarden-compatible JSON import file
-# with all AI LaunchKit service credentials and optionally provides
+# with all AI CoreKit service credentials and optionally provides
 # a download link.
 #
 # Usage:
@@ -79,7 +79,7 @@ generate_vaultwarden_json() {
 
     log_info "Generating Vaultwarden import file..."
 
-    local json_file="$PROJECT_ROOT/ai-launchkit-credentials.json"
+    local json_file="$PROJECT_ROOT/ai-corekit-credentials.json"
     local folder_id=$(generate_uuid)
     local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
 
@@ -90,7 +90,7 @@ generate_vaultwarden_json() {
   "folders": [
     {
       "id": "$folder_id",
-      "name": "AI LaunchKit Services"
+      "name": "AI CoreKit Services"
     }
   ],
   "items": [
@@ -377,7 +377,7 @@ EOF
     if is_profile_active "metabase"; then
         add_secure_note \
             "Metabase Business Intelligence" \
-            "URL: https://${METABASE_HOSTNAME}\\nNo-code business intelligence platform\\nFirst-time setup:\\n1. Open URL above\\n2. Complete setup wizard\\n3. Create admin account\\n4. Add data sources\\nConnect to AI LaunchKit databases:\\n- n8n PostgreSQL: postgres:5432\\n- Supabase: supabase-db:5432\\n- Invoice Ninja MySQL: invoiceninja_db:3306\\n- Kimai MySQL: kimai_db:3306\\nFeatures: Visual query builder, X-Ray insights, dashboards, scheduled reports"
+            "URL: https://${METABASE_HOSTNAME}\\nNo-code business intelligence platform\\nFirst-time setup:\\n1. Open URL above\\n2. Complete setup wizard\\n3. Create admin account\\n4. Add data sources\\nConnect to AI CoreKit databases:\\n- n8n PostgreSQL: postgres:5432\\n- Supabase: supabase-db:5432\\n- Invoice Ninja MySQL: invoiceninja_db:3306\\n- Kimai MySQL: kimai_db:3306\\nFeatures: Visual query builder, X-Ray insights, dashboards, scheduled reports"
     fi
 
     # Baserow
@@ -531,8 +531,8 @@ EOF
 
     # Server Access Info
     add_secure_note \
-        "AI LaunchKit Server Access" \
-        "Domain: ${USER_DOMAIN_NAME}\\nServer IP: $(curl -s ifconfig.me 2>/dev/null || echo 'Unknown')\\nSSH Access:\\nssh $(whoami)@${USER_DOMAIN_NAME}\\nDocker Commands:\\ndocker ps\\ndocker logs <container>\\ndocker restart <container>\\nUpdate AI LaunchKit:\\ncd ~/ai-launchkit\\nsudo bash ./scripts/update.sh"
+        "AI CoreKit Server Access" \
+        "Domain: ${USER_DOMAIN_NAME}\\nServer IP: $(curl -s ifconfig.me 2>/dev/null || echo 'Unknown')\\nSSH Access:\\nssh $(whoami)@${USER_DOMAIN_NAME}\\nDocker Commands:\\ndocker ps\\ndocker logs <container>\\ndocker restart <container>\\nUpdate AI CoreKit:\\ncd ~/ai-corekit\\nsudo bash ./scripts/update.sh"
 
     # Write items to file
     echo "$items_json" >> "$json_file"
@@ -546,11 +546,11 @@ EOF
 
     # Create download instructions file
     cat > "$PROJECT_ROOT/VAULTWARDEN_IMPORT.txt" << 'EOF'
-AI LAUNCHKIT VAULTWARDEN IMPORT INSTRUCTIONS
+AI COREKIT VAULTWARDEN IMPORT INSTRUCTIONS
 ============================================
 
 Your credentials file has been generated:
-  📁 ai-launchkit-credentials.json
+  📁 ai-corekit-credentials.json
 
 HOW TO IMPORT INTO VAULTWARDEN:
 --------------------------------
@@ -560,10 +560,10 @@ HOW TO IMPORT INTO VAULTWARDEN:
 3. Login to your account
 4. Go to: Tools → Import Data
 5. Select Format: "Bitwarden (json)"
-6. Choose File: ai-launchkit-credentials.json
+6. Choose File: ai-corekit-credentials.json
 7. Click: Import Data
 
-All credentials will be imported into the "AI LaunchKit Services" folder.
+All credentials will be imported into the "AI CoreKit Services" folder.
 
 SECURITY NOTES:
 ---------------
@@ -608,7 +608,7 @@ EOF
         
         # Port for temporary HTTP server
         DOWNLOAD_PORT=8889
-        DOWNLOAD_FILENAME="ai-launchkit-credentials.json"
+        DOWNLOAD_FILENAME="ai-corekit-credentials.json"
         
         # Get server IPv4 address
         echo "🔍 Detecting server IP address..."

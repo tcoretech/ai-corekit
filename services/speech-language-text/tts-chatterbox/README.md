@@ -271,11 +271,11 @@ One of Chatterbox's most powerful features is the ability to clone voices with m
 ssh user@yourdomain.com
 
 # Create voice directory
-mkdir -p ~/ai-launchkit/shared/tts/voices
+mkdir -p ~/ai-corekit/shared/tts/voices
 
 # Upload your voice sample (10-30 seconds recommended)
 # Upload via SCP or save directly:
-# scp voice_sample.wav user@yourdomain.com:~/ai-launchkit/shared/tts/voices/
+# scp voice_sample.wav user@yourdomain.com:~/ai-corekit/shared/tts/voices/
 ```
 
 **Requirements for best results:**
@@ -425,7 +425,7 @@ Chatterbox supports 22+ languages with language-aware synthesis:
 
 ```bash
 # Edit docker-compose.yml
-nano ~/ai-launchkit/docker-compose.yml
+nano ~/ai-corekit/docker-compose.yml
 
 # Find chatterbox-tts service, add:
 deploy:

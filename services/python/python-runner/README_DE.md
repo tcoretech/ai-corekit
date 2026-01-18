@@ -37,7 +37,7 @@ n8n Container ← WebSocket → n8nio/runners Container
 
 ### Erste Einrichtung
 
-Python Runner ist **bereits im AI LaunchKit konfiguriert**, wenn du mit der neuesten Version installiert hast. Überprüfe, ob es aktiviert ist:
+Python Runner ist **bereits im AI CoreKit konfiguriert**, wenn du mit der neuesten Version installiert hast. Überprüfe, ob es aktiviert ist:
 
 #### Schritt 1: Überprüfen, ob Python Runner aktiviert ist
 

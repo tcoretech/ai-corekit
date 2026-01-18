@@ -303,10 +303,10 @@ Tiefenrecherche zu Konkurrenten mit vergleichender Analyse.
 
 ```bash
 # Prüfen, ob Service läuft
-launchkit ps | grep gpt-researcher
+corekit ps | grep gpt-researcher
 
 # Service-Logs prüfen
-launchkit logs gpt-researcher --tail 100
+corekit logs gpt-researcher --tail 100
 
 # Aktive Recherche-Aufgaben überwachen
 curl http://gpt-researcher:8000/api/tasks/active
@@ -335,10 +335,10 @@ curl http://gpt-researcher:8000/api/result/{task_id} | jq '.sources'
 
 ```bash
 # Interne Konnektivität testen
-launchkit exec n8n curl http://gpt-researcher:8000/health
+corekit exec n8n curl http://gpt-researcher:8000/health
 
 # Docker-Netzwerk prüfen
-docker network inspect ai-launchkit_default | grep gpt-researcher
+docker network inspect ai-corekit_default | grep gpt-researcher
 ```
 
 **Lösung:**
@@ -346,14 +346,14 @@ docker network inspect ai-launchkit_default | grep gpt-researcher
 - Prüfen, ob Service im gleichen Docker-Netzwerk ist
 - Beide Services neu starten:
   ```bash
-  launchkit restart gpt-researcher n8n
+  corekit restart gpt-researcher n8n
   ```
 
 **Problem 4: Task-Status zeigt "Failed"**
 
 ```bash
 # Detaillierte Fehler-Logs prüfen
-launchkit logs gpt-researcher | grep ERROR
+corekit logs gpt-researcher | grep ERROR
 
 # Task-Status mit Fehlerdetails prüfen
 curl http://gpt-researcher:8000/api/status/{task_id}

@@ -1,9 +1,10 @@
 {
   "name": "smtp-relay",
+  "display_name": "SMTP Relay",
   "category": "Mail System",
-  "description": "",
-  "use_cases": "",
-  "interface": "",
-  "source": "",
+  "rank": 100,
+  "description": "Dedicated SMTP relay service for handling outbound transactional email delivery and forwarding.",
+  "interface": "internal: smtp://mailserver:25",
+  "source": "https://github.com/docker-mailserver/docker-mailserver",
   "depends_on": []
 }

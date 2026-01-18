@@ -1,8 +1,9 @@
 {
   "name": "nocodb",
+  "display_name": "NocoDB",
   "category": "Business Productivity",
-  "description": "NocoDB (Open-source Airtable alternative, smart spreadsheet UI)",
-  "use_cases": "Smart spreadsheet UI, realtime collaboration, automation",
+  "rank": 100,
+  "description": "Open-source Airtable alternative featuring a smart spreadsheet UI for real-time collaboration and automation.",
   "interface": "nocodb.<yourdomain>.com",
   "source": "https://github.com/nocodb/nocodb",
   "depends_on": [

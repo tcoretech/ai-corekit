@@ -392,7 +392,7 @@ LightRAG nutzt standardmäßig lokale Ollama-Modelle. Für bessere Performance m
 
 1. **OpenAI API Key zu .env hinzufügen:**
 ```bash
-cd /root/ai-launchkit
+cd /root/ai-corekit
 nano .env
 
 # Hinzufügen oder aktualisieren:
@@ -415,7 +415,7 @@ lightrag:
 
 3. **LightRAG neu starten:**
 ```bash
-launchkit restart lightrag
+corekit restart lightrag
 ```
 
 **Performance-Vergleich:**
@@ -433,7 +433,7 @@ launchkit restart lightrag
 
 ```bash
 # Prüfen ob Ollama (langsam) oder OpenAI (schnell) verwendet wird
-launchkit logs lightrag | grep -E "LLM_BINDING|EMBEDDING_BINDING"
+corekit logs lightrag | grep -E "LLM_BINDING|EMBEDDING_BINDING"
 
 # Falls Ollama auf CPU verwendet wird:
 # Lösung 1: Zu OpenAI wechseln (siehe oben)
@@ -441,7 +441,7 @@ launchkit logs lightrag | grep -E "LLM_BINDING|EMBEDDING_BINDING"
 # Lösung 3: Chunk-Größe im Preprocessing reduzieren
 
 # Prüfen ob Ollama läuft
-launchkit ps | grep ollama
+corekit ps | grep ollama
 curl http://ollama:11434/api/tags
 ```
 
@@ -457,7 +457,7 @@ curl http://ollama:11434/api/tags
 curl http://lightrag:9621/api/health
 
 # Wissensgraphen auf Daten verifizieren
-launchkit logs lightrag | grep "entities extracted"
+corekit logs lightrag | grep "entities extracted"
 
 # Mit einfacher Abfrage testen
 curl -X POST http://lightrag:9621/api/query \
@@ -474,19 +474,19 @@ curl -X POST http://lightrag:9621/api/query \
 
 ```bash
 # Prüfen ob LightRAG-Port erreichbar ist
-launchkit exec open-webui curl http://lightrag:9621/health
+corekit exec open-webui curl http://lightrag:9621/health
 
 # Ollama-kompatible API verifizieren
 curl http://lightrag:9621/v1/models
 # Sollte Modellliste zurückgeben
 
 # Open WebUI neu starten
-launchkit restart open-webui
+corekit restart open-webui
 ```
 
 **Lösung:**
 - Interne DNS-Auflösung zwischen Containern verifizieren
-- Docker-Netzwerk prüfen: `docker network inspect ai-launchkit_default`
+- Docker-Netzwerk prüfen: `docker network inspect ai-corekit_default`
 - Sicherstellen, dass LightRAG-Container läuft
 
 **Problem 4: Zu wenig Speicher-Fehler**
@@ -514,10 +514,10 @@ docker stats lightrag --no-stream
 
 ```bash
 # Container-Status prüfen
-launchkit ps -a | grep lightrag
+corekit ps -a | grep lightrag
 
 # Logs anzeigen
-launchkit logs lightrag
+corekit logs lightrag
 
 # Häufige Probleme:
 # - Fehlende LLM-Konfiguration
@@ -528,7 +528,7 @@ launchkit logs lightrag
 **Lösung:**
 - Verifizieren, dass Ollama läuft: `docker ps | grep ollama`
 - Port-Konflikte prüfen: `netstat -tulpn | grep 9621`
-- Mit Abhängigkeiten neu starten: `launchkit restart ollama lightrag`
+- Mit Abhängigkeiten neu starten: `corekit restart ollama lightrag`
 
 ### Best Practices
 

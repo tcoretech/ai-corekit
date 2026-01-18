@@ -18,7 +18,7 @@ Weaviate (pronounced "we-vee-eight") is an open-source, AI-native vector databas
 
 **Access Weaviate:**
 
-Weaviate is pre-installed and running on your AI LaunchKit instance.
+Weaviate is pre-installed and running on your AI CoreKit instance.
 
 1. **GraphQL Playground:** `https://weaviate.yourdomain.com/v1/graphql`
    - Interactive query builder and testing interface
@@ -649,7 +649,7 @@ curl -X PATCH http://localhost:8080/v1/schema/Document \
 - Use filters instead of cross-references for simple relationships
 - Example: Store author name in Book object, not reference
 
-### Integration with Other AI LaunchKit Services
+### Integration with Other AI CoreKit Services
 
 **Weaviate + RAGApp:**
 - Can configure RAGApp to use Weaviate as vector store

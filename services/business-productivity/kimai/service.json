@@ -1,8 +1,9 @@
 {
   "name": "kimai",
+  "display_name": "Kimai",
   "category": "Business Productivity",
-  "description": "Kimai (Professional Time Tracking - DSGVO-compliant, 2FA, invoicing)",
-  "use_cases": "DSGVO-compliant billing, team timesheets, API, 2FA, invoicing",
+  "rank": 100,
+  "description": "Professional, DSGVO-compliant time tracking software featuring team timesheets, invoicing, 2FA security, and API access.",
   "interface": "time.<yourdomain>.com",
   "source": "https://github.com/kimai/kimai",
   "depends_on": []

@@ -1,8 +1,9 @@
 {
   "name": "formbricks",
+  "display_name": "Formbricks",
   "category": "Business Productivity",
-  "description": "Formbricks - Privacy-first surveys & forms (Typeform alternative)",
-  "use_cases": "Customer feedback, NPS surveys, market research, form builder, GDPR-compliant",
+  "rank": 100,
+  "description": "Privacy-first survey and form builder serving as a GDPR-compliant Typeform alternative for customer feedback, NPS surveys, and market research.",
   "interface": "forms.<yourdomain>.com",
   "source": "https://github.com/formbricks/formbricks",
   "depends_on": [

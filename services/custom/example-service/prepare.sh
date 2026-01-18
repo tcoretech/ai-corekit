@@ -18,7 +18,7 @@ if ! docker image inspect "$IMG" > /dev/null 2>&1; then
     echo "[Bootstrap] Image $IMG not found. Creating placeholder..."
     
     # Check if we have internet to pull alpine, if not try to use any local image? 
-    # LaunchKit assumes internet.
+    # CoreKit assumes internet.
     docker pull alpine:latest
     docker tag alpine:latest "$IMG"
     echo "[Bootstrap] Placeholder image created."

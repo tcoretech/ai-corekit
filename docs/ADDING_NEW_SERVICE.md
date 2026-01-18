@@ -1,10 +1,10 @@
-# Guide: Adding a New Service to AI LaunchKit
+# Guide: Adding a New Service to AI CoreKit
 
-This document explains how to add a new service to AI LaunchKit following the modular service structure.
+This document explains how to add a new service to AI CoreKit following the modular service structure.
 
 ## Overview
 
-AI LaunchKit uses a modular architecture where each service is self-contained in its own directory. This makes it easy to add, remove, or update services without affecting the rest of the system.
+AI CoreKit uses a modular architecture where each service is self-contained in its own directory. This makes it easy to add, remove, or update services without affecting the rest of the system.
 
 ## Service Structure
 
@@ -40,7 +40,7 @@ cd services/my-category/my-service
 
 ### 2. Create `service.json`
 
-This file registers your service with the LaunchKit system.
+This file registers your service with the CoreKit system.
 
 ```json
 {
@@ -122,26 +122,26 @@ Create a `README.md` in your service directory explaining how to use it, configu
 
 ## Testing Your Service
 
-You can test your service using the `launchkit` CLI.
+You can test your service using the `corekit` CLI.
 
 1.  **Enable the service:**
     ```bash
-    launchkit enable my-service
+    corekit enable my-service
     ```
 
 2.  **Generate secrets (if applicable):**
     ```bash
-    launchkit init
+    corekit init
     ```
 
 3.  **Start the service:**
     ```bash
-    launchkit up my-service
+    corekit up my-service
     ```
 
 4.  **Check logs:**
     ```bash
-    launchkit logs my-service
+    corekit logs my-service
     ```
     (Or use `docker compose logs -f my-service`)
 

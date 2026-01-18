@@ -219,8 +219,8 @@ OpenedAI-Speech uses Piper TTS which supports 50+ languages. Here's how to add G
 # Access your server
 ssh user@yourdomain.com
 
-# Navigate to AI LaunchKit
-cd ~/ai-launchkit
+# Navigate to AI CoreKit
+cd ~/ai-corekit
 
 # Edit voice configuration
 nano openedai-config/voice_to_speaker.yaml

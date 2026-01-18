@@ -84,7 +84,7 @@ For local/NAS storage instead of Nextcloud:
 2. Click **New Snapshot**
 3. **Select Directory to Backup:**
    - For Docker volumes: `/docker-volumes`
-   - For AI LaunchKit files: `/ai-launchkit`
+   - For AI CoreKit files: `/ai-corekit`
    - For shared data: `/shared`
 4. Click **Snapshot Now** for immediate backup
 5. Or **Estimate** to see what will be backed up first

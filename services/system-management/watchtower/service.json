@@ -1,8 +1,10 @@
 {
   "name": "watchtower",
+  "display_name": "Watchtower",
   "category": "System Management",
-  "description": "Watchtower (Automated Docker container updates)",
-  "use_cases": "Keep containers up-to-date automatically",
+  "rank": 100,
+  "description": "Utility for automating Docker container base image updates, ensuring services are always running the latest versions.",
   "interface": "Internal",
-  "source": "https://containrrr.dev/watchtower/"
+  "source": "https://containrrr.dev/watchtower/",
+  "depends_on": null
 }

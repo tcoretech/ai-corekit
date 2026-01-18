@@ -1,9 +1,10 @@
 {
   "name": "gotenberg",
+  "display_name": "Gotenberg",
   "category": "AI Support Tools",
-  "description": "Gotenberg (Document Conversion API)",
-  "use_cases": "HTML/Markdown \u2192 PDF, Office \u2192 PDF, merge PDFs",
-  "interface": "Internal API",
+  "rank": 100,
+  "description": "Powerful document conversion API for converting HTML, Markdown, and Office documents to PDF, as well as merging PDF files.",
+  "interface": "internal: http://gotenberg:3000",
   "source": "https://github.com/gotenberg/gotenberg",
   "depends_on": []
 }

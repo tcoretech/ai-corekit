@@ -690,7 +690,7 @@ docker compose restart llm-guard
 - **Community Examples:** https://llm-guard.com/docs/examples
 - **API-Referenz:** https://llm-guard.com/docs/api
 
-### Integration mit AI LaunchKit Services
+### Integration mit AI CoreKit Services
 
 **LLM Guard + Microsoft Presidio:**
 - LLM Guard: General security (injection, toxicity, secrets)
@@ -1478,7 +1478,7 @@ docker compose restart presidio-analyzer presidio-anonymizer
    Anfrage → Presidio → Protokoll (Original-Hash + anonymisiert) → Audit-Trail
    ```
 
-### Integration mit AI LaunchKit Services
+### Integration mit AI CoreKit Services
 
 **Presidio + LLM Guard:**
 - LLM Guard: Allgemeine Sicherheit (Injection, Toxizität, Geheimnisse)
@@ -2159,7 +2159,7 @@ docker logs flair-ner | grep "Model loaded"
 
 **Empfehlung:** Flair für Deutsch verwenden, Presidio für Englisch, beide für mehrsprachige Anwendungen kombinieren.
 
-### Integration mit AI LaunchKit Services
+### Integration mit AI CoreKit Services
 
 **Flair NER + Microsoft Presidio:**
 - Spracherkennung → Zum entsprechenden Service weiterleiten

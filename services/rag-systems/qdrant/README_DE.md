@@ -18,7 +18,7 @@ Qdrant (ausgesprochen "Quadrant") ist eine hochperformante Open-Source-Vektor-Da
 
 **Zugriff auf Qdrant:**
 
-Qdrant ist vorinstalliert und läuft auf deiner AI LaunchKit Instanz.
+Qdrant ist vorinstalliert und läuft auf deiner AI CoreKit Instanz.
 
 1. **Web-UI:** `https://qdrant.deinedomain.com`
    - Collections anzeigen, Punkte durchsuchen, Vektoren inspizieren
@@ -511,7 +511,7 @@ curl -X PUT http://localhost:6333/collections/documents/snapshots/upload \
   --data-binary @snapshot.snapshot
 ```
 
-### Integration mit anderen AI LaunchKit Services
+### Integration mit anderen AI CoreKit Services
 
 **Qdrant + RAGApp:**
 - RAGApp verwendet Qdrant als Standard-Vector-Store

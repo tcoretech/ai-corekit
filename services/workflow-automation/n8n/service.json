@@ -1,8 +1,9 @@
 {
   "name": "n8n",
+  "display_name": "n8n",
   "category": "Workflow Automation",
-  "description": "n8n, n8n-worker, n8n-import (Workflow Automation)",
-  "use_cases": "API integrations, data pipelines, business automation",
+  "rank": 10,
+  "description": "Extendable workflow automation tool for connecting apps, building API integrations, and orchestrating complex business processes.",
   "interface": "n8n.<yourdomain>.com",
   "source": "https://github.com/n8n-io/n8n",
   "depends_on": [

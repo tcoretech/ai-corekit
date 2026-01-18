@@ -52,7 +52,7 @@ Mailpit ist **bereits in n8n vorkonfiguriert**. Alle "Send Email"-Nodes nutzen M
 // 2. Send Email Node (bereits vorkonfiguriert)
 {
   "to": "test@example.com",
-  "subject": "Test vom AI LaunchKit",
+  "subject": "Test vom AI CoreKit",
   "text": "Diese E-Mail wurde von Mailpit erfasst!"
 }
 
@@ -147,7 +147,7 @@ docker exec [dienst] env | grep SMTP
 # Sollte zeigen: SMTP_HOST=mailpit, SMTP_PORT=1025
 
 # 2. Prüfe Docker-Netzwerk
-docker network inspect ai-launchkit_default | grep mailpit
+docker network inspect ai-corekit_default | grep mailpit
 
 # 3. Prüfe Service-Logs
 docker logs [dienst] | grep -i "mail\|smtp"

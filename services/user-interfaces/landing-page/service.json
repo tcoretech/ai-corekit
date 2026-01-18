@@ -1,8 +1,10 @@
 {
   "name": "landing-page",
+  "display_name": "Landing Page",
   "category": "User Interfaces",
-  "description": "Landing Page (Static website)",
-  "use_cases": "Main entry point",
+  "rank": 100,
+  "description": "Static landing page serving as the main entry point and navigation hub for the deployed infrastructure.",
   "interface": "<yourdomain>.com",
-  "source": "local"
+  "source": "local",
+  "depends_on": null
 }

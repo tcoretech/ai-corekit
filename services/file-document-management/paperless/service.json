@@ -1,8 +1,9 @@
 {
   "name": "paperless",
+  "display_name": "Paperless",
   "category": "File & Document Management",
-  "description": "Paperless-ngx (Document management with OCR & AI tagging)",
-  "use_cases": "Document archiving, AI auto-tagging, GDPR compliance, full-text search",
+  "rank": 100,
+  "description": "Community-supported document management system featuring OCR, AI-powered auto-tagging, full-text search, and GDPR compliance tools.",
   "interface": "docs.<yourdomain>.com",
   "source": "https://github.com/paperless-ngx/paperless-ngx",
   "depends_on": []

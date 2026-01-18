@@ -128,8 +128,6 @@ generate_services_section() {
 
     echo "---"
     echo ""
-    echo "> 📖 **For detailed documentation**, see each service's README in \`services/<category>/<service>/README.md\`"
-    echo ""
 }
 
 # Main execution

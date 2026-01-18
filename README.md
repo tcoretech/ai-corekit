@@ -248,8 +248,7 @@ Core host-level services
 
 ---
 
-<br>
-> 📖 **For detailed documentation**, see each service's README in `services/<category>/<service>/README.md`
+
 <!-- SERVICES_SECTION_END -->
 
 ## 💻 CLI Reference

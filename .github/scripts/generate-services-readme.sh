@@ -65,8 +65,9 @@ total_services=$(wc -l < "$SERVICES_DATA" | tr -d ' ')
 generate_services_section() {
     echo "## ✨ What's Included"
     echo ""
-    echo "> **${total_services}+ self-hosted services** organized into categories."
-    echo "> Each service includes its own README with detailed setup instructions, n8n integration examples, and troubleshooting guides."
+    echo "**${total_services}+ self-hosted services** pre-configured and wrapped for easy deployment."
+    echo ""
+    echo "Each service includes its own config, secrets handling and detailed setup instructions. Navigate to each modular service definition below."
     echo ""
 
     # Read categories from config and iterate
@@ -127,7 +128,6 @@ generate_services_section() {
 
     echo "---"
     echo ""
-    echo "<br>"
     echo "> 📖 **For detailed documentation**, see each service's README in \`services/<category>/<service>/README.md\`"
     echo ""
 }

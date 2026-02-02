@@ -38,7 +38,7 @@ services:
     - leantime-userfiles:/var/www/html/userfiles
     - leantime-plugins:/var/www/html/app/Plugins
     - leantime-logs:/var/www/html/storage/logs
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     healthcheck:
       test:
       - CMD

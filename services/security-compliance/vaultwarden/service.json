@@ -1,0 +1,10 @@
+{
+  "name": "vaultwarden",
+  "display_name": "Vaultwarden",
+  "category": "Security & Compliance",
+  "rank": 100,
+  "description": "Lightweight, self-hosted password manager compatible with Bitwarden clients, enabling secure credential management and team sharing.",
+  "interface": "vault.<yourdomain>.com",
+  "source": "https://github.com/dani-garcia/vaultwarden",
+  "depends_on": []
+}

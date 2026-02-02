@@ -25,7 +25,7 @@ services:
     - EMAIL_SMTP_USE_TLS=${EMAIL_SMTP_USE_TLS}
     volumes:
     - baserow_data:/baserow/data
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     depends_on:
       baserow-init:
         condition: service_completed_successfully

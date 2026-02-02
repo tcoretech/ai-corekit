@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
     - formbricks_uploads:/home/nextjs/apps/web/uploads
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     env_file:
       - .env
     environment:

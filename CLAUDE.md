@@ -535,7 +535,7 @@ ai-corekit/
     │       ├── data/         # Runtime data
     │       ├── config/       # Static config
     │       └── *.sh          # Lifecycle hooks
-    └── custom/               # User services
+    └── custom-services/      # User services
 ```
 
 ## Key Files

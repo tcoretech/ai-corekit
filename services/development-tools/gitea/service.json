@@ -1,0 +1,10 @@
+{
+  "name": "gitea",
+  "display_name": "Gitea",
+  "category": "Development Tools",
+  "rank": 100,
+  "description": "Lightweight, self-hosted DevOps platform and Git service providing source code management, issue tracking, and CI/CD capabilities.",
+  "interface": "git.<yourdomain>.com",
+  "source": "https://github.com/go-gitea/gitea",
+  "depends_on": []
+}

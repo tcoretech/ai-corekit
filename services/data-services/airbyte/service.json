@@ -1,0 +1,10 @@
+{
+  "name": "airbyte",
+  "display_name": "Airbyte",
+  "category": "Data Services",
+  "rank": 100,
+  "description": "Advanced data integration platform capable of syncing data from over 600 sources (Google Ads, Meta, TikTok, GA4) to data warehouses. Ideal for use with Metabase.",
+  "interface": "airbyte.<yourdomain>.com",
+  "source": "https://github.com/airbytehq/airbyte",
+  "depends_on": []
+}

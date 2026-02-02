@@ -1,0 +1,48 @@
+services:
+  fastmcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: launchkit/fastmcp:latest
+    container_name: fastmcp
+    profiles:
+      - fastmcp
+    env_file:
+      - .env
+    environment:
+      - FASTMCP_PORT=${FASTMCP_PORT:-8100}
+      - FASTMCP_HOST=0.0.0.0
+      - FASTMCP_API_KEY=${FASTMCP_API_KEY}
+      - FASTMCP_SERVER_NAME=${FASTMCP_SERVER_NAME:-FastMCP Gateway}
+      # MCP Server API Keys
+      - BRAVE_API_KEY=${BRAVE_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Filesystem access paths
+      - FASTMCP_ALLOWED_PATHS=${FASTMCP_ALLOWED_PATHS:-/data/workspace}
+    volumes:
+      - ./config:/app/config:ro
+      - ./config/local:/app/config/local:ro
+      - ./data:/app/data
+      - ./data/workspace:/data/workspace
+      - ./data/memory:/app/memory
+      - ./server.py:/app/server.py:ro
+    ports:
+      - "${FASTMCP_PORT:-8100}:${FASTMCP_PORT:-8100}"
+    working_dir: /app
+    command: ["python", "server.py"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${FASTMCP_PORT:-8100}/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "launchkit.service=fastmcp"
+      - "launchkit.category=ai-agents"

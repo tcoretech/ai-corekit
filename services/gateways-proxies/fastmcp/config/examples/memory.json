@@ -1,0 +1,12 @@
+    {
+  "memory-mcp": {
+    "enabled": false,
+    "description": "Information Graph Memory Server",
+    "type": "external",
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-memory"
+    ]
+  }
+}

@@ -11,7 +11,7 @@ services:
     - kopia_cache:/app/cache
     - kopia_logs:/app/logs
     - /var/lib/docker/volumes:/data/docker-volumes:ro
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared:ro
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared:ro
     - .:/data/ai-corekit:ro
     env_file:
       - .env

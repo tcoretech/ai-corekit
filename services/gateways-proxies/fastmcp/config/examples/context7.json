@@ -1,0 +1,10 @@
+{
+  "context7": {
+    "enabled": false,
+    "description": "Up-to-date documentation and code examples for libraries and frameworks",
+    "type": "external",
+    "command": "npx",
+    "args": ["-y", "@upstash/context7-mcp"],
+    "env": {}
+  }
+}

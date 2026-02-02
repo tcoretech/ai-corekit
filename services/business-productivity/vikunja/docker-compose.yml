@@ -22,7 +22,7 @@ services:
     - VIKUNJA_SERVICE_TIMEZONE=${TZ:-UTC}
     volumes:
     - vikunja-files:/app/vikunja/files
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     depends_on:
       vikunja-init:
         condition: service_completed_successfully

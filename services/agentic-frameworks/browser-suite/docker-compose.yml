@@ -1,0 +1,99 @@
+services:
+  skyvern-postgres:
+    image: postgres:15-alpine
+    container_name: skyvern-postgres
+    profiles:
+    - browser-suite
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - POSTGRES_USER=skyvern
+    - POSTGRES_PASSWORD=skyvern
+    - POSTGRES_DB=skyvern
+    - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+    - skyvern_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U skyvern
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  browserless:
+    image: ghcr.io/browserless/chromium:latest
+    container_name: browserless
+    profiles:
+    - browser-suite
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - TOKEN=${BROWSERLESS_TOKEN}
+    - CONCURRENT=${BROWSERLESS_CONCURRENT:-10}
+    - TIMEOUT=${BROWSERLESS_TIMEOUT:-120000}
+    - MAX_QUEUE_LENGTH=${BROWSERLESS_QUEUE:-10}
+    - ENABLE_DEBUGGER=${BROWSERLESS_DEBUGGER:-false}
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:3000/pressure
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    expose:
+    - '3000'
+  skyvern:
+    image: public.ecr.aws/skyvern/skyvern:latest
+    container_name: skyvern
+    profiles:
+    - browser-suite
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - DATABASE_STRING=postgresql+psycopg://skyvern:skyvern@skyvern-postgres:5432/skyvern
+    - SKYVERN_API_KEY=${SKYVERN_API_KEY}
+    - BROWSERLESS_URL=ws://browserless:3000?token=${BROWSERLESS_TOKEN}
+    - ENABLE_OPENAI=true
+    - LOG_LEVEL=INFO
+    volumes:
+    - ${PROJECT_ROOT}/services/.shared-resources/shared/skyvern-artifacts:/data/artifacts
+    - ${PROJECT_ROOT}/services/.shared-resources/shared/skyvern-videos:/data/videos
+    depends_on:
+      skyvern-postgres:
+        condition: service_healthy
+      browserless:
+        condition: service_started
+  browser-use:
+    image: python:3.11-slim
+    container_name: browser-use
+    profiles:
+    - browser-suite
+    restart: unless-stopped
+    working_dir: /workspace
+    command: 'bash -c " apt-get update && apt-get install -y curl wget &&  pip install
+      --no-cache-dir browser-use playwright langchain openai anthropic && playwright
+      install-deps chromium && playwright install chromium && echo ''Browser-use ready
+      - execute via: docker exec browser-use python script.py'' && tail -f /dev/null
+      "
+
+      '
+      env_file:
+        - .env
+    environment:
+    - BROWSERLESS_URL=ws://browserless:3000?token=${BROWSERLESS_TOKEN}
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/workspace
+    - browser-use-cache:/root/.cache
+    depends_on:
+    - browserless
+volumes:
+  skyvern_postgres_data: {}
+  browser-use-cache: {}

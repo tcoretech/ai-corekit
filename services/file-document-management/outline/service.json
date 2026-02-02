@@ -1,0 +1,10 @@
+{
+  "name": "outline",
+  "display_name": "Outline",
+  "category": "File & Document Management",
+  "rank": 100,
+  "description": "Team knowledge base and documentation platform serving as a Notion alternative with a modern, real-time editor.",
+  "interface": "outline.<yourdomain>.com",
+  "source": "https://github.com/outline/outline",
+  "depends_on": []
+}

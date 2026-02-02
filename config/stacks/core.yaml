@@ -8,6 +8,7 @@ services:
   - landing-page
   - n8n
   - n8n-mcp
+  - fastmcp
   - webhook-testing
   - gitea
   - homepage

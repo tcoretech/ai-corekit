@@ -99,7 +99,7 @@ for service in "${SERVICES_TO_BUILD[@]}"; do
     log_info "Building service: $service"
     
     # Find service directory
-    service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+    service_dir=$(find_service_path "$service")
     
     if [ -z "$service_dir" ]; then
         log_warning "Service directory not found for: $service"

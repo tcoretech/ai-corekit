@@ -1,0 +1,10 @@
+{
+  "name": "bolt",
+  "display_name": "bolt.diy",
+  "category": "Development Tools",
+  "rank": 90,
+  "description": "AI-powered web development tool for rapid prototyping, creating MVPs, and assisting in learning to code.",
+  "interface": "bolt.<yourdomain>.com",
+  "source": "https://github.com/stackblitz-labs/bolt.diy",
+  "depends_on": []
+}

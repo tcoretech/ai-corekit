@@ -1,0 +1,11 @@
+{
+  "playwright": {
+    "enabled": false,
+    "description": "Playwright Browser Automation",
+    "type": "external",
+    "command": "npx",
+    "args": [
+      "@playwright/mcp@latest"
+    ]
+  }
+}

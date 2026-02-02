@@ -1,0 +1,35 @@
+services:
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:latest
+    container_name: stirling-pdf
+    profiles:
+    - stirling-pdf
+    restart: unless-stopped
+    volumes:
+    - stirling_data:/usr/share/tessdata
+    - stirling_configs:/configs
+    - stirling_logs:/logs
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
+    env_file:
+      - .env
+    environment:
+    - SYSTEM_DEFAULTLOCALE=${STIRLING_LOCALE:-de-DE}
+    - UI_APPNAME=${STIRLING_APP_NAME:-AI LaunchKit PDF}
+    - "UI_HOMEDESCRIPTION=${STIRLING_APP_DESC:-PDF-Tools f\xFCr AI LaunchKit}"
+    - UI_APPNAMENAVBAR=${STIRLING_APP_NAME:-AI LaunchKit PDF}
+    - SECURITY_ENABLELOGIN=${STIRLING_ENABLE_LOGIN:-true}
+    - SECURITY_INITIALLOGINUSERNAME=${STIRLING_USERNAME}
+    - SECURITY_INITIALLOGINPASSWORD=${STIRLING_PASSWORD}
+    - DISABLE_ADDITIONAL_FEATURES=false
+    - LANGS=de-DE,en-GB,en-US
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:8080/api/v1/info/status | grep -q 'UP' || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+volumes:
+  stirling_configs: {}
+  stirling_logs: {}
+  stirling_data: {}

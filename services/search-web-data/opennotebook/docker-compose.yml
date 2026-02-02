@@ -21,7 +21,7 @@ services:
     volumes:
     - opennotebook_data:/app/data
     - opennotebook_surreal:/mydata
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/app/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/app/shared
     healthcheck:
       test:
       - CMD-SHELL

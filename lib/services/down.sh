@@ -199,7 +199,7 @@ log_info "Stopping services: ${SERVICES_TO_STOP[*]}"
 # COMPOSE_FILES=()
 
 # for service in "${SERVICES_TO_STOP[@]}"; do
-#     service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+#     service_dir=$(find_service_path "$service")
 #     if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
 #         COMPOSE_FILES+=("-f" "$service_dir/docker-compose.yml")
 #     fi
@@ -258,7 +258,7 @@ if [ "$USE_SPECIFIC" = true ]; then
         fi
 
         log_info "Looking for service: $service in $PROJECT_ROOT/services"
-        service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+        service_dir=$(find_service_path "$service")
         log_info "Found service dir: $service_dir"
         if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
              # Force enable all profiles to ensure the service is actually stopped/removed
@@ -275,7 +275,7 @@ else
     # So we should probably iterate to be safe and consistent with 'up'.
     
     for service in "${SERVICES_TO_STOP[@]}"; do
-        service_dir=$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+        service_dir=$(find_service_path "$service")
         if [ -n "$service_dir" ] && [ -f "$service_dir/docker-compose.yml" ]; then
              # Force enable all profiles to ensure the service is actually stopped/removed
              COMPOSE_PROFILES="*" docker compose -p "$PROJECT_NAME" --project-directory "$service_dir" -f "$service_dir/docker-compose.yml" down
@@ -285,7 +285,7 @@ fi
 
 # Cleanup Hooks (Optional)
 for service in "${SERVICES_TO_STOP[@]}"; do
-    service_dir=$(find "$PROJECT_ROOT/services" -name "$service" -type d | head -n 1)
+    service_dir=$(find_service_path "$service")
     if [ -n "$service_dir" ] && [ -f "$service_dir/cleanup.sh" ]; then
         log_info "[$service] Running cleanup hook..."
         (cd "$service_dir" && bash "cleanup.sh")

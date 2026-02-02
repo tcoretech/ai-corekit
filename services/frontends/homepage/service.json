@@ -1,0 +1,10 @@
+{
+  "name": "homepage",
+  "display_name": "Homepage",
+  "category": "Frontends",
+  "rank": 100,
+  "description": "Modern, customizable dashboard providing a centralized overview and quick access to all hosted services and Docker integrations.",
+  "interface": "dashboard.<yourdomain>.com",
+  "source": "https://github.com/gethomepage/homepage",
+  "depends_on": []
+}

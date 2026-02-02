@@ -1,0 +1,13 @@
+{
+  "name": "fastmcp",
+  "display_name": "FastMCP Gateway",
+  "category": "Gateways & Proxies",
+  "description": "A unified MCP (Model Context Protocol) server that proxies and aggregates multiple MCP servers",
+  "depends_on": [],
+  "ports": {
+    "8100": "MCP Gateway HTTP/SSE endpoint"
+  },
+  "urls": {
+    "mcp_endpoint": "http://localhost:${FASTMCP_PORT:-8100}/mcp"
+  }
+}

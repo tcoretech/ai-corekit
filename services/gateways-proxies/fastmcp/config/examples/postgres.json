@@ -1,0 +1,16 @@
+{
+  "postgres": {
+    "enabled": false,
+    "description": "PostgreSQL Database Inspector",
+    "type": "external",
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-postgres",
+      "${POSTGRES_CONNECTION_STRING}"
+    ],
+    "env": {
+        "POSTGRES_CONNECTION_STRING": "${POSTGRES_CONNECTION_STRING}"
+    }
+  }
+}

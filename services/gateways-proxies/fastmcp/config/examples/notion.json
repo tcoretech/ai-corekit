@@ -1,0 +1,9 @@
+{
+  "notion": {
+    "enabled": false,
+    "description": "Notion Integration",
+    "type": "http",
+    "url": "https://mcp.notion.com/mcp",
+    "note": "Requires HTTP/SSE support in gateway"
+  }
+}

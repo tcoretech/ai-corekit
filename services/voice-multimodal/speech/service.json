@@ -1,0 +1,10 @@
+{
+  "name": "speech",
+  "display_name": "Speech Stack",
+  "category": "Voice & Multimodal",
+  "rank": 100,
+  "description": "CPU-optimized speech stack combining Whisper ASR and OpenedAI TTS, suitable for building voice assistants, generating audiobooks, and audio notifications.",
+  "interface": "internal: http://openedai-speech:8000",
+  "source": "https://github.com/matatonic/openedai-speech",
+  "depends_on": []
+}

@@ -1,0 +1,10 @@
+{
+  "name": "ai-security",
+  "display_name": "AI Security Suite - LLM Guard + Presidio",
+  "category": "Security & Compliance",
+  "rank": 100,
+  "description": "Comprehensive AI security suite combining LLM Guard and Presidio for AI safety and GDPR-compliance, preventing prompt injections, filtering toxicity, and removing PII.",
+  "interface": "internal: http://llm-guard:8000",
+  "source": "https://github.com/protectai/llm-guard",
+  "depends_on": []
+}

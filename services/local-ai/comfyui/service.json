@@ -1,0 +1,10 @@
+{
+  "name": "comfyui",
+  "display_name": "ComfyUI",
+  "category": "Local AI Services",
+  "rank": 100,
+  "description": "Node-based user interface for Stable Diffusion, enabling complex image generation workflows, AI art creation, and photo editing.",
+  "interface": "comfyui.<yourdomain>.com",
+  "source": "https://github.com/comfyanonymous/ComfyUI",
+  "depends_on": []
+}

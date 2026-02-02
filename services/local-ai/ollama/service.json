@@ -1,0 +1,10 @@
+{
+  "name": "ollama",
+  "display_name": "Ollama",
+  "category": "Local AI Services",
+  "rank": 80,
+  "description": "Local Large Language Model (LLM) runner enabling the execution of models like Llama, Mistral, and Phi locally with an API-compatible interface.",
+  "interface": "ollama.<yourdomain>.com",
+  "source": "https://github.com/ollama/ollama",
+  "depends_on": []
+}

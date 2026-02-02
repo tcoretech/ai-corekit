@@ -1,0 +1,12 @@
+{
+  "linear": {
+    "enabled": false,
+    "description": "Linear Issue Tracking",
+    "type": "http",
+    "url": "https://mcp.linear.app/mcp",
+    "env": {
+      "LINEAR_API_KEY": "${LINEAR_API_KEY}"
+    },
+    "note": "Requires HTTP/SSE support in gateway"
+  }
+}

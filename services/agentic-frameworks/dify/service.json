@@ -1,0 +1,10 @@
+{
+  "name": "dify",
+  "display_name": "Dify",
+  "category": "Agentic Frameworks",
+  "rank": 100,
+  "description": "LLM application development platform designed for building AI agents, chatbots, and automating workflows.",
+  "interface": "dify.<yourdomain>.com",
+  "source": "https://github.com/langgenius/dify",
+  "depends_on": []
+}

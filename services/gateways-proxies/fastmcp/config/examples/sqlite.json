@@ -1,0 +1,14 @@
+{
+  "sqlite": {
+    "enabled": false,
+    "description": "SQLite Database Inspector",
+    "type": "external",
+    "command": "uvx",
+    "args": [
+      "mcp-server-sqlite",
+      "--db-path",
+      "/app/data/sqlite.db"
+    ],
+    "env": {}
+  }
+}

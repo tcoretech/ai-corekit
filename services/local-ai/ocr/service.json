@@ -1,0 +1,10 @@
+{
+  "name": "ocr",
+  "display_name": "OCR Bundle",
+  "category": "Local AI Services",
+  "rank": 100,
+  "description": "OCR bundle combining Tesseract and EasyOCR to reliably extract text from images and PDF documents.",
+  "interface": "internal: http://tesseract-ocr:8884",
+  "source": "",
+  "depends_on": []
+}

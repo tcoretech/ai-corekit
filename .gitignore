@@ -30,6 +30,6 @@ dkim_*
 volumes/
 docker-data/
 shared-backup/
-services/shared-resources/shared/
-services/shared-resources/media/
-services/shared-resources/temp/
+services/.shared-resources/shared/
+services/.shared-resources/media/
+services/.shared-resources/temp/

@@ -19,7 +19,7 @@ services:
     - RAG_SERVICE_ENABLED=true
     volumes:
     - paperless-ai-data:/app/data
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     healthcheck:
       test:
       - CMD-SHELL
@@ -59,7 +59,7 @@ services:
     - LOG_LEVEL=info
     volumes:
     - paperless-gpt-prompts:/app/prompts
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     healthcheck:
       test:
       - CMD-SHELL

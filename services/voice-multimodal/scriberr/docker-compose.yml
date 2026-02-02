@@ -1,0 +1,37 @@
+services:
+  scriberr:
+    image: ghcr.io/rishikanthc/scriberr:latest
+    container_name: scriberr
+    profiles:
+    - scriberr
+    restart: unless-stopped
+    volumes:
+    - scriberr_data:/app/data
+    - ${PROJECT_ROOT}/services/.shared-resources/shared/audio:/app/data/uploads
+    env_file:
+      - .env
+    environment:
+    - HOST=0.0.0.0
+    - PORT=8080
+    - DATABASE_PATH=/app/data/scriberr.db
+    - UPLOAD_DIR=/app/data/uploads
+    - WHISPERX_ENV=/app/data/whisperx-env
+    - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    - WHISPER_MODEL=${SCRIBERR_WHISPER_MODEL:-base}
+    - ENABLE_SPEAKER_DIARIZATION=${SCRIBERR_SPEAKER_DIARIZATION:-true}
+    - MIN_SPEAKERS=${SCRIBERR_MIN_SPEAKERS:-2}
+    - MAX_SPEAKERS=${SCRIBERR_MAX_SPEAKERS:-4}
+    - WHISPER_THREADS=${SCRIBERR_THREADS:-4}
+    - BATCH_SIZE=${SCRIBERR_BATCH_SIZE:-16}
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:8080/api/health || wget -q --spider http://localhost:8080
+        || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+volumes:
+  scriberr_data: {}

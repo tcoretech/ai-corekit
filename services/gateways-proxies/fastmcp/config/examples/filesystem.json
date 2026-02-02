@@ -1,0 +1,13 @@
+{
+  "filesystem-mcp": {
+    "enabled": false,
+    "description": "Filesystem MCP Server (External)",
+    "type": "external",
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-filesystem",
+      "${FILESYSTEM_ROOT_PATH:-/app/data/workspace}"
+    ]
+  }
+}

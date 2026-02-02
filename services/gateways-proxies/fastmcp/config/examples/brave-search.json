@@ -1,0 +1,15 @@
+{
+  "brave-search": {
+    "enabled": false,
+    "description": "Brave Search API",
+    "type": "external",
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-brave-search"
+    ],
+    "env": {
+      "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+    }
+  }
+}

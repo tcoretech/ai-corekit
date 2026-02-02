@@ -1,0 +1,10 @@
+{
+  "name": "stirling-pdf",
+  "display_name": "Stirling-PDF",
+  "category": "File & Document Management",
+  "rank": 100,
+  "description": "Comprehensive PDF manipulation tool offering over 100 features including merging, splitting, compressing, OCR, and signing documents.",
+  "interface": "pdf.<yourdomain>.com",
+  "source": "https://github.com/Stirling-Tools/Stirling-PDF",
+  "depends_on": []
+}

@@ -48,9 +48,9 @@ services:
     - ./data/backups:/backup
     - ./config/workflows:/import/workflows:ro
     - ./config/credentials:/import/credentials:ro
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
-    - ${PROJECT_ROOT}/services/shared-resources/media:/data/media
-    - ${PROJECT_ROOT}/services/shared-resources/temp:/data/temp
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/media:/data/media
+    - ${PROJECT_ROOT}/services/.shared-resources/temp:/data/temp
     networks:
       - default
 
@@ -98,9 +98,9 @@ services:
     command: worker
     volumes:
     - n8n_storage:/home/node/.n8n
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
-    - ${PROJECT_ROOT}/services/shared-resources/media:/data/media
-    - ${PROJECT_ROOT}/services/shared-resources/temp:/data/temp
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/media:/data/media
+    - ${PROJECT_ROOT}/services/.shared-resources/temp:/data/temp
     depends_on:
       n8n:
         condition: service_started
@@ -128,7 +128,7 @@ services:
     - N8N_RUNNERS_PYTHON_ALLOW_BUILTIN=*
     - N8N_RUNNERS_PYTHON_ALLOW_EXTERNAL=
     volumes:
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     - ./config/task-runners.json:/etc/n8n-task-runners.json:ro
     depends_on:
       n8n:

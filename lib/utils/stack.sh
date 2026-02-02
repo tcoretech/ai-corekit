@@ -162,3 +162,40 @@ find_stack_for_service() {
     fi
     echo "$found_stack"
 }
+
+# Helper: Find Service Path
+# Usage: find_service_path <service_name> [project_root] [config_dir]
+find_service_path() {
+    local service="$1"
+    local p_root="${2:-$PROJECT_ROOT}"
+    local c_dir="${3:-$CONFIG_DIR}"
+    
+    # 1. Try to find path from service_categories.json
+    if [ -f "$c_dir/service_categories.json" ]; then
+        # Extract paths using grep/cut
+        # Grep for "path": "value"
+        local paths=$(grep '"path":' "$c_dir/service_categories.json" | cut -d'"' -f4)
+        
+        for p in $paths; do
+            if [ -d "$p_root/services/$p/$service" ]; then
+                echo "$p_root/services/$p/$service"
+                return 0
+            fi
+        done
+    fi
+    
+    # 2. Check 'custom-services' folder explicitly
+    if [ -d "$p_root/services/custom-services/$service" ]; then
+        echo "$p_root/services/custom-services/$service"
+        return 0
+    fi
+    
+    # 3. Fallback to global find
+    local found=$(find "$p_root/services" -mindepth 2 -maxdepth 2 -name "$service" -type d 2>/dev/null | head -n 1)
+    if [ -n "$found" ]; then
+        echo "$found"
+        return 0
+    fi
+    
+    return 1
+}

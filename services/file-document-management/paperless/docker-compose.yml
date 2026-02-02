@@ -27,7 +27,7 @@ services:
     volumes:
     - paperless_data:/usr/src/paperless/data
     - paperless_media:/usr/src/paperless/media
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/usr/src/paperless/consume/seafile
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/usr/src/paperless/consume/seafile
     depends_on:
     - paperless-db
     - paperless-redis

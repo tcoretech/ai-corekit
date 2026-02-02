@@ -1,0 +1,10 @@
+{
+  "name": "redis",
+  "display_name": "Redis Cache",
+  "category": "Data Services",
+  "rank": 100,
+  "description": "Shared Redis instance providing caching and message brokering for services like n8n.",
+  "interface": "internal: tcp://redis:6379",
+  "source": "https://hub.docker.com/_/redis",
+  "depends_on": []
+}

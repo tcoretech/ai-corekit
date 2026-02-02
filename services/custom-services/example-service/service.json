@@ -1,0 +1,12 @@
+{
+  "name": "example-service",
+  "display_name": "Example Service",
+  "category": "Custom Services",
+  "rank": 100,
+  "description": "Example Service (Custom Repo Hosting Template)",
+  "interface": null,
+  "source": null,
+  "depends_on": null,
+  "version": "1.0.0",
+  "dependencies": []
+}

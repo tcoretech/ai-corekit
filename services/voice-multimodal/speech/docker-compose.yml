@@ -1,0 +1,46 @@
+services:
+  openedai-speech:
+    image: ghcr.io/matatonic/openedai-speech-min:latest
+    container_name: openedai-speech
+    profiles:
+    - speech
+    restart: unless-stopped
+    expose:
+    - '8000'
+    volumes:
+    - ./data/voices:/app/voices
+    - ./config/local/openedai-config:/app/config
+    env_file:
+      - .env
+    environment:
+    - TTS_HOME=voices
+    - HF_HOME=voices
+  faster-whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: faster-whisper
+    profiles:
+    - speech
+    restart: unless-stopped
+    expose:
+    - '8000'
+    env_file:
+      - .env
+    environment:
+    - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-distil-whisper-large-v3}
+    - WHISPER__COMPUTE_TYPE=int8
+    - WHISPER__DEVICE=cpu
+    - WHISPER__CPU_THREADS=4
+    volumes:
+    - whisper-models:/root/.cache/huggingface
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8000/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+volumes:
+  whisper-models: {}

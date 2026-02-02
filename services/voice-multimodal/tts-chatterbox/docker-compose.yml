@@ -1,0 +1,25 @@
+services:
+  tts-chatterbox:
+    build:
+      context: ./build
+      dockerfile: ../docker/Dockerfile
+    container_name: tts-chatterbox
+    profiles:
+    - tts-chatterbox
+    restart: unless-stopped
+    volumes:
+    - chatterbox_models:/root/.cache/huggingface
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
+    env_file:
+      - .env
+    environment:
+    - GRADIO_SERVER_NAME=0.0.0.0
+    ports:
+    - "7860:7860"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+volumes:
+  chatterbox_models: {}

@@ -1,0 +1,10 @@
+{
+  "name": "neo4j",
+  "display_name": "Neo4j",
+  "category": "Data Services",
+  "rank": 100,
+  "description": "High-performance graph database optimized for knowledge graphs, relationship mapping, and fraud detection.",
+  "interface": "neo4j.<yourdomain>.com",
+  "source": "https://github.com/neo4j/neo4j",
+  "depends_on": []
+}

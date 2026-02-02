@@ -1,0 +1,52 @@
+services:
+  easyocr:
+    image: voduytuan/restful-easyocr:latest
+    container_name: easyocr
+    profiles:
+    - ocr
+    restart: unless-stopped
+    volumes:
+    - easyocr_models:/root/.EasyOCR/model
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
+    env_file:
+      - .env
+    environment:
+    - SECRET_KEY=${EASYOCR_SECRET_KEY:-launchkit}
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:2000/health
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+  tesseract-ocr:
+    image: hertzg/tesseract-server:latest
+    container_name: tesseract-ocr
+    profiles:
+    - ocr
+    restart: unless-stopped
+    volumes:
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/tmp
+    env_file:
+      - .env
+    environment:
+    - HTTP_LISTEN_PORT=8884
+    - HTTP_UPLOAD_TMPDIR=/tmp
+    - POOL_DEFAULT_MAX=${OCR_CPU_CORES:-4}
+    - POOL_DEFAULT_IDLETIMEOUTMILLIS=5000
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - --spider
+      - http://localhost:8884/status
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+volumes:
+  easyocr_models: {}

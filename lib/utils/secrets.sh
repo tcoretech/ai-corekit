@@ -5,6 +5,10 @@ if ! command -v log_info &> /dev/null; then
     source "$(dirname "${BASH_SOURCE[0]}")/logging.sh"
 fi
 
+if ! command -v find_service_path &> /dev/null; then
+    source "$(dirname "${BASH_SOURCE[0]}")/stack.sh"
+fi
+
 # --- Generation Functions ---
 
 # Usage: gen_random <length> <characters>
@@ -138,7 +142,7 @@ load_all_envs() {
         # Load only specific services
         for service in "${specific_services[@]}"; do
             # Find service directory (maxdepth 2)
-            local s_dir=$(find "$project_root/services" -mindepth 2 -maxdepth 2 -name "$service" -type d | head -n 1)
+            local s_dir=$(find_service_path "$service" "$project_root" "$project_root/config")
             if [[ -n "$s_dir" && -f "$s_dir/.env" ]]; then
                 _load_file_to_map "$s_dir/.env"
             fi

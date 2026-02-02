@@ -1,0 +1,10 @@
+{
+  "name": "qdrant",
+  "display_name": "Qdrant",
+  "category": "Data Services",
+  "rank": 100,
+  "description": "High-performance vector database optimized for semantic search, recommendation engines, and RAG storage.",
+  "interface": "qdrant.<yourdomain>.com",
+  "source": "https://github.com/qdrant/qdrant",
+  "depends_on": []
+}

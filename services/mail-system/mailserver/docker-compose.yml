@@ -18,7 +18,7 @@ services:
     - ./data/dms/config:/tmp/docker-mailserver/
     - caddy-data:/certs/:ro
     - /etc/localtime:/etc/localtime:ro
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     env_file:
       - .env
     environment:

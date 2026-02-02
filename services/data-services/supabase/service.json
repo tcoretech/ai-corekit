@@ -1,0 +1,10 @@
+{
+  "name": "supabase",
+  "display_name": "Supabase",
+  "category": "Data Services",
+  "rank": 10,
+  "description": "Open-source Backend-as-a-Service (BaaS) providing Database, Authentication, Realtime subscriptions, Storage, and Edge Functions.",
+  "interface": "supabase.<yourdomain>.com",
+  "source": "https://github.com/supabase/supabase",
+  "depends_on": []
+}

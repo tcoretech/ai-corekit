@@ -2,96 +2,109 @@
   {
     "name": "Workflow Automation",
     "icon": "🔧",
-    "description": "Orchestrate processes and integrate services"
+    "description": "Orchestrate processes and integrate services",
+    "path": "workflow-automation"
   },
   {
-    "name": "User Interfaces",
+    "name": "Frontends",
     "icon": "🎯",
-    "description": "Front-end interfaces and dashboards"
+    "description": "Front-end interfaces and dashboards",
+    "path": "frontends"
   },
   {
     "name": "Mail System",
     "icon": "📧",
-    "description": "Email sending, receiving, and management"
-  },
-  {
-    "name": "Video Conferencing",
-    "icon": "📹",
-    "description": "Real-time video and audio communication"
-  },
-  {
-    "name": "File & Document Management",
-    "icon": "📁",
-    "description": "Storage, organization, and document processing"
+    "description": "Email sending, receiving, and management",
+    "path": "mail-system"
   },
   {
     "name": "Business Productivity",
     "icon": "💼",
-    "description": "Tools for business operations and management"
+    "description": "Tools for business operations and management",
+    "path": "business-productivity"
   },
   {
-    "name": "AI Content Generation",
-    "icon": "🎨",
-    "description": "Generate images, text, and other media"
-  },
-  {
-    "name": "AI-Powered Development",
+    "name": "Development Tools",
     "icon": "💻",
-    "description": "Coding assistance and development tools"
+    "description": "Coding assistance and development tools",
+    "path": "development-tools"
   },
   {
-    "name": "AI Agents",
+    "name": "Agentic Frameworks",
     "icon": "🤖",
-    "description": "Autonomous agents and assistants"
+    "description": "Autonomous agents and frameworks",
+    "path": "agentic-frameworks"
   },
   {
     "name": "RAG Systems",
     "icon": "📚",
-    "description": "Retrieval-Augmented Generation systems"
+    "description": "Retrieval-Augmented Generation systems",
+    "path": "rag-systems"
   },
   {
-    "name": "Speech, Language & Text",
+    "name": "Voice & Multimodal",
     "icon": "🎙️",
-    "description": "Speech recognition and text processing"
+    "description": "Speech recognition, synthesis, and multimodal processing",
+    "path": "voice-multimodal"
   },
   {
     "name": "Search & Web Data",
     "icon": "🔍",
-    "description": "Search engines and data scraping"
+    "description": "Search engines and data scraping",
+    "path": "search-web-data"
   },
   {
-    "name": "Knowledge Graphs",
-    "icon": "🧠",
-    "description": "Structure and query complex data relationships"
-  },
-  {
-    "name": "Data Infrastructure",
+    "name": "Data Services",
     "icon": "🗄️",
-    "description": "Databases and data management systems"
+    "description": "Databases and data management systems",
+    "path": "data-services"
   },
   {
     "name": "System Management",
     "icon": "⚙️",
-    "description": "Monitoring, logging, and infrastructure tools"
+    "description": "Monitoring, logging, and infrastructure tools",
+    "path": "system-management"
   },
   {
-    "name": "AI Support Tools",
-    "icon": "🧰",
-    "description": "Utilities and supporting services for AI"
-  },
-  {
-    "name": "AI Security & Compliance",
+    "name": "Security & Compliance",
     "icon": "🛡️",
-    "description": "Security auditing and compliance tools"
+    "description": "Security auditing and compliance tools",
+    "path": "security-compliance"
   },
   {
-    "name": "Python",
+    "name": "Code Runners",
     "icon": "🐍",
-    "description": "Python environments and script runners"
+    "description": "Code execution environments",
+    "path": "code-runners"
   },
   {
     "name": "Host Services",
     "icon": "🖥️",
-    "description": "Core host-level services"
+    "description": "Core host-level services",
+    "path": "host-services"
+  },
+  {
+    "name": "Gateways & Proxies",
+    "icon": "🌐",
+    "description": "Gateways, proxies and tunnels",
+    "path": "gateways-proxies"
+  },
+  {
+    "name": "Local AI Services",
+    "icon": "🏠",
+    "description": "Locally hosted AI models and inference servers",
+    "path": "local-ai"
+  },
+  {
+    "name": "File & Document Management",
+    "icon": "📁",
+    "description": "Storage, organization, and document processing",
+    "path": "file-document-management"
+  },
+  {
+    "name": "Custom Services",
+    "icon": "✨",
+    "description": "User-defined custom services",
+    "path": "custom-services"
   }
 ]

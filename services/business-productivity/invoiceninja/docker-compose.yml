@@ -8,7 +8,7 @@ services:
     volumes:
     - invoiceninja_public:/var/www/app/public
     - invoiceninja_storage:/var/www/app/storage
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     - ./config/php-cli.ini:/usr/local/etc/php/conf.d/memory-limit.ini
     env_file:
       - .env

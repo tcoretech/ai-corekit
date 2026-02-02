@@ -29,7 +29,7 @@ services:
     - NODE_ENV=production
     volumes:
     - calcom_data:/app/data
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     expose:
     - '3000'
     healthcheck:

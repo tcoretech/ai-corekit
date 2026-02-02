@@ -1,0 +1,10 @@
+{
+  "name": "mysql",
+  "display_name": "MySQL Database",
+  "category": "Data Services",
+  "rank": 100,
+  "description": "Shared MySQL database instance powering services like Leantime and Mautic.",
+  "interface": "internal: tcp://mysql:3306",
+  "source": "https://hub.docker.com/_/mysql",
+  "depends_on": []
+}

@@ -16,7 +16,7 @@ services:
     - PASSWORD=${ODOO_DB_PASSWORD}
     volumes:
     - odoo_data:/var/lib/odoo
-    - ${PROJECT_ROOT}/services/shared-resources/shared:/data/shared:ro
+    - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared:ro
     command: odoo --proxy-mode
     healthcheck:
       test:

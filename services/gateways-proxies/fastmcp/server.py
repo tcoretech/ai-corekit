@@ -18,11 +18,14 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastmcp import FastMCP
+from fastmcp.client.transports import StdioTransport
 from starlette.applications import Starlette
 from starlette.routing import Route, Mount
 from starlette.responses import JSONResponse, Response
+from starlette.requests import Request
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -38,6 +41,7 @@ SERVER_NAME = os.environ.get("FASTMCP_SERVER_NAME", "FastMCP Gateway")
 API_KEY = os.environ.get("FASTMCP_API_KEY", "")
 SERVERS_CONFIG = os.environ.get("FASTMCP_SERVERS_CONFIG", "config/servers.json")
 SERVERS_LOCAL_CONFIG = os.environ.get("FASTMCP_SERVERS_LOCAL_CONFIG", "config/local/servers.json")
+SERVERS_LOCAL_DIR = os.environ.get("FASTMCP_SERVERS_LOCAL_DIR", "config/local/servers")
 
 # Feature flags
 ENABLE_FILESYSTEM = os.environ.get("FASTMCP_ENABLE_FILESYSTEM", "true").lower() == "true"
@@ -51,6 +55,47 @@ ENABLE_GITHUB = os.environ.get("FASTMCP_ENABLE_GITHUB", "false").lower() == "tru
 mcp = FastMCP(SERVER_NAME)
 
 
+# ============================================================================
+# Authentication Middleware
+# ============================================================================
+
+class APIKeyAuthMiddleware(BaseHTTPMiddleware):
+    """Middleware to enforce API key authentication."""
+
+    # Paths that don't require authentication
+    PUBLIC_PATHS = {"/health"}
+
+    async def dispatch(self, request: Request, call_next):
+        # Skip auth for public paths
+        if request.url.path in self.PUBLIC_PATHS:
+            return await call_next(request)
+
+        # Skip auth if no API key is configured
+        if not API_KEY:
+            return await call_next(request)
+
+        # Check for API key in headers
+        auth_header = request.headers.get("Authorization", "")
+        api_key_header = request.headers.get("X-API-Key", "")
+
+        # Extract Bearer token if present
+        bearer_token = ""
+        if auth_header.startswith("Bearer "):
+            bearer_token = auth_header[7:]
+
+        # Validate API key
+        if bearer_token == API_KEY or api_key_header == API_KEY:
+            return await call_next(request)
+
+        # Authentication failed
+        logger.warning(f"Unauthorized request to {request.url.path} from {request.client.host}")
+        return JSONResponse(
+            {"error": "Unauthorized", "message": "Valid API key required"},
+            status_code=401,
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
 def load_servers_config() -> dict:
     """Load servers configuration from JSON files."""
     config = {"servers": {}, "defaults": {}}
@@ -61,6 +106,41 @@ def load_servers_config() -> dict:
         with open(base_path) as f:
             config = json.load(f)
         logger.info(f"Loaded base config from {SERVERS_CONFIG}")
+
+    # Load separate server files from local directory
+    local_dir = Path(SERVERS_LOCAL_DIR)
+    if local_dir.exists() and local_dir.is_dir():
+        for file_path in local_dir.glob("*.json"):
+            try:
+                with open(file_path) as f:
+                    file_content = json.load(f)
+                    
+                # Handle structure: {"servers": {...}}
+                servers_to_add = {}
+                if "servers" in file_content:
+                    servers_to_add = file_content["servers"]
+                # Handle structure: {"server_name": {...}} (direct map)
+                elif isinstance(file_content, dict):
+                    # Filter out non-server keys like 'defaults' if present at root
+                    servers_to_add = {k: v for k, v in file_content.items() 
+                                    if k != "defaults" and not k.startswith("_")}
+                
+                for server_name, server_config in servers_to_add.items():
+                    if server_name.startswith("_"):
+                        continue
+                        
+                    # Basic validation - must be dict
+                    if not isinstance(server_config, dict):
+                        logger.warning(f"Skipping invalid config for {server_name} in {file_path.name}")
+                        continue
+                        
+                    config["servers"][server_name] = {
+                        **config["servers"].get(server_name, {}),
+                        **server_config
+                    }
+                logger.info(f"Loaded local server config from {file_path}")
+            except Exception as e:
+                logger.error(f"Failed to load local config {file_path}: {e}")
 
     # Load local overrides
     local_path = Path(SERVERS_LOCAL_CONFIG)
@@ -767,23 +847,122 @@ if ENABLE_GITHUB:
 
 
 # ============================================================================
+# External MCP Server Proxying
+# ============================================================================
+
+def initialize_external_servers():
+    """Initialize and mount external MCP servers as proxies."""
+    config = load_servers_config()
+
+    for server_name, server_config in config.get("servers", {}).items():
+        if server_name.startswith("_"):
+            continue
+
+        if not server_config.get("enabled"):
+            continue
+
+        server_type = server_config.get("type", "builtin")
+
+        # Skip builtin servers - they're handled directly above
+        if server_type == "builtin":
+            continue
+
+        if server_type == "external":
+            command = server_config.get("command")
+            args = server_config.get("args", [])
+
+            if not command:
+                logger.warning(f"External server '{server_name}' missing 'command' field")
+                continue
+
+            # Expand environment variables in args
+            expanded_args = [expand_env_vars(arg) for arg in args]
+
+            # Build environment for the subprocess
+            server_env = {}
+            for key, value in server_config.get("env", {}).items():
+                expanded_value = expand_env_vars(value)
+                if expanded_value:  # Only set if non-empty
+                    server_env[key] = expanded_value
+
+            try:
+                logger.info(f"Starting external server: {server_name} ({command} {' '.join(expanded_args)})")
+
+                # Create stdio transport for the external command
+                transport = StdioTransport(
+                    command=command,
+                    args=expanded_args,
+                    env=server_env if server_env else None
+                )
+
+                # Create proxy server from transport and mount it
+                proxy = FastMCP.as_proxy(transport, name=f"{server_name}-proxy")
+                mcp.mount(proxy, prefix=server_name)
+                logger.info(f"Mounted external server: {server_name}")
+
+            except Exception as e:
+                logger.error(f"Failed to mount external server '{server_name}': {e}")
+                import traceback
+                traceback.print_exc()
+
+        elif server_type == "http":
+            url = server_config.get("url")
+            if not url:
+                logger.warning(f"HTTP server '{server_name}' missing 'url' field")
+                continue
+
+            # Expand URL (in case it has env vars)
+            expanded_url = expand_env_vars(url)
+
+            # Build headers if present
+            headers = {}
+            for key, value in server_config.get("headers", {}).items():
+                expanded_value = expand_env_vars(value)
+                if expanded_value:
+                    headers[key] = expanded_value
+
+            try:
+                logger.info(f"Connecting to HTTP MCP server: {server_name} ({expanded_url})")
+
+                # Create proxy server from URL and mount it
+                # Note: headers support may require custom transport
+                proxy = FastMCP.as_proxy(expanded_url, name=f"{server_name}-proxy")
+                mcp.mount(proxy, prefix=server_name)
+                logger.info(f"Mounted HTTP server: {server_name}")
+
+            except Exception as e:
+                logger.error(f"Failed to mount HTTP server '{server_name}': {e}")
+                import traceback
+                traceback.print_exc()
+
+
+# ============================================================================
 # HTTP Server Setup
 # ============================================================================
 
 async def health_check(request):
     """Health check endpoint."""
+    # Count external servers
+    config = load_servers_config()
+    external_servers = [
+        name for name, cfg in config.get("servers", {}).items()
+        if cfg.get("enabled") and cfg.get("type") in ("external", "http") and not name.startswith("_")
+    ]
+
     return JSONResponse({
         "status": "healthy",
         "server": SERVER_NAME,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "tools": {
+        "tools_count": len(mcp._tool_manager._tools) if hasattr(mcp, '_tool_manager') else 0,
+        "builtin_features": {
             "filesystem": ENABLE_FILESYSTEM,
             "memory": ENABLE_MEMORY,
             "time": ENABLE_TIME,
             "fetch": ENABLE_FETCH,
             "brave_search": ENABLE_BRAVE and bool(os.environ.get("BRAVE_API_KEY")),
             "github": ENABLE_GITHUB and bool(os.environ.get("GITHUB_TOKEN"))
-        }
+        },
+        "external_servers": external_servers
     })
 
 
@@ -812,24 +991,45 @@ async def server_info(request):
     })
 
 
-# Create Starlette app with CORS middleware
+# Create Starlette app with middleware
 middleware = [
     Middleware(
         CORSMiddleware,
         allow_origins=["*"],
         allow_methods=["*"],
         allow_headers=["*"],
-    )
+    ),
+    Middleware(APIKeyAuthMiddleware),
 ]
 
-# Create the app with routes
+# Get the MCP HTTP app with its lifespan
+mcp_http_app = mcp.http_app()
+
+
+@asynccontextmanager
+async def combined_lifespan(app):
+    """Combined lifespan that initializes external servers and FastMCP."""
+    # Initialize external MCP servers (sync function, called during startup)
+    logger.info("Initializing external MCP servers...")
+    initialize_external_servers()
+
+    # Enter FastMCP lifespan
+    async with mcp_http_app.lifespan(app):
+        yield
+
+    logger.info("Shutting down...")
+
+
+# Create the app with routes and combined lifespan
+# Mount at root so FastMCP's internal /mcp route is accessible at /mcp (not /mcp/mcp)
 app = Starlette(
     routes=[
         Route("/health", health_check),
         Route("/info", server_info),
-        Mount("/mcp", app=mcp.http_app()),
+        Mount("/", app=mcp_http_app),
     ],
     middleware=middleware,
+    lifespan=combined_lifespan,
 )
 
 

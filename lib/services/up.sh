@@ -102,10 +102,16 @@ resolve_dependencies() {
     local service_dir=$(find_service_path "$service")
     
     if [ -n "$service_dir" ] && [ -f "$service_dir/service.json" ]; then
-        # Extract depends_on array using grep/sed/tr since we don't have jq guaranteed
-        # This is a simple parser and assumes standard formatting
-        local deps=$(grep -A 10 '"depends_on":' "$service_dir/service.json" | grep '"' | grep -v "depends_on" | tr -d ' ",' | tr '\n' ' ')
-        echo "$deps"
+        # Use python3 to parse JSON if available (closest to jq without jq)
+        if command -v python3 &>/dev/null; then
+            python3 -c "import json; f=open('$service_dir/service.json'); d=json.load(f).get('depends_on', []); print(' '.join(d))" 2>/dev/null
+        else
+            # Fallback: legacy grep parsing (flaky)
+            # Extract depends_on array using grep/sed/tr since we don't have jq guaranteed
+            # This is a simple parser and assumes standard formatting
+            local deps=$(grep -A 10 '"depends_on":' "$service_dir/service.json" | grep '"' | grep -v "depends_on" | tr -d ' ",' | tr '\n' ' ')
+            echo "$deps"
+        fi
     fi
 }
 

@@ -1,0 +1,19 @@
+{
+  "n8n": {
+    "enabled": false,
+    "description": "n8n Workflow Integration",
+    "type": "external",
+    "command": "npx",
+    "args": [
+      "n8n-mcp"
+    ],
+    "env": {
+      "MCP_MODE": "stdio",
+      "LOG_LEVEL": "error",
+      "DISABLE_CONSOLE_OUTPUT": "true",
+      "N8N_API_URL": "${N8N_API_URL}",
+      "N8N_API_KEY": "${N8N_API_KEY}",
+      "N8N_MCP_TELEMETRY_DISABLED": "true"
+    }
+  }
+}

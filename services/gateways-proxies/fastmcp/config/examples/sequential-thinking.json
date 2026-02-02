@@ -1,0 +1,12 @@
+{
+  "sequential-thinking": {
+    "enabled": false,
+    "description": "Sequential Thinking Tool",
+    "type": "external",
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-sequential-thinking"
+    ]
+  }
+}

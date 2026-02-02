@@ -103,6 +103,96 @@ cmd_list() {
     echo "Legend: ✓ enabled, ○ disabled, + available to enable, · in local"
 }
 
+# Find file containing a server by name
+find_server_file() {
+    local name="$1"
+    local search_dir="$2"
+
+    for file in "$search_dir"/*.json; do
+        [ -f "$file" ] || continue
+        local sname=$(jq -r 'keys[0]' "$file" 2>/dev/null)
+        if [ "$sname" = "$name" ]; then
+            echo "$file"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Check for required environment variables and prompt to set them
+check_required_env_vars() {
+    local config_file="$1"
+    local name="$2"
+    local env_file="$SCRIPT_DIR/.env"
+    local missing_vars=()
+
+    # Source existing env file
+    if [ -f "$env_file" ]; then
+        set -a
+        source "$env_file" 2>/dev/null || true
+        set +a
+    fi
+
+    # Extract env vars from config
+    local env_vars=$(jq -r --arg name "$name" '.[$name].env // {} | keys[]' "$config_file" 2>/dev/null)
+
+    for var in $env_vars; do
+        # Extract the source var name from ${VAR} or ${VAR:-default} syntax
+        local source_var=$(jq -r --arg name "$name" --arg var "$var" '.[$name].env[$var]' "$config_file" 2>/dev/null)
+        # Parse ${VAR_NAME} or ${VAR_NAME:-default}
+        local actual_var=$(echo "$source_var" | sed -n 's/.*\${\([^}:-]*\).*/\1/p')
+
+        if [ -n "$actual_var" ]; then
+            # Check if the variable is set and non-empty
+            local current_value="${!actual_var:-}"
+            if [ -z "$current_value" ]; then
+                missing_vars+=("$actual_var")
+            fi
+        fi
+    done
+
+    if [ ${#missing_vars[@]} -gt 0 ]; then
+        echo ""
+        log_warning "This server requires the following environment variables:"
+        for var in "${missing_vars[@]}"; do
+            echo "  - $var"
+        done
+        echo ""
+
+        # Check if we're in an interactive terminal
+        if [ -t 0 ]; then
+            echo "Would you like to set them now? [y/N] "
+            read -r response
+            if [[ "$response" =~ ^[Yy]$ ]]; then
+                for var in "${missing_vars[@]}"; do
+                    echo -n "Enter value for $var: "
+                    read -r value
+                    if [ -n "$value" ]; then
+                        # Add or update the variable in .env file
+                        if grep -q "^${var}=" "$env_file" 2>/dev/null; then
+                            # Update existing
+                            sed -i "s|^${var}=.*|${var}='${value}'|" "$env_file"
+                        else
+                            # Append new
+                            echo "${var}='${value}'" >> "$env_file"
+                        fi
+                        log_success "Set $var in $env_file"
+                    fi
+                done
+            else
+                echo ""
+                echo "You can set these later in: $env_file"
+                echo "Then restart the gateway: corekit restart fastmcp"
+            fi
+        else
+            echo "Set these in: $env_file"
+            echo "Then restart: corekit restart fastmcp"
+        fi
+        return 1
+    fi
+    return 0
+}
+
 # Enable a server
 cmd_enable() {
     local name="$1"
@@ -120,19 +210,22 @@ cmd_enable() {
         exit 1
     fi
 
-    local local_file="$LOCAL_SERVERS_DIR/${name}.json"
-    local example_file="$EXAMPLES_DIR/${name}.json"
+    # Search for server by name in files
+    local local_file=$(find_server_file "$name" "$LOCAL_SERVERS_DIR")
+    local example_file=$(find_server_file "$name" "$EXAMPLES_DIR")
+    local dest_file="$LOCAL_SERVERS_DIR/${name}.json"
 
     # Check if server exists in local
-    if [ -f "$local_file" ]; then
+    if [ -n "$local_file" ]; then
         # Update enabled to true
         local tmp=$(mktemp)
         jq --arg name "$name" '.[$name].enabled = true' "$local_file" > "$tmp" && mv "$tmp" "$local_file"
         log_success "Enabled server: $name"
-    elif [ -f "$example_file" ]; then
+        dest_file="$local_file"
+    elif [ -n "$example_file" ]; then
         # Copy from examples and enable
         local tmp=$(mktemp)
-        jq --arg name "$name" '.[$name].enabled = true' "$example_file" > "$tmp" && mv "$tmp" "$local_file"
+        jq --arg name "$name" '.[$name].enabled = true' "$example_file" > "$tmp" && mv "$tmp" "$dest_file"
         log_success "Copied from examples and enabled: $name"
     else
         log_error "Server '$name' not found in examples or local servers."
@@ -147,12 +240,8 @@ cmd_enable() {
         exit 1
     fi
 
-    # Check for required env vars
-    local requires=$(jq -r --arg name "$name" '.[$name].requires_api_key // empty' "$local_file" 2>/dev/null)
-    if [ -n "$requires" ]; then
-        log_warning "This server requires: $requires"
-        echo "  Set this in: $SCRIPT_DIR/.env"
-    fi
+    # Check for required env vars and offer to set them
+    check_required_env_vars "$dest_file" "$name" || true
 
     echo ""
     echo "Restart the gateway to apply changes:"
@@ -168,9 +257,10 @@ cmd_disable() {
         exit 1
     fi
 
-    local local_file="$LOCAL_SERVERS_DIR/${name}.json"
+    # Search for server by name in local files
+    local local_file=$(find_server_file "$name" "$LOCAL_SERVERS_DIR")
 
-    if [ ! -f "$local_file" ]; then
+    if [ -z "$local_file" ]; then
         log_error "Server '$name' not found in local servers."
         exit 1
     fi

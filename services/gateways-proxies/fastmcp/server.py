@@ -168,7 +168,7 @@ def expand_env_vars(value: Any) -> Any:
         import re
         def replacer(match):
             var_name = match.group(1)
-            default = match.group(3) if match.group(3) else ""
+            default = match.group(2) if match.group(2) else ""
             return os.environ.get(var_name, default)
         return re.sub(r'\$\{([^}:-]+)(?::-([^}]*))?\}', replacer, value)
     elif isinstance(value, list):

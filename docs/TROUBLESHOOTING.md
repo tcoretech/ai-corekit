@@ -42,6 +42,40 @@ corekit logs caddy --tail 50
 corekit restart caddy
 ```
 
+### Firewall Configuration
+
+AI CoreKit does **not** configure the firewall automatically during `corekit init` to prevent accidental SSH lockouts.
+
+**To configure firewall with safety checks:**
+```bash
+corekit system --close-ports
+```
+
+This command will:
+- Require multiple confirmations
+- Auto-detect your SSH port
+- Preserve SSH, HTTP (80), and HTTPS (443) access
+- Block all other incoming connections by default
+
+**If you need to allow additional ports for services:**
+```bash
+# Allow a specific port
+sudo ufw allow <port>/tcp
+
+# Check firewall status
+sudo ufw status
+
+# Examples for common services:
+# Jitsi: sudo ufw allow 10000/udp
+# LiveKit: sudo ufw allow 50000:50100/udp
+# Custom SSH: sudo ufw allow 2222/tcp
+```
+
+**If locked out after firewall configuration:**
+- Use physical/console access to your server
+- Run: `sudo ufw disable` to disable the firewall
+- Reconfigure with correct ports before re-enabling
+
 ### Docker Issues
 
 ```bash

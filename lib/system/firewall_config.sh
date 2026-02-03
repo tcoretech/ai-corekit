@@ -74,10 +74,14 @@ fi
 if [ "$SSH_PORT" == "22" ] && [ -f /etc/ssh/sshd_config ]; then
     CONFIG_SSH_PORT=$(grep -E '^Port ' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
     if [ -n "$CONFIG_SSH_PORT" ] && [ "$CONFIG_SSH_PORT" != "22" ]; then
-        SSH_PORT=$CONFIG_SSH_PORT
-        log_warning "Detected SSH configured on non-standard port: $SSH_PORT (from /etc/ssh/sshd_config)"
-        echo "   We will allow this port to prevent lockout."
-        echo ""
+        if [[ "$CONFIG_SSH_PORT" =~ ^[0-9]+$ ]]; then
+            SSH_PORT=$CONFIG_SSH_PORT
+            log_warning "Detected SSH configured on non-standard port: $SSH_PORT (from /etc/ssh/sshd_config)"
+            echo "   We will allow this port to prevent lockout."
+            echo ""
+        else
+            log_warning "Ignoring invalid SSH port value in /etc/ssh/sshd_config: '$CONFIG_SSH_PORT'"
+        fi
     fi
 fi
 

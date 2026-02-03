@@ -60,8 +60,8 @@ echo ""
 # Get current SSH port
 SSH_PORT=22
 if command -v ss &> /dev/null; then
-    # Try to detect SSH port from active connections
-    DETECTED_SSH_PORT=$(ss -tlnp | grep sshd | awk -F: '{print $2}' | awk '{print $1}' | head -1)
+    # Try to detect SSH port from active connections (handle IPv4 and IPv6)
+    DETECTED_SSH_PORT=$(ss -tlnp | grep sshd | awk '{for(i=1;i<=NF;i++) if($i ~ /:[0-9]+$/) {split($i, a, ":"); print a[length(a)]}}' | head -1)
     if [ -n "$DETECTED_SSH_PORT" ] && [ "$DETECTED_SSH_PORT" != "22" ]; then
         SSH_PORT=$DETECTED_SSH_PORT
         log_warning "Detected SSH running on non-standard port: $SSH_PORT"

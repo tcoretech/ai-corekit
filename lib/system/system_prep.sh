@@ -1,46 +1,55 @@
 #!/bin/bash
-
 set -e
 
-# Source the utilities file
-source "$(dirname "$0")/../utils/logging.sh"
+# Source utilities
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$PROJECT_ROOT/lib/utils/logging.sh"
 
-export DEBIAN_FRONTEND=noninteractive
+log_info "Running system preparation..."
 
-# System Update
-log_info "Updating package list and upgrading the system..."
-apt update -y && apt upgrade -y
+# Check for sudo if not root
+if [ "$EUID" -ne 0 ] && ! command -v sudo &> /dev/null; then
+    log_warning "This script requires root privileges or sudo. Please run with sudo or as root."
+    exit 1
+fi
 
-# Installing Basic Utilities
-log_info "Installing standard CLI tools..."
-apt install -y \
-  htop git curl make unzip ufw fail2ban python3 psmisc whiptail jq \
-  build-essential ca-certificates gnupg lsb-release openssl \
-  debian-keyring debian-archive-keyring apt-transport-https python3-pip python3-dotenv python3-yaml
+SUDO_CMD=""
+if [ "$EUID" -ne 0 ]; then
+    SUDO_CMD="sudo"
+fi
 
-# Configuring Firewall (UFW)
-log_info "Configuring firewall (UFW)..."
-echo "y" | ufw reset
-ufw --force enable
-ufw default deny incoming
-ufw default allow outgoing
-ufw reload
-ufw status
+# Update package lists
+log_info "Updating package lists..."
+if command -v apt-get &> /dev/null; then
+    $SUDO_CMD apt-get update -y
+else
+    log_warning "'apt-get' not found. Skipping package update. This is normal on non-Debian systems."
+fi
 
-# Configuring Fail2Ban
-log_info "Enabling brute-force protection (Fail2Ban)..."
-systemctl enable fail2ban
-sleep 1
-systemctl start fail2ban
-sleep 1
-fail2ban-client status
-sleep 1
-fail2ban-client status sshd
+# Install essential packages
+log_info "Installing essential packages..."
+if command -v apt-get &> /dev/null; then
+    # Install common utilities needed for the system
+    PACKAGES=(
+        curl
+        wget
+        git
+        unzip
+        zip
+        ca-certificates
+        gnupg
+        lsb-release
+        software-properties-common
+        apt-transport-https
+    )
+    
+    $SUDO_CMD apt-get install -y "${PACKAGES[@]}"
+    log_success "Essential packages installed successfully."
+else
+    log_warning "'apt-get' not found. Skipping package installation."
+fi
 
-# Automatic Security Updates
-log_info "Enabling automatic security updates..."
-apt install -y unattended-upgrades
-# Automatic confirmation for dpkg-reconfigure
-echo "y" | dpkg-reconfigure --priority=low unattended-upgrades
-
-exit 0 
+log_success "System preparation completed successfully."
+log_info "Note: Firewall configuration has been moved to a separate command."
+log_info "To configure firewall, run: corekit system --close-ports"

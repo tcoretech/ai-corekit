@@ -132,7 +132,7 @@ $SUDO_CMD ufw default allow outgoing
 
 # Allow SSH - CRITICAL to prevent lockout
 log_info "Allowing SSH on port $SSH_PORT (to prevent lockout)..."
-$SUDO_CMD ufw allow $SSH_PORT/tcp comment 'SSH access'
+$SUDO_CMD ufw allow "$SSH_PORT"/tcp comment 'SSH access'
 
 # Allow HTTP and HTTPS for web services
 log_info "Allowing HTTP (80) and HTTPS (443)..."

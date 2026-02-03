@@ -61,10 +61,21 @@ echo ""
 SSH_PORT=22
 if command -v ss &> /dev/null; then
     # Try to detect SSH port from active connections
-    DETECTED_SSH_PORT=$(ss -tlnp | grep sshd | grep -oP ':\K[0-9]+' | head -1)
+    DETECTED_SSH_PORT=$(ss -tlnp | grep sshd | awk -F: '{print $2}' | awk '{print $1}' | head -1)
     if [ -n "$DETECTED_SSH_PORT" ] && [ "$DETECTED_SSH_PORT" != "22" ]; then
         SSH_PORT=$DETECTED_SSH_PORT
         log_warning "Detected SSH running on non-standard port: $SSH_PORT"
+        echo "   We will allow this port to prevent lockout."
+        echo ""
+    fi
+fi
+
+# If we didn't detect a running SSH, check sshd_config
+if [ "$SSH_PORT" == "22" ] && [ -f /etc/ssh/sshd_config ]; then
+    CONFIG_SSH_PORT=$(grep -E '^Port ' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+    if [ -n "$CONFIG_SSH_PORT" ] && [ "$CONFIG_SSH_PORT" != "22" ]; then
+        SSH_PORT=$CONFIG_SSH_PORT
+        log_warning "Detected SSH configured on non-standard port: $SSH_PORT (from /etc/ssh/sshd_config)"
         echo "   We will allow this port to prevent lockout."
         echo ""
     fi
@@ -126,7 +137,7 @@ $SUDO_CMD ufw allow 443/tcp comment 'HTTPS'
 
 # Enable UFW
 log_info "Enabling UFW..."
-echo "y" | $SUDO_CMD ufw enable
+$SUDO_CMD ufw --force enable
 
 # Show status
 echo ""

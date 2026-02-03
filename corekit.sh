@@ -90,6 +90,34 @@ cmd_config() {
     fi
 }
 
+# Command: System
+cmd_system() {
+    local action="$1"
+    shift || true
+    
+    case "$action" in
+        --close-ports)
+            if [ -f "$LIB_DIR/system/firewall_config.sh" ]; then
+                bash "$LIB_DIR/system/firewall_config.sh" "$@"
+            else
+                log_error "Firewall configuration script not found."
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Usage: corekit system --close-ports"
+            echo ""
+            echo "System commands:"
+            echo "  --close-ports    Configure firewall to close most ports (keeps SSH, HTTP, HTTPS)"
+            echo ""
+            echo "⚠️  WARNING: --close-ports will enable UFW firewall and close most ports."
+            echo "    SSH, HTTP, and HTTPS will remain open, but other services may become"
+            echo "    inaccessible. Only use this if you understand the implications."
+            exit 1
+            ;;
+    esac
+}
+
 # Command: Credentials
 cmd_credentials() {
     local action="$1"
@@ -900,6 +928,7 @@ cmd_help() {
     echo "Commands:"
     echo "  init          Initialize the system (install dependencies)"
     echo "  config        Run configuration wizard"
+    echo "  system        System management commands (e.g., system --close-ports)"
     echo "  enable        Enable services or stacks (e.g. enable service1 -s stack1)"
     echo "  disable       Disable services or stacks"
     echo "  up            Start services"
@@ -929,6 +958,9 @@ case "$COMMAND" in
         ;;
     config)
         cmd_config "$@"
+        ;;
+    system)
+        cmd_system "$@"
         ;;
     enable)
         cmd_enable "$@"

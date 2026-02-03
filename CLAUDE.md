@@ -81,6 +81,20 @@ corekit credentials export
 corekit credentials download
 ```
 
+### System Management
+```bash
+# Configure firewall (with safety checks)
+corekit system --close-ports
+```
+
+**⚠️ Firewall Configuration:**
+- NOT run during `corekit init` to prevent SSH lockouts
+- Requires multiple confirmations before proceeding
+- Auto-detects SSH port from running processes and `/etc/ssh/sshd_config`
+- Preserves SSH, HTTP (80), and HTTPS (443) access
+- Sets default deny for all other incoming connections
+- Use only if you understand the implications and have console access
+
 ## Critical Architecture Principles
 
 ### 1. Modular Service Units

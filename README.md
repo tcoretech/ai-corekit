@@ -275,6 +275,7 @@ corekit <command> [arguments]
 | ------- | ----------- |
 | `init` | Initialize the system (check requirements, install Docker). |
 | `config` | Run the interactive configuration wizard. |
+| `system` | System management commands (e.g., `system --close-ports`). |
 | `enable` | Enable specific services or entire stacks (e.g. `-s core`). |
 | `disable` | Disable services or stacks. |
 | `up` | Start services. |
@@ -318,6 +319,45 @@ Generate or update secrets automatically with:
 ```bash
 corekit config
 ```
+
+### System Management
+
+AI CoreKit includes system management commands for server configuration and security.
+
+#### Firewall Configuration
+
+The firewall is **not configured automatically** during `corekit init` to prevent accidental SSH lockouts. 
+
+To configure UFW firewall with safety checks:
+```bash
+corekit system --close-ports
+```
+
+This command will:
+- Require multiple confirmations before proceeding
+- Auto-detect your SSH port (both running and configured)
+- Preserve SSH, HTTP (80), and HTTPS (443) access
+- Set default deny policy for all other incoming connections
+
+**⚠️ Important Notes:**
+- Only run this command if you understand the implications
+- Ensure you have physical/console access to the server as a backup
+- The script will detect non-standard SSH ports automatically
+- Review the warnings carefully before confirming
+
+After configuration, you can manage firewall rules manually:
+```bash
+# Check firewall status
+sudo ufw status
+
+# Allow additional ports
+sudo ufw allow <port>/tcp
+
+# Remove a rule
+sudo ufw delete allow <port>/tcp
+```
+
+See individual service READMEs for specific firewall requirements.
 
 ## 🛠️ Extensibility
 

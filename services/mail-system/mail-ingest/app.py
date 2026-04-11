@@ -4,7 +4,9 @@ import hashlib
 import smtplib
 import re
 import time
+import uuid
 import logging
+from email.utils import formatdate
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import PlainTextResponse, Response
@@ -152,6 +154,8 @@ async def mailgun_incoming(request: Request):
             f"From: {sender}",
             f"To: {recipient}",
             f"Subject: {subject}",
+            f"Date: {formatdate(localtime=True)}",
+            f"Message-ID: <{uuid.uuid4()}@{MAILSERVER_HELO_DOMAIN}>",
             "MIME-Version: 1.0",
             "Content-Type: text/plain; charset=utf-8",
         ]

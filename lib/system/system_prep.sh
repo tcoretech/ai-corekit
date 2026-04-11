@@ -19,18 +19,8 @@ if [ "$EUID" -ne 0 ]; then
     SUDO_CMD="sudo"
 fi
 
-# Update package lists
-log_info "Updating package lists..."
+# Install essential packages (skip if all already present)
 if command -v apt-get &> /dev/null; then
-    $SUDO_CMD apt-get update -y
-else
-    log_warning "'apt-get' not found. Skipping package update. This is normal on non-Debian systems."
-fi
-
-# Install essential packages
-log_info "Installing essential packages..."
-if command -v apt-get &> /dev/null; then
-    # Install common utilities needed for the system
     PACKAGES=(
         curl
         wget
@@ -43,9 +33,22 @@ if command -v apt-get &> /dev/null; then
         software-properties-common
         apt-transport-https
     )
-    
-    $SUDO_CMD apt-get install -y "${PACKAGES[@]}"
-    log_success "Essential packages installed successfully."
+
+    MISSING=()
+    for pkg in "${PACKAGES[@]}"; do
+        if ! dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
+            MISSING+=("$pkg")
+        fi
+    done
+
+    if [ ${#MISSING[@]} -gt 0 ]; then
+        log_info "Installing missing packages: ${MISSING[*]}"
+        $SUDO_CMD apt-get update -y
+        $SUDO_CMD apt-get install -y "${MISSING[@]}"
+        log_success "Essential packages installed successfully."
+    else
+        log_info "All essential packages already installed, skipping."
+    fi
 else
     log_warning "'apt-get' not found. Skipping package installation."
 fi

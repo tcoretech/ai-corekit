@@ -39,7 +39,7 @@ corekit up supabase
 
 ```bash
 git clone https://github.com/tcoretech/ai-corekit && cd ai-corekit
-sudo make install
+sudo bash install.sh
 corekit init
 corekit config
 corekit up

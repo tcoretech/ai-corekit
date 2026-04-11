@@ -33,3 +33,5 @@ shared-backup/
 services/.shared-resources/shared/
 services/.shared-resources/media/
 services/.shared-resources/temp/
+
+.claude/

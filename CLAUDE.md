@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Installation & Setup
 ```bash
 # Install CLI globally
-sudo make install
+sudo bash install.sh
 
 # Initialize system (Docker, secrets)
 corekit init
@@ -515,7 +515,7 @@ corekit up <service>
 ```
 ai-corekit/
 ├── corekit.sh              # Main CLI entrypoint
-├── Makefile                  # Install CLI globally
+├── install.sh                # Install/uninstall CLI globally
 ├── config/
 │   ├── .env.global           # Global configuration
 │   └── stacks/               # Service group definitions

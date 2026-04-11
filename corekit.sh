@@ -78,6 +78,25 @@ cmd_init() {
     else
         log_error "Secrets generation script not found."
     fi
+
+    # Verify Docker socket is accessible; if not, the user likely needs a new session
+    if ! docker info &>/dev/null 2>&1; then
+        CURRENT_USER=${SUDO_USER:-$(whoami)}
+        if [ "$CURRENT_USER" != "root" ] && groups "$CURRENT_USER" 2>/dev/null | grep -q '\bdocker\b'; then
+            echo ""
+            log_warning "Docker was installed and '$CURRENT_USER' was added to the docker group,"
+            log_warning "but this shell session doesn't have the new group membership yet."
+            echo ""
+            echo "  Run the following command to activate it without reconnecting:"
+            echo ""
+            echo "    newgrp docker"
+            echo ""
+            echo "  Then run: corekit up"
+            echo ""
+        fi
+    else
+        log_success "Docker socket is accessible. You can run: corekit up"
+    fi
 }
 
 # Command: Config

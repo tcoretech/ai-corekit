@@ -50,7 +50,7 @@ corekit up
 <!-- SERVICES_SECTION_START -->
 ## ✨ What's Included
 
-**80+ self-hosted services** pre-configured and wrapped for easy deployment.
+**81+ self-hosted services** pre-configured and wrapped for easy deployment.
 
 Each service includes its own config, secrets handling and detailed setup instructions. Navigate to each modular service definition below.
 
@@ -61,7 +61,6 @@ Orchestrate processes and integrate services
 | --- | --- | ------ |
 | [**n8n**](services/workflow-automation/n8n) | `n8n` | Extendable workflow automation tool for connecting apps, building API integrations, and orchestrating complex business processes. [[↗](https://github.com/n8n-io/n8n)] |
 | [**Flowise**](services/workflow-automation/flowise) | `flowise` | Drag-and-drop AI agent builder for creating chatbots, customer support assistants, and complex AI workflows. [[↗](https://github.com/FlowiseAI/Flowise)] |
-| [**Webhook Tester + Hoppscotch**](services/workflow-automation/webhook-testing) | `webhook-testing` | Debugging suite combining Webhook Tester and Hoppscotch for inspecting incoming webhooks and testing external service integrations. [[↗](https://github.com/tarampampam/webhook-tester)] |
 | [**n8n-MCP**](services/workflow-automation/n8n-mcp) | `n8n-mcp` | Model Context Protocol (MCP) server for n8n, enabling AI assistants like Claude or Cursor to generate and validate n8n workflows. [[↗](https://github.com/czlonkowski/n8n-mcp)] |
 
 ### 🎯 Frontends
@@ -114,6 +113,7 @@ Coding assistance and development tools
 | [**bolt.diy**](services/development-tools/bolt) | `bolt` | AI-powered web development tool for rapid prototyping, creating MVPs, and assisting in learning to code. [[↗](https://github.com/stackblitz-labs/bolt.diy)] |
 | [**Gitea**](services/development-tools/gitea) | `gitea` | Lightweight, self-hosted DevOps platform and Git service providing source code management, issue tracking, and CI/CD capabilities. [[↗](https://github.com/go-gitea/gitea)] |
 | [**OpenUI**](services/development-tools/openui) | `openui` | Experimental AI frontend and UI generator for creating design systems, component libraries, and mockups. [[↗](https://github.com/wandb/openui)] |
+| [**Webhook Tester + Hoppscotch**](services/development-tools/webhook-testing) | `webhook-testing` | Debugging suite combining Webhook Tester and Hoppscotch for inspecting incoming webhooks and testing external service integrations. [[↗](https://github.com/tarampampam/webhook-tester)] |
 
 ### 🤖 Agentic Frameworks
 Autonomous agents and frameworks
@@ -123,7 +123,7 @@ Autonomous agents and frameworks
 | [**Browser Automation Suite**](services/agentic-frameworks/browser-suite) | `browser-suite` | Comprehensive browser automation suite combining Browserless, Skyvern, and Browser-use for web scraping, form filling, and automated testing. [[↗](https://github.com/browser-use/browser-use)] |
 | [**Dify**](services/agentic-frameworks/dify) | `dify` | LLM application development platform designed for building AI agents, chatbots, and automating workflows. [[↗](https://github.com/langgenius/dify)] |
 | [**Letta**](services/agentic-frameworks/letta) | `letta` | Agent Server and SDK enabling the creation of persistent AI assistants with advanced memory management capabilities. [[↗](https://github.com/letta-ai/letta)] |
-| [**Vexa**](services/agentic-frameworks/vexa) | `vexa` | Real-time meeting transcription API supporting 99 languages, offering live transcription for Google Meet & Teams with speaker identification. [[↗](https://github.com/Vexa-ai/vexa)] |
+| [**openclaw**](services/agentic-frameworks/openclaw) | `openclaw` | A versatile agentic framework that connects LLMs to the real world securely. |
 
 ### 📚 RAG Systems
 Retrieval-Augmented Generation systems
@@ -143,6 +143,7 @@ Speech recognition, synthesis, and multimodal processing
 | [**Scriberr**](services/voice-multimodal/scriberr) | `scriberr` | AI-powered audio transcription tool featuring speaker diarization, ideal for creating meeting transcripts, processing podcasts, and analyzing call recordings. [[↗](https://github.com/rishikanthc/Scriberr)] |
 | [**Speech Stack**](services/voice-multimodal/speech) | `speech` | CPU-optimized speech stack combining Whisper ASR and OpenedAI TTS, suitable for building voice assistants, generating audiobooks, and audio notifications. [[↗](https://github.com/matatonic/openedai-speech)] |
 | [**TTS Chatterbox**](services/voice-multimodal/tts-chatterbox) | `tts-chatterbox` | State-of-the-art Text-to-Speech system serving as a high-quality alternative to ElevenLabs, providing AI voices with rich emotional expression. [[↗](https://github.com/resemble-ai/chatterbox)] |
+| [**Vexa**](services/voice-multimodal/vexa) | `vexa` | Real-time meeting transcription API supporting 99 languages, offering live transcription for Google Meet & Teams with speaker identification. [[↗](https://github.com/Vexa-ai/vexa)] |
 
 ### 🔍 Search & Web Data
 Search engines and data scraping

@@ -5,6 +5,16 @@ set -e
 # Source the utilities file
 source "$(dirname "$0")/../utils/logging.sh"
 
+# Check for sudo if not root
+if [ "$EUID" -ne 0 ] && ! command -v sudo &> /dev/null; then
+    log_error "This script requires root privileges or sudo. Please run with sudo or as root."
+    exit 1
+fi
+
+SUDO_CMD=""
+if [ "$EUID" -ne 0 ]; then
+    SUDO_CMD="sudo"
+fi
 
 # 1. Preparing the environment
 export DEBIAN_FRONTEND=noninteractive
@@ -30,21 +40,19 @@ run_apt_with_retry() {
         fi
 
         # No lock detected, attempt the command
-        # Use eval to correctly handle arguments with spaces/quotes passed as a single string
-        if eval apt-get "$@"; then
+        if $SUDO_CMD apt-get "$@"; then
             return 0 # Success
         else
             local exit_code=$?
             if [ $i -lt $retries ]; then
                  sleep $wait_time
             else
-                 # Attempt to remove locks if they exist and seem stale? Maybe too risky.
                  return $exit_code # Failed after retries
             fi
         fi
     done
 
-    log_message "Failed to acquire lock or run command after $retries attempts: apt-get $cmd_str"
+    log_error "Failed to acquire lock or run command after $retries attempts: apt-get $cmd_str"
     return 1 # Failed after retries
 }
 
@@ -70,7 +78,7 @@ if command -v docker &> /dev/null; then
             log_info "User '$ORIGINAL_USER' is already in the docker group."
         else
             log_info "Adding user '$ORIGINAL_USER' to the docker group..."
-            usermod -aG docker "$ORIGINAL_USER"
+            $SUDO_CMD usermod -aG docker "$ORIGINAL_USER"
         fi
     else
         log_warning "Could not identify a non-root user. Docker will only be available for the root user."
@@ -90,16 +98,16 @@ run_apt_with_retry install -qq $APT_OPTIONS \
 
 # 3. Adding Docker's GPG key
 log_info "Adding Docker's GPG key..."
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-chmod a+r /etc/apt/keyrings/docker.gpg
+$SUDO_CMD install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | $SUDO_CMD gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+$SUDO_CMD chmod a+r /etc/apt/keyrings/docker.gpg
 
 # 4. Adding the Docker repository
 log_info "Adding the official Docker repository..."
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  tee /etc/apt/sources.list.d/docker.list > /dev/null
+  $SUDO_CMD tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 # 5. Installing Docker and Docker Compose
 log_info "Installing Docker Engine and Compose Plugin..."
@@ -116,7 +124,7 @@ run_apt_with_retry install -qq $APT_OPTIONS \
 ORIGINAL_USER=${SUDO_USER:-$(whoami)}
 log_info "Adding user '$ORIGINAL_USER' to the docker group..."
 if id "$ORIGINAL_USER" &>/dev/null; then
-    usermod -aG docker "$ORIGINAL_USER"
+    $SUDO_CMD usermod -aG docker "$ORIGINAL_USER"
 fi
 
 # 7. Verifying the installation

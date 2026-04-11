@@ -72,7 +72,7 @@ In your Cloudflare Zero Trust dashboard:
 3. Add a new public hostname:
    - **Subdomain**: `openclaw` (or your preference)
    - **Domain**: `yourdomain.com`
-   - **Service**: `http://openclaw-gateway:18789`
+   - **Service**: `http://openclaw:18789`
 
 ### Step 2: Configure Access Policies (CRITICAL)
 

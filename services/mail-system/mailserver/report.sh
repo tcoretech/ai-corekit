@@ -6,9 +6,12 @@ echo "================================= Docker-Mailserver ==================="
 echo
 echo "✅ Production mail server ready for all services"
 echo
-echo "Auto-configured Account:"
+echo "Auto-configured Accounts:"
 echo "  Email: noreply@${BASE_DOMAIN}"
 echo "  Password: ${MAIL_NOREPLY_PASSWORD:-<check_env_file>}"
+echo
+echo "  Email: info@${BASE_DOMAIN}"
+echo "  Password: ${MAIL_INFO_PASSWORD:-<check_env_file>}"
 echo
 echo "SMTP Settings (automatically configured for all services):"
 echo "  Host: mailserver (internal)"

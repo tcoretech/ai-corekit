@@ -1,0 +1,7 @@
+{
+  "name": "openclaw",
+  "description": "A versatile agentic framework that connects LLMs to the real world securely.",
+  "category": "Agentic Frameworks",
+  "version": "1.0.0",
+  "dependencies": []
+}

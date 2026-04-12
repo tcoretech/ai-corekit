@@ -1,6 +1,6 @@
 # Example Custom Service
 
-This is a minimal template for adding your own services to AI LaunchKit.
+This is a minimal template for adding your own services to AI CoreKit.
 
 ## Structure
 

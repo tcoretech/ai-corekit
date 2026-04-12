@@ -1,0 +1,7 @@
+*
+!README.md
+!example-service/
+!example-service/**/*
+# Allow submodule pointer entries (content stays private)
+!agent-runner
+!autobuilder

@@ -1,0 +1,6 @@
+[submodule "services/custom-services/autobuilder"]
+	path = services/custom-services/autobuilder
+	url = https://github.com/tcoretech/autobuilder.git
+[submodule "services/custom-services/agent-runner"]
+	path = services/custom-services/agent-runner
+	url = https://github.com/tcoretech/agent-runner.git

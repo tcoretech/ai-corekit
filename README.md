@@ -241,7 +241,7 @@ User-defined custom services
 
 | Service | Name | Description |
 | --- | --- | ------ |
-| [**Example Service**](services/custom-services/example-service) | `example-service` | Custom Repo Hosting Template |
+| [**Example Service**](services/custom-services/example-service) | `example-service` | Minimal example showing the CoreKit service structure |
 
 ---
 

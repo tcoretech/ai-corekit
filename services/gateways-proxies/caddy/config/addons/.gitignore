@@ -1,0 +1,3 @@
+# Custom Caddy addon configs are local-only — never committed.
+# Drop *.conf files here to extend Caddy without touching the tracked Caddyfile.
+*.conf

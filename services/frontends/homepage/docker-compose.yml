@@ -8,7 +8,7 @@ services:
     env_file:
       - .env
     environment:
-    - HOMEPAGE_VAR_TITLE=AI LaunchKit Dashboard
+    - HOMEPAGE_VAR_TITLE=AI CoreKit Dashboard
     - HOMEPAGE_VAR_SEARCH_PROVIDER=searxng
     - HOMEPAGE_VAR_HEADER_STYLE=boxed
     - HOMEPAGE_VAR_LAYOUT_STYLE=row

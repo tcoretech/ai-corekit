@@ -247,7 +247,7 @@ User-defined custom services
 
 ### 🛠️ Creating Custom Services
 
-You can easily add your own services to AI LaunchKit using the custom services directory. This allows you to integrate your own tools or proprietary software while keeping them separate from the core repository.
+You can easily add your own services to AI CoreKit using the custom services directory. This allows you to integrate your own tools or proprietary software while keeping them separate from the core repository.
 
 👉 **[Learn how to add custom services](services/custom-services/README.md)**
 <!-- SERVICES_SECTION_END -->

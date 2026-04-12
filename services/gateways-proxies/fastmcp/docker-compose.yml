@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: launchkit/fastmcp:latest
+    image: corekit/fastmcp:latest
     container_name: fastmcp
     profiles:
       - fastmcp
@@ -44,5 +44,5 @@ services:
         max-size: "10m"
         max-file: "3"
     labels:
-      - "launchkit.service=fastmcp"
-      - "launchkit.category=ai-agents"
+      - "corekit.service=fastmcp"
+      - "corekit.category=ai-agents"

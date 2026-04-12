@@ -1,6 +1,6 @@
-# AI LaunchKit Services Catalogue
+# AI CoreKit Services Catalogue
 
-This document provides a complete catalogue of the **80+ self-hosted services** included in AI LaunchKit.
+This document provides a complete catalogue of the **80+ self-hosted services** included in AI CoreKit.
 
 ## Table of Contents
 

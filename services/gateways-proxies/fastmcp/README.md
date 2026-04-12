@@ -16,11 +16,11 @@ FastMCP Gateway provides a centralized MCP server that:
 
 ```bash
 # Enable and start the service
-launchkit enable fastmcp
-launchkit up fastmcp
+corekit enable fastmcp
+corekit up fastmcp
 
 # View logs
-launchkit logs fastmcp
+corekit logs fastmcp
 ```
 
 The MCP endpoint will be available at `http://localhost:8100/mcp`
@@ -185,7 +185,7 @@ fastmcp/
 
 ```bash
 # Check logs
-launchkit logs fastmcp --tail 50
+corekit logs fastmcp --tail 50
 
 # Verify configuration
 cat services/ai-agents/fastmcp/.env

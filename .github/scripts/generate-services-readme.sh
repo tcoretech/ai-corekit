@@ -132,7 +132,7 @@ generate_services_section() {
     echo ""
     echo "### 🛠️ Creating Custom Services"
     echo ""
-    echo "You can easily add your own services to AI LaunchKit using the custom services directory. This allows you to integrate your own tools or proprietary software while keeping them separate from the core repository."
+    echo "You can easily add your own services to AI CoreKit using the custom services directory. This allows you to integrate your own tools or proprietary software while keeping them separate from the core repository."
     echo ""
     echo "👉 **[Learn how to add custom services](services/custom-services/README.md)**"
     echo ""

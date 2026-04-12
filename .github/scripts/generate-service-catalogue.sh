@@ -63,9 +63,9 @@ total_services=$(wc -l < "$SERVICES_DATA" | tr -d ' ')
 
 # Start generating output
 {
-    echo "# AI LaunchKit Services Catalogue"
+    echo "# AI CoreKit Services Catalogue"
     echo ""
-    echo "This document provides a complete catalogue of the **${total_services}+ self-hosted services** included in AI LaunchKit."
+    echo "This document provides a complete catalogue of the **${total_services}+ self-hosted services** included in AI CoreKit."
     echo ""
     echo "## Table of Contents"
     echo ""

@@ -26,7 +26,7 @@ corekit run openclaw onboard
 
 ### Environment Variables
 
-Edit `/root/ai-launchkit/services/agentic-frameworks/openclaw/.env`:
+Edit `services/agentic-frameworks/openclaw/.env`:
 
 ```bash
 # Required - Auto-generated during corekit up

@@ -11,7 +11,7 @@ services:
     env_file:
       - .env
     environment:
-    - SECRET_KEY=${EASYOCR_SECRET_KEY:-launchkit}
+    - SECRET_KEY=${EASYOCR_SECRET_KEY:-corekit-easyocr-secret}
     healthcheck:
       test:
       - CMD

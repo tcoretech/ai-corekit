@@ -1,3 +1,3 @@
 #!/bin/bash
-# No special startup logic needed as the updater handles the valid startup
+# No post-startup logic needed for this service
 exit 0

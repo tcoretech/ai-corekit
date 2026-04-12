@@ -38,8 +38,6 @@ services:
           chown node:node "$$CF"
         fi
         exec runuser -u node -- node openclaw.mjs gateway --bind "${OPENCLAW_GATEWAY_BIND:-lan}" --port 18789 --allow-unconfigured
-    networks:
-      - default
 
   openclaw-cli:
     build:
@@ -72,14 +70,7 @@ services:
       - --
     profiles:
       - tools
-    networks:
-      - default
 
 volumes:
   openclaw_config:
   openclaw_workspace:
-
-networks:
-  default:
-    name: ${PROJECT_NAME:-ai-launchkit}_default
-    external: true

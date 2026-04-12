@@ -51,8 +51,6 @@ services:
     - ${PROJECT_ROOT}/services/.shared-resources/shared:/data/shared
     - ${PROJECT_ROOT}/services/.shared-resources/media:/data/media
     - ${PROJECT_ROOT}/services/.shared-resources/temp:/data/temp
-    networks:
-      - default
 
   n8n-worker:
     build:
@@ -111,7 +109,7 @@ services:
     deploy:
       replicas: ${N8N_WORKER_COUNT:-1}
   n8n-runner:
-    image: n8nio/runners:${N8N_RUNNERS_VERSION}
+    image: n8nio/runners:${N8N_RUNNERS_VERSION:-latest}
     container_name: n8n-runner
     profiles:
     - n8n
@@ -148,8 +146,3 @@ services:
 
 volumes:
   n8n_storage: {}
-
-networks:
-  default:
-    external: true
-    name: ${PROJECT_NAME:-localai}_default

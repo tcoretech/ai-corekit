@@ -392,11 +392,13 @@ corekit up -s core
 
 ## Service Discovery & Networking
 
-- All services join the default Docker network (named `<project>_default`)
-- Services communicate using container names as hostnames
-- Example: `n8n` connects to `postgres:5432`, not `localhost:5432`
-- DNS resolution handled by Docker's internal DNS
-- No need to define networks explicitly unless isolating services
+- The corekit CLI runs every service with `docker compose -p <project_name>`, where `<project_name>` comes from the service's stack (e.g., `localai` for the core stack).
+- Docker Compose implicitly creates and reuses a network named `<project_name>_default` across all services run with the same `-p` flag.
+- Services communicate using container names as hostnames (e.g., `n8n` connects to `postgres:5432`, not `localhost:5432`). DNS resolution is handled by Docker's internal DNS.
+- **Do not declare networks in `docker-compose.yml`**:
+  - No top-level `networks:` block
+  - No `networks: - default` at the service level (redundant)
+  - **Never** use `external: true` — no service "owns" the project-default network, and declaring it external causes startup to fail when the network hasn't been created yet by another service.
 
 ## CLI Implementation Details
 

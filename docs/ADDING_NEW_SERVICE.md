@@ -54,7 +54,7 @@ This file registers your service with the CoreKit system.
 
 ### 3. Create `docker-compose.yml`
 
-Define your service container(s). Use the `${PROJECT_NAME:-localai}` variable for network names if needed, but typically you just join the default network.
+Define your service container(s). Do **not** declare networks — the corekit CLI runs every service with `docker compose -p <project_name>` and Docker Compose automatically creates and reuses a `<project_name>_default` network across all services in the same stack.
 
 ```yaml
 services:
@@ -66,15 +66,17 @@ services:
       - PORT=8080
       - DATABASE_URL=${DATABASE_URL}
     volumes:
-      - ${PROJECT_NAME}_my_service_data:/data
-    networks:
-      - default
+      - ./data:/data
 
 volumes:
   my_service_data:
 ```
 
-**Note:** You do not need to define the network explicitly if you are joining the default network. The system handles network bridging.
+**Networking rules:**
+- **Never** declare a top-level `networks:` block.
+- **Never** use `external: true` — no service "owns" the network; docker compose manages it implicitly via the project name.
+- **Do not** add `networks: - default` at the service level — services join the project-default network automatically.
+- Cross-service communication works via container names (e.g., `postgres:5432`, `redis:6379`, `n8n:5678`) because every service in a stack is on the same `<project_name>_default` network.
 
 ### 4. Create `.env.example`
 

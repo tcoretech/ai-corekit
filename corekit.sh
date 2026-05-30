@@ -675,6 +675,31 @@ cmd_logs() {
             fi
             return
         fi
+
+        local managed_child
+        managed_child=$(
+            docker ps -a \
+                --filter "label=corekit.child=true" \
+                --filter "label=corekit.service=$service_name" \
+                --format "{{.Names}}\t{{.Label \"corekit.project\"}}" |
+            awk -F'\t' -v desired="${project:-}" '
+            {
+                project=$2
+                if (project == "" || project == "<no value>") {
+                    project="localai"
+                }
+                if (desired != "" && project != desired) {
+                    next
+                }
+                print $1
+                exit
+            }'
+        )
+        if [ -n "$managed_child" ]; then
+            shift # Remove service name from args
+            docker logs "$managed_child" "$@"
+            return
+        fi
     fi
 
     run_compose_cmd logs "$@"
@@ -794,11 +819,34 @@ cmd_ps() {
         }' | column -t -s $'\t'
     }
 
+    emit_corekit_child_ps() {
+        local desired_project="$1"
+        docker ps --filter "label=corekit.child=true" \
+            --format "{{.Label \"corekit.project\"}}\t{{.Label \"corekit.service\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" |
+        awk -F'\t' -v desired="$desired_project" '
+        BEGIN { OFS="\t" }
+        {
+            project=$1
+            service=$2
+            if (project == "" || project == "<no value>") {
+                project="localai"
+            }
+            if (service == "" || service == "<no value>") {
+                service=$3
+            }
+            if (desired != "" && project != desired) {
+                next
+            }
+            print project, service, $3, $4, $5, $6
+        }'
+    }
+
     if [ -n "$project" ]; then
         # Specific project requested
         {
             printf "PROJECT\tSERVICE\tCONTAINER\tIMAGE\tSTATUS\tPORTS\n"
             docker ps --filter "label=com.docker.compose.project=$project" --format "{{.Label \"com.docker.compose.project\"}}\t{{.Label \"com.docker.compose.service\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+            emit_corekit_child_ps "$project"
         } | process_ps_output
     elif [ -n "$stack" ]; then
         # Specific stack requested
@@ -806,6 +854,7 @@ cmd_ps() {
         {
             printf "PROJECT\tSERVICE\tCONTAINER\tIMAGE\tSTATUS\tPORTS\n"
             docker ps --filter "label=com.docker.compose.project=$PROJECT_NAME" --format "{{.Label \"com.docker.compose.project\"}}\t{{.Label \"com.docker.compose.service\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+            emit_corekit_child_ps "$PROJECT_NAME"
         } | process_ps_output
     else
         # No specific project/stack, find all configured projects
@@ -816,6 +865,7 @@ cmd_ps() {
         {
             printf "PROJECT\tSERVICE\tCONTAINER\tIMAGE\tSTATUS\tPORTS\n"
             docker ps --filter "label=com.docker.compose.project" --format "{{.Label \"com.docker.compose.project\"}}\t{{.Label \"com.docker.compose.service\"}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+            emit_corekit_child_ps ""
         } | process_ps_output | grep -E "^(PROJECT|${pattern})\s"
     fi
     

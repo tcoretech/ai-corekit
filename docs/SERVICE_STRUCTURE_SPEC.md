@@ -84,7 +84,28 @@ To avoid confusion about *when* a script runs, we use distinct names:
     *   **Purpose**: Reporting.
     *   **Tasks**: Outputs URLs, credentials, and status to the user.
 
-### 5. Environment Variables
+### 5. Managed Child Containers
+Some services create additional containers at runtime instead of declaring every
+container in their static `docker-compose.yml`. Examples include deployment
+engines, job runners, or plugin services that manage app containers through the
+Docker socket.
+
+Runtime-created containers must use CoreKit's generic child-label contract:
+
+```text
+corekit.child=true
+corekit.parent.service=<corekit-service-name>
+corekit.project=<stack-project-name>
+corekit.service=<displayed-child-service-name>
+```
+
+CoreKit uses these labels to include child containers in `corekit ps`, route
+direct `corekit logs <child>` calls, and prune disabled parent services. The
+parent service remains responsible for actually stopping/removing its children
+from `cleanup.sh`, because only the parent understands its own child lifecycle
+and any legacy adoption rules.
+
+### 6. Environment Variables
 *   **`.env`**: The source of truth for secrets and instance-specific configuration.
 *   **`.env.example`**: Must exist and list all required variables with dummy values.
 *   **Inheritance**: Services should inherit global settings (like `BASE_DOMAIN`) from the root `.env` or any other enabled service `.env`, they are all available at runtime.

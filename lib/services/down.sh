@@ -142,6 +142,26 @@ if [ "$PRUNE_MODE" = true ]; then
             fi
         fi
     done
+
+    while IFS=$'\t' read -r parent_service child_project; do
+        [ -n "$parent_service" ] || continue
+        [ "$parent_service" = "<no value>" ] && continue
+
+        [ "$child_project" = "<no value>" ] && child_project=""
+        [ -z "$child_project" ] && child_project="localai"
+        [ "$child_project" != "$CHECK_PROJECT_NAME" ] && continue
+
+        if [ -z "${ENABLED_MAP[$parent_service]}" ] && [ -z "${SERVICES_TO_STOP_MAP[$parent_service]}" ]; then
+            log_info "[$parent_service] Found managed child containers but '$parent_service' is disabled. Scheduling for stop."
+            SERVICES_TO_STOP+=("$parent_service")
+            SERVICES_TO_STOP_MAP["$parent_service"]=1
+            USE_SPECIFIC=true
+        fi
+    done < <(
+        docker ps -a --filter "label=corekit.child=true" \
+            --format "{{.Label \"corekit.parent.service\"}}\t{{.Label \"corekit.project\"}}" |
+        sort -u
+    )
 fi
 
 # Determine services to stop

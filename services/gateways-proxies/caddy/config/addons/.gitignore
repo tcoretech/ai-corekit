@@ -1,3 +1,6 @@
 # Custom Caddy addon configs are local-only — never committed.
-# Drop *.conf files here to extend Caddy without touching the tracked Caddyfile.
+# Drop *.conf or *.conf.template files here to extend Caddy without touching
+# the tracked Caddyfile. Templates are rendered by prepare.sh against the
+# corekit-managed environment (including .env.global) before Caddy starts.
 *.conf
+*.conf.template

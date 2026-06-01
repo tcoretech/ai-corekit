@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     volumes:
     - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
-    - ./config/addons:/etc/caddy/addons:ro
+    - ./data/addons-rendered:/etc/caddy/addons:ro
     - ./data/data:/data:rw
     - ./data/config:/config:rw
     # Website is now served by landing-page service

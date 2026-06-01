@@ -32,6 +32,7 @@ if command -v apt-get &> /dev/null; then
         lsb-release
         software-properties-common
         apt-transport-https
+        gettext-base
     )
 
     MISSING=()

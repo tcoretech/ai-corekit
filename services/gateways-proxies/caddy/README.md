@@ -85,6 +85,31 @@ VAULTWARDEN_PASSWORD=your-secure-password
 VAULTWARDEN_PASSWORD_HASH=hashed-with-bcrypt
 ```
 
+### Extending Caddy with Local Addons
+
+The main `Caddyfile` is intentionally curated — every reverse-proxy route lives there. To add routes without editing the tracked Caddyfile (for example, for an autobuilder-deployed custom service), drop a file into `config/addons/`. The addons directory is gitignored, so addon files stay local to your deployment.
+
+There are two flavours:
+
+**Plain `*.conf` addons** — used as-is. They can only reference variables that are explicitly listed in this service's `docker-compose.yml` `environment:` block. Suitable when the addon only uses core CoreKit vars that already flow through.
+
+**`*.conf.template` addons (recommended for custom services)** — rendered by `prepare.sh` against the full corekit-managed environment (`.env.global` plus every service `.env`) before Caddy starts. Use these when your addon needs a variable that isn't in Caddy's compose env list, so you don't have to modify Caddy itself.
+
+Templates use standard shell substitution syntax, including default values for robustness when a variable is unset:
+
+```caddyfile
+# config/addons/main-site-staging.conf.template
+${MAIN_SITE_STAGING_HOSTNAME:-disabled-main-site-staging.invalid} {
+    reverse_proxy main-site-staging:3000
+}
+```
+
+If the hostname isn't set, the block becomes a dormant vhost on a `.invalid` placeholder rather than crashing Caddy's config parse.
+
+Rendered files live in `data/addons-rendered/` (gitignored). Caddy mounts that directory as `/etc/caddy/addons`, so any change to a template requires a Caddy restart (`corekit restart caddy`) to re-render.
+
+**Requires `envsubst`** (from `gettext-base`); installed automatically by `corekit init` on Debian/Ubuntu.
+
 ### n8n Integration Setup
 
 **Use Case:** Monitor SSL certificate expiration, test service availability, or automate Caddy configuration changes.

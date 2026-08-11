@@ -28,6 +28,11 @@ jq -e . \
   "$N8N_DIR/task-runners-managed.json" >/dev/null
 jq -e '.active == false and ([.nodes[].type] | sort) == ["n8n-nodes-base.manualTrigger","n8n-nodes-base.set"]' \
   "$N8N_DIR/managed/canary.json" >/dev/null
+jq -e '[.packageRules[] | select(.automerge == true)] | length == 0' \
+  "$PROJECT_ROOT/renovate.json" >/dev/null || {
+  echo "Renovate automerge requires enforced GitHub status checks" >&2
+  exit 1
+}
 
 N8N_REF="$(awk '$1 == "FROM" && $2 ~ /^n8nio\/n8n:/ {print $2; exit}' "$N8N_DIR/Dockerfile")"
 RUNNER_REF="$(awk '$1 == "FROM" && $2 ~ /^n8nio\/runners:/ {print $2; exit}' "$N8N_DIR/runner/Dockerfile")"

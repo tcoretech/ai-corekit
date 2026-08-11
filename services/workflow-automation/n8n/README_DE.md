@@ -333,7 +333,7 @@ for item in _items:  # "_items" Variable (Unterstrich!)
 
 #### Wie es funktioniert
 ```
-n8n Container ←→ n8n-runner Container (n8nio/runners:latest)
+n8n Container ←→ n8n-runner Container (exakt dieselbe n8n-Version und ein verifizierter Image-Digest)
 (Workflow)        (Native Python Ausführung)
 ```
 

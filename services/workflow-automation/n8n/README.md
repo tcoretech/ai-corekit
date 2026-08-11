@@ -4,6 +4,12 @@
 
 n8n is a powerful, extendable workflow automation platform that lets you connect anything to everything via its open, fair-code model. It's the heart of AI CoreKit, orchestrating all integrations between the 50+ services.
 
+> **Managed deployment:** Production uses one standard-mode n8n process and one
+> exact-version external runner. Image pins, runner restrictions, updates, and
+> recovery are defined in this service directory and in
+> `docs/managed-updates/`. Do not replace the committed pins with moving tags or
+> re-enable queue workers without supported external binary storage.
+
 ### Features
 
 - **400+ Integrations:** Pre-built nodes for popular services
@@ -46,7 +52,7 @@ Database: n8n
 User: n8n
 Password: [from .env file]
 
-// Redis (queue management)
+// Redis (available to workflows; n8n itself is not using queue mode)
 Host: redis
 Port: 6379
 
@@ -1469,7 +1475,7 @@ To use packages beyond Python's standard library, you need to build a custom `n8
 **Create Custom Dockerfile:**
 ```dockerfile
 # custom-runners.Dockerfile
-FROM n8nio/runners:latest
+FROM n8nio/runners:<exact-n8n-version>@sha256:<verified-image-digest>
 
 # Switch to root to install packages
 USER root
@@ -1509,11 +1515,11 @@ COPY n8n-task-runners.json /usr/local/lib/node_modules/@n8n/task-runner/
 **Build and Deploy:**
 ```bash
 # Build custom image
-docker build -f custom-runners.Dockerfile -t custom-runners:latest .
+docker build -f custom-runners.Dockerfile -t custom-runners:<version>-<build-id> .
 
 # Update docker-compose.yml to use custom image
-# Change: image: n8nio/runners:latest
-# To: image: custom-runners:latest
+# Keep the exact runner version equal to the exact n8n version and pin its digest.
+# Use a unique immutable local tag such as custom-runners:<version>-<build-id>.
 
 # Restart containers
 docker compose down
@@ -1864,7 +1870,7 @@ docker exec python-runner env | grep N8N_RUNNERS_MAX_OLD_SPACE_SIZE
 - Increase memory limit in docker-compose.yml:
 ```yaml
 python-runner:
-  image: n8nio/runners:latest
+  image: n8nio/runners:<exact-n8n-version>@sha256:<verified-image-digest>
   deploy:
     resources:
       limits:

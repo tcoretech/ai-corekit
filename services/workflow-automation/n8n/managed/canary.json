@@ -1,0 +1,52 @@
+{
+  "id": "b702b23d-511f-4f28-89d0-3f2e98e9c2f1",
+  "versionId": "5c77d287-c4db-44d4-a6e7-c13242f6a2e5",
+  "name": "CoreKit managed-update no-side-effect canary",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b0a86a55-4951-449c-9b7e-74949e34de5a",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f515b2a0-6538-4205-9ac0-898a52683d9a",
+              "name": "corekitCanary",
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        }
+      },
+      "id": "403892d5-d81d-40f2-a389-1446481928a9",
+      "name": "Set safe canary value",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [240, 0]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set safe canary value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

@@ -30,7 +30,7 @@ Orchestrate processes and integrate services
 
 | Service | Description | Interface | Dependencies |
 |---------|-------------|-----------|--------------|
-| [**n8n**](../services/workflow-automation/n8n) <br> [`n8n`] | Extendable workflow automation tool for connecting apps, building API integrations, and orchestrating complex business processes. [[↗](https://github.com/n8n-io/n8n)] | `n8n.<yourdomain>.com` | postgres, redis |
+| [**n8n**](../services/workflow-automation/n8n) <br> [`n8n`] | Extendable workflow automation tool for connecting apps, building API integrations, and orchestrating complex business processes. [[↗](https://github.com/n8n-io/n8n)] | `n8n.<yourdomain>.com` | postgres |
 | [**Flowise**](../services/workflow-automation/flowise) <br> [`flowise`] | Drag-and-drop AI agent builder for creating chatbots, customer support assistants, and complex AI workflows. [[↗](https://github.com/FlowiseAI/Flowise)] | `flowise.<yourdomain>.com` | - |
 | [**n8n-MCP**](../services/workflow-automation/n8n-mcp) <br> [`n8n-mcp`] | Model Context Protocol (MCP) server for n8n, enabling AI assistants like Claude or Cursor to generate and validate n8n workflows. [[↗](https://github.com/czlonkowski/n8n-mcp)] | `n8nmcp.<yourdomain>.com` | - |
 

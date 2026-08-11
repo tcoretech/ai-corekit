@@ -7,7 +7,29 @@
   "interface": "n8n.<yourdomain>.com",
   "source": "https://github.com/n8n-io/n8n",
   "depends_on": [
-    "postgres",
-    "redis"
-  ]
+    "postgres"
+  ],
+  "managed_update": {
+    "enabled": true,
+    "deployment_branch": "main",
+    "update_group": "n8n-application-and-runners",
+    "channel": "stable",
+    "check_cadence": "daily",
+    "apply_cadence": "weekly",
+    "minimum_release_age_days": 7,
+    "automatic_update_types": [
+      "patch",
+      "minor"
+    ],
+    "major_updates_require_manual_approval": true,
+    "security_override_requires_manual_flag": true,
+    "backup_required": true,
+    "stateful_rollback": "guarded",
+    "recovery_sets_to_keep": 3,
+    "minimum_free_space_gb": 15,
+    "components": [
+      "n8n",
+      "n8n-runner"
+    ]
+  }
 }

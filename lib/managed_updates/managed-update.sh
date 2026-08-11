@@ -227,18 +227,17 @@ entity_count() {
 }
 
 load_required_environment() {
-  set -a
-  if [[ -f "$PROJECT_ROOT/config/.env.global" ]]; then
-    # shellcheck disable=SC1091
-    source "$PROJECT_ROOT/config/.env.global"
-  fi
-  # shellcheck disable=SC1091
-  source "$PROJECT_ROOT/services/data-services/postgres/.env"
-  # shellcheck disable=SC1091
-  source "$N8N_DIR/.env"
-  set +a
   export PROJECT_ROOT
   export COMPOSE_PROFILES=n8n
+  if [[ -f "$PROJECT_ROOT/config/.env.global" ]]; then
+    N8N_HOSTNAME="$(sed -n 's/^N8N_HOSTNAME=//p' "$PROJECT_ROOT/config/.env.global" | tail -n 1)"
+    N8N_HOSTNAME="${N8N_HOSTNAME%$'\r'}"
+    N8N_HOSTNAME="${N8N_HOSTNAME#\"}"
+    N8N_HOSTNAME="${N8N_HOSTNAME%\"}"
+    N8N_HOSTNAME="${N8N_HOSTNAME#\'}"
+    N8N_HOSTNAME="${N8N_HOSTNAME%\'}"
+    export N8N_HOSTNAME
+  fi
 }
 
 compose_project() {
@@ -516,7 +515,9 @@ apply_update() {
   fi
 
   log_event info deployment_started "Recreating only the coordinated n8n main and runner bundle"
-  if ! docker compose -p "$project_name" --project-directory "$N8N_DIR" -f "$N8N_DIR/docker-compose.yml" \
+  if ! docker compose -p "$project_name" --project-directory "$N8N_DIR" \
+    --env-file "$PROJECT_ROOT/services/data-services/postgres/.env" \
+    --env-file "$N8N_DIR/.env" -f "$N8N_DIR/docker-compose.yml" \
     up -d --no-deps n8n n8n-runner; then
     write_failure_state compose_up "$backup_manifest"
     die "Candidate Compose deployment failed; stateful recovery requires the guarded rollback plan"

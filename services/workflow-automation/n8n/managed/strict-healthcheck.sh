@@ -123,7 +123,9 @@ if [[ "$RUN_CANARY" == "true" ]]; then
   CANARY_OUTPUT="$(mktemp "$STATE_ROOT/.canary.XXXXXX")"
   PROJECT_NAME="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' n8n 2>/dev/null || true)"
   [[ -n "$PROJECT_NAME" ]] || PROJECT_NAME=localai
-  if ! docker compose -p "$PROJECT_NAME" --project-directory "$SERVICE_DIR" -f "$SERVICE_DIR/docker-compose.yml" \
+  if ! docker compose -p "$PROJECT_NAME" --project-directory "$SERVICE_DIR" \
+    --env-file "$SERVICE_DIR/../../data-services/postgres/.env" \
+    --env-file "$SERVICE_DIR/.env" -f "$SERVICE_DIR/docker-compose.yml" \
     run --rm --no-deps -T -e N8N_RUNNERS_ENABLED=false \
     -v "$CANARY_FILE:/tmp/corekit-managed-canary.json:ro" n8n \
     execute --file=/tmp/corekit-managed-canary.json >"$CANARY_OUTPUT" 2>&1; then

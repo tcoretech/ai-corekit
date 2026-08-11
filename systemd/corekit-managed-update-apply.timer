@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly AI CoreKit approved managed service update window
+
+[Timer]
+OnCalendar=Sun *-*-* 04:15:00 UTC
+Persistent=true
+RandomizedDelaySec=20m
+Unit=corekit-managed-update-apply.service
+
+[Install]
+WantedBy=timers.target

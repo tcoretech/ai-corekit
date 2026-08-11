@@ -1,0 +1,85 @@
+name: managed-n8n
+
+on:
+  pull_request:
+    paths:
+      - "services/workflow-automation/n8n/**"
+      - "lib/managed_updates/**"
+      - "scripts/validate-managed-updates.sh"
+      - "scripts/install-managed-update-systemd.sh"
+      - "systemd/**"
+      - "tests/test-managed-update.sh"
+      - "tests/test-n8n-candidate.sh"
+      - "tests/fixtures/n8n-**"
+      - "renovate.json"
+      - ".github/workflows/managed-n8n.yml"
+      - "corekit.sh"
+  push:
+    branches:
+      - main
+      - "codex/**"
+      - "renovate/**"
+    paths:
+      - "services/workflow-automation/n8n/**"
+      - "lib/managed_updates/**"
+      - "scripts/validate-managed-updates.sh"
+      - "scripts/install-managed-update-systemd.sh"
+      - "systemd/**"
+      - "tests/test-managed-update.sh"
+      - "tests/test-n8n-candidate.sh"
+      - "tests/fixtures/n8n-**"
+      - "renovate.json"
+      - ".github/workflows/managed-n8n.yml"
+      - "corekit.sh"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: managed-n8n-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install validation tools
+        run: sudo apt-get update && sudo apt-get install -y jq shellcheck
+      - name: Shellcheck
+        run: >-
+          shellcheck --severity=error corekit.sh
+          lib/managed_updates/managed-update.sh
+          services/workflow-automation/n8n/managed/backup.sh
+          services/workflow-automation/n8n/managed/strict-healthcheck.sh
+          scripts/validate-managed-updates.sh
+          scripts/install-managed-update-systemd.sh
+          tests/test-managed-update.sh
+          tests/test-n8n-candidate.sh
+      - name: Validate policy, stable channel, Compose, and Git diff
+        run: ./scripts/validate-managed-updates.sh --online
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.18.0"
+      - name: Validate Renovate configuration
+        run: npx --yes --package renovate@43.285.4 renovate-config-validator renovate.json
+      - name: Verify forbidden files and secrets are not tracked
+        run: |
+          if git ls-files \
+            | grep -E '(^|/)\.env$|^services/workflow-automation/n8n/(data/backups|config/credentials)/.+|^services/workflow-automation/n8n/.+\.(dump|sql)$' \
+            | grep -vE '/\.gitkeep$'; then
+            echo "forbidden generated or secret file is tracked" >&2
+            exit 1
+          fi
+          git diff --check
+
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and exercise isolated grouped candidate
+        run: ./tests/test-n8n-candidate.sh
+      - name: Test managed updater without mutation
+        run: ./tests/test-managed-update.sh

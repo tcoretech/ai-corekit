@@ -1,0 +1,22 @@
+[Unit]
+Description=AI CoreKit managed service update check
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=services
+Group=services
+UMask=0077
+WorkingDirectory=/home/services/ai-launchkit
+ExecStart=/usr/bin/flock --nonblock /home/services/.local/state/ai-corekit/managed-updates/systemd-check.lock /home/services/ai-launchkit/corekit.sh managed-update check n8n
+TimeoutStartSec=15min
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/services/.local/state/ai-corekit/managed-updates
+
+[Install]
+WantedBy=multi-user.target

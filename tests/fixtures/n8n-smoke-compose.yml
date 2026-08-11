@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:17.10@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  n8n:
+    image: ${N8N_TEST_IMAGE}
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: postgres
+      DB_POSTGRESDB_USER: postgres
+      N8N_ENCRYPTION_KEY: corekit-ci-encryption-key-not-production
+      N8N_RUNNERS_MODE: external
+      N8N_RUNNERS_BROKER_LISTEN_ADDRESS: 0.0.0.0
+      N8N_RUNNERS_AUTH_TOKEN: corekit-ci-runner-token-not-production
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5678/healthz && wget -q -O /dev/null http://127.0.0.1:5678/healthz/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+
+  runner:
+    image: ${N8N_TEST_RUNNER_IMAGE}
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,mode=1777,size=64m
+      - /home/runner:rw,nosuid,nodev,uid=1000,gid=1000,mode=0700,size=128m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      N8N_RUNNERS_AUTH_TOKEN: corekit-ci-runner-token-not-production
+      N8N_RUNNERS_TASK_BROKER_URI: http://n8n:5679
+      N8N_RUNNERS_TASK_TIMEOUT: "300"
+    volumes:
+      - ${PROJECT_ROOT}/services/workflow-automation/n8n/task-runners-managed.json:/etc/n8n-task-runners.json:ro
+    depends_on:
+      n8n:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5680/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 15s

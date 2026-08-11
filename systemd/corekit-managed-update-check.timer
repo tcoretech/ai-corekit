@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily AI CoreKit managed service update check
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 UTC
+Persistent=true
+RandomizedDelaySec=30m
+Unit=corekit-managed-update-check.service
+
+[Install]
+WantedBy=timers.target

@@ -345,6 +345,16 @@ cmd_update() {
     fi
 }
 
+# Command: Managed Update
+cmd_managed_update() {
+    if [ -f "$LIB_DIR/managed_updates/managed-update.sh" ]; then
+        bash "$LIB_DIR/managed_updates/managed-update.sh" "$@"
+    else
+        log_error "Managed update script not found."
+        exit 1
+    fi
+}
+
 # Command: Down
 cmd_down() {
     if [ -f "$LIB_DIR/services/down.sh" ]; then
@@ -1011,6 +1021,7 @@ cmd_help() {
     echo "  exec          Execute command in container"
     echo "  pull          Pull service images"
     echo "  update        Update the system"
+    echo "  managed-update  Safely check, plan, apply, inspect, or recover opted-in service updates"
     echo "  credentials   Manage credentials (download|export)"
     echo "  run <service> Run a service-specific command (e.g., corekit run ssh ...)"
     echo "  list          List all available services"
@@ -1069,6 +1080,9 @@ case "$COMMAND" in
         ;;
     update)
         cmd_update "$@"
+        ;;
+    managed-update)
+        cmd_managed_update "$@"
         ;;
     credentials)
         cmd_credentials "$@"

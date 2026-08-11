@@ -1,0 +1,142 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests"
+  ],
+  "baseBranchPatterns": [
+    "main"
+  ],
+  "dependencyDashboard": true,
+  "labels": [
+    "dependencies",
+    "managed-update"
+  ],
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "pin",
+  "schedule": [
+    "after 2am and before 6am"
+  ],
+  "timezone": "Etc/UTC",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^services/workflow-automation/n8n/docker-compose\\.yml$/"
+      ],
+      "matchStrings": [
+        "image: \\${N8N_MANAGED_IMAGE:-corekit/n8n:(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)-git[0-9]+\\.[0-9]+\\.[0-9]+-r[0-9]+}"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "n8nio/n8n",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^services/workflow-automation/n8n/docker-compose\\.yml$/"
+      ],
+      "matchStrings": [
+        "image: \\${N8N_MANAGED_RUNNER_IMAGE:-corekit/n8n-runners:(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)-r[0-9]+}"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "n8nio/runners",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^services/workflow-automation/n8n/Dockerfile$/"
+      ],
+      "matchStrings": [
+        "ARG N8N_GIT_VERSION=(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)\\nARG N8N_GIT_COMMIT=(?<currentDigest>[0-9a-f]{40})"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "tcoretech/n8n-git",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Keep the n8n application and every runner coordinated",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "n8nio/n8n",
+        "n8nio/runners"
+      ],
+      "groupName": "n8n managed bundle",
+      "groupSlug": "n8n-managed-bundle",
+      "minimumReleaseAge": "7 days",
+      "pinDigests": true,
+      "separateMinorPatch": false,
+      "versioning": "semver"
+    },
+    {
+      "description": "Automerge eligible n8n patch/minor changes only after every required check",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "n8nio/n8n",
+        "n8nio/runners"
+      ],
+      "matchUpdateTypes": [
+        "digest",
+        "patch",
+        "minor"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true,
+      "ignoreTests": false
+    },
+    {
+      "description": "Major n8n updates always require manual review",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "n8nio/n8n",
+        "n8nio/runners"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false,
+      "addLabels": [
+        "major-update",
+        "manual-approval"
+      ]
+    },
+    {
+      "description": "n8n-git installer commit and checksums require manual verification",
+      "matchDatasources": [
+        "github-tags"
+      ],
+      "matchPackageNames": [
+        "tcoretech/n8n-git"
+      ],
+      "minimumReleaseAge": "7 days",
+      "automerge": false,
+      "addLabels": [
+        "manual-approval"
+      ]
+    },
+    {
+      "description": "Do not query the registry for locally built CoreKit image tags",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "corekit/n8n",
+        "corekit/n8n-runners"
+      ],
+      "enabled": false
+    }
+  ],
+  "prBodyNotes": [
+    "The `managed-n8n` CI job verifies that n8n and runner pins move together and that the candidate equals n8n's official stable GitHub release. Beta-tag candidates cannot pass or automerge."
+  ]
+}

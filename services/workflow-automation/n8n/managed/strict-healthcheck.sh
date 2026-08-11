@@ -7,7 +7,11 @@ EXPECTED_WORKFLOWS=""
 EXPECTED_CREDENTIALS=""
 RUN_CANARY=false
 TIMEOUT_SECONDS=420
-STATE_ROOT="${COREKIT_MANAGED_STATE_ROOT:-/home/services/.local/state/ai-corekit/managed-updates}"
+if [[ -z "${COREKIT_MANAGED_STATE_ROOT:-}" ]]; then
+  : "${HOME:?Set HOME or COREKIT_MANAGED_STATE_ROOT}"
+fi
+USER_STATE_HOME="${XDG_STATE_HOME:-${HOME:-}/.local/state}"
+STATE_ROOT="${COREKIT_MANAGED_STATE_ROOT:-$USER_STATE_HOME/ai-corekit/managed-updates}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 

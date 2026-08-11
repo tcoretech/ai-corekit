@@ -5,8 +5,13 @@ umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${COREKIT_PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
-STATE_ROOT="${COREKIT_MANAGED_STATE_ROOT:-/home/services/.local/state/ai-corekit/managed-updates}"
-BACKUP_ROOT="${COREKIT_N8N_BACKUP_ROOT:-/home/services/backups/ai-corekit/n8n}"
+if [[ -z "${COREKIT_MANAGED_STATE_ROOT:-}" || -z "${COREKIT_N8N_BACKUP_ROOT:-}" ]]; then
+  : "${HOME:?Set HOME or both managed-update root variables}"
+fi
+USER_STATE_HOME="${XDG_STATE_HOME:-${HOME:-}/.local/state}"
+USER_DATA_HOME="${XDG_DATA_HOME:-${HOME:-}/.local/share}"
+STATE_ROOT="${COREKIT_MANAGED_STATE_ROOT:-$USER_STATE_HOME/ai-corekit/managed-updates}"
+BACKUP_ROOT="${COREKIT_N8N_BACKUP_ROOT:-$USER_DATA_HOME/ai-corekit/backups/n8n}"
 LOCK_FILE="${COREKIT_MANAGED_LOCK_FILE:-$STATE_ROOT/managed-update.lock}"
 N8N_DIR="$PROJECT_ROOT/services/workflow-automation/n8n"
 POLICY_FILE="$N8N_DIR/service.json"

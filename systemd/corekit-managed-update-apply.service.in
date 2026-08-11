@@ -1,0 +1,25 @@
+[Unit]
+Description=AI CoreKit approved managed service update apply
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@COREKIT_USER@
+Group=@COREKIT_GROUP@
+UMask=0077
+WorkingDirectory=@PROJECT_ROOT@
+Environment=COREKIT_PROJECT_ROOT=@PROJECT_ROOT@
+Environment=COREKIT_MANAGED_STATE_ROOT=@STATE_ROOT@
+Environment=COREKIT_N8N_BACKUP_ROOT=@BACKUP_ROOT@
+ExecStart=/usr/bin/flock --nonblock @STATE_ROOT@/systemd-apply.lock @PROJECT_ROOT@/corekit.sh managed-update apply n8n
+TimeoutStartSec=6h
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=@PROJECT_ROOT@ @STATE_ROOT@ @BACKUP_ROOT@
+
+[Install]
+WantedBy=multi-user.target

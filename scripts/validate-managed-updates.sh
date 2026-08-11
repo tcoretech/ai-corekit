@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 N8N_DIR="$PROJECT_ROOT/services/workflow-automation/n8n"
 ONLINE=false
+VALIDATION_TMP="$(mktemp -d /tmp/corekit-managed-validation.XXXXXX)"
+trap 'rm -rf -- "$VALIDATION_TMP"' EXIT
 
 if [[ "${1:-}" == "--online" ]]; then
   ONLINE=true
@@ -53,6 +55,49 @@ fi
 for required_pattern in '.env' '**/credentials/**' '**/backups/**' 'data/**' '.git'; do
   grep -Fxq "$required_pattern" "$N8N_DIR/.dockerignore"
 done
+
+FORBIDDEN_HOST_ROOT="/home/"services
+FORBIDDEN_UNIT_USER="User="services
+FORBIDDEN_UNIT_GROUP="Group="services
+if grep -RnsF \
+  -e "$FORBIDDEN_HOST_ROOT" \
+  -e "$FORBIDDEN_UNIT_USER" \
+  -e "$FORBIDDEN_UNIT_GROUP" \
+  "$PROJECT_ROOT/docs/managed-updates" \
+  "$PROJECT_ROOT/lib/managed_updates" \
+  "$PROJECT_ROOT/scripts/install-managed-update-systemd.sh" \
+  "$PROJECT_ROOT/systemd"; then
+  echo "Host-specific managed-update path or account found" >&2
+  exit 1
+fi
+
+RENDERED_UNITS="$VALIDATION_TMP/systemd"
+VALIDATION_USER="$(stat -c '%U' "$PROJECT_ROOT")"
+if [[ "$VALIDATION_USER" == "root" ]]; then
+  VALIDATION_USER="nobody"
+fi
+VALIDATION_GROUP="$(id -gn "$VALIDATION_USER")"
+"$PROJECT_ROOT/scripts/install-managed-update-systemd.sh" \
+  --render-only "$RENDERED_UNITS" \
+  --user "$VALIDATION_USER" \
+  --group "$VALIDATION_GROUP" \
+  --project-root "$PROJECT_ROOT" \
+  --state-root "$VALIDATION_TMP/state" \
+  --backup-root "$VALIDATION_TMP/backups"
+systemd-analyze verify \
+  "$RENDERED_UNITS/corekit-managed-update-check.service" \
+  "$RENDERED_UNITS/corekit-managed-update-check.timer" \
+  "$RENDERED_UNITS/corekit-managed-update-apply.service" \
+  "$RENDERED_UNITS/corekit-managed-update-apply.timer"
+if "$PROJECT_ROOT/scripts/install-managed-update-systemd.sh" \
+  --render-only "$VALIDATION_TMP/root-units" \
+  --user root \
+  --project-root "$PROJECT_ROOT" \
+  --state-root "$VALIDATION_TMP/root-state" \
+  --backup-root "$VALIDATION_TMP/root-backups" >/dev/null 2>&1; then
+  echo "Systemd installer accepted root as the scheduled runtime account" >&2
+  exit 1
+fi
 
 ENABLED_POLICIES="$(find "$PROJECT_ROOT/services" -mindepth 3 -maxdepth 3 -name service.json -type f -print0 \
   | xargs -0 -r jq -r 'select(.managed_update.enabled == true) | .name')"

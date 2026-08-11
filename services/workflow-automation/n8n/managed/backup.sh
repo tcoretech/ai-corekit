@@ -6,7 +6,11 @@ umask 077
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROJECT_ROOT="${COREKIT_PROJECT_ROOT:-$(cd "$SERVICE_DIR/../../.." && pwd)}"
-BACKUP_ROOT="${COREKIT_N8N_BACKUP_ROOT:-/home/services/backups/ai-corekit/n8n}"
+if [[ -z "${COREKIT_N8N_BACKUP_ROOT:-}" ]]; then
+  : "${HOME:?Set HOME or COREKIT_N8N_BACKUP_ROOT}"
+fi
+USER_DATA_HOME="${XDG_DATA_HOME:-${HOME:-}/.local/share}"
+BACKUP_ROOT="${COREKIT_N8N_BACKUP_ROOT:-$USER_DATA_HOME/ai-corekit/backups/n8n}"
 PREVIOUS_GIT_COMMIT=""
 BACKUP_LABEL="pre-upgrade"
 CANDIDATE_IMAGE=""

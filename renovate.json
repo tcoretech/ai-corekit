@@ -74,7 +74,7 @@
       "versioning": "semver"
     },
     {
-      "description": "Automerge eligible n8n patch/minor changes only after every required check",
+      "description": "Require manual merge until GitHub enforces required status checks",
       "matchDatasources": [
         "docker"
       ],
@@ -87,10 +87,7 @@
         "patch",
         "minor"
       ],
-      "automerge": true,
-      "automergeType": "pr",
-      "platformAutomerge": true,
-      "ignoreTests": false
+      "automerge": false
     },
     {
       "description": "Major n8n updates always require manual review",

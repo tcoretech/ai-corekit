@@ -37,3 +37,5 @@ sudo ./scripts/install-managed-update-systemd.sh
 Use `--project-root`, `--state-root`, and `--backup-root` when the detected defaults are not appropriate. The selected account needs access to the checkout, the Docker daemon used by CoreKit, and the protected state/recovery directories. A dedicated service account is recommended, but no account name or home-directory layout is required.
 
 If the Renovate GitHub App is not installed, install it for the repository at <https://github.com/apps/renovate> and allow it to open pull requests. The committed configuration is `renovate.json`.
+
+Renovate opens grouped, reviewable PRs, but automerge remains disabled until the repository enforces the `validate` and `candidate` status checks on its deployment branch. Do not enable platform automerge without those required checks; existing CI is not equivalent to GitHub enforcing it before merge.

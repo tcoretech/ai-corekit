@@ -26,6 +26,10 @@ When you run the installer, Caddy automatically:
 3. **Sets up reverse proxies** with optimal headers and timeouts
 4. **Enables automatic renewal** for certificates (every 60 days)
 
+The base-domain upstream defaults to `landing-page:80`. Set
+`MAIN_SITE_UPSTREAM` in the service `.env` when the primary website is served
+by another container or port.
+
 **Access Caddy:**
 - Caddy runs in the background - you never interact with it directly
 - All services are automatically available at `https://[service].yourdomain.com`

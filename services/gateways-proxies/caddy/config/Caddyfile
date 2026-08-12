@@ -5,7 +5,7 @@
 
 # Main Website (Base Domain)
 {$BASE_DOMAIN} {
-    reverse_proxy landing-page:80
+    reverse_proxy {$MAIN_SITE_UPSTREAM:landing-page:80}
 }
 
 # N8N

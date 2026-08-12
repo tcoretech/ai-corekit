@@ -1,8 +1,6 @@
 services:
   n8n-mcp:
-    build:
-      context: https://github.com/czlonkowski/n8n-mcp.git
-      dockerfile: Dockerfile
+    image: ${N8N_MCP_IMAGE:-ghcr.io/czlonkowski/n8n-mcp:2.69.0}
     container_name: n8n-mcp
     profiles:
     - n8n-mcp
@@ -11,12 +9,13 @@ services:
       - .env
     environment:
     - AUTH_TOKEN=${N8N_MCP_TOKEN}
-    - USE_FIXED_HTTP=true
     - N8N_HOST=n8n
     - N8N_API_URL=http://n8n:5678
     - N8N_API_KEY=${N8N_API_KEY}
     - LOG_LEVEL=info
     - MCP_MODE=http
+    - N8N_MCP_TELEMETRY_DISABLED=true
+    - NODE_ENV=production
     - PORT=3000
     volumes:
     - n8n-mcp-data:/app/data

@@ -17,6 +17,8 @@ services:
     - N8N_MCP_TELEMETRY_DISABLED=true
     - NODE_ENV=production
     - PORT=3000
+    # The managed n8n API is reached by its private Docker DNS name. Metadata IPs remain blocked.
+    - WEBHOOK_SECURITY_MODE=${N8N_MCP_WEBHOOK_SECURITY_MODE:-permissive}
     volumes:
     - n8n-mcp-data:/app/data
     healthcheck:

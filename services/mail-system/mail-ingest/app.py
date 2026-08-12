@@ -3,9 +3,12 @@ import hmac
 import hashlib
 import smtplib
 import re
+import json
 import time
 import uuid
 import logging
+from email.message import EmailMessage
+from email.policy import SMTP
 from email.utils import formatdate
 
 from fastapi import FastAPI, Request, HTTPException
@@ -64,6 +67,50 @@ def verify_mailgun_signature(api_key: str, timestamp: str, token: str, signature
     ).hexdigest()
 
     return hmac.compare_digest(digest, signature)
+
+
+def mailgun_message_header(form, name: str) -> str:
+    """Read a header from Mailgun's signed webhook fields without allowing CRLF injection."""
+
+    for candidate in (name, name.lower(), name.title()):
+        value = form.get(candidate)
+        if value:
+            return re.sub(r"[\r\n]+", " ", str(value)).strip()
+
+    try:
+        message_headers = json.loads(str(form.get("message-headers") or "[]"))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return ""
+
+    for item in message_headers:
+        if (
+            isinstance(item, list)
+            and len(item) == 2
+            and str(item[0]).casefold() == name.casefold()
+        ):
+            return re.sub(r"[\r\n]+", " ", str(item[1])).strip()
+    return ""
+
+
+def build_fallback_message(
+    sender: str,
+    recipient: str,
+    subject: str,
+    body_plain: str,
+    reply_to: str = "",
+) -> bytes:
+    """Build a safe MIME message when Mailgun does not supply body-mime."""
+
+    message = EmailMessage(policy=SMTP)
+    message["From"] = sender
+    message["To"] = recipient
+    message["Subject"] = subject
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = f"<{uuid.uuid4()}@{MAILSERVER_HELO_DOMAIN}>"
+    if reply_to:
+        message["Reply-To"] = reply_to
+    message.set_content(body_plain)
+    return message.as_bytes()
 
 
 def smtp_forward(envelope_from: str, envelope_to: str, raw_mime: bytes) -> None:
@@ -140,6 +187,7 @@ async def mailgun_incoming(request: Request):
         raise HTTPException(status_code=403, detail="Invalid Mailgun signature")
 
     sender = form.get("sender") or form.get("from") or "unknown@localhost"
+    from_header = form.get("from") or sender
     recipient = form.get("recipient") or form.get("to") or "unknown@localhost"
     message_id = form.get("Message-Id") or form.get("message-id")
 
@@ -147,21 +195,18 @@ async def mailgun_incoming(request: Request):
     raw_mime = form.get("body-mime")
 
     if not raw_mime:
-        # Fallback: very simple plain-text message if you're not using Store and Notify
+        # Fallback: reconstruct a safe message while retaining reply routing.
         subject = form.get("subject") or ""
         body_plain = form.get("body-plain") or ""
-        headers = [
-            f"From: {sender}",
-            f"To: {recipient}",
-            f"Subject: {subject}",
-            f"Date: {formatdate(localtime=True)}",
-            f"Message-ID: <{uuid.uuid4()}@{MAILSERVER_HELO_DOMAIN}>",
-            "MIME-Version: 1.0",
-            "Content-Type: text/plain; charset=utf-8",
-        ]
-        raw_mime = "\r\n".join(headers) + "\r\n\r\n" + body_plain
-
-    raw_bytes = raw_mime.encode("utf-8", errors="replace")
+        raw_bytes = build_fallback_message(
+            str(from_header),
+            str(recipient),
+            str(subject),
+            str(body_plain),
+            mailgun_message_header(form, "Reply-To"),
+        )
+    else:
+        raw_bytes = str(raw_mime).encode("utf-8", errors="replace")
 
     logger.info(
         "forwarding_email %s",

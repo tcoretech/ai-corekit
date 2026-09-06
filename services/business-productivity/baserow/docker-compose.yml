@@ -1,6 +1,6 @@
 services:
   baserow:
-    image: baserow/baserow:1.35.0
+    image: baserow/baserow:1.35.3@sha256:28a3972439946892cb51997b949a96976d1015acfdb67bf6d0f7fdf3662233d4
     container_name: baserow
     profiles:
     - baserow

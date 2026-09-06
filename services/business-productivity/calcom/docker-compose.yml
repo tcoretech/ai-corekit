@@ -1,6 +1,6 @@
 services:
   calcom:
-    image: calcom/cal.com:v5.8.2
+    image: calcom/cal.com:v5.9.14@sha256:1bddc5ca08b3b930713ec9b111e0c684bc67d33b590b1af9f8a398dde6131e36
     container_name: calcom
     profiles:
     - calcom

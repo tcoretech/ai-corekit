@@ -1,6 +1,6 @@
 services:
   postiz:
-    image: ghcr.io/gitroomhq/postiz-app:latest
+    image: ghcr.io/gitroomhq/postiz-app:latest@sha256:785f97312f66a347fb96cdccc4ded5a33ced69a672c89a9adc8054e7d6a21dc5
     container_name: postiz
     profiles:
     - postiz

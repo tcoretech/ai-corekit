@@ -1,6 +1,6 @@
 services:
   livekit-server:
-    image: livekit/livekit-server:latest
+    image: livekit/livekit-server:latest@sha256:6fd3b7088874c4d119160dd688798dfec852bc014786d392caad15f6f63912a3
     container_name: livekit-server
     profiles:
     - livekit
@@ -31,7 +31,7 @@ services:
       timeout: 10s
       retries: 5
   livekit-agents:
-    image: python:3.11-slim
+    image: python:3.11-slim@sha256:9534e5a8e315485d4061ed659af0fd78a284c015f9b73661b41d6bab25604534
     container_name: livekit-agents
     profiles:
     - livekit

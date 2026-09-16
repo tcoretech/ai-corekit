@@ -46,7 +46,7 @@ services:
     volumes:
     - outline_data:/var/lib/outline/data
   outline-minio:
-    image: minio/minio:latest
+    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     container_name: outline-minio
     profiles:
     - outline
@@ -61,7 +61,7 @@ services:
     volumes:
     - outline_minio_data:/data
   outline-postgres:
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
     container_name: outline-postgres
     profiles:
     - outline
@@ -82,7 +82,7 @@ services:
       timeout: 10s
       retries: 3
   outline-redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
     container_name: outline-redis
     env_file:
       - .env
@@ -92,7 +92,7 @@ services:
     volumes:
     - outline_redis_data:/data
   dex:
-    image: ghcr.io/dexidp/dex:v2.37.0
+    image: ghcr.io/dexidp/dex:v2.37.0@sha256:f579d00721b0d842328c43a562f50343c54b0048ef2d58d6b54e750c21fc7938
     container_name: dex
     profiles:
     - outline

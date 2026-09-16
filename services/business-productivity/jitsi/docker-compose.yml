@@ -1,6 +1,6 @@
 services:
   jitsi-jvb:
-    image: jitsi/jvb:stable-10008
+    image: jitsi/jvb:stable-10008@sha256:bcd27c59b40ca42e86a9a475655ede68f8f0db230d14b36a59e4293757b0d694
     container_name: jitsi-jvb
     profiles:
     - jitsi
@@ -28,7 +28,7 @@ services:
     depends_on:
     - jitsi-prosody
   jitsi-web:
-    image: jitsi/web:stable-10008
+    image: jitsi/web:stable-10008@sha256:b77d2fc7aa145db72f9c558d47c13d99e3ce72f7b05f8f78710fd8f9ce2c31b0
     container_name: jitsi-web
     profiles:
     - jitsi
@@ -57,7 +57,7 @@ services:
     expose:
     - '80'
   jitsi-prosody:
-    image: jitsi/prosody:stable-10008
+    image: jitsi/prosody:stable-10008@sha256:29456e777bc163bfce38096ba5ce6e159c90f1d245cdcc03835537fe0921760d
     container_name: jitsi-prosody
     profiles:
     - jitsi
@@ -86,7 +86,7 @@ services:
     - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
     - TZ=${TZ}
   jitsi-jicofo:
-    image: jitsi/jicofo:stable-10008
+    image: jitsi/jicofo:stable-10008@sha256:c746b190fffabf95e220fcaad8970656aff3052eed30fd2fa0edd8f0e24d2699
     container_name: jitsi-jicofo
     profiles:
     - jitsi

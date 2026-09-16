@@ -1,6 +1,6 @@
 services:
   paperless-ai:
-    image: clusterzx/paperless-ai:latest
+    image: clusterzx/paperless-ai:latest@sha256:2b65888163fd59716f1c8285b31c5bd0b30c9c3c192c42b516688e3887d4ba60
     container_name: paperless-ai
     profiles:
     - paperless-ai
@@ -28,7 +28,7 @@ services:
       timeout: 10s
       retries: 5
   paperless-gpt:
-    image: ghcr.io/icereed/paperless-gpt:latest
+    image: ghcr.io/icereed/paperless-gpt:latest@sha256:855d9df5bacb2bed60bd520f1ffe0d118695aef9f77d37466ae85823001f547d
     container_name: paperless-gpt
     profiles:
     - paperless-ai

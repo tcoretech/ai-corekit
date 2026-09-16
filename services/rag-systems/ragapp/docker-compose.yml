@@ -1,6 +1,6 @@
 services:
   ragapp:
-    image: ragapp/ragapp:latest
+    image: ragapp/ragapp:latest@sha256:6bbb3e70e38f45e0d0e8cafc87e9a9b6b5cf39a0c218888eda5f837b850f60be
     container_name: ragapp
     env_file:
       - .env

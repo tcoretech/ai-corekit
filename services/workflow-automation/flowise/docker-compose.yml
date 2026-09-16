@@ -1,6 +1,6 @@
 services:
   flowise:
-    image: flowiseai/flowise
+    image: flowiseai/flowise@sha256:cf880b17b1290fbaebebc76c33954bde67b3775aff95feec72a1d060cc81e43d
     restart: unless-stopped
     container_name: flowise
     profiles:

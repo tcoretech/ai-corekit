@@ -1,6 +1,6 @@
 services:
   seafile:
-    image: seafileltd/seafile-mc:latest
+    image: seafileltd/seafile-mc:latest@sha256:f1e19cc1cdd52ed8ec883de114acaa1e932941515dd6571fce0c0ff02248c4cf
     container_name: seafile
     profiles:
     - seafile
@@ -33,7 +33,7 @@ services:
       timeout: 10s
       retries: 5
   seafile-db:
-    image: mariadb:10.11
+    image: mariadb:10.11@sha256:07c0aaff7396b74cb7975cba78257178d188e30f531a5db2b617c48beef13c41
     container_name: seafile-mariadb
     profiles:
     - seafile

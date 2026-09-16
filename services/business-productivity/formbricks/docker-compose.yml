@@ -1,6 +1,6 @@
 services:
   formbricks:
-    image: formbricks/formbricks:latest
+    image: formbricks/formbricks:latest@sha256:9b80cc97f972fe75b2e61f66922760cf18e5c40a99e9dad766b87197ceddcfc3
     container_name: formbricks
     profiles:
     - formbricks
@@ -46,7 +46,7 @@ services:
       retries: 5
       start_period: 90s
   formbricks_db:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
     container_name: formbricks_db
     profiles:
     - formbricks

@@ -1,6 +1,6 @@
 services:
   stirling-pdf:
-    image: stirlingtools/stirling-pdf:latest
+    image: stirlingtools/stirling-pdf:latest@sha256:3b3670fce70b396ec56ba380a3cc7858e0abf83fe13f31c88f7737847763a396
     container_name: stirling-pdf
     profiles:
     - stirling-pdf

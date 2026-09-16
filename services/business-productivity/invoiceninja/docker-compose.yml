@@ -1,6 +1,6 @@
 services:
   invoiceninja:
-    image: invoiceninja/invoiceninja:5
+    image: invoiceninja/invoiceninja:5@sha256:043ccaafd3e7970c2ffc45a89b4e032566e4a7b50f264c24f49cabfae18598fa
     container_name: invoiceninja
     profiles:
     - invoiceninja
@@ -56,7 +56,7 @@ services:
       retries: 5
       start_period: 120s
   invoiceninja_db:
-    image: mysql:8.3
+    image: mysql:8.3@sha256:9de9d54fecee6253130e65154b930978b1fcc336bcc86dfd06e89b72a2588ebe
     container_name: invoiceninja_db
     profiles:
     - invoiceninja
@@ -86,7 +86,7 @@ services:
       retries: 5
       start_period: 30s
   invoiceninja_nginx:
-    image: nginx:alpine
+    image: nginx:alpine@sha256:72ba65eb42c10344912a84ff42408db7d34f2feb642204570ab8fc5ffd29f1d3
     container_name: invoiceninja_nginx
     env_file:
       - .env

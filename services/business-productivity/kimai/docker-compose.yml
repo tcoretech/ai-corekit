@@ -1,6 +1,6 @@
 services:
   kimai:
-    image: kimai/kimai2:apache
+    image: kimai/kimai2:apache@sha256:3084f1e5ecdc10afafc193911039a06cdabda4473f3a48d62edbe460e3c154ee
     container_name: kimai
     profiles:
     - kimai
@@ -34,7 +34,7 @@ services:
       timeout: 10s
       retries: 5
   kimai_db:
-    image: mysql:8.3
+    image: mysql:8.3@sha256:9de9d54fecee6253130e65154b930978b1fcc336bcc86dfd06e89b72a2588ebe
     container_name: kimai_db
     profiles:
     - kimai

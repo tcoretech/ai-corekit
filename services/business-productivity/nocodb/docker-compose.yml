@@ -1,6 +1,6 @@
 services:
   nocodb:
-    image: nocodb/nocodb:latest
+    image: nocodb/nocodb:latest@sha256:4ccfc5114506b1725ffc63be56445fc6fe453a6e6d5cb56eb5f88f0540d4e56e
     container_name: nocodb
     profiles:
     - nocodb

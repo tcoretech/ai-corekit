@@ -1,6 +1,6 @@
 services:
   qdrant:
-    image: qdrant/qdrant
+    image: qdrant/qdrant@sha256:12364fe851b9f17356fc88189fc06d1b521262e04659ec7345975b00c9246a10
     container_name: qdrant
     profiles:
     - qdrant

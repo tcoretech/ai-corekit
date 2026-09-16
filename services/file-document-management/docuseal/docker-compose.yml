@@ -1,6 +1,6 @@
 services:
   docuseal:
-    image: docuseal/docuseal:latest
+    image: docuseal/docuseal:latest@sha256:8ba47ff41ac49e22b6044f6c609411f7ab7ccbb688ff64da7183cb1e71765304
     container_name: docuseal
     profiles:
     - docuseal
@@ -15,7 +15,7 @@ services:
     volumes:
     - docuseal_data:/data
   docuseal-db:
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
     container_name: docuseal-db
     profiles:
     - docuseal

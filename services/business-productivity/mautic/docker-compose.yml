@@ -1,6 +1,6 @@
 services:
   mautic_redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
     container_name: mautic_redis
     env_file:
       - .env
@@ -18,7 +18,7 @@ services:
       timeout: 10s
       retries: 5
   mautic_worker:
-    image: mautic/mautic:latest
+    image: mautic/mautic:latest@sha256:dea3bb71a5c5bf4c0c7d1764e58a32109898e7b2e6a710f14f50e2a913c03a0f
     container_name: mautic_worker
     profiles:
     - mautic
@@ -48,7 +48,7 @@ services:
       \    php /var/www/html/bin/console mautic:import --no-interaction\n    sleep\
       \ 300\n  done\n\"\n"
   mautic_db:
-    image: mariadb:10.11
+    image: mariadb:10.11@sha256:07c0aaff7396b74cb7975cba78257178d188e30f531a5db2b617c48beef13c41
     container_name: mautic_db
     profiles:
     - mautic
@@ -71,7 +71,7 @@ services:
       retries: 5
       start_period: 30s
   mautic_web:
-    image: mautic/mautic:latest
+    image: mautic/mautic:latest@sha256:dea3bb71a5c5bf4c0c7d1764e58a32109898e7b2e6a710f14f50e2a913c03a0f
     container_name: mautic_web
     profiles:
     - mautic

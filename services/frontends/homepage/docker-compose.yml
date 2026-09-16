@@ -1,6 +1,6 @@
 services:
   homepage:
-    image: ghcr.io/gethomepage/homepage:latest
+    image: ghcr.io/gethomepage/homepage:latest@sha256:f820276654539cdc2cf0169f28188d135919a7984fad76d83d8d5ff1383f3705
     container_name: homepage
     profiles:
     - homepage

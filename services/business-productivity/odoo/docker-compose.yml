@@ -1,6 +1,6 @@
 services:
   odoo:
-    image: odoo:18.0
+    image: odoo:18.0@sha256:c01e5bc381f087a3be2800d65cff8ad51ab0709dc54c3b81cd9b0d6c9b3a4d77
     container_name: odoo
     profiles:
     - odoo
@@ -28,7 +28,7 @@ services:
       timeout: 10s
       retries: 3
   odoo-schema-init:
-    image: odoo:18.0
+    image: odoo:18.0@sha256:c01e5bc381f087a3be2800d65cff8ad51ab0709dc54c3b81cd9b0d6c9b3a4d77
     container_name: odoo-schema-init
     profiles:
     - odoo

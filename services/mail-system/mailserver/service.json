@@ -6,7 +6,5 @@
   "description": "Full-stack mail server (Docker-Mailserver) with Mailgun ingest support for sending and receiving real emails.",
   "interface": "mail.<yourdomain>.com",
   "source": "https://github.com/docker-mailserver/docker-mailserver",
-  "depends_on": [
-    "caddy"
-  ]
+  "depends_on": []
 }

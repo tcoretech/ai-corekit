@@ -1,0 +1,9 @@
+{
+  "name": "agents-tunnel",
+  "display_name": "Cloudflare Tunnel (agents)",
+  "category": "Gateways Proxies",
+  "rank": 5,
+  "description": "Dedicated Cloudflare Tunnel connector for the agents stack.",
+  "source": "https://github.com/cloudflare/cloudflared",
+  "depends_on": []
+}

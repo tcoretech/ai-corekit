@@ -1,0 +1,39 @@
+# Postgres for the playground n8n only.
+#
+# The shared `postgres` server carries five databases (postgres, langfuse,
+# calcom, baserow, formbricks) and has exactly one role -- `postgres`, a
+# superuser -- shared by every service that touches it. Keeping the playground
+# on that server means every one of those services can read n8n's tables. This
+# server exists so the `n8n` stack owns its data and nothing outside the stack
+# has a network path to it.
+services:
+  n8n-postgres:
+    image: postgres:17
+    container_name: n8n-postgres
+    profiles:
+    - n8n-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${N8N_PLAY_DB_NAME:-n8n}
+      POSTGRES_USER: ${N8N_PLAY_DB_USER:-n8nplay}
+      POSTGRES_PASSWORD: ${N8N_PLAY_DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    command:
+    - postgres
+    - -c
+    - shared_buffers=128MB
+    - -c
+    - max_connections=50
+    volumes:
+    - ./data/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${N8N_PLAY_DB_USER:-n8nplay} -d ${N8N_PLAY_DB_NAME:-n8n}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'

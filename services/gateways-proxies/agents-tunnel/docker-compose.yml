@@ -1,0 +1,43 @@
+# Cloudflare Tunnel connector for the agents stack.
+#
+# Each stack gets its own tunnel because Cloudflare may send any hostname on a
+# tunnel to any connector running that tunnel's token. One tunnel shared across
+# stacks would therefore defeat the network separation between them.
+services:
+  agents-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: agents-tunnel
+    profiles:
+    - agents-tunnel
+    restart: always
+    command: tunnel --no-autoupdate run
+    env_file:
+      - .env
+    environment:
+    - TUNNEL_TOKEN=${AGENTS_TUNNEL_TOKEN}
+    - TUNNEL_METRICS=127.0.0.1:60123
+    deploy:
+      resources:
+        reservations:
+          memory: 64M
+        limits:
+          memory: 256M
+    mem_reservation: 64m
+    mem_limit: 256m
+    oom_score_adj: -900
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    healthcheck:
+      test:
+      - CMD
+      - cloudflared
+      - tunnel
+      - --metrics
+      - localhost:60123
+      - ready
+      interval: 30s
+      timeout: 30s
+      retries: 3

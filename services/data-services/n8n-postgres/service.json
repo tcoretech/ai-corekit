@@ -1,0 +1,9 @@
+{
+  "name": "n8n-postgres",
+  "display_name": "Postgres (playground n8n)",
+  "category": "Data Services",
+  "rank": 20,
+  "description": "Dedicated Postgres for the playground n8n so it no longer shares the multi-tenant server.",
+  "source": "https://github.com/postgres/postgres",
+  "depends_on": []
+}

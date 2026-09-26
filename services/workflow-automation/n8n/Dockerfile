@@ -30,11 +30,12 @@ RUN /usr/local/bin/apk.static add --no-cache --upgrade \
     apk add --no-cache \
       bash=5.3.9-r1 \
       curl=8.22.0-r0 \
+      libcurl=8.22.0-r0 \
       exiftool=13.55-r0 \
       ffmpeg=8.1.2-r0 \
       ghostscript=10.07.1-r0 \
       imagemagick=7.1.2.30-r0 \
-      jq=1.8.2-r0 \
+      jq=1.8.2_git20260622-r1 \
       mediainfo=26.01-r0 \
       py3-pip=26.1.2-r0 \
       python3=3.14.7-r1 \

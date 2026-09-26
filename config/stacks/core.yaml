@@ -77,5 +77,4 @@ services:
   - mysql
   - postgres
   - redis
-  - caddy
   - watchtower

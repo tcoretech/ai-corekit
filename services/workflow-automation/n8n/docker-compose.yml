@@ -2,7 +2,7 @@ services:
   n8n:
     # Managed deployments override this with a version+Git-commit candidate
     # tag. The fallback remains exact and contains no moving tag.
-    image: ${N8N_MANAGED_IMAGE:-corekit/n8n:2.34.4-git1.2.3-r1}
+    image: ${N8N_MANAGED_IMAGE:-corekit/n8n:2.39.6-git1.2.3-r1}
     build:
       context: .
       pull: false
@@ -63,7 +63,7 @@ services:
     stop_grace_period: 60s
 
   n8n-runner:
-    image: ${N8N_MANAGED_RUNNER_IMAGE:-corekit/n8n-runners:2.34.4-r1}
+    image: ${N8N_MANAGED_RUNNER_IMAGE:-corekit/n8n-runners:2.39.6-r1}
     build:
       context: ./runner
       pull: false

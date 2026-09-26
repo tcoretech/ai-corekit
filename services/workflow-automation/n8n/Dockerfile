@@ -7,7 +7,7 @@ RUN apk add --no-cache apk-tools-static=3.0.7-r0
 # Keep the readable version and immutable digest together. CI verifies this
 # version matches the runner image and the managed-update policy.
 # renovate: datasource=docker depName=n8nio/n8n
-FROM n8nio/n8n:2.34.4@sha256:f69bad7a699300702af665b9f13fc67455b93c9fb9174bca6c37f3d4a47b8583
+FROM n8nio/n8n:2.39.6@sha256:1eb33706d9bd902cc83f302ba8d608420dfc0815e03ee4bb1c072367d2c5e259
 
 ARG N8N_GIT_VERSION=v1.2.3
 ARG N8N_GIT_COMMIT=5916cfed2561016afdc34c3f31d6ab13f59394eb

@@ -41,7 +41,10 @@ services:
         max-file: '3'
 
   n8n-prod:
-    image: ${N8N_PROD_IMAGE:-corekit/n8n:2.39.6-git1.2.3-r1}
+    # Built by the managed updater as corekit/n8n:<version>-git<short commit>.
+    # Re-pin this after every `corekit managed-update apply n8n`, or set
+    # N8N_PROD_IMAGE in .env to override it.
+    image: ${N8N_PROD_IMAGE:-corekit/n8n:2.39.6-git6c84c643d221}
     container_name: n8n-prod
     profiles:
     - n8n-prod
@@ -118,7 +121,7 @@ services:
         max-file: '5'
 
   n8n-prod-runner:
-    image: ${N8N_PROD_RUNNER_IMAGE:-corekit/n8n-runners:2.39.6-r1}
+    image: ${N8N_PROD_RUNNER_IMAGE:-corekit/n8n-runners:2.39.6-git6c84c643d221}
     container_name: n8n-prod-runner
     profiles:
     - n8n-prod

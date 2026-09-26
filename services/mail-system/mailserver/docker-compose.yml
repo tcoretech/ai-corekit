@@ -24,7 +24,7 @@ services:
     environment:
     - LOG_LEVEL=info
     - SUPERVISOR_LOGLEVEL=warn
-    - PERMIT_DOCKER=network
+    - PERMIT_DOCKER=none
     - NETWORK_INTERFACE=eth0
     - SSL_TYPE=manual
     - SSL_CERT_PATH=/certs/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.crt

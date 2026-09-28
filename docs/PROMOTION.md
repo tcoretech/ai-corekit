@@ -1,7 +1,13 @@
 # Promotion
 
-`corekit promote` imports workflow definitions into a service from a commit that
-is already merged into a protected branch.
+Imports workflow definitions into an n8n service from a commit that is already
+merged into a protected branch.
+
+It is exposed on the service rather than as a top-level corekit verb, because it
+is n8n-specific: it drives `n8n-git` and the n8n CLI inside the container, and
+nothing else in the catalogue could use it as written.
+
+    corekit run <service> promote [options]
 
 ## The problem it solves
 
@@ -20,7 +26,7 @@ arbitrary definition against real credentials.
 ```
 authoring instance  --push-->  branch  --review, merge-->  protected branch
                                                                   |
-                                                    corekit promote (on the host)
+                                                    corekit run <svc> promote (host)
                                                                   v
                                                           production instance
 ```
@@ -87,13 +93,17 @@ anything.
 ## Use
 
 ```bash
-corekit promote <service> --plan               # show what would happen
-corekit promote <service>                      # promote the protected branch tip
-corekit promote <service> --commit <sha>       # promote one exact commit
-corekit promote <service> --dry-run            # import in the tool's dry-run mode
-corekit promote <service> --status             # what is deployed, and from where
-corekit promote <service> --rollback-plan      # recovery procedure
+corekit run <service> promote --plan             # show what would happen
+corekit run <service> promote                    # promote the protected branch tip
+corekit run <service> promote --commit <sha>     # promote one exact commit
+corekit run <service> promote --dry-run          # import in the tool's dry-run mode
+corekit run <service> status                     # what is deployed, and from where
+corekit run <service> rollback-plan              # recovery procedure
 ```
+
+A service opts in by shipping a `cli.sh` that delegates to the shared
+implementation in `lib/promotion/promote.sh`, and a `promotion` block in its
+`service.json`.
 
 `--plan` changes nothing and needs no lock, so it is safe to run at any time.
 
@@ -116,7 +126,7 @@ a failed promotion, whatever the import reported.
 
 ## Recovery
 
-`corekit promote <service> --rollback-plan` prints the procedure and the recorded
+`corekit run <service> rollback-plan` prints the procedure and the recorded
 previous commit. Rolling forward to the previous commit is usually right and is
 the same deterministic path. Restoring the pre-promotion export is for when the
 definitions are not the problem.

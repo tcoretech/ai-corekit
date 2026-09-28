@@ -16,6 +16,9 @@
 #
 # It is deliberately a host command. Anything that can be triggered from inside
 # the service it promotes into is not a control.
+#
+# Exposed through each service's cli.sh rather than as a top-level corekit verb:
+# the work is n8n-specific, so a generic verb would promise more than it does.
 set -Eeuo pipefail
 umask 077
 
@@ -45,9 +48,11 @@ die() { log_event error promotion_failed "$1" >&2; exit 1; }
 
 usage() {
   cat <<'USAGE'
-Usage: corekit promote <service> [options]
-       corekit promote <service> --status
-       corekit promote <service> --rollback-plan
+Shared implementation behind a service's promote command. Invoked as:
+
+  corekit run <service> promote [options]
+  corekit run <service> status
+  corekit run <service> rollback-plan
 
 Import workflow definitions into a service from a commit that is already merged
 into its protected branch.
@@ -126,7 +131,7 @@ if [[ "$COMMAND" == "rollback-plan" ]]; then
       procedure:[
         "Identify the previous commit from .previous.commit in the state above.",
         "Confirm whether the target has accepted writes since the promotion. If it may have, do not restore over it: preserve the current state and escalate.",
-        "If writes are conclusively absent, re-run the promotion pinned to the previous commit: corekit promote <service> --commit <previous>.",
+        "If writes are conclusively absent, re-run the promotion pinned to the previous commit: corekit run <service> promote --commit <previous>.",
         "If the definitions themselves are not the problem, restore the backup recorded at .backup_path instead.",
         "Re-run the post-promotion checks before treating the service as recovered."
       ]
@@ -256,7 +261,7 @@ fi
 health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$CONTAINER")"
 if [[ "$health" != "healthy" && "$health" != "none" ]]; then
   log_event error health_failed "Container health is '$health' after import"
-  die "Service is not healthy after promotion. Recover with: corekit promote $SERVICE --rollback-plan"
+  die "Service is not healthy after promotion. Recover with: corekit run $SERVICE rollback-plan"
 fi
 
 tmp_state="$(mktemp "$STATE_ROOT/.${SERVICE}.XXXXXX")"

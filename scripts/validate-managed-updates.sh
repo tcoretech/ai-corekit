@@ -167,11 +167,38 @@ jq -e '
 ' <<<"$COMPOSE_JSON" >/dev/null
 
 if [[ "$ONLINE" == "true" ]]; then
-  STABLE_TAG="$(curl -fsSL --retry 3 https://api.github.com/repos/n8n-io/n8n/releases/latest | jq -r '.tag_name')"
-  [[ "$STABLE_TAG" == "n8n@$N8N_VERSION" ]] || {
-    echo "Candidate $N8N_VERSION is not the official stable release ($STABLE_TAG)" >&2
+  # This guard checks that the pin is VALID, not that it is the newest thing
+  # released. Requiring the newest made two of this repository's own rules
+  # contradict each other: a release younger than minimum_release_age_days is
+  # one the driver will refuse to apply, so demanding it here asked for a pin
+  # that could never be deployed. It also made the result a function of the
+  # calendar rather than of the commit, so an untouched branch went red the day
+  # n8n shipped and blocked every unrelated change with it.
+  #
+  # Staying current is the driver's job: it checks on a timer, respects the age
+  # gate and opens its own update. So a newer release is reported here, loudly,
+  # and does not fail the build.
+  MINIMUM_RELEASE_AGE_DAYS="$(jq -r '.managed_update.minimum_release_age_days // 0' "$N8N_DIR/service.json")"
+  RELEASE_JSON="$(curl -fsSL --retry 3 \
+    "https://api.github.com/repos/n8n-io/n8n/releases/tags/n8n@$N8N_VERSION" 2>/dev/null)" || {
+    echo "Candidate $N8N_VERSION is not a published n8n release" >&2
     exit 1
   }
+  jq -e '.draft == false and .prerelease == false' <<<"$RELEASE_JSON" >/dev/null || {
+    echo "Candidate $N8N_VERSION is a draft or prerelease, not a stable release" >&2
+    exit 1
+  }
+  RELEASE_PUBLISHED="$(jq -r '.published_at' <<<"$RELEASE_JSON")"
+  RELEASE_AGE_DAYS=$(( ( $(date -u +%s) - $(date -u -d "$RELEASE_PUBLISHED" +%s) ) / 86400 ))
+  if (( RELEASE_AGE_DAYS < MINIMUM_RELEASE_AGE_DAYS )); then
+    echo "Candidate $N8N_VERSION is ${RELEASE_AGE_DAYS}d old; policy requires ${MINIMUM_RELEASE_AGE_DAYS}d" >&2
+    exit 1
+  fi
+  STABLE_TAG="$(curl -fsSL --retry 3 https://api.github.com/repos/n8n-io/n8n/releases/latest | jq -r '.tag_name')"
+  if [[ "$STABLE_TAG" != "n8n@$N8N_VERSION" ]]; then
+    echo "NOTICE: pinned n8n $N8N_VERSION (${RELEASE_AGE_DAYS}d old); newest release is $STABLE_TAG." >&2
+    echo "NOTICE: this is not a failure. The managed-update timer moves the pin once a release clears the ${MINIMUM_RELEASE_AGE_DAYS}d gate." >&2
+  fi
   N8N_GIT_VERSION="$(awk -F= '$1 == "ARG N8N_GIT_VERSION" {print $2}' "$N8N_DIR/Dockerfile")"
   N8N_GIT_COMMIT="$(awk -F= '$1 == "ARG N8N_GIT_COMMIT" {print $2}' "$N8N_DIR/Dockerfile")"
   RESOLVED_N8N_GIT_COMMIT="$(git ls-remote https://github.com/tcoretech/n8n-git.git "refs/tags/$N8N_GIT_VERSION" | awk 'NR == 1 {print $1}')"

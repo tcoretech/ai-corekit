@@ -1,0 +1,43 @@
+{
+  "name": "n8n-prod",
+  "display_name": "n8n (production)",
+  "category": "Workflow Automation",
+  "rank": 9,
+  "description": "Production n8n for workflows and credentials that should not sit on an instance where workflows are authored freely. Isolated stack, own Postgres, own tunnel.",
+  "interface": "n8n-prod.<yourdomain>.com",
+  "source": "https://github.com/n8n-io/n8n",
+  "depends_on": [],
+  "managed_update": {
+    "enabled": true,
+    "deployment_branch": "main",
+    "update_group": "adopts-authoring-instance-image",
+    "channel": "stable",
+    "check_cadence": "daily",
+    "apply_cadence": "weekly",
+    "minimum_release_age_days": 7,
+    "automatic_update_types": [
+      "patch",
+      "minor"
+    ],
+    "major_updates_require_manual_approval": true,
+    "security_override_requires_manual_flag": true,
+    "backup_required": true,
+    "stateful_rollback": "guarded",
+    "recovery_sets_to_keep": 3,
+    "minimum_free_space_gb": 10,
+    "components": [
+      "n8n-prod",
+      "n8n-prod-runner"
+    ],
+    "note": "Builds nothing. Adopts an image already built and verified for the authoring instance, pinned in this service's .env. An update is a re-pin plus a recreate."
+  },
+  "promotion": {
+    "enabled": true,
+    "protected_branch": "main",
+    "repository_path": "workflows",
+    "preserve_ids": true,
+    "backup_required": true,
+    "credentials": "never",
+    "note": "Repository and token are site-specific and come from the service .env: PROMOTION_REPOSITORY, PROMOTION_TOKEN. Give the token read access only; the branch protection is the control, not the token."
+  }
+}

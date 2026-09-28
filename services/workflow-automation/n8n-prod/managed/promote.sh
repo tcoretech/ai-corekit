@@ -17,13 +17,13 @@
 # It is deliberately a host command. Anything that can be triggered from inside
 # the service it promotes into is not a control.
 #
-# Exposed through each service's cli.sh rather than as a top-level corekit verb:
-# the work is n8n-specific, so a generic verb would promise more than it does.
+# Lives with the service rather than in lib/, because the work is n8n-specific:
+# a generic verb, or a shared library, would promise more than it delivers.
 set -Eeuo pipefail
 umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="${COREKIT_PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+PROJECT_ROOT="${COREKIT_PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../../../.." && pwd)}"
 if [[ -z "${COREKIT_PROMOTION_STATE_ROOT:-}" ]]; then
   : "${HOME:?Set HOME or COREKIT_PROMOTION_STATE_ROOT}"
 fi

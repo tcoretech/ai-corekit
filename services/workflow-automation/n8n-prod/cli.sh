@@ -4,14 +4,13 @@
 #   corekit run n8n-prod promote [options]
 #
 # Promotion is n8n-specific -- it drives n8n-git and the n8n CLI inside the
-# container -- so it lives on this service rather than as a top-level corekit
-# verb. See docs/PROMOTION.md for the design and configuration.
+# container -- so both the command and its implementation live with the service
+# rather than in lib/. See docs/PROMOTION.md for the design and configuration.
 set -Eeuo pipefail
 
 SERVICE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_NAME="$(basename "$SERVICE_DIR")"
-PROJECT_ROOT="${COREKIT_PROJECT_ROOT:-$(cd "$SERVICE_DIR/../../.." && pwd)}"
-PROMOTE_LIB="$PROJECT_ROOT/lib/promotion/promote.sh"
+PROMOTE_LIB="$SERVICE_DIR/managed/promote.sh"
 
 usage() {
   cat <<USAGE

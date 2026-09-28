@@ -102,7 +102,7 @@ corekit run <service> rollback-plan              # recovery procedure
 ```
 
 A service opts in by shipping a `cli.sh` that delegates to the shared
-implementation in `lib/promotion/promote.sh`, and a `promotion` block in its
+implementation in `the service's managed/promote.sh`, and a `promotion` block in its
 `service.json`.
 
 `--plan` changes nothing and needs no lock, so it is safe to run at any time.

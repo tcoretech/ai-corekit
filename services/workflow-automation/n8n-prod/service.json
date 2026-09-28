@@ -3,7 +3,7 @@
   "display_name": "n8n (production)",
   "category": "Workflow Automation",
   "rank": 9,
-  "description": "Production n8n holding the owner real workflows and mailbox credentials. Isolated stack, own Postgres, own tunnel.",
+  "description": "Production n8n for workflows and credentials that should not sit on an instance where workflows are authored freely. Isolated stack, own Postgres, own tunnel.",
   "interface": "n8n-prod.<yourdomain>.com",
   "source": "https://github.com/n8n-io/n8n",
   "depends_on": [],

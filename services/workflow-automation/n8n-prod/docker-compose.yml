@@ -1,7 +1,8 @@
 # Production n8n.
 #
-# This instance holds the owner's real workflows and the credentials that reach
-# the Outlook mailbox. It is deliberately narrower than the playground: regular
+# A second n8n intended to hold production workflows and the credentials they
+# use, separate from an instance where workflows are authored freely. It is
+# deliberately narrower than an authoring instance: regular
 # execution mode, no community packages, dangerous nodes excluded, no public
 # API, no published ports, and its own Postgres that no other stack can reach.
 #
@@ -64,11 +65,11 @@ services:
       # the playground, and kept in the password manager as well as here.
       N8N_ENCRYPTION_KEY: ${N8N_PROD_ENCRYPTION_KEY}
 
-      N8N_HOST: ${N8N_PROD_HOSTNAME:-n8n-prod.tcoretech.com}
+      N8N_HOST: ${N8N_PROD_HOSTNAME:-n8n-prod.<yourdomain>.com}
       N8N_PROTOCOL: https
       N8N_PORT: 5678
-      WEBHOOK_URL: https://${N8N_PROD_HOSTNAME:-n8n-prod.tcoretech.com}/
-      N8N_EDITOR_BASE_URL: https://${N8N_PROD_HOSTNAME:-n8n-prod.tcoretech.com}/
+      WEBHOOK_URL: https://${N8N_PROD_HOSTNAME:-n8n-prod.<yourdomain>.com}/
+      N8N_EDITOR_BASE_URL: https://${N8N_PROD_HOSTNAME:-n8n-prod.<yourdomain>.com}/
       GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Europe/London}
 
       # Regular execution mode. No queue, no workers, no Redis.

@@ -36,7 +36,7 @@ def signed_form(timestamp=None, token="token-0001"):
         "token": token,
         "signature": signature,
         "sender": "visitor@gmail.com",
-        "recipient": "info@tcoretech.com",
+        "recipient": "info@example.com",
         "subject": "hello",
         "body-plain": "hello",
     }

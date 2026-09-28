@@ -104,9 +104,32 @@ if "$PROJECT_ROOT/scripts/install-managed-update-systemd.sh" \
   exit 1
 fi
 
-ENABLED_POLICIES="$(find "$PROJECT_ROOT/services" -mindepth 3 -maxdepth 3 -name service.json -type f -print0 \
-  | xargs -0 -r jq -r 'select(.managed_update.enabled == true) | .name')"
-[[ "$ENABLED_POLICIES" == "n8n" ]]
+# Registration is per-service, so the guard is no longer "the only one is n8n".
+# It is: the registered set is the one this repository intends, and every
+# service in it has the hooks the driver will actually call. Asking `list` for
+# that answer means CI reads the same readiness the operator does, rather than
+# a second copy of the rule that can drift from it.
+EXPECTED_REGISTERED=$'n8n\nn8n-prod'
+REGISTRY_JSON="$(COREKIT_PROJECT_ROOT="$PROJECT_ROOT" \
+  "$PROJECT_ROOT/lib/managed_updates/managed-update.sh" list)"
+ACTUAL_REGISTERED="$(jq -r '.registered[].service' <<<"$REGISTRY_JSON" | sort)"
+if [[ "$ACTUAL_REGISTERED" != "$EXPECTED_REGISTERED" ]]; then
+  {
+    echo "Registered managed-update services are not the expected set."
+    echo "  expected: $(tr '\n' ' ' <<<"$EXPECTED_REGISTERED")"
+    echo "  found:    $(tr '\n' ' ' <<<"$ACTUAL_REGISTERED")"
+    echo "A new registration puts a service on the update timers, so it is a"
+    echo "deliberate change: update EXPECTED_REGISTERED in this script with it."
+  } >&2
+  exit 1
+fi
+NOT_READY="$(jq -r '.registered[] | select(.ready | not)
+  | "  \(.service): missing \(.missing_hooks | join(", "))"' <<<"$REGISTRY_JSON")"
+if [[ -n "$NOT_READY" ]]; then
+  echo "Registered service is missing hooks the driver will call:" >&2
+  echo "$NOT_READY" >&2
+  exit 1
+fi
 
 if grep -RniE 'watchtower|corekit[.]sh update|corekit update' \
   "$PROJECT_ROOT/systemd" "$PROJECT_ROOT/lib/managed_updates" 2>/dev/null; then

@@ -12,8 +12,13 @@
 # Repository-wide rather than per-file, because these scripts source their
 # helpers at runtime; the bug worth catching is "defined nowhere at all".
 #
-# Static, so it cannot see a command assembled at runtime. It does catch the
-# case above.
+# Limits worth knowing:
+#  - It only flags a command alone on its own line with no arguments. A deleted
+#    function called as `foo "$bar"` still slips through.
+#  - It cannot see a command assembled at runtime.
+#  - It resolves names against the PATH of whatever runs it, so a script naming
+#    a host-only tool will fail on a CI runner that lacks it.
+# It does catch the case above, which is the one that bit us.
 set -Eeuo pipefail
 IFS=$'\n\t'
 

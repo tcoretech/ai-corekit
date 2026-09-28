@@ -397,8 +397,14 @@ write_success_state() {
   local previous_runner_image_id="$3"
   local backup_manifest="$4"
   local n8n_image_id runner_image_id tmp_state previous_state history fingerprint previous_git_commit
-  n8n_image_id="$(docker inspect --format '{{.Image}}' n8n)"
-  runner_image_id="$(docker inspect --format '{{.Image}}' n8n-runner)"
+  local -a components
+  mapfile -t components < <(jq -r '.managed_update.components[]? // empty' "$POLICY_FILE")
+  (( ${#components[@]} > 0 )) || components=("$SERVICE")
+  # Guarded: a missing container must not abort after a successful deployment
+  # and leave no record that it happened.
+  n8n_image_id="$(docker inspect --format '{{.Image}}' "${components[0]}" 2>/dev/null || true)"
+  runner_image_id=""
+  (( ${#components[@]} > 1 )) && runner_image_id="$(docker inspect --format '{{.Image}}' "${components[1]}" 2>/dev/null || true)"
   fingerprint="$(bundle_fingerprint)"
   previous_git_commit="$(jq -r '.git.previous_live_commit // empty' "$backup_manifest")"
   previous_state='null'
@@ -471,8 +477,8 @@ apply_update() {
   validate_bundle
   git_is_clean || die "Git worktree is dirty; refusing managed deployment"
 
-  local branch current_version change_type age free_gb current_commit short_commit fingerprint
-  local candidate_image candidate_runner_image project_name workflow_count credential_count
+  local branch current_version change_type age free_gb current_commit fingerprint
+  local candidate_image workflow_count credential_count
   local previous_n8n_image_id previous_runner_image_id backup_manifest active
 
   branch="$(git -C "$PROJECT_ROOT" branch --show-current)"
@@ -493,6 +499,13 @@ apply_update() {
     jq -e . <<<"$VERSION_INFO" >/dev/null 2>&1 || die "version.sh did not return valid JSON after the update"
     TARGET_VERSION="$(jq -r '.target_version' <<<"$VERSION_INFO")"
     BUNDLE_IDENTITY="$(jq -r '.identity' <<<"$VERSION_INFO")"
+    # Policy is part of the committed tree too. A commit that raises the
+    # release-age floor, or changes the component list the recovery path stops,
+    # must govern this run rather than the version it replaced.
+    DEPLOYMENT_BRANCH="$(jq -r '.managed_update.deployment_branch' "$POLICY_FILE")"
+    MINIMUM_RELEASE_AGE_DAYS="$(jq -r '.managed_update.minimum_release_age_days' "$POLICY_FILE")"
+    MINIMUM_FREE_SPACE_GB="$(jq -r '.managed_update.minimum_free_space_gb' "$POLICY_FILE")"
+    RECOVERY_SETS_TO_KEEP="$(jq -r '.managed_update.recovery_sets_to_keep' "$POLICY_FILE")"
     TARGET_N8N_DIGEST="$(jq -r '.refs.n8n_digest // ""' <<<"$VERSION_INFO")"
     TARGET_RUNNER_DIGEST="$(jq -r '.refs.runner_digest // ""' <<<"$VERSION_INFO")"
     N8N_GIT_VERSION="$(jq -r '.refs.n8n_git_version // ""' <<<"$VERSION_INFO")"
@@ -538,13 +551,18 @@ apply_update() {
     || die "Candidate build or verification failed"
   jq -e . <<<"$CANDIDATE_IMAGES" >/dev/null 2>&1 || die "build.sh did not return valid JSON"
   candidate_image="$(jq -r '.images.app // empty' <<<"$CANDIDATE_IMAGES")"
-  candidate_runner_image="$(jq -r '.images.runner // empty' <<<"$CANDIDATE_IMAGES")"
   [[ -n "$candidate_image" ]] || die "build.sh did not report a candidate image"
 
   workflow_count="$(entity_count workflow_entity)"
   credential_count="$(entity_count credentials_entity)"
-  previous_n8n_image_id="$(docker inspect --format '{{.Image}}' n8n)"
-  previous_runner_image_id="$(docker inspect --format '{{.Image}}' n8n-runner 2>/dev/null || true)"
+  # Recovery points at the image to restart, so it must be THIS service's
+  # container. Reading a fixed name would hand production the authoring
+  # instance's image.
+  mapfile -t _components < <(jq -r '.managed_update.components[]? // empty' "$POLICY_FILE")
+  (( ${#_components[@]} > 0 )) || _components=("$SERVICE")
+  previous_n8n_image_id="$(docker inspect --format '{{.Image}}' "${_components[0]}" 2>/dev/null || true)"
+  previous_runner_image_id=""
+  (( ${#_components[@]} > 1 )) && previous_runner_image_id="$(docker inspect --format '{{.Image}}' "${_components[1]}" 2>/dev/null || true)"
   if [[ -z "$PREVIOUS_GIT_COMMIT" ]]; then
     if [[ -f "$STATE_FILE" ]]; then
       PREVIOUS_GIT_COMMIT="$(jq -r '.current.git_commit // empty' "$STATE_FILE")"
@@ -573,7 +591,11 @@ apply_update() {
     die "Candidate deployment failed; stateful recovery requires the guarded rollback plan"
   fi
 
-  if ! COREKIT_MANAGED_STATE_ROOT="$STATE_ROOT" bash "$HOOK_DIR/strict-healthcheck.sh" \
+  # The canary must exercise the candidate, not whatever a compose fallback tag
+  # resolves to. It is a second consumer of the images build.sh produced.
+  if ! COREKIT_MANAGED_STATE_ROOT="$STATE_ROOT" \
+       COREKIT_CANDIDATE_IMAGES="$CANDIDATE_IMAGES" \
+       bash "$HOOK_DIR/strict-healthcheck.sh" \
     --expected-workflows "$workflow_count" \
     --expected-credentials "$credential_count" \
     --canary; then

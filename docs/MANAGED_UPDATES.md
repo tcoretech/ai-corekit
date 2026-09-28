@@ -32,8 +32,9 @@ corekit managed-update list
 ## Hooks
 
 Anything service-specific lives in `<service>/managed/`. The driver runs these
-and treats a non-zero exit as a failed deployment. Every hook is optional except
-where noted; a missing hook means that step is skipped.
+and treats a non-zero exit as a failed deployment. Only `validate.sh` is
+optional; every other hook is called unconditionally and a missing one fails the
+run.
 
 | Hook | Required | Purpose | Contract |
 |---|---|---|---|

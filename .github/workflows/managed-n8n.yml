@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - "services/workflow-automation/n8n/**"
+      - "services/workflow-automation/n8n-prod/**"
       - "lib/managed_updates/**"
+      - "tests/test-shell-resolvable.sh"
       - "scripts/validate-managed-updates.sh"
       - "scripts/install-managed-update-systemd.sh"
       - "systemd/**"
@@ -21,7 +23,9 @@ on:
       - "renovate/**"
     paths:
       - "services/workflow-automation/n8n/**"
+      - "services/workflow-automation/n8n-prod/**"
       - "lib/managed_updates/**"
+      - "tests/test-shell-resolvable.sh"
       - "scripts/validate-managed-updates.sh"
       - "scripts/install-managed-update-systemd.sh"
       - "systemd/**"
@@ -51,12 +55,19 @@ jobs:
         run: >-
           shellcheck --severity=error corekit.sh
           lib/managed_updates/managed-update.sh
-          services/workflow-automation/n8n/managed/backup.sh
-          services/workflow-automation/n8n/managed/strict-healthcheck.sh
+          services/workflow-automation/n8n/managed/*.sh
+          services/workflow-automation/n8n-prod/managed/*.sh
+          services/workflow-automation/n8n-prod/cli.sh
+          tests/test-shell-resolvable.sh
           scripts/validate-managed-updates.sh
           scripts/install-managed-update-systemd.sh
           tests/test-managed-update.sh
           tests/test-n8n-candidate.sh
+      - name: Every called command resolves
+        # Catches a call left behind when a function is deleted. shellcheck does
+        # not report undefined functions and `bash -n` cannot see them, which is
+        # how one reached this branch and broke `managed-update apply`.
+        run: tests/test-shell-resolvable.sh
       - name: Validate policy, stable channel, Compose, and Git diff
         run: ./scripts/validate-managed-updates.sh --online
       - uses: actions/setup-node@v4

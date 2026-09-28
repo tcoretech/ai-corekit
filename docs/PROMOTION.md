@@ -77,8 +77,11 @@ Split by whether it is safe to publish.
 ```
 PROMOTION_REPOSITORY='owner/repo'
 PROMOTION_TOKEN='...'
-PROMOTION_BRANCH='main'      # optional, overrides the policy
-PROMOTION_PATH='workflows'   # optional, overrides the policy
+# Optional; these override the policy in service.json.
+# No inline comments: the value is read literally, so a trailing comment
+# would become part of the branch name or path.
+PROMOTION_BRANCH='main'
+PROMOTION_PATH='workflows'
 ```
 
 Give the token **read access only**. The control is the branch protection on the

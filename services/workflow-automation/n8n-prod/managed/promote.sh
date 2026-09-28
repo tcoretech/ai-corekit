@@ -304,7 +304,13 @@ if [[ "$BACKUP_REQUIRED" == "true" ]]; then
     # when the first promotion happens. Only treat an empty export as a failure
     # when the target actually holds workflows to lose.
     existing="$(workflow_count)"
-    if [[ "$existing" != "unknown" && "$existing" != "0" ]]; then
+    # A target that reports zero is genuinely new, which is exactly when the
+    # first promotion happens. A target whose count cannot be read is the
+    # opposite case: that is when a backup matters most, so it is a hard stop.
+    if [[ "$existing" == "unknown" ]]; then
+      die "Pre-promotion backup produced nothing and the target's workflow count could not be read. Refusing to import without a backup."
+    fi
+    if [[ "$existing" != "0" ]]; then
       die "Pre-promotion backup produced nothing although the target holds $existing workflow(s). Refusing to import without a backup."
     fi
     log_event warning backup_empty "Target holds no workflows; proceeding with an empty recovery set"
@@ -360,24 +366,32 @@ fi
 # A promotion that imported nothing is a failed promotion, so verify against the
 # target rather than trusting the tool's summary.
 verify_imported() {
-  local missing=0 total=0 name
+  local missing=0 total=0 id name listing
+  listing="$(docker exec "$CONTAINER_ID" sh -c "n8n list:workflow 2>/dev/null" 2>/dev/null || true)"
+
   while IFS= read -r file; do
-    name="$(jq -r '.name // (.[0].name // empty)' "$file" 2>/dev/null)"
-    [[ -z "$name" ]] && continue
+    # Only files that are actually workflow definitions: a definition has both
+    # an id and a name. Without this, package.json and friends are counted as
+    # definitions and a good promotion is failed for not finding them.
+    id="$(jq -r 'if type == "array" then .[0].id else .id end // empty' "$file" 2>/dev/null || true)"
+    name="$(jq -r 'if type == "array" then .[0].name else .name end // empty' "$file" 2>/dev/null || true)"
+    [[ -n "$id" && -n "$name" ]] || continue
     total=$((total + 1))
-    if ! docker exec "$CONTAINER_ID" sh -c \
-        "n8n list:workflow 2>/dev/null" 2>/dev/null | grep -qF "$name"; then
-      log_event error import_unverified "Workflow '$name' is not present in the target after import"
+    # Match on id, which --preserve keeps, rather than on name: a substring name
+    # match would accept an unrelated pre-existing workflow.
+    if ! grep -qF -- "$id" <<<"$listing"; then
+      log_event error import_unverified "Definition '$name' ($id) is not present in the target after import"
       missing=$((missing + 1))
     fi
-  done < <(find "$IMPORT_SOURCE" -maxdepth 2 -name '*.json' -type f 2>/dev/null)
+  done < <(find "$IMPORT_SOURCE" -maxdepth 3 -name '*.json' -type f 2>/dev/null)
+
+  # Verifying nothing is not success. If the path held no definitions, the
+  # promotion did nothing and should say so rather than report a clean run.
   if (( total == 0 )); then
-    log_event warning nothing_to_import "No workflow definitions found at '${REPO_PATH:-/}' in this commit"
-    return 0
-  fi
-  if (( missing > 0 )); then
+    log_event error nothing_to_verify "No workflow definitions found at '${REPO_PATH:-/}' in commit ${TARGET_COMMIT:0:12}"
     return 1
   fi
+  (( missing == 0 )) || return 1
   log_event info import_verified "All $total definition(s) are present in the target"
 }
 

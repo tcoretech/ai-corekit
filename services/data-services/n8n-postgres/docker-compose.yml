@@ -1,11 +1,9 @@
-# Postgres for the playground n8n only.
+# A Postgres dedicated to one n8n instance.
 #
-# The shared `postgres` server carries five databases (postgres, langfuse,
-# calcom, baserow, formbricks) and has exactly one role -- `postgres`, a
-# superuser -- shared by every service that touches it. Keeping the playground
-# on that server means every one of those services can read n8n's tables. This
-# server exists so the `n8n` stack owns its data and nothing outside the stack
-# has a network path to it.
+# Worth having when the shared server hosts several services' databases behind a
+# single superuser role: every service holding that password can then read every
+# other service's tables, n8n's included. A dedicated server lets the stack own
+# its data, with no network path to it from outside.
 services:
   n8n-postgres:
     image: postgres:17

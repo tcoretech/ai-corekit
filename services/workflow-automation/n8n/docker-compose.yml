@@ -38,8 +38,8 @@ services:
       N8N_UNVERIFIED_PACKAGES_ENABLED: "false"
       # A Code node must not be able to read the process environment: this
       # container holds N8N_ENCRYPTION_KEY, which decrypts every credential.
-      # Matters because the MCP connector holds workflow:write, so it can
-      # create Code nodes.
+      # Matters wherever a client can author workflows: creating a Code node is
+      # then enough to read the process environment.
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "true"
       N8N_USER_MANAGEMENT_JWT_SECRET: ${N8N_USER_MANAGEMENT_JWT_SECRET}
       NODES_EXCLUDE: ${NODES_EXCLUDE:-}

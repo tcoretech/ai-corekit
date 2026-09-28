@@ -157,7 +157,16 @@ SERVICE_DIR="$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -type d -na
 [[ -n "$SERVICE_DIR" ]] || die "No such service: $SERVICE"
 POLICY_FILE="$SERVICE_DIR/service.json"
 STATE_FILE="$STATE_ROOT/${SERVICE}.json"
-BACKUP_ROOT="${COREKIT_MANAGED_BACKUP_ROOT:-${COREKIT_N8N_BACKUP_ROOT:-$USER_DATA_HOME/ai-corekit/backups/$SERVICE}}"
+# COREKIT_N8N_BACKUP_ROOT is honoured only for n8n itself. It predates
+# multi-service support and is set in the systemd units, so applying it to every
+# service would send one service's recovery sets into another's directory.
+if [[ -n "${COREKIT_MANAGED_BACKUP_ROOT:-}" ]]; then
+  BACKUP_ROOT="$COREKIT_MANAGED_BACKUP_ROOT"
+elif [[ "$SERVICE" == "n8n" && -n "${COREKIT_N8N_BACKUP_ROOT:-}" ]]; then
+  BACKUP_ROOT="$COREKIT_N8N_BACKUP_ROOT"
+else
+  BACKUP_ROOT="$USER_DATA_HOME/ai-corekit/backups/$SERVICE"
+fi
 
 [[ -f "$POLICY_FILE" ]] || die "Service '$SERVICE' has no service.json"
 [[ "$(jq -r '.managed_update.enabled // false' "$POLICY_FILE")" == "true" ]] \
@@ -450,8 +459,11 @@ write_success_state() {
 
 verify_recovery_retention() {
   local verified_count
-  verified_count="$(find "$BACKUP_ROOT" -mindepth 2 -maxdepth 2 -name manifest.json -type f -print0 \
-    | xargs -0 -r jq -r 'select(.verified == true) | .created_at' | wc -l)"
+  verified_count=0
+  if [[ -d "$BACKUP_ROOT" ]]; then
+    verified_count="$( { find "$BACKUP_ROOT" -mindepth 2 -maxdepth 2 -name manifest.json -type f -print0 \
+      | xargs -0 -r jq -r 'select(.verified == true) | .created_at' | wc -l; } 2>/dev/null || echo 0)"
+  fi
   log_event info recovery_retention "Verified recovery sets are preserved without automatic deletion; policy floor is ${RECOVERY_SETS_TO_KEEP}, current count is ${verified_count}"
 }
 
@@ -475,6 +487,16 @@ apply_update() {
     git_is_clean || die "Git worktree became dirty after fetch"
     git -C "$PROJECT_ROOT" merge-base --is-ancestor HEAD "origin/$DEPLOYMENT_BRANCH" || die "Remote change is not fast-forwardable"
     git -C "$PROJECT_ROOT" merge --ff-only "origin/$DEPLOYMENT_BRANCH"
+    # The merge can change what is committed, so everything read from the tree
+    # before it is now stale. Re-read before validating against it.
+    VERSION_INFO="$(run_hook version.sh)" || die "Could not re-read versions after the update"
+    jq -e . <<<"$VERSION_INFO" >/dev/null 2>&1 || die "version.sh did not return valid JSON after the update"
+    TARGET_VERSION="$(jq -r '.target_version' <<<"$VERSION_INFO")"
+    BUNDLE_IDENTITY="$(jq -r '.identity' <<<"$VERSION_INFO")"
+    TARGET_N8N_DIGEST="$(jq -r '.refs.n8n_digest // ""' <<<"$VERSION_INFO")"
+    TARGET_RUNNER_DIGEST="$(jq -r '.refs.runner_digest // ""' <<<"$VERSION_INFO")"
+    N8N_GIT_VERSION="$(jq -r '.refs.n8n_git_version // ""' <<<"$VERSION_INFO")"
+    N8N_GIT_COMMIT="$(jq -r '.refs.n8n_git_commit // ""' <<<"$VERSION_INFO")"
     validate_bundle
   fi
 
@@ -533,7 +555,8 @@ apply_update() {
   fi
 
   log_event info backup_started "Creating mandatory final recovery set and isolated restore drill"
-  backup_manifest="$(COREKIT_PROJECT_ROOT="$PROJECT_ROOT" COREKIT_N8N_BACKUP_ROOT="$BACKUP_ROOT" \
+  backup_manifest="$(COREKIT_PROJECT_ROOT="$PROJECT_ROOT" \
+    COREKIT_MANAGED_BACKUP_ROOT="$BACKUP_ROOT" COREKIT_N8N_BACKUP_ROOT="$BACKUP_ROOT" \
     bash "$HOOK_DIR/backup.sh" --label "pre-${TARGET_VERSION}" \
       --previous-git-commit "$PREVIOUS_GIT_COMMIT" --candidate-image "$candidate_image" | tail -n 1)"
   [[ -f "$backup_manifest" ]] || die "Backup script did not return a verified manifest"

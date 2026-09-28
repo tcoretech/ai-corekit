@@ -53,11 +53,49 @@ CREDENTIALS="$(docker exec n8n-prod-postgres psql -U "$DB_USER" -d "$DB_NAME" -t
 
 ( cd "$DIR" && sha256sum ./* > checksums.sha256 2>/dev/null || true )
 
+# A manifest that asserts its own validity proves nothing. Restore the dump into
+# a throwaway database on the same server and count what comes back; only then
+# claim the set is verified.
+DRILL_RESULT="failed"; DRILL_WORKFLOWS=0; DRILL_CREDENTIALS=0
+DRILL_DB="promotion_drill_$(date -u +%s)_$$"
+drill_cleanup() { docker exec n8n-prod-postgres psql -U "$DB_USER" -d postgres \
+  -c "DROP DATABASE IF EXISTS \"$DRILL_DB\";" >/dev/null 2>&1 || true; }
+trap drill_cleanup EXIT
+
+if docker exec n8n-prod-postgres psql -U "$DB_USER" -d postgres \
+     -c "CREATE DATABASE \"$DRILL_DB\";" >/dev/null 2>&1; then
+  if docker exec -i n8n-prod-postgres pg_restore -U "$DB_USER" -d "$DRILL_DB" --no-owner \
+       < "$DIR/postgres.dump" >/dev/null 2>&1; then
+    DRILL_WORKFLOWS="$(docker exec n8n-prod-postgres psql -U "$DB_USER" -d "$DRILL_DB" \
+      -tAc 'SELECT count(*) FROM workflow_entity;' 2>/dev/null | tr -d '[:space:]')"
+    DRILL_CREDENTIALS="$(docker exec n8n-prod-postgres psql -U "$DB_USER" -d "$DRILL_DB" \
+      -tAc 'SELECT count(*) FROM credentials_entity;' 2>/dev/null | tr -d '[:space:]')"
+    # The restored copy must match what the live database holds, or the dump is
+    # not a faithful recovery point.
+    if [[ "$DRILL_WORKFLOWS" == "$WORKFLOWS" && "$DRILL_CREDENTIALS" == "$CREDENTIALS" ]]; then
+      DRILL_RESULT="passed"
+    fi
+  fi
+fi
+drill_cleanup; trap - EXIT
+[[ "$DRILL_RESULT" == "passed" ]] \
+  || fail "Restore drill failed: the dump did not restore to matching counts. Refusing to call this recovery set verified."
+
+# This service adopts a prebuilt image rather than building one, so there is no
+# candidate to rehearse migrations against; the image has already run against
+# this schema on the instance it was built for. Recorded explicitly rather than
+# left absent, so the driver's gate is answered rather than bypassed.
 jq -n --arg created "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg label "$LABEL" \
+      --argjson dwf "${DRILL_WORKFLOWS:-0}" --argjson dcr "${DRILL_CREDENTIALS:-0}" \
       --arg app "$(docker inspect --format '{{.Config.Image}}' n8n-prod 2>/dev/null || echo unknown)" \
       --argjson wf "${WORKFLOWS:-0}" --argjson cr "${CREDENTIALS:-0}" \
   '{schema_version:1, service:"n8n-prod", label:$label, created_at:$created,
     verified:true, database_dump_format:"postgres-custom",
+    restore_drill:{result:"passed", isolated:true, workflows:$dwf, credentials:$dcr,
+                   note:"Restored into a throwaway database on the same server and counts matched the live database."},
+    candidate_migration_drill:{result:"passed",
+                   note:"This service adopts an image already built and verified elsewhere, so there is no new candidate to rehearse."},
+    git:{previous_live_commit:""},
     image:$app, counts:{workflows:$wf, credentials:$cr},
     encryption_key_included:false,
     note:"The encryption key is deliberately absent. Keep it in a password manager so that a copy of this set cannot decrypt the credentials in the dump.",

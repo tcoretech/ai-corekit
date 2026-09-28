@@ -39,14 +39,39 @@ where noted; a missing hook means that step is skipped.
 |---|---|---|---|
 | `version.sh` | yes | What version is committed, and what is live | Prints one JSON object: `{"target_version","live_version","identity"}`. `identity` is any string that changes when the committed build would change |
 | `validate.sh` | no | Refuse an incoherent committed bundle | Exit non-zero to abort. Message on stderr |
-| `build.sh` | no | Build or pull the candidate and verify it is what was asked for | Receives the target version as `$1`. Prints JSON `{"images":{...}}` on the last line |
-| `backup.sh` | when `backup_required` | Create and verify a recovery set | Prints the manifest path on the last line. The manifest must report `verified: true` |
-| `counts.sh` | no | Entity counts and in-flight executions | Prints `{"workflows","credentials","active_executions"}`. Without it, count gating is skipped |
+| `build.sh` | yes | Build or pull the candidate and verify it is what was asked for | Receives the target version as `$1`. Prints JSON `{"images":{...}}` on the last line. A service that builds nothing still needs one, to verify the image it adopts |
+| `backup.sh` | yes | Create and verify a recovery set | Prints the manifest path on the last line. The manifest must report `verified: true`, `restore_drill.result: "passed"` and `candidate_migration_drill.result: "passed"` — see below |
+| `counts.sh` | in practice yes | Entity counts and in-flight executions | Prints `{"workflows","credentials","active_executions"}`. Must exit non-zero if it cannot read them: reporting zero would let a deployment proceed during a database outage. Without the hook, the post-deployment count check fails the deployment |
 | `deploy.sh` | yes | Recreate the service with the candidate | Receives the target version as `$1`, and the candidate images as `COREKIT_CANDIDATE_IMAGES` |
 | `strict-healthcheck.sh` | yes | Readiness, counts, canary | Exit non-zero if the deployment should be treated as failed |
 
 Hooks run with `COREKIT_PROJECT_ROOT`, `COREKIT_SERVICE_DIR` and
-`COREKIT_SERVICE_NAME` in the environment.
+`COREKIT_SERVICE_NAME` in the environment. `backup.sh` also receives
+`COREKIT_MANAGED_BACKUP_ROOT`, and `deploy.sh` receives
+`COREKIT_CANDIDATE_IMAGES`, the JSON that `build.sh` printed.
+
+Only `validate.sh` is genuinely optional. The others are called unconditionally,
+and a missing one fails the run.
+
+### The backup manifest
+
+The driver refuses to deploy unless the manifest reports all three of:
+
+```json
+{ "verified": true,
+  "restore_drill":            { "result": "passed" },
+  "candidate_migration_drill":{ "result": "passed" } }
+```
+
+`verified` is an assertion the hook makes about itself, so it is worth no more
+than the work behind it. A hook that writes `verified: true` without restoring
+anything turns the gate into decoration. Restore the dump somewhere isolated and
+compare what comes back against the live instance before claiming it.
+
+Where a step does not apply — a service that adopts a prebuilt image has no
+candidate whose migrations need rehearsing — say so explicitly in the manifest
+with a `note`, rather than omitting the key. An absent key fails the gate, which
+is correct: silence should not pass.
 
 `counts.sh` matters more than it looks. A service with its own database must
 report from that database: measuring one instance against another instance's

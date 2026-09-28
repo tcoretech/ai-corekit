@@ -1,0 +1,9 @@
+{
+  "name": "admin-tunnel",
+  "display_name": "Cloudflare Tunnel (admin)",
+  "category": "Gateways Proxies",
+  "rank": 5,
+  "description": "Dedicated Cloudflare Tunnel connector for the admin stack.",
+  "source": "https://github.com/cloudflare/cloudflared",
+  "depends_on": []
+}

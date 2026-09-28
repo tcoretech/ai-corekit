@@ -64,7 +64,13 @@ fi
 # Create filename with hostname (gets overwritten each time)
 OUTPUT_DIR="$PROJECT_ROOT/config/local"
 mkdir -p "$OUTPUT_DIR"
+# The export is a plaintext copy of every credential on the host. Keep the
+# directory and the file readable only by the account that created them.
+chmod 700 "$OUTPUT_DIR"
 OUTPUT_FILE="$OUTPUT_DIR/credentials.${BASE_DOMAIN}.txt"
+# Create the file with the right mode before anything is written to it, so the
+# contents are never briefly world-readable under a permissive umask.
+install -m 600 /dev/null "$OUTPUT_FILE"
 
 # ============================================================================
 # Header
@@ -103,8 +109,14 @@ bash "$FINAL_REPORT_SCRIPT" 2>&1 | \
 # If running as sudo, adjust ownership to the actual user
 if [ -n "$SUDO_USER" ]; then
     chown "$SUDO_USER:$SUDO_USER" "$OUTPUT_FILE"
+    chown "$SUDO_USER:$SUDO_USER" "$OUTPUT_DIR"
     log_info "File ownership adjusted to: $SUDO_USER"
 fi
+
+# Re-assert the mode in case anything above replaced the file rather than
+# writing through the handle we created.
+chmod 600 "$OUTPUT_FILE"
+chmod 700 "$OUTPUT_DIR"
 
 # ============================================================================
 # Success Message
@@ -123,6 +135,11 @@ echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔒 SECURITY REMINDER"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo
+echo "➡️  Import this file into your password manager, then delete it."
+echo "   It is a plaintext copy of every credential on this host, and nothing"
+echo "   rotates or expires it. Leaving it on disk is the risk it creates."
+echo "   Delete it with:  shred -u $OUTPUT_FILE"
 echo
 echo "⚠️  This file contains sensitive credentials:"
 echo "   • Passwords, API keys, and tokens"
@@ -149,8 +166,8 @@ echo
 echo "To download this file securely (encrypted zip):"
 echo "   corekit credentials download"
 echo
-echo "Remember to delete the file after use:"
-echo "   rm $OUTPUT_FILE"
+echo "Import it into your password manager, then delete it:"
+echo "   shred -u $OUTPUT_FILE"
 echo
 
 exit 0

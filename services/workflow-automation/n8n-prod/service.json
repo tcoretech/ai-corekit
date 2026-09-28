@@ -10,5 +10,14 @@
   "managed_update": {
     "enabled": false,
     "note": "Enable only after the playground upgrade path is proven on this instance."
+  },
+  "promotion": {
+    "enabled": true,
+    "protected_branch": "main",
+    "repository_path": "workflows",
+    "preserve_ids": true,
+    "backup_required": true,
+    "credentials": "never",
+    "note": "Repository and token are site-specific and come from the service .env: PROMOTION_REPOSITORY, PROMOTION_TOKEN. Give the token read access only; the branch protection is the control, not the token."
   }
 }

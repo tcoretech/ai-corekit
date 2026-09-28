@@ -346,6 +346,16 @@ cmd_update() {
 }
 
 # Command: Managed Update
+# Command: Promote
+cmd_promote() {
+    if [ -f "$LIB_DIR/promotion/promote.sh" ]; then
+        bash "$LIB_DIR/promotion/promote.sh" "$@"
+    else
+        log_error "Promotion script not found."
+        exit 1
+    fi
+}
+
 cmd_managed_update() {
     if [ -f "$LIB_DIR/managed_updates/managed-update.sh" ]; then
         bash "$LIB_DIR/managed_updates/managed-update.sh" "$@"
@@ -1022,6 +1032,7 @@ cmd_help() {
     echo "  pull          Pull service images"
     echo "  update        Update the system"
     echo "  managed-update  Safely check, plan, apply, inspect, or recover opted-in service updates"
+    echo "  promote       Import reviewed workflow definitions into a service from Git"
     echo "  credentials   Manage credentials (download|export)"
     echo "  run <service> Run a service-specific command (e.g., corekit run ssh ...)"
     echo "  list          List all available services"
@@ -1083,6 +1094,9 @@ case "$COMMAND" in
         ;;
     managed-update)
         cmd_managed_update "$@"
+        ;;
+    promote)
+        cmd_promote "$@"
         ;;
     credentials)
         cmd_credentials "$@"

@@ -1,0 +1,3 @@
+# Test-only dependencies. Not installed into the runtime image.
+-r requirements.txt
+httpx

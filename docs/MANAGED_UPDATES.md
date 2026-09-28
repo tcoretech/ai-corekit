@@ -18,7 +18,7 @@ A service is registered by a `managed_update` block in its `service.json`:
   "major_updates_require_manual_approval": true,
   "backup_required": true,
   "minimum_free_space_gb": 15,
-  "components": ["service", "service-worker"]
+  "components": ["service", "service-runner"]
 }
 ```
 
@@ -32,9 +32,9 @@ corekit managed-update list
 ## Hooks
 
 Anything service-specific lives in `<service>/managed/`. The driver runs these
-and treats a non-zero exit as a failed deployment. Only `validate.sh` is
-optional; every other hook is called unconditionally and a missing one fails the
-run.
+and treats a non-zero exit as a failed deployment. Three are optional and are
+skipped when absent: `validate.sh`, `counts.sh` and `stop.sh`. The rest are
+called unconditionally, and a missing one fails the run.
 
 | Hook | Required | Purpose | Contract |
 |---|---|---|---|
@@ -43,6 +43,7 @@ run.
 | `build.sh` | yes | Build or pull the candidate and verify it is what was asked for | Receives the target version as `$1`. Prints JSON `{"images":{...}}` on the last line. A service that builds nothing still needs one, to verify the image it adopts |
 | `backup.sh` | yes | Create and verify a recovery set | Prints the manifest path on the last line. The manifest must report `verified: true`, `restore_drill.result: "passed"` and `candidate_migration_drill.result: "passed"` — see below |
 | `counts.sh` | in practice yes | Entity counts and in-flight executions | Prints `{"workflows","credentials","active_executions"}`. Must exit non-zero if it cannot read them: reporting zero would let a deployment proceed during a database outage. Without the hook, the post-deployment count check fails the deployment |
+| `stop.sh` | no | Stop this service's containers after a failed health check | Without it the driver stops the containers named in `components` |
 | `deploy.sh` | yes | Recreate the service with the candidate | Receives the target version as `$1`, and the candidate images as `COREKIT_CANDIDATE_IMAGES` |
 | `strict-healthcheck.sh` | yes | Readiness, counts, canary | Exit non-zero if the deployment should be treated as failed |
 
@@ -51,8 +52,10 @@ Hooks run with `COREKIT_PROJECT_ROOT`, `COREKIT_SERVICE_DIR` and
 `COREKIT_MANAGED_BACKUP_ROOT`, and `deploy.sh` receives
 `COREKIT_CANDIDATE_IMAGES`, the JSON that `build.sh` printed.
 
-Only `validate.sh` is genuinely optional. The others are called unconditionally,
-and a missing one fails the run.
+`components` is ordered and load-bearing: the first entry is the container whose
+image is recorded as the rollback target, the second is its task runner. Recovery
+hands both to the operator, so listing them the other way round would tell them
+to restart the wrong image.
 
 ### The backup manifest
 

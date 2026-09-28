@@ -211,8 +211,12 @@ resolve_branch_tip() {
 
 TARGET_COMMIT="$PIN_COMMIT"
 if [[ -z "$TARGET_COMMIT" ]]; then
-  TARGET_COMMIT="$(resolve_branch_tip)"
-  [[ -n "$TARGET_COMMIT" ]] || die "Could not resolve branch '$BRANCH' in the repository. Check the repository name, token and branch."
+  # `|| true` matters: resolve_branch_tip pipes under `pipefail`, so without it
+  # a bad token or unreachable remote fails the assignment and `set -e` exits
+  # with no message -- exactly when the operator needs one.
+  TARGET_COMMIT="$(resolve_branch_tip)" || true
+  [[ -n "$TARGET_COMMIT" ]] \
+    || die "Could not resolve branch '$BRANCH' in '$REPOSITORY'. Check the repository name, the token, and that the branch exists."
 fi
 
 PREVIOUS_COMMIT=""
@@ -256,18 +260,29 @@ log_event info promotion_started "Promoting $SERVICE from commit ${TARGET_COMMIT
 
 log_event info ancestry_check_started "Verifying ${TARGET_COMMIT:0:12} is merged into '$BRANCH'"
 SCRATCH="$(mktemp -d -t promote-verify-XXXXXXXX)"
-cleanup_scratch() { [[ -n "${SCRATCH:-}" && -d "$SCRATCH" ]] && rm -rf "$SCRATCH"; }
-trap cleanup_scratch EXIT
+# One cleanup for both temporary directories: the checkout and, separately, the
+# credential helper. CREDS_DIR is created further down; the guards make this safe
+# to run before it exists.
+cleanup_temp() {
+  [[ -n "${SCRATCH:-}"   && -d "${SCRATCH:-}"   ]] && rm -rf "$SCRATCH"
+  [[ -n "${CREDS_DIR:-}" && -d "${CREDS_DIR:-}" ]] && rm -rf "$CREDS_DIR"
+  return 0
+}
+trap cleanup_temp EXIT
 
 git -C "$SCRATCH" init --quiet 2>/dev/null || die "Could not prepare a verification clone"
 git -C "$SCRATCH" remote add origin "$(repository_url)" 2>/dev/null || true
 
-# Credentials go via a helper, never on the command line where /proc exposes them.
-ASKPASS="$SCRATCH/.askpass"
+# Credentials go via a helper, never on the command line where /proc exposes
+# them -- and never inside $SCRATCH, whose working tree is later handed to the
+# import tool. Keeping them in a separate directory also avoids a checkout
+# failing because the promoted commit happens to contain a file of that name.
+CREDS_DIR="$(mktemp -d -t promote-creds-XXXXXXXX)"
+ASKPASS="$CREDS_DIR/askpass"
+printf '%s' "$TOKEN" > "$CREDS_DIR/token"
 printf '#!/bin/sh\ncase "$1" in Username*) printf %%s "x-access-token";; *) cat "%s";; esac\n' \
-  "$SCRATCH/.token" > "$ASKPASS"
-printf '%s' "$TOKEN" > "$SCRATCH/.token"
-chmod 700 "$ASKPASS"; chmod 600 "$SCRATCH/.token"
+  "$CREDS_DIR/token" > "$ASKPASS"
+chmod 700 "$ASKPASS"; chmod 600 "$CREDS_DIR/token"
 export GIT_ASKPASS="$ASKPASS" GIT_TERMINAL_PROMPT=0
 
 git -C "$SCRATCH" fetch --quiet --filter=blob:none --no-tags origin \
@@ -367,7 +382,15 @@ fi
 # target rather than trusting the tool's summary.
 verify_imported() {
   local missing=0 total=0 id name listing
-  listing="$(docker exec "$CONTAINER_ID" sh -c "n8n list:workflow 2>/dev/null" 2>/dev/null || true)"
+  # Captured once. If this fails, say so: reporting every definition missing
+  # would accuse a promotion that actually landed.
+  # Assumes `n8n list:workflow` prints workflow ids. If a future version prints
+  # names only, every promotion will fail here after a successful import --
+  # that is the symptom to recognise.
+  if ! listing="$(docker exec "$CONTAINER_ID" sh -c "n8n list:workflow" 2>/dev/null)"; then
+    log_event error listing_unavailable "Could not list workflows in the target, so the import could not be verified either way"
+    return 1
+  fi
 
   while IFS= read -r file; do
     # Only files that are actually workflow definitions: a definition has both

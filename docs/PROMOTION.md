@@ -110,6 +110,16 @@ implementation in `the service's managed/promote.sh`, and a `promotion` block in
 
 `--plan` changes nothing and needs no lock, so it is safe to run at any time.
 
+## A note on `counts.sh`
+
+Promotion reads the target's workflow count through the service's `counts.sh`
+hook, to tell a genuinely empty target — where the first promotion happens and
+an empty recovery set is expected — from one whose count cannot be read, where a
+backup matters most. Without that hook the count is unknown, so the first
+promotion into an empty target is refused. That is the safe default rather than a
+fault, but it is worth knowing before adding promotion to a service that has no
+counts hook.
+
 ## Gates
 
 A promotion stops at the first failure:

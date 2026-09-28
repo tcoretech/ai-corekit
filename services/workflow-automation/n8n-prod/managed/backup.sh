@@ -91,8 +91,8 @@ jq -n --arg created "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg label "$LABEL" \
       --argjson wf "${WORKFLOWS:-0}" --argjson cr "${CREDENTIALS:-0}" \
   '{schema_version:1, service:"n8n-prod", label:$label, created_at:$created,
     verified:true, database_dump_format:"postgres-custom",
-    restore_drill:{result:"passed", isolated:true, workflows:$dwf, credentials:$dcr,
-                   note:"Restored into a throwaway database on the same server and counts matched the live database."},
+    restore_drill:{result:"passed", isolation:"database", workflows:$dwf, credentials:$dcr,
+                   note:"Restored into a throwaway database on the live server, not a separate instance, and the restored counts matched the live database."},
     candidate_migration_drill:{result:"passed",
                    note:"This service adopts an image already built and verified elsewhere, so there is no new candidate to rehearse."},
     git:{previous_live_commit:""},

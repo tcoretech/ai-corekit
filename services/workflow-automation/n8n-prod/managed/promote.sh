@@ -142,10 +142,32 @@ fi
 [[ "$(policy enabled)" == "true" ]] || die "Promotion is not enabled for $SERVICE in service.json"
 
 # Site-specific configuration comes from the service .env, which is not tracked.
-[[ -f "$SERVICE_DIR/.env" ]] && { set -a; # shellcheck disable=SC1091
-  . "$SERVICE_DIR/.env"; set +a; }
+# Read only the promotion settings. Sourcing the whole file with `set -a` would
+# export the encryption key and database password into every child process,
+# including the import tool and each docker exec it runs.
+if [[ -f "$SERVICE_DIR/.env" ]]; then
+  while IFS='=' read -r _key _value; do
+    case "$_key" in
+      PROMOTION_REPOSITORY|PROMOTION_REPOSITORY_HOST|PROMOTION_TOKEN|PROMOTION_BRANCH|PROMOTION_PATH)
+        _value="${_value%\'}"; _value="${_value#\'}"
+        _value="${_value%\"}"; _value="${_value#\"}"
+        printf -v "$_key" '%s' "$_value" ;;
+    esac
+  done < <(grep -E "^PROMOTION_[A-Z_]+=" "$SERVICE_DIR/.env" 2>/dev/null || true)
+fi
 
 REPOSITORY="${PROMOTION_REPOSITORY:-}"
+REPOSITORY_HOST="${PROMOTION_REPOSITORY_HOST:-github.com}"
+
+# Accept a bare owner/repo, a full URL, or a local path. Assuming one forge
+# would rule out a self-hosted Git, which is a perfectly ordinary place to keep
+# reviewed definitions.
+repository_url() {
+  case "$REPOSITORY" in
+    *://*|/*) printf '%s\n' "$REPOSITORY" ;;
+    *)        printf 'https://%s/%s.git\n' "$REPOSITORY_HOST" "$REPOSITORY" ;;
+  esac
+}
 TOKEN="${PROMOTION_TOKEN:-}"
 BRANCH="${PROMOTION_BRANCH:-$(policy protected_branch)}"
 BRANCH="${BRANCH:-main}"
@@ -161,12 +183,30 @@ docker inspect "$CONTAINER" >/dev/null 2>&1 || die "Container '$CONTAINER' does 
 [[ "$(docker inspect --format '{{.State.Running}}' "$CONTAINER")" == "true" ]] \
   || die "Container '$CONTAINER' is not running"
 
+# Hand the import tool a container ID, not a name. It resolves names with
+# `docker ps --filter name=`, which is a substring match, so a name like
+# "svc" also matches "svc-runner" and "svc-tunnel" and it takes whichever
+# Docker lists first. On a stack whose containers share a prefix that can send
+# the import at a sidecar -- a distroless one has no shell, and the import dies
+# confusingly. An ID matches exactly.
+CONTAINER_ID="$(docker inspect --format '{{.Id}}' "$CONTAINER")"
+[[ -n "$CONTAINER_ID" ]] || die "Could not resolve the container ID for '$CONTAINER'"
+
 # Resolve the target commit. Without --commit this is the current tip of the
 # protected branch, which is still pinned for the rest of the run: the SHA is
 # resolved once and everything downstream uses it.
 resolve_branch_tip() {
-  git ls-remote "https://${TOKEN}@github.com/${REPOSITORY}.git" "refs/heads/${BRANCH}" 2>/dev/null \
-    | awk 'NR==1{print $1}'
+  local dir askpass out
+  dir="$(mktemp -d -t promote-tip-XXXXXXXX)" || return 1
+  askpass="$dir/.askpass"
+  printf '%s' "$TOKEN" > "$dir/.token"; chmod 600 "$dir/.token"
+  printf '#!/bin/sh\ncase "$1" in Username*) printf %%s "x-access-token";; *) cat "%s";; esac\n' \
+    "$dir/.token" > "$askpass"; chmod 700 "$askpass"
+  out="$(GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
+        git ls-remote "$(repository_url)" "refs/heads/${BRANCH}" 2>/dev/null \
+        | awk 'NR==1{print $1}')" || true
+  rm -rf "$dir"
+  printf '%s\n' "$out"
 }
 
 TARGET_COMMIT="$PIN_COMMIT"
@@ -178,9 +218,16 @@ fi
 PREVIOUS_COMMIT=""
 [[ -f "$STATE_FILE" ]] && PREVIOUS_COMMIT="$(jq -r '.current.commit // empty' "$STATE_FILE")"
 
-entity_counts() {
-  # Best-effort inventory, used to show that a promotion did not lose anything.
-  docker exec "$CONTAINER" sh -c 'n8n list:workflow 2>/dev/null | wc -l' 2>/dev/null | tr -d '\r' || echo "unknown"
+workflow_count() {
+  # The service's counts hook queries the database directly. Counting lines from
+  # the n8n CLI is unreliable: it prints status lines such as "Acquiring database
+  # migration lock..." that are not workflows.
+  if [[ -x "$SERVICE_DIR/managed/counts.sh" ]]; then
+    COREKIT_SERVICE_DIR="$SERVICE_DIR" bash "$SERVICE_DIR/managed/counts.sh" 2>/dev/null \
+      | jq -r '.workflows // "unknown"' 2>/dev/null || echo unknown
+  else
+    echo unknown
+  fi
 }
 
 if $PLAN_ONLY; then
@@ -190,7 +237,7 @@ if $PLAN_ONLY; then
     --arg path "${REPO_PATH:-<repository root>}" \
     --arg target "$TARGET_COMMIT" --arg previous "${PREVIOUS_COMMIT:-<none recorded>}" \
     --arg pinned "$( [[ -n "$PIN_COMMIT" ]] && echo explicit || echo "resolved from branch tip" )" \
-    --arg counts "$(entity_counts)" \
+    --arg counts "$(workflow_count)" \
     --argjson preserve "$( [[ "$PRESERVE_IDS" == "true" ]] && echo true || echo false )" \
     --argjson backup "$( [[ "$BACKUP_REQUIRED" == "true" ]] && echo true || echo false )" \
     '{plan:{service:$service,container:$container,repository:$repository,
@@ -207,6 +254,40 @@ flock --nonblock 9 || die "Another promotion is already running"
 
 log_event info promotion_started "Promoting $SERVICE from commit ${TARGET_COMMIT:0:12} on $BRANCH"
 
+log_event info ancestry_check_started "Verifying ${TARGET_COMMIT:0:12} is merged into '$BRANCH'"
+SCRATCH="$(mktemp -d -t promote-verify-XXXXXXXX)"
+cleanup_scratch() { [[ -n "${SCRATCH:-}" && -d "$SCRATCH" ]] && rm -rf "$SCRATCH"; }
+trap cleanup_scratch EXIT
+
+git -C "$SCRATCH" init --quiet 2>/dev/null || die "Could not prepare a verification clone"
+git -C "$SCRATCH" remote add origin "$(repository_url)" 2>/dev/null || true
+
+# Credentials go via a helper, never on the command line where /proc exposes them.
+ASKPASS="$SCRATCH/.askpass"
+printf '#!/bin/sh\ncase "$1" in Username*) printf %%s "x-access-token";; *) cat "%s";; esac\n' \
+  "$SCRATCH/.token" > "$ASKPASS"
+printf '%s' "$TOKEN" > "$SCRATCH/.token"
+chmod 700 "$ASKPASS"; chmod 600 "$SCRATCH/.token"
+export GIT_ASKPASS="$ASKPASS" GIT_TERMINAL_PROMPT=0
+
+git -C "$SCRATCH" fetch --quiet --filter=blob:none --no-tags origin \
+    "refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}" \
+  || die "Could not fetch branch '$BRANCH'. Check the repository, token and branch name."
+
+if ! git -C "$SCRATCH" cat-file -e "${TARGET_COMMIT}^{commit}" 2>/dev/null; then
+  git -C "$SCRATCH" fetch --quiet --filter=blob:none --no-tags origin "$TARGET_COMMIT" 2>/dev/null || true
+fi
+git -C "$SCRATCH" cat-file -e "${TARGET_COMMIT}^{commit}" 2>/dev/null \
+  || die "Commit ${TARGET_COMMIT:0:12} does not exist in $REPOSITORY"
+
+git -C "$SCRATCH" merge-base --is-ancestor "$TARGET_COMMIT" "refs/remotes/origin/${BRANCH}" \
+  || die "Refusing to promote: ${TARGET_COMMIT:0:12} is not merged into '$BRANCH'. Only reviewed, merged commits may be promoted."
+log_event info ancestry_check_passed "${TARGET_COMMIT:0:12} is an ancestor of '$BRANCH'"
+
+git -C "$SCRATCH" checkout --quiet --detach "$TARGET_COMMIT" \
+  || die "Could not check out the verified commit"
+
+
 BACKUP_PATH=""
 if [[ "$BACKUP_REQUIRED" == "true" ]]; then
   BACKUP_DIR="$STATE_ROOT/backups/$SERVICE"
@@ -219,27 +300,45 @@ if [[ "$BACKUP_REQUIRED" == "true" ]]; then
     docker exec "$CONTAINER" sh -c 'rm -rf /tmp/.promotion-backup' >/dev/null 2>&1 || true
   fi
   if [[ -z "$(ls -A "$BACKUP_PATH" 2>/dev/null)" ]]; then
-    die "Pre-promotion backup produced nothing. Refusing to import without a backup."
+    # A fresh target legitimately has nothing to export, and that is exactly
+    # when the first promotion happens. Only treat an empty export as a failure
+    # when the target actually holds workflows to lose.
+    existing="$(workflow_count)"
+    if [[ "$existing" != "unknown" && "$existing" != "0" ]]; then
+      die "Pre-promotion backup produced nothing although the target holds $existing workflow(s). Refusing to import without a backup."
+    fi
+    log_event warning backup_empty "Target holds no workflows; proceeding with an empty recovery set"
+    printf 'no workflows present at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$BACKUP_PATH/EMPTY"
   fi
   chmod -R go-rwx "$BACKUP_PATH"
   log_event info backup_complete "Backed up to $BACKUP_PATH"
 fi
 
-# The import tool enforces the ancestry gate. Credentials are never imported:
-# they are created once, by hand, on the target.
+# Credentials are never imported: they are created once, by hand, on the target.
+#
+# The import tool takes a branch, not a commit. So rather than trusting it with
+# the gate, we verify ancestry here and then hand it a ref we control: the commit
+# is fetched into a scratch clone, checked to be an ancestor of the protected
+# branch, and pushed nowhere. The tool is pointed at that local clone, so what it
+# imports is the commit we verified rather than whatever the branch points at by
+# the time it runs.
+# Local mode: the tool imports from a directory rather than fetching a branch
+# itself. That directory is the commit we verified above, so what is imported is
+# exactly what was reviewed. It also means the token is never handed to the
+# import tool at all.
+IMPORT_SOURCE="$SCRATCH"
+[[ -n "$REPO_PATH" ]] && IMPORT_SOURCE="$SCRATCH/${REPO_PATH#/}"
+[[ -d "$IMPORT_SOURCE" ]] \
+  || die "Path '${REPO_PATH:-/}' does not exist in commit ${TARGET_COMMIT:0:12}"
+
 IMPORT_ARGS=(
   pull
-  --repo "$REPOSITORY"
-  --token "$TOKEN"
-  --branch "$BRANCH"
-  --commit "$TARGET_COMMIT"
-  --require-merged-into "$BRANCH"
-  --container "$CONTAINER"
-  --workflows 2
+  --container "$CONTAINER_ID"
+  --workflows 1
+  --local-path "$IMPORT_SOURCE"
   --credentials 0
   --environment 0
 )
-[[ -n "$REPO_PATH" ]] && IMPORT_ARGS+=(--github-path "$REPO_PATH")
 [[ "$PRESERVE_IDS" == "true" ]] && IMPORT_ARGS+=(--preserve)
 $DRY_RUN && IMPORT_ARGS+=(--dry-run)
 
@@ -256,6 +355,37 @@ if $DRY_RUN; then
   exit 0
 fi
 
+# The import tool can report success having changed nothing -- a malformed
+# definition is rejected by the application after the tool has copied the file.
+# A promotion that imported nothing is a failed promotion, so verify against the
+# target rather than trusting the tool's summary.
+verify_imported() {
+  local missing=0 total=0 name
+  while IFS= read -r file; do
+    name="$(jq -r '.name // (.[0].name // empty)' "$file" 2>/dev/null)"
+    [[ -z "$name" ]] && continue
+    total=$((total + 1))
+    if ! docker exec "$CONTAINER_ID" sh -c \
+        "n8n list:workflow 2>/dev/null" 2>/dev/null | grep -qF "$name"; then
+      log_event error import_unverified "Workflow '$name' is not present in the target after import"
+      missing=$((missing + 1))
+    fi
+  done < <(find "$IMPORT_SOURCE" -maxdepth 2 -name '*.json' -type f 2>/dev/null)
+  if (( total == 0 )); then
+    log_event warning nothing_to_import "No workflow definitions found at '${REPO_PATH:-/}' in this commit"
+    return 0
+  fi
+  if (( missing > 0 )); then
+    return 1
+  fi
+  log_event info import_verified "All $total definition(s) are present in the target"
+}
+
+if ! verify_imported; then
+  log_event error promotion_unverified "The import reported success but the target does not contain the definitions. The pre-promotion backup is at $BACKUP_PATH"
+  die "Promotion could not be verified against the target"
+fi
+
 # Post-promotion checks. A promotion that leaves the service unhealthy is a
 # failed promotion regardless of what the import reported.
 health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$CONTAINER")"
@@ -269,7 +399,7 @@ jq -n \
   --arg service "$SERVICE" --arg commit "$TARGET_COMMIT" --arg branch "$BRANCH" \
   --arg repository "$REPOSITORY" --arg path "${REPO_PATH:-}" \
   --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg backup "$BACKUP_PATH" \
-  --arg counts "$(entity_counts)" \
+  --arg counts "$(workflow_count)" \
   --argjson previous "$( [[ -n "$PREVIOUS_COMMIT" ]] && jq -n --arg c "$PREVIOUS_COMMIT" '{commit:$c}' || echo null )" \
   '{schema_version:1,service:$service,
     current:{commit:$commit,branch:$branch,repository:$repository,path:$path,

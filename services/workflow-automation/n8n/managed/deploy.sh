@@ -14,6 +14,18 @@ IMAGES_JSON="${COREKIT_CANDIDATE_IMAGES:-}"
 export N8N_MANAGED_IMAGE="$(jq -r '.images.app' <<<"$IMAGES_JSON")"
 export N8N_MANAGED_RUNNER_IMAGE="$(jq -r '.images.runner' <<<"$IMAGES_JSON")"
 
+# Compose selects nothing unless the profile is named, and WEBHOOK_URL is built
+# from N8N_HOSTNAME, which lives in the global config rather than this service's
+# .env. Both must be in the environment before compose runs.
+export COMPOSE_PROFILES=n8n
+if [[ -f "$PROJECT_ROOT/config/.env.global" ]]; then
+  hostname_value="$(sed -n 's/^N8N_HOSTNAME=//p' "$PROJECT_ROOT/config/.env.global" | tail -n 1)"
+  hostname_value="${hostname_value%$'\r'}"
+  hostname_value="${hostname_value#\"}"; hostname_value="${hostname_value%\"}"
+  hostname_value="${hostname_value#\'}"; hostname_value="${hostname_value%\'}"
+  [[ -n "$hostname_value" ]] && export N8N_HOSTNAME="$hostname_value"
+fi
+
 project_name="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' n8n 2>/dev/null || true)"
 [[ -n "$project_name" ]] || project_name=localai
 

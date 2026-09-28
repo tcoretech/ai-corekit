@@ -542,9 +542,8 @@ apply_update() {
   [[ "$(jq -r '.candidate_migration_drill.result' "$backup_manifest")" == "passed" ]] || die "Candidate migration rehearsal did not pass"
 
   [[ "$(active_execution_count)" == "0" ]] || die "Executions became active after the backup gate"
-  load_required_environment
-  export N8N_MANAGED_IMAGE="$candidate_image"
-  export N8N_MANAGED_RUNNER_IMAGE="$candidate_runner_image"
+  # The environment a deployment needs is service-specific, so the deploy hook
+  # assembles it. The driver supplies only the candidate images.
   log_event info deployment_started "Recreating only this service's containers with the candidate"
   if ! COREKIT_CANDIDATE_IMAGES="$CANDIDATE_IMAGES" run_hook deploy.sh "$TARGET_VERSION"; then
     write_failure_state compose_up "$backup_manifest"

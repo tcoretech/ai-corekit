@@ -267,34 +267,24 @@ version_is_greater() {
     (( target_major == current_major && target_minor == current_minor && target_patch > current_patch ))
 }
 
-active_execution_count() {
-  docker exec postgres psql -X -U postgres -d postgres -At -v ON_ERROR_STOP=1 \
-    -c "SELECT count(*) FROM execution_entity WHERE status IN ('new','running','waiting','unknown');"
-}
-
-entity_count() {
-  local table="$1"
-  docker exec postgres psql -X -U postgres -d postgres -At -v ON_ERROR_STOP=1 \
-    -c "SELECT count(*) FROM ${table};"
-}
-
-load_required_environment() {
-  export PROJECT_ROOT
-  export COMPOSE_PROFILES=n8n
-  if [[ -f "$PROJECT_ROOT/config/.env.global" ]]; then
-    N8N_HOSTNAME="$(sed -n 's/^N8N_HOSTNAME=//p' "$PROJECT_ROOT/config/.env.global" | tail -n 1)"
-    N8N_HOSTNAME="${N8N_HOSTNAME%$'\r'}"
-    N8N_HOSTNAME="${N8N_HOSTNAME#\"}"
-    N8N_HOSTNAME="${N8N_HOSTNAME%\"}"
-    N8N_HOSTNAME="${N8N_HOSTNAME#\'}"
-    N8N_HOSTNAME="${N8N_HOSTNAME%\'}"
-    export N8N_HOSTNAME
+# Counts come from the service, because a service with its own database must
+# not be measured against another instance's.
+service_counts() {
+  if have_hook counts.sh; then
+    run_hook counts.sh
+  else
+    printf '{"workflows":null,"credentials":null,"active_executions":"0"}\n'
   fi
 }
-
-compose_project() {
-  docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' n8n 2>/dev/null || printf 'localai\n'
+active_execution_count() { jq -r '.active_executions // "0"' <<<"$(service_counts)"; }
+entity_count() {
+  case "$1" in
+    workflow_entity)    jq -r '.workflows // "unknown"'   <<<"$(service_counts)" ;;
+    credentials_entity) jq -r '.credentials // "unknown"' <<<"$(service_counts)" ;;
+    *)                  printf 'unknown\n' ;;
+  esac
 }
+
 
 print_plan() {
   local current_version change_type current_branch head remote age free_gb active changed current_commit fingerprint
@@ -555,9 +545,6 @@ apply_update() {
   load_required_environment
   export N8N_MANAGED_IMAGE="$candidate_image"
   export N8N_MANAGED_RUNNER_IMAGE="$candidate_runner_image"
-  project_name="$(compose_project)"
-  [[ -n "$project_name" ]] || project_name=localai
-
   log_event info deployment_started "Recreating only this service's containers with the candidate"
   if ! COREKIT_CANDIDATE_IMAGES="$CANDIDATE_IMAGES" run_hook deploy.sh "$TARGET_VERSION"; then
     write_failure_state compose_up "$backup_manifest"

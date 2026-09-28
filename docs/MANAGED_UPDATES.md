@@ -41,11 +41,16 @@ where noted; a missing hook means that step is skipped.
 | `validate.sh` | no | Refuse an incoherent committed bundle | Exit non-zero to abort. Message on stderr |
 | `build.sh` | no | Build or pull the candidate and verify it is what was asked for | Receives the target version as `$1`. Prints JSON `{"images":{...}}` on the last line |
 | `backup.sh` | when `backup_required` | Create and verify a recovery set | Prints the manifest path on the last line. The manifest must report `verified: true` |
-| `deploy.sh` | yes | Recreate the service with the candidate | Receives the target version as `$1` |
+| `counts.sh` | no | Entity counts and in-flight executions | Prints `{"workflows","credentials","active_executions"}`. Without it, count gating is skipped |
+| `deploy.sh` | yes | Recreate the service with the candidate | Receives the target version as `$1`, and the candidate images as `COREKIT_CANDIDATE_IMAGES` |
 | `strict-healthcheck.sh` | yes | Readiness, counts, canary | Exit non-zero if the deployment should be treated as failed |
 
 Hooks run with `COREKIT_PROJECT_ROOT`, `COREKIT_SERVICE_DIR` and
 `COREKIT_SERVICE_NAME` in the environment.
+
+`counts.sh` matters more than it looks. A service with its own database must
+report from that database: measuring one instance against another instance's
+numbers would let a deployment that silently lost data pass its checks.
 
 ## Why hooks rather than configuration
 

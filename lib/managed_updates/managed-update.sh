@@ -11,13 +11,15 @@ fi
 USER_STATE_HOME="${XDG_STATE_HOME:-${HOME:-}/.local/state}"
 USER_DATA_HOME="${XDG_DATA_HOME:-${HOME:-}/.local/share}"
 STATE_ROOT="${COREKIT_MANAGED_STATE_ROOT:-$USER_STATE_HOME/ai-corekit/managed-updates}"
-BACKUP_ROOT="${COREKIT_N8N_BACKUP_ROOT:-$USER_DATA_HOME/ai-corekit/backups/n8n}"
 LOCK_FILE="${COREKIT_MANAGED_LOCK_FILE:-$STATE_ROOT/managed-update.lock}"
-N8N_DIR="$PROJECT_ROOT/services/workflow-automation/n8n"
-POLICY_FILE="$N8N_DIR/service.json"
-STATE_FILE="$STATE_ROOT/n8n.json"
 COMMAND="${1:-help}"
 SERVICE="${2:-n8n}"
+
+# Resolved once the service name is known; see below.
+SERVICE_DIR=""
+POLICY_FILE=""
+STATE_FILE=""
+BACKUP_ROOT=""
 
 shift || true
 shift || true
@@ -57,6 +59,7 @@ Commands:
   apply [service]          Fast-forward the deployment branch and apply an eligible committed candidate
   status [service]         Show redacted runtime state and live versions
   rollback-plan [service]  Show guarded recovery information; never restores a stateful DB automatically
+  list                     List every service registered for managed updates
 
 Options:
   --offline                Do not contact the Git remote
@@ -118,46 +121,86 @@ elif [[ -e "$LOCK_FILE" ]]; then
   flock -n -s 9 || die "Another managed updater process is already running"
 fi
 
-[[ "$SERVICE" == "n8n" ]] || die "Service '$SERVICE' is not opted in to managed updates"
-[[ -f "$POLICY_FILE" ]] || die "n8n managed-update policy is missing"
-[[ "$(jq -r '.managed_update.enabled // false' "$POLICY_FILE")" == "true" ]] || die "n8n managed updates are disabled"
+if [[ "$COMMAND" == "list" ]]; then
+  # Registration lives in each service's own service.json, so this is the one
+  # place that answers "what will the timers touch, and is it ready?".
+  while IFS= read -r dir; do
+    policy="$dir/service.json"
+    [[ -f "$policy" ]] || continue
+    jq -e '.managed_update' "$policy" >/dev/null 2>&1 || continue
+    missing=()
+    for hook in version.sh deploy.sh strict-healthcheck.sh; do
+      [[ -x "$dir/managed/$hook" ]] || missing+=("$hook")
+    done
+    if [[ "$(jq -r '.managed_update.backup_required // false' "$policy")" == "true" ]] \
+       && [[ ! -x "$dir/managed/backup.sh" ]]; then
+      missing+=("backup.sh")
+    fi
+    jq -cn \
+      --arg service "$(basename "$dir")" \
+      --argjson enabled "$(jq -r '.managed_update.enabled // false' "$policy")" \
+      --arg branch "$(jq -r '.managed_update.deployment_branch // ""' "$policy")" \
+      --argjson age "$(jq -r '.managed_update.minimum_release_age_days // null' "$policy")" \
+      --argjson components "$(jq -c '.managed_update.components // []' "$policy")" \
+      --argjson missing "$(printf '%s\n' "${missing[@]+"${missing[@]}"}" | jq -R . | jq -s 'map(select(. != ""))')" \
+      '{service:$service, enabled:$enabled, deployment_branch:$branch,
+        minimum_release_age_days:$age, components:$components,
+        missing_hooks:$missing, ready:(($enabled) and ($missing|length)==0)}'
+  done < <(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | sort) \
+  | jq -s '{registered: map(select(.enabled)), not_registered: map(select(.enabled|not))}'
+  exit 0
+fi
+
+# A service is registered by a managed_update block in its own service.json.
+# Nothing here knows which services exist.
+SERVICE_DIR="$(find "$PROJECT_ROOT/services" -mindepth 2 -maxdepth 2 -type d -name "$SERVICE" -print -quit 2>/dev/null || true)"
+[[ -n "$SERVICE_DIR" ]] || die "No such service: $SERVICE"
+POLICY_FILE="$SERVICE_DIR/service.json"
+STATE_FILE="$STATE_ROOT/${SERVICE}.json"
+BACKUP_ROOT="${COREKIT_MANAGED_BACKUP_ROOT:-${COREKIT_N8N_BACKUP_ROOT:-$USER_DATA_HOME/ai-corekit/backups/$SERVICE}}"
+
+[[ -f "$POLICY_FILE" ]] || die "Service '$SERVICE' has no service.json"
+[[ "$(jq -r '.managed_update.enabled // false' "$POLICY_FILE")" == "true" ]] \
+  || die "Service '$SERVICE' is not registered for managed updates. Set managed_update.enabled in its service.json."
+
+# Everything service-specific is a hook in the service's own managed/ directory.
+HOOK_DIR="$SERVICE_DIR/managed"
+export COREKIT_PROJECT_ROOT="$PROJECT_ROOT"
+export COREKIT_SERVICE_DIR="$SERVICE_DIR"
+export COREKIT_SERVICE_NAME="$SERVICE"
+
+have_hook() { [[ -x "$HOOK_DIR/$1" ]]; }
+run_hook() {
+  local hook="$1"; shift
+  [[ -x "$HOOK_DIR/$hook" ]] || die "Service '$SERVICE' is registered for managed updates but has no $hook hook"
+  bash "$HOOK_DIR/$hook" "$@"
+}
+
+VERSION_INFO="$(run_hook version.sh)" || die "Could not determine versions for '$SERVICE'"
+jq -e . <<<"$VERSION_INFO" >/dev/null 2>&1 || die "version.sh did not return valid JSON"
+TARGET_VERSION="$(jq -r '.target_version' <<<"$VERSION_INFO")"
+BUNDLE_IDENTITY="$(jq -r '.identity' <<<"$VERSION_INFO")"
 
 DEPLOYMENT_BRANCH="$(jq -r '.managed_update.deployment_branch' "$POLICY_FILE")"
 MINIMUM_RELEASE_AGE_DAYS="$(jq -r '.managed_update.minimum_release_age_days' "$POLICY_FILE")"
 MINIMUM_FREE_SPACE_GB="$(jq -r '.managed_update.minimum_free_space_gb' "$POLICY_FILE")"
 RECOVERY_SETS_TO_KEEP="$(jq -r '.managed_update.recovery_sets_to_keep' "$POLICY_FILE")"
 
-N8N_REF="$(awk '$1 == "FROM" && $2 ~ /^n8nio\/n8n:/ {print $2; exit}' "$N8N_DIR/Dockerfile")"
-RUNNER_REF="$(awk '$1 == "FROM" && $2 ~ /^n8nio\/runners:/ {print $2; exit}' "$N8N_DIR/runner/Dockerfile")"
-TARGET_VERSION="${N8N_REF#*:}"
-TARGET_VERSION="${TARGET_VERSION%%@*}"
-TARGET_N8N_DIGEST="${N8N_REF##*@}"
-TARGET_RUNNER_VERSION="${RUNNER_REF#*:}"
-TARGET_RUNNER_VERSION="${TARGET_RUNNER_VERSION%%@*}"
-TARGET_RUNNER_DIGEST="${RUNNER_REF##*@}"
-N8N_GIT_VERSION="$(awk -F= '$1 == "ARG N8N_GIT_VERSION" {print $2}' "$N8N_DIR/Dockerfile")"
-N8N_GIT_COMMIT="$(awk -F= '$1 == "ARG N8N_GIT_COMMIT" {print $2}' "$N8N_DIR/Dockerfile")"
+# Kept for the structured output below; sourced from the service's version hook
+# rather than parsed here, so the driver stays service-agnostic.
+TARGET_N8N_DIGEST="$(jq -r '.refs.n8n_digest // ""' <<<"$VERSION_INFO")"
+TARGET_RUNNER_DIGEST="$(jq -r '.refs.runner_digest // ""' <<<"$VERSION_INFO")"
+N8N_GIT_VERSION="$(jq -r '.refs.n8n_git_version // ""' <<<"$VERSION_INFO")"
+N8N_GIT_COMMIT="$(jq -r '.refs.n8n_git_commit // ""' <<<"$VERSION_INFO")"
 
 validate_bundle() {
-  [[ "$TARGET_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "Pinned n8n version is invalid"
-  [[ "$TARGET_VERSION" == "$TARGET_RUNNER_VERSION" ]] || die "Pinned n8n and runner versions differ"
-  [[ "$TARGET_N8N_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || die "Pinned n8n digest is invalid"
-  [[ "$TARGET_RUNNER_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || die "Pinned runner digest is invalid"
-  [[ "$N8N_GIT_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "Pinned n8n-git version is invalid"
-  [[ "$N8N_GIT_COMMIT" =~ ^[0-9a-f]{40}$ ]] || die "Pinned n8n-git commit is invalid"
-  jq -e . "$POLICY_FILE" "$N8N_DIR/task-runners-managed.json" >/dev/null || die "Managed n8n JSON configuration is invalid"
-  if grep -ERn '(^|[[:space:]:])latest([@[:space:]]|$)' \
-    "$N8N_DIR/Dockerfile" "$N8N_DIR/runner/Dockerfile" "$N8N_DIR/docker-compose.yml" >/dev/null; then
-    die "Moving latest reference found in the managed n8n bundle"
+  if have_hook validate.sh; then
+    run_hook validate.sh || die "Committed bundle for '$SERVICE' failed validation"
   fi
 }
 
 live_version() {
-  if docker inspect n8n >/dev/null 2>&1 && [[ "$(docker inspect --format '{{.State.Running}}' n8n)" == "true" ]]; then
-    docker exec n8n n8n --version 2>/dev/null | tr -d '\r'
-  else
-    printf 'unknown\n'
-  fi
+  jq -r '.live_version // "unknown"' <<<"$VERSION_INFO"
 }
 
 version_change_type() {
@@ -194,7 +237,7 @@ remote_head() {
 
 release_age_days() {
   local committed_at now
-  committed_at="$(git -C "$PROJECT_ROOT" log -1 --format=%ct -- "$N8N_DIR/Dockerfile")"
+  committed_at="$(git -C "$PROJECT_ROOT" log -1 --format=%ct -- "$SERVICE_DIR")"
   [[ -n "$committed_at" ]] || die "Unable to determine candidate commit age"
   now="$(date +%s)"
   printf '%s\n' "$(( (now - committed_at) / 86400 ))"
@@ -205,8 +248,12 @@ free_space_gb() {
 }
 
 bundle_fingerprint() {
-  git -C "$PROJECT_ROOT" ls-tree -r HEAD -- "${N8N_DIR#"$PROJECT_ROOT"/}" \
-    | sha256sum | awk '{print $1}'
+  # The committed tree plus the identity the service reports, so a change to
+  # either is a change of candidate.
+  {
+    git -C "$PROJECT_ROOT" ls-tree -r HEAD -- "${SERVICE_DIR#"$PROJECT_ROOT"/}"
+    printf '%s\n' "$BUNDLE_IDENTITY"
+  } | sha256sum | awk '{print $1}'
 }
 
 version_is_greater() {
@@ -337,7 +384,8 @@ write_failure_state() {
       --arg git_commit "$(git -C "$PROJECT_ROOT" rev-parse HEAD)" \
       --arg target_version "$TARGET_VERSION" \
       --arg backup_manifest "$backup_manifest" \
-      '{schema_version:1,service:"n8n",last_result:{result:"failed",timestamp:$timestamp,stage:$stage,git_commit:$git_commit,target_version:$target_version,backup_manifest:$backup_manifest,writes_possible:true,automatic_database_restore_permitted:false}}' \
+      --arg service_name "$SERVICE" \
+      '{schema_version:1,service:$service_name,last_result:{result:"failed",timestamp:$timestamp,stage:$stage,git_commit:$git_commit,target_version:$target_version,backup_manifest:$backup_manifest,writes_possible:true,automatic_database_restore_permitted:false}}' \
       >"$tmp_state"
   fi
   chmod 0600 "$tmp_state"
@@ -384,9 +432,10 @@ write_success_state() {
     --arg backup_manifest "$backup_manifest" \
     --argjson previous "$previous_state" \
     --argjson history "$history" \
+    --arg service_name "$SERVICE" \
     '{
       schema_version:1,
-      service:"n8n",
+      service:$service_name,
       current:{
         version:$version,
         git_commit:$git_commit,
@@ -472,18 +521,13 @@ apply_update() {
   active="$(active_execution_count)"
   [[ "$active" == "0" ]] || die "Active or waiting executions prevent deployment"
 
-  short_commit="$(git -C "$PROJECT_ROOT" rev-parse --short=12 HEAD)"
-  candidate_image="corekit/n8n:${TARGET_VERSION}-git${short_commit}"
-  candidate_runner_image="corekit/n8n-runners:${TARGET_VERSION}-git${short_commit}"
-  log_event info candidate_build_started "Building exact committed n8n and runner candidates before downtime"
-  docker build --pull=false --tag "$candidate_image" "$N8N_DIR"
-  docker build --pull=false --tag "$candidate_runner_image" "$N8N_DIR/runner"
-
-  [[ "$(docker run --rm --network none "$candidate_image" n8n --version | tr -d '\r')" == "$TARGET_VERSION" ]] || die "Candidate n8n version verification failed"
-  [[ "$(docker image inspect --format '{{index .Config.Labels "io.corekit.n8n-git.version"}}' "$candidate_image")" == "$N8N_GIT_VERSION" ]] || die "Candidate n8n-git version verification failed"
-  [[ "$(docker image inspect --format '{{index .Config.Labels "io.corekit.n8n-git.commit"}}' "$candidate_image")" == "$N8N_GIT_COMMIT" ]] || die "Candidate n8n-git commit verification failed"
-  [[ "$(docker image inspect --format '{{index .Config.Labels "io.corekit.runner-for-n8n-version"}}' "$candidate_runner_image")" == "$TARGET_VERSION" ]] || die "Candidate runner version verification failed"
-  [[ "$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.version"}}' "$candidate_runner_image")" == "$TARGET_VERSION" ]] || die "Candidate upstream runner version verification failed"
+  log_event info candidate_build_started "Building and verifying the committed candidate before any downtime"
+  CANDIDATE_IMAGES="$(run_hook build.sh "$TARGET_VERSION" | tail -n 1)" \
+    || die "Candidate build or verification failed"
+  jq -e . <<<"$CANDIDATE_IMAGES" >/dev/null 2>&1 || die "build.sh did not return valid JSON"
+  candidate_image="$(jq -r '.images.app // empty' <<<"$CANDIDATE_IMAGES")"
+  candidate_runner_image="$(jq -r '.images.runner // empty' <<<"$CANDIDATE_IMAGES")"
+  [[ -n "$candidate_image" ]] || die "build.sh did not report a candidate image"
 
   workflow_count="$(entity_count workflow_entity)"
   credential_count="$(entity_count credentials_entity)"
@@ -500,7 +544,7 @@ apply_update() {
 
   log_event info backup_started "Creating mandatory final recovery set and isolated restore drill"
   backup_manifest="$(COREKIT_PROJECT_ROOT="$PROJECT_ROOT" COREKIT_N8N_BACKUP_ROOT="$BACKUP_ROOT" \
-    bash "$N8N_DIR/managed/backup.sh" --label "pre-${TARGET_VERSION}" \
+    bash "$HOOK_DIR/backup.sh" --label "pre-${TARGET_VERSION}" \
       --previous-git-commit "$PREVIOUS_GIT_COMMIT" --candidate-image "$candidate_image" | tail -n 1)"
   [[ -f "$backup_manifest" ]] || die "Backup script did not return a verified manifest"
   [[ "$(jq -r '.verified' "$backup_manifest")" == "true" ]] || die "Recovery set is not verified"
@@ -514,36 +558,30 @@ apply_update() {
   project_name="$(compose_project)"
   [[ -n "$project_name" ]] || project_name=localai
 
-  mapfile -t old_workers < <(docker ps -a --filter label=com.docker.compose.service=n8n-worker --format '{{.Names}}' | sort)
-  if (( ${#old_workers[@]} > 0 )); then
-    docker stop --time 60 "${old_workers[@]}" >/dev/null
-  fi
-
-  log_event info deployment_started "Recreating only the coordinated n8n main and runner bundle"
-  if ! docker compose -p "$project_name" --project-directory "$N8N_DIR" \
-    --env-file "$PROJECT_ROOT/services/data-services/postgres/.env" \
-    --env-file "$N8N_DIR/.env" -f "$N8N_DIR/docker-compose.yml" \
-    up -d --no-deps n8n n8n-runner; then
+  log_event info deployment_started "Recreating only this service's containers with the candidate"
+  if ! COREKIT_CANDIDATE_IMAGES="$CANDIDATE_IMAGES" run_hook deploy.sh "$TARGET_VERSION"; then
     write_failure_state compose_up "$backup_manifest"
-    die "Candidate Compose deployment failed; stateful recovery requires the guarded rollback plan"
+    die "Candidate deployment failed; stateful recovery requires the guarded rollback plan"
   fi
 
-  if ! COREKIT_MANAGED_STATE_ROOT="$STATE_ROOT" bash "$N8N_DIR/managed/strict-healthcheck.sh" \
+  if ! COREKIT_MANAGED_STATE_ROOT="$STATE_ROOT" bash "$HOOK_DIR/strict-healthcheck.sh" \
     --expected-workflows "$workflow_count" \
     --expected-credentials "$credential_count" \
     --canary; then
-    docker stop --time 30 n8n-runner n8n >/dev/null 2>&1 || true
+    if have_hook stop.sh; then
+      run_hook stop.sh >/dev/null 2>&1 || true
+    else
+      # Fall back to the components the policy names.
+      mapfile -t _components < <(jq -r '.managed_update.components[]? // empty' "$POLICY_FILE")
+      (( ${#_components[@]} > 0 )) && docker stop --time 30 "${_components[@]}" >/dev/null 2>&1 || true
+    fi
     write_failure_state strict_health "$backup_manifest"
     die "Candidate failed strict health; stopped without automatic database restore because writes are conservatively possible"
   fi
 
-  if (( ${#old_workers[@]} > 0 )); then
-    docker rm "${old_workers[@]}" >/dev/null
-  fi
-
   write_success_state "$current_version" "$previous_n8n_image_id" "$previous_runner_image_id" "$backup_manifest"
   verify_recovery_retention
-  log_event info deployment_succeeded "n8n managed deployment passed readiness, canary, counts, audit, and restore gates"
+  log_event info deployment_succeeded "Managed deployment of '$SERVICE' passed readiness, canary, counts, audit, and restore gates"
 }
 
 show_status() {

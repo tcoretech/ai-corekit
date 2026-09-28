@@ -125,6 +125,15 @@ if [[ "$RUN_CANARY" == "true" ]]; then
   install -d -m 0700 "$STATE_ROOT"
   chmod 0700 "$STATE_ROOT"
   CANARY_OUTPUT="$(mktemp "$STATE_ROOT/.canary.XXXXXX")"
+  # Run the candidate, not whatever the compose fallback tag resolves to. Without
+  # this the canary proves a stale image can execute a workflow, and on a host
+  # where that tag is absent it fails a deployment that actually succeeded.
+  if [[ -n "${COREKIT_CANDIDATE_IMAGES:-}" ]]; then
+    export N8N_MANAGED_IMAGE="$(jq -r '.images.app // empty' <<<"$COREKIT_CANDIDATE_IMAGES")"
+    export N8N_MANAGED_RUNNER_IMAGE="$(jq -r '.images.runner // empty' <<<"$COREKIT_CANDIDATE_IMAGES")"
+  fi
+  export COMPOSE_PROFILES=n8n
+
   PROJECT_NAME="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' n8n 2>/dev/null || true)"
   [[ -n "$PROJECT_NAME" ]] || PROJECT_NAME=localai
   if ! docker compose -p "$PROJECT_NAME" --project-directory "$SERVICE_DIR" \

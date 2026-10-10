@@ -1,6 +1,6 @@
 services:
   example-service:
-    image: ${SERVICE_IMAGE:-nginx:alpine}
+    image: ${SERVICE_IMAGE:-nginx:alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2}
     container_name: example-service
     restart: unless-stopped
     env_file:

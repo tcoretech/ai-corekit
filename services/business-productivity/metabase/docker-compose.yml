@@ -1,6 +1,6 @@
 services:
   metabase:
-    image: metabase/metabase:latest
+    image: metabase/metabase:latest@sha256:08b1ebc81765c42f936acd4a83db4178e403805f9c473650e974a2b70cf38d37
     container_name: metabase
     profiles:
     - metabase

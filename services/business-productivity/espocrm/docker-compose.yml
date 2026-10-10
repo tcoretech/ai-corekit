@@ -1,6 +1,6 @@
 services:
   espocrm:
-    image: espocrm/espocrm:latest
+    image: espocrm/espocrm:latest@sha256:fd86fafa91fde0b3c4498d224ab4dc00eba94547f3d22fb4895aab478385d600
     container_name: espocrm
     profiles:
     - espocrm
@@ -31,7 +31,7 @@ services:
       retries: 5
       start_period: 180s
   espocrm-db:
-    image: mariadb:latest
+    image: mariadb:latest@sha256:f1bba652ba57bea3099ca2fe1af692af537c27d96e0bcde39dce29e2ba1ec4f3
     container_name: espocrm-db
     profiles:
     - espocrm
@@ -57,7 +57,7 @@ services:
       retries: 5
       start_period: 30s
   espocrm-daemon:
-    image: espocrm/espocrm:latest
+    image: espocrm/espocrm:latest@sha256:fd86fafa91fde0b3c4498d224ab4dc00eba94547f3d22fb4895aab478385d600
     container_name: espocrm-daemon
     env_file:
       - .env

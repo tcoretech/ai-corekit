@@ -1,6 +1,6 @@
 services:
   snappymail:
-    image: djmaze/snappymail:latest
+    image: djmaze/snappymail:latest@sha256:5e3d990438809a8a49f8ac5758db03e858e6e9fc0e369e1f9e474f7664079905
     container_name: snappymail
     profiles:
     - snappymail

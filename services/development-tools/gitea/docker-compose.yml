@@ -1,6 +1,6 @@
 services:
   gitea:
-    image: gitea/gitea:latest
+    image: gitea/gitea:latest@sha256:f505a0d3a41323b786e05942fc7a4075e07ae7c169fd9485649aa55ee543a21a
     container_name: gitea
     profiles:
     - gitea
@@ -24,7 +24,7 @@ services:
     - /etc/timezone:/etc/timezone:ro
     - /etc/localtime:/etc/localtime:ro
   gitea-db:
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     container_name: gitea-db
     profiles:
     - gitea

@@ -1,6 +1,6 @@
 services:
   twenty-crm:
-    image: twentycrm/twenty:latest
+    image: twentycrm/twenty:latest@sha256:bb4e94f0215cbd14c7356b0324d9b7ac10ccd077042cd6d5058ad02ef2080605
     container_name: twenty-crm
     profiles:
     - twenty-crm
@@ -32,7 +32,7 @@ services:
       retries: 5
       start_period: 60s
   twenty-redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
     container_name: twenty-redis
     env_file:
       - .env

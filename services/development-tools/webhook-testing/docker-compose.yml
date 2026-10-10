@@ -1,6 +1,6 @@
 services:
   hoppscotch-db:
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     container_name: hoppscotch-db
     profiles:
     - webhook-testing
@@ -22,7 +22,7 @@ services:
       retries: 5
       start_period: 30s
   webhook-tester-redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
     container_name: webhook-tester-redis
     env_file:
       - .env
@@ -40,7 +40,7 @@ services:
       timeout: 5s
       retries: 5
   webhook-tester:
-    image: ghcr.io/tarampampam/webhook-tester:2
+    image: ghcr.io/tarampampam/webhook-tester:2@sha256:85818267b450d3d386cad6510c561e09b974183ed2832c373bc83b125fc1b221
     container_name: webhook-tester
     profiles:
     - webhook-testing
@@ -70,7 +70,7 @@ services:
       retries: 3
       start_period: 10s
   hoppscotch-migrate:
-    image: hoppscotch/hoppscotch:latest
+    image: hoppscotch/hoppscotch:latest@sha256:3160f5b3acf49478552a66a0785ee6c75f64311066f149f7d946fbd540f8388d
     container_name: hoppscotch-migrate
     profiles:
     - webhook-testing
@@ -84,7 +84,7 @@ services:
     command: sh -c "pnpx prisma migrate deploy --schema /dist/backend/prisma/schema.prisma"
     restart: 'no'
   hoppscotch:
-    image: hoppscotch/hoppscotch:latest
+    image: hoppscotch/hoppscotch:latest@sha256:3160f5b3acf49478552a66a0785ee6c75f64311066f149f7d946fbd540f8388d
     container_name: hoppscotch
     profiles:
     - webhook-testing

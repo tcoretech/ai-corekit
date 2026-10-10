@@ -1,6 +1,6 @@
 services:
   lightrag:
-    image: ghcr.io/hkuds/lightrag:latest
+    image: ghcr.io/hkuds/lightrag:latest@sha256:5bdbd524931b011df246fe20888d110cef691e6804c12cde636a2b746d7de27e
     container_name: lightrag
     profiles:
     - lightrag

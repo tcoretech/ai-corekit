@@ -1,6 +1,6 @@
 services:
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:latest@sha256:3de2bd5203120b866d74a9b283b2ffb8ec382fbf9dc321814700c6ea6f44ec57
     container_name: cadvisor
     env_file:
       - .env
@@ -15,7 +15,7 @@ services:
     expose:
     - 8080
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:latest@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
     container_name: node-exporter
     env_file:
       - .env
@@ -33,7 +33,7 @@ services:
     expose:
     - 9100
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:latest@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
     container_name: prometheus
     env_file:
       - .env
@@ -46,7 +46,7 @@ services:
     extra_hosts:
     - host.docker.internal:host-gateway
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:latest@sha256:b28bae15e219c998fb0e0424ed724930cc61b1f61fb404d47c862f9a23f9e572
     container_name: grafana
     profiles:
     - monitoring

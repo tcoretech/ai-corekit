@@ -1,6 +1,6 @@
 services:
   easyocr:
-    image: voduytuan/restful-easyocr:latest
+    image: voduytuan/restful-easyocr:latest@sha256:067bf4975be2a9c2b74396f962c0d799ecfc208064640099d5431b8e89ddca58
     container_name: easyocr
     profiles:
     - ocr
@@ -23,7 +23,7 @@ services:
       retries: 5
       start_period: 40s
   tesseract-ocr:
-    image: hertzg/tesseract-server:latest
+    image: hertzg/tesseract-server:latest@sha256:29f62caf8cb22f6d47ee13e297f259e36597b7294d5b886c0fe78d9fbf82ef65
     container_name: tesseract-ocr
     profiles:
     - ocr

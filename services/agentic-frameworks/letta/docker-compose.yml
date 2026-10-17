@@ -1,6 +1,6 @@
 services:
   letta:
-    image: letta/letta:latest
+    image: letta/letta:latest@sha256:d5939f08759637da3f3d97153c09d6f2dd727145800ce2adae656117a6178eb8
     container_name: letta
     profiles:
     - letta

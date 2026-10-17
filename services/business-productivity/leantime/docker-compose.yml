@@ -1,6 +1,6 @@
 services:
   leantime:
-    image: leantime/leantime:latest
+    image: leantime/leantime:latest@sha256:8b2133d02640d618cb002fca4fe03a046d074bbb81388d4cb035152cef008905
     container_name: leantime
     profiles:
     - leantime

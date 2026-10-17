@@ -1,6 +1,6 @@
 services:
   gotenberg:
-    image: gotenberg/gotenberg:8
+    image: gotenberg/gotenberg:8@sha256:aa552cc115db488e0f0bcb07446aac13071ad51505b642c84bb894500907b42b
     container_name: gotenberg
     profiles:
     - gotenberg

@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
       - name: Install validation tools
         run: sudo apt-get update && sudo apt-get install -y jq shellcheck
       - name: Shellcheck
@@ -59,7 +59,7 @@ jobs:
           tests/test-n8n-candidate.sh
       - name: Validate policy, stable channel, Compose, and Git diff
         run: ./scripts/validate-managed-updates.sh --online
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
           node-version: "24.18.0"
       - name: Validate Renovate configuration
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
       - name: Build and exercise isolated grouped candidate
         run: ./tests/test-n8n-candidate.sh
       - name: Test managed updater without mutation

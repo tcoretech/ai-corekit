@@ -1,6 +1,6 @@
 services:
   smtp-relay:
-    image: alpine/socat
+    image: alpine/socat@sha256:22d77becaeeea8ef56b8c4bb2312323acafe85354be6a85714ff5050e3537842
     container_name: smtp-relay
     env_file:
       - .env

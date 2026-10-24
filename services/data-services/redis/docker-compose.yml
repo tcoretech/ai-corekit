@@ -3,7 +3,7 @@ services:
     container_name: redis
     env_file:
       - .env
-    image: docker.io/valkey/valkey:8-alpine
+    image: docker.io/valkey/valkey:8-alpine@sha256:081c2f5cb575efc901aa80ff9cdbd1ec6a301682fd35e1ebb4b0990a4a4a8507
     command: valkey-server --save 30 1 --loglevel warning
     restart: unless-stopped
     volumes:

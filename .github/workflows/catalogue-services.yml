@@ -16,7 +16,7 @@ jobs:
   update-catalogue:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
       
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y jq
@@ -32,7 +32,7 @@ jobs:
           ./.github/scripts/generate-services-readme.sh --update
 
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v5.2.0
         with:
           commit_message: "docs: update services catalogue and README"
           file_pattern: 'docs/SERVICES_CATALOGUE.md README.md'

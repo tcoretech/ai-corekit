@@ -1,6 +1,6 @@
 services:
   n8n-mcp:
-    image: ${N8N_MCP_IMAGE:-ghcr.io/czlonkowski/n8n-mcp:2.69.0}
+    image: ${N8N_MCP_IMAGE:-ghcr.io/czlonkowski/n8n-mcp:2.69.0@sha256:48e0824d3ccb3ec1b2029a8319704a5505b2acb8278f3f35ed7d4c5865473320}
     container_name: n8n-mcp
     profiles:
     - n8n-mcp

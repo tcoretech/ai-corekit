@@ -1,6 +1,6 @@
 services:
   vikunja:
-    image: vikunja/vikunja:latest
+    image: vikunja/vikunja:latest@sha256:f7dc8428d10aef17f3075886d3c1c022f566ec456f88985f02c137f4fc534576
     container_name: vikunja
     profiles:
     - vikunja

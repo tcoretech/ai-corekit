@@ -1,6 +1,6 @@
 services:
   ollama-pull-llama-cpu:
-    image: ollama/ollama:latest
+    image: ollama/ollama:latest@sha256:0e59999e0e8f9fd4e704bd788a89b7e4cad399367fb1365f8c102ac662288761
     container_name: ollama-pull-llama
     env_file:
       - .env
@@ -16,7 +16,7 @@ services:
     depends_on:
     - ollama-cpu
   ollama-cpu:
-    image: ollama/ollama:latest
+    image: ollama/ollama:latest@sha256:0e59999e0e8f9fd4e704bd788a89b7e4cad399367fb1365f8c102ac662288761
     container_name: ollama
     restart: unless-stopped
     env_file:
@@ -31,7 +31,7 @@ services:
     profiles:
     - ${OLLAMA_CPU_PROFILE:-ollama-cpu-disabled}
   ollama-pull-llama-gpu:
-    image: ollama/ollama:latest
+    image: ollama/ollama:latest@sha256:0e59999e0e8f9fd4e704bd788a89b7e4cad399367fb1365f8c102ac662288761
     container_name: ollama-pull-llama
     env_file:
       - .env
@@ -47,7 +47,7 @@ services:
     depends_on:
     - ollama-gpu
   ollama-gpu:
-    image: ollama/ollama:latest
+    image: ollama/ollama:latest@sha256:0e59999e0e8f9fd4e704bd788a89b7e4cad399367fb1365f8c102ac662288761
     container_name: ollama
     restart: unless-stopped
     env_file:
@@ -70,7 +70,7 @@ services:
             capabilities:
             - gpu
   ollama-pull-llama-gpu-amd:
-    image: ollama/ollama:rocm
+    image: ollama/ollama:rocm@sha256:557fbb820145948aaba383e8214e18bb3f597f4fffb08585458c70c253e7c342
     container_name: ollama-pull-llama
     env_file:
       - .env
@@ -86,7 +86,7 @@ services:
     depends_on:
     - ollama-gpu-amd
   ollama-gpu-amd:
-    image: ollama/ollama:rocm
+    image: ollama/ollama:rocm@sha256:557fbb820145948aaba383e8214e18bb3f597f4fffb08585458c70c253e7c342
     container_name: ollama
     restart: unless-stopped
     env_file:

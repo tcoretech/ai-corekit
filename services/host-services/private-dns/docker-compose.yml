@@ -1,6 +1,6 @@
 services:
   private-dns:
-    image: coredns/coredns:latest
+    image: coredns/coredns:latest@sha256:0a9d8c8ddf34347eb59aad9a8784f0710de88d6d112726d11d271f9bc6daca26
     container_name: private-dns
     profiles:
       - private-dns

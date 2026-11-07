@@ -1,7 +1,7 @@
 services:
   caddy:
     container_name: caddy
-    image: docker.io/library/caddy:2-alpine
+    image: docker.io/library/caddy:2-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
     ports:
     - 127.0.0.1:80:80
     - 127.0.0.1:443:443

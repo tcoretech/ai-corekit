@@ -1,6 +1,6 @@
 services:
   comfyui:
-    image: yanwk/comfyui-boot:cu124-slim
+    image: yanwk/comfyui-boot:cu124-slim@sha256:0deb9ac5a9464fc089f5a6672ee58d223f4e84fae2a205cebfe7abc6d316c1cf
     container_name: comfyui
     profiles:
     - comfyui

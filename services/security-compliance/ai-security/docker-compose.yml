@@ -22,7 +22,7 @@ services:
       retries: 3
       start_period: 120s
   llm-guard:
-    image: laiyer/llm-guard-api:latest
+    image: laiyer/llm-guard-api:latest@sha256:bea3efb1220ad18149b73de625c55e6d835bf8b45023a089a3762012a86550ba
     container_name: llm-guard
     profiles:
     - ai-security
@@ -47,7 +47,7 @@ services:
       retries: 5
       start_period: 40s
   presidio-analyzer:
-    image: mcr.microsoft.com/presidio-analyzer:latest
+    image: mcr.microsoft.com/presidio-analyzer:latest@sha256:286e3fa7f3a7426e775e8564fe1870f1ba8f999d3ab8bbb8cc46a44355d9d6e9
     container_name: presidio-analyzer
     profiles:
     - ai-security
@@ -68,7 +68,7 @@ services:
       retries: 3
       start_period: 60s
   presidio-anonymizer:
-    image: mcr.microsoft.com/presidio-anonymizer:latest
+    image: mcr.microsoft.com/presidio-anonymizer:latest@sha256:a10a12a2a613d13cf29d3ad3641e3258444dd8c90403dd644a0a114c472c2483
     container_name: presidio-anonymizer
     profiles:
     - ai-security

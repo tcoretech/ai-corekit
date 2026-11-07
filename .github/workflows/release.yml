@@ -25,7 +25,7 @@ jobs:
       new_version: ${{ steps.bump_version.outputs.new_version }}
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.4.0
       with:
         fetch-depth: 0
 
@@ -54,15 +54,15 @@ jobs:
     needs: calculate-version
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.4.0
       with:
         fetch-depth: 0
         ref: ${{ github.ref_name }}
 
     - name: Set up Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v4.4.0
       with:
-        node-version: '20'
+        node-version: '20.20.2'
 
     - name: Generate changelog
       run: |
@@ -91,7 +91,7 @@ jobs:
       contents: write
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.4.0
       with:
         ref: ${{ github.ref_name }}
 

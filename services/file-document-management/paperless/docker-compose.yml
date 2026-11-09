@@ -1,6 +1,6 @@
 services:
   paperless:
-    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest@sha256:d704e84f88300eb6ab001ab15720a2330ff99169cf9f94d6b8fcc44b63a84c84
     container_name: paperless-ngx
     profiles:
     - paperless
@@ -41,7 +41,7 @@ services:
       timeout: 10s
       retries: 5
   paperless-redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:c5d34a98396a4775e223c74e929162c35c5a2182901ba26b50ade939941ce14b
     container_name: paperless-redis
     env_file:
       - .env
@@ -59,7 +59,7 @@ services:
       timeout: 3s
       retries: 5
   paperless-db:
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:3540c0362c809df084ffac0ae69fe794515f9de92692f02178bcdce0ef0302ac
     container_name: paperless-postgres
     profiles:
     - paperless

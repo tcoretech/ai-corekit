@@ -1,6 +1,6 @@
 services:
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:latest@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
     container_name: mailpit
     restart: unless-stopped
     volumes:

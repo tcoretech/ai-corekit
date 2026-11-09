@@ -1,6 +1,6 @@
 services:
   perplexica:
-    image: itzcrazykns1337/perplexica:latest
+    image: itzcrazykns1337/perplexica:latest@sha256:343d2a02858cc3c15bb35bf94b3249923f4eb5de16eb80d266eddfef6d84951d
     container_name: perplexica
     profiles:
     - perplexica

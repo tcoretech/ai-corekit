@@ -1,6 +1,6 @@
 services:
   web-tunnel:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:latest@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
     container_name: web-tunnel
     profiles:
     - web-tunnel

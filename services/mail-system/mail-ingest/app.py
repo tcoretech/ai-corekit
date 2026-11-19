@@ -308,6 +308,7 @@ async def metrics():
 
 
 @app.post("/mailgun/incoming", response_class=PlainTextResponse)
+@app.post("/mailgun/incoming-mime", response_class=PlainTextResponse)
 async def mailgun_incoming(request: Request):
     """
     Mailgun Route webhook endpoint.
@@ -315,7 +316,12 @@ async def mailgun_incoming(request: Request):
     Expect:
     - timestamp, token, signature
     - sender, recipient
-    - body-mime (if using Store and Notify) OR body-plain/body-html as fallback
+    - body-mime OR body-plain/body-html as fallback
+
+    Mailgun only posts body-mime from a forward() action whose URL ends in
+    "mime", hence the second path. store(notify=...) never includes it, so
+    those messages are rebuilt from body-plain and lose HTML, attachments and
+    their original headers.
     """
     # Enforce the size cap before the form is parsed.
     await read_body_within_limit(request)
@@ -354,8 +360,10 @@ async def mailgun_incoming(request: Request):
     recipient = form.get("recipient") or form.get("to") or "unknown@localhost"
     message_id = form.get("Message-Id") or form.get("message-id")
 
-    # Prefer raw MIME if Mailgun provides it (Store and Notify)
+    # Prefer raw MIME if Mailgun provides it (forward() to a "...mime" URL)
     raw_mime = form.get("body-mime")
+    if hasattr(raw_mime, "read"):
+        raw_mime = (await raw_mime.read()).decode("utf-8", errors="replace")
 
     if not raw_mime:
         # Fallback: reconstruct a safe message while retaining reply routing.

@@ -106,6 +106,35 @@ class RejectionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(self._forwarded), 1)
 
+    def test_raw_mime_from_a_forward_route_is_relayed_unchanged(self):
+        raw = (
+            "From: Visitor <visitor@gmail.com>\r\n"
+            "To: info@example.com\r\n"
+            "Subject: hello\r\n"
+            "Content-Type: text/html; charset=utf-8\r\n"
+            "\r\n"
+            "<p>hello</p>\r\n"
+        )
+        form = signed_form()
+        form["body-mime"] = raw
+
+        response = self.client.post("/mailgun/incoming-mime", data=form)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self._forwarded, [("visitor@gmail.com", "info@example.com", raw.encode())])
+
+    def test_raw_mime_sent_as_a_file_part_is_relayed_unchanged(self):
+        raw = b"From: visitor@gmail.com\r\nSubject: hello\r\n\r\nhello\r\n"
+
+        response = self.client.post(
+            "/mailgun/incoming-mime",
+            data=signed_form(),
+            files={"body-mime": ("message.mime", raw, "message/rfc822")},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self._forwarded[0][2], raw)
+
     def test_timestamp_older_than_five_minutes_is_rejected(self):
         stale = int(time.time()) - 301
         response = self.client.post("/mailgun/incoming", data=signed_form(timestamp=stale))

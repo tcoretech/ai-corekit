@@ -1,0 +1,9 @@
+{
+  "name": "mail-tunnel",
+  "display_name": "Cloudflare Tunnel (mail)",
+  "category": "Gateways Proxies",
+  "rank": 5,
+  "description": "Dedicated Cloudflare Tunnel connector for the mail stack.",
+  "source": "https://github.com/cloudflare/cloudflared",
+  "depends_on": []
+}

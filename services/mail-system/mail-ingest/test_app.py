@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import smtplib
+import ssl
 import time
 import unittest
 from unittest import mock
@@ -251,6 +252,7 @@ class FakeSMTP:
     instances: list["FakeSMTP"] = []
     rcpt_codes: dict[str, int] = {}
     starttls_error: Exception | None = None
+    peer_cert = b"mailserver-cert-der"
 
     def __init__(self, host, port, timeout=None):
         self._host = host
@@ -270,6 +272,7 @@ class FakeSMTP:
         if FakeSMTP.starttls_error:
             raise FakeSMTP.starttls_error
         self.calls.append(("starttls", self._host, context.check_hostname))
+        self.sock = mock.Mock(getpeercert=lambda binary_form=False: FakeSMTP.peer_cert)
 
     def login(self, user, password):
         self.calls.append(("login", user))
@@ -342,3 +345,15 @@ class SmtpForwardTests(unittest.TestCase):
         with mock.patch.object(app_module, "MAILGUN_WEBHOOK_SIGNING_KEY", SIGNING_KEY):
             response = TestClient(app).post("/mailgun/incoming", data=signed_form(token="token-rcpt"))
         self.assertEqual(response.status_code, 422)
+
+    def test_pinned_certificate_that_matches_is_trusted(self):
+        pin = hashlib.sha256(FakeSMTP.peer_cert).hexdigest()
+        with mock.patch.object(app_module, "MAILSERVER_TLS_FINGERPRINT", pin):
+            app_module.smtp_forward("a@hotmail.com", "tom@example.com", b"raw")
+        self.assertIn("login", self.calls())
+
+    def test_pinned_certificate_that_differs_is_refused_before_login(self):
+        with mock.patch.object(app_module, "MAILSERVER_TLS_FINGERPRINT", "00" * 32):
+            with self.assertRaises(ssl.SSLError):
+                app_module.smtp_forward("a@hotmail.com", "tom@example.com", b"raw")
+        self.assertNotIn("login", self.calls())

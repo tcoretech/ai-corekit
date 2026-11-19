@@ -35,5 +35,8 @@ ensure_account() {
 
 ensure_account "noreply@${BASE_DOMAIN}" "${MAIL_NOREPLY_PASSWORD}"
 ensure_account "info@${BASE_DOMAIN}" "${MAIL_INFO_PASSWORD}"
+# mail-ingest logs in on its own listener to deliver Mailgun's inbound mail
+# (see config/user-patches.sh). It is barred from submission.
+ensure_account "mail-ingest@${BASE_DOMAIN}" "${MAIL_INGEST_SMTP_PASSWORD}"
 
 log_success "Mail accounts provisioned"

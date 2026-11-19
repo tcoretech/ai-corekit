@@ -1,8 +1,10 @@
 import hashlib
 import hmac
 import json
+import smtplib
 import time
 import unittest
+from unittest import mock
 from email import policy
 from email.parser import BytesParser
 
@@ -241,3 +243,102 @@ class TimestampFreshnessUnitTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FakeSMTP:
+    """Records what smtp_forward does to the mailserver connection."""
+
+    instances: list["FakeSMTP"] = []
+    rcpt_codes: dict[str, int] = {}
+    starttls_error: Exception | None = None
+
+    def __init__(self, host, port, timeout=None):
+        self._host = host
+        self.calls: list[tuple] = []
+        FakeSMTP.instances.append(self)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def ehlo(self, name):
+        self.calls.append(("ehlo", name))
+
+    def starttls(self, context=None):
+        if FakeSMTP.starttls_error:
+            raise FakeSMTP.starttls_error
+        self.calls.append(("starttls", self._host, context.check_hostname))
+
+    def login(self, user, password):
+        self.calls.append(("login", user))
+
+    def mail(self, sender):
+        self.calls.append(("mail", sender))
+
+    def rcpt(self, rcpt):
+        code = FakeSMTP.rcpt_codes.get(rcpt, 250)
+        self.calls.append(("rcpt", rcpt))
+        return code, b"5.7.1 refused" if code >= 400 else b"2.1.5 Ok"
+
+    def data(self, raw):
+        self.calls.append(("data",))
+
+
+class SmtpForwardTests(unittest.TestCase):
+    def setUp(self):
+        FakeSMTP.instances = []
+        FakeSMTP.rcpt_codes = {}
+        FakeSMTP.starttls_error = None
+        patches = [
+            mock.patch.object(app_module.smtplib, "SMTP", FakeSMTP),
+            mock.patch.object(app_module, "SMTP_RETRY_ATTEMPTS", 1),
+            mock.patch.object(app_module, "MAILSERVER_SMTP_USER", "mail-ingest@example.com"),
+            mock.patch.object(app_module, "MAILSERVER_SMTP_PASSWORD", "pw"),
+            mock.patch.object(app_module, "MAILSERVER_TLS_SERVER_NAME", "mail.example.com"),
+        ]
+        for p in patches:
+            p.start()
+            self.addCleanup(p.stop)
+
+    def calls(self):
+        return [c[0] for c in FakeSMTP.instances[-1].calls]
+
+    def test_logs_in_after_starttls_verified_against_the_public_name(self):
+        app_module.smtp_forward("a@hotmail.com", "tom@example.com", b"raw")
+        self.assertEqual(
+            self.calls(), ["ehlo", "starttls", "ehlo", "login", "mail", "rcpt", "data"]
+        )
+        self.assertEqual(
+            FakeSMTP.instances[-1].calls[1], ("starttls", "mail.example.com", True)
+        )
+
+    def test_never_logs_in_when_starttls_is_unavailable(self):
+        FakeSMTP.starttls_error = smtplib.SMTPNotSupportedError("no STARTTLS")
+        with self.assertRaises(smtplib.SMTPNotSupportedError):
+            app_module.smtp_forward("a@hotmail.com", "tom@example.com", b"raw")
+        self.assertNotIn("login", self.calls())
+
+    def test_without_a_login_configured_it_relays_unauthenticated(self):
+        with mock.patch.object(app_module, "MAILSERVER_SMTP_USER", ""):
+            app_module.smtp_forward("a@hotmail.com", "tom@example.com", b"raw")
+        self.assertEqual(self.calls(), ["ehlo", "mail", "rcpt", "data"])
+
+    def test_refused_recipient_raises_instead_of_reaching_data(self):
+        FakeSMTP.rcpt_codes = {"tom@example.com": 550}
+        with self.assertRaises(smtplib.SMTPRecipientsRefused):
+            app_module.smtp_forward("a@hotmail.com", "tom@example.com", b"raw")
+        self.assertNotIn("data", self.calls())
+
+    def test_partly_refused_recipients_still_deliver_to_the_rest(self):
+        FakeSMTP.rcpt_codes = {"bad@example.com": 550}
+        with self.assertLogs("mail-ingest", level="ERROR"):
+            app_module.smtp_forward("a@hotmail.com", "tom@example.com, bad@example.com", b"raw")
+        self.assertIn("data", self.calls())
+
+    def test_refused_recipient_is_reported_to_mailgun_as_422(self):
+        FakeSMTP.rcpt_codes = {"info@example.com": 550}
+        with mock.patch.object(app_module, "MAILGUN_WEBHOOK_SIGNING_KEY", SIGNING_KEY):
+            response = TestClient(app).post("/mailgun/incoming", data=signed_form(token="token-rcpt"))
+        self.assertEqual(response.status_code, 422)

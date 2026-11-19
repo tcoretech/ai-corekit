@@ -1,0 +1,9 @@
+{
+  "name": "n8n-tunnel",
+  "display_name": "Cloudflare Tunnel (n8n)",
+  "category": "Gateways Proxies",
+  "rank": 5,
+  "description": "Dedicated Cloudflare Tunnel connector for the n8n stack.",
+  "source": "https://github.com/cloudflare/cloudflared",
+  "depends_on": []
+}

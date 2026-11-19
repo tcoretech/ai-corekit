@@ -24,7 +24,7 @@ services:
     environment:
     - LOG_LEVEL=info
     - SUPERVISOR_LOGLEVEL=warn
-    - PERMIT_DOCKER=network
+    - PERMIT_DOCKER=none
     - NETWORK_INTERFACE=eth0
     - SSL_TYPE=manual
     - SSL_CERT_PATH=/certs/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${MAILSERVER_WEBMAIL_HOSTNAME}/${MAILSERVER_WEBMAIL_HOSTNAME}.crt
@@ -60,6 +60,7 @@ services:
     - RELAY_PASSWORD=${MAILGUN_SMTP_PASSWORD}
     - RELAY_TLS_LEVEL=encrypt
     - ACCOUNT_PROVISIONER=FILE
+    - MAIL_INGEST_SMTP_USER=mail-ingest@${BASE_DOMAIN}
     - ENABLE_UPDATE_CHECK=0
     cap_add:
     - NET_ADMIN

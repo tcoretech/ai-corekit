@@ -85,6 +85,43 @@ docker exec mailserver setup email list
 - Authentication: noreply@yourdomain.com
 - Password: auto-generated (see `.env`)
 
+### Inbound Mail via Mailgun (mail-ingest)
+
+MX points at Mailgun. Mailgun checks SPF and DKIM at the edge, then posts each
+message to `mail-ingest`, which relays it to this container over SMTP.
+
+That relay does **not** use port 25. On port 25 Postfix re-checks the original
+sender's SPF against mail-ingest's Docker address, which fails for every sender
+that publishes `-all`. Instead, `config/user-patches.sh` adds a listener on port
+`10587` (not published on the host) that:
+
+- requires STARTTLS and a login as `mail-ingest@<yourdomain>`, and nobody else
+- accepts local recipients only, so it cannot relay even when authenticated
+- skips the SPF policy check
+- hides the login from Rspamd, OpenDKIM and OpenDMARC, so the message is still
+  scanned and DMARC-checked as inbound mail
+
+`secrets.sh` generates `MAIL_INGEST_SMTP_PASSWORD`, and `startup.sh` creates the
+account. The account is barred from submission (587/465), so its credential
+cannot send mail out.
+
+Do not set `PERMIT_DOCKER` to `network` or `connected-networks` to make inbound
+work: that lets any container on the network relay mail out through Mailgun.
+
+**Mailgun route.** Use a forward to the `-mime` endpoint so Mailgun posts the
+raw message:
+
+```
+forward("https://<MAIL_INGEST_HOSTNAME>/mailgun/incoming-mime")
+store()
+```
+
+Mailgun only includes the raw message (`body-mime`) when the forward URL ends
+in `mime`. `store(notify="…/mailgun/incoming")` never includes it, so
+mail-ingest falls back to rebuilding a plain-text message, which drops HTML,
+attachments and the original headers. `store()` without `notify` keeps a copy
+in Mailgun for three days in case delivery has to be replayed.
+
 ### n8n Integration Setup
 
 **Create SMTP Credentials in n8n:**

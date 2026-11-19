@@ -1,0 +1,9 @@
+{
+  "name": "n8n-postgres",
+  "display_name": "Postgres (dedicated n8n)",
+  "category": "Data Services",
+  "rank": 20,
+  "description": "Postgres dedicated to a single n8n instance, for deployments where the shared server hosts other services' databases.",
+  "source": "https://github.com/postgres/postgres",
+  "depends_on": []
+}

@@ -4,9 +4,11 @@ import hashlib
 import smtplib
 import re
 import json
+import ssl
 import time
 import uuid
 import logging
+import threading
 from email.message import EmailMessage
 from email.policy import SMTP
 from email.utils import formatdate
@@ -24,6 +26,16 @@ MAILGUN_WEBHOOK_SIGNING_KEY = os.getenv("MAILGUN_WEBHOOK_SIGNING_KEY", "").strip
 MAILSERVER_HOST = os.getenv("MAILSERVER_HOST", "mailserver")
 MAILSERVER_PORT = int(os.getenv("MAILSERVER_PORT", "25"))
 MAILSERVER_HELO_DOMAIN = os.getenv("MAILSERVER_HELO_DOMAIN", "mail-ingest.local")
+# When set, log in after STARTTLS. The mailserver then accepts the relay on its
+# mail-ingest listener without re-checking the original sender's SPF.
+MAILSERVER_SMTP_USER = os.getenv("MAILSERVER_SMTP_USER", "").strip()
+MAILSERVER_SMTP_PASSWORD = os.getenv("MAILSERVER_SMTP_PASSWORD", "")
+# The mailserver's certificate carries its public name, not the container name.
+MAILSERVER_TLS_SERVER_NAME = os.getenv("MAILSERVER_TLS_SERVER_NAME", "").strip() or MAILSERVER_HOST
+# SHA-256 of the mailserver certificate (DER, hex). When set, the connection is
+# trusted only if the presented certificate matches, whatever its CA, name or
+# dates. Used while the mailserver certificate is expired; see mailserver/secrets.sh.
+MAILSERVER_TLS_FINGERPRINT = os.getenv("MAILSERVER_TLS_FINGERPRINT", "").strip().lower().replace(":", "")
 SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT_SECONDS", "15"))
 SMTP_RETRY_ATTEMPTS = int(os.getenv("SMTP_RETRY_ATTEMPTS", "2"))
 SMTP_RETRY_DELAY = float(os.getenv("SMTP_RETRY_DELAY_SECONDS", "2"))
@@ -51,6 +63,108 @@ SMTP_ERRORS = Counter(
     "SMTP forwarding failures by type",
     labelnames=["reason"],
 )
+
+
+# Reject a webhook whose Mailgun timestamp is further than this from our clock.
+MAX_TIMESTAMP_SKEW_SECONDS = int(os.getenv("MAX_TIMESTAMP_SKEW_SECONDS", "300"))
+
+# Remember each accepted Mailgun token for this long and refuse to process it twice.
+REPLAY_WINDOW_SECONDS = int(os.getenv("REPLAY_WINDOW_SECONDS", "900"))
+
+# Refuse a request body larger than this before any form parsing happens.
+MAX_BODY_BYTES = int(os.getenv("MAX_BODY_BYTES", str(30 * 1024 * 1024)))
+
+REJECTED_TOTAL = Counter(
+    "mailgun_rejected_total",
+    "Mailgun webhook requests rejected before forwarding",
+    labelnames=["reason"],
+)
+
+# token -> unix time the reservation expires. Only ever holds tokens from
+# requests whose signature already verified, so an unauthenticated caller
+# cannot fill it or evict anything.
+_seen_tokens: dict[str, float] = {}
+_seen_tokens_lock = threading.Lock()
+
+
+def _prune_seen_tokens(now: float) -> None:
+    """Drop expired reservations. Caller holds the lock."""
+
+    for token in [t for t, expiry in _seen_tokens.items() if expiry <= now]:
+        del _seen_tokens[token]
+
+
+def reserve_token(token: str, now: float | None = None) -> bool:
+    """
+    Claim a Mailgun token for the replay window.
+
+    Returns True when the token is new and now reserved, False when it is a
+    replay. Release the reservation with release_token() if the request could
+    not be processed, so that Mailgun's retry of a genuinely failed delivery is
+    not mistaken for a replay.
+    """
+
+    now = time.time() if now is None else now
+    with _seen_tokens_lock:
+        _prune_seen_tokens(now)
+        if token in _seen_tokens:
+            return False
+        _seen_tokens[token] = now + REPLAY_WINDOW_SECONDS
+        return True
+
+
+def release_token(token: str) -> None:
+    """Give a token back after a failed delivery so Mailgun may retry it."""
+
+    with _seen_tokens_lock:
+        _seen_tokens.pop(token, None)
+
+
+def timestamp_is_fresh(timestamp: str, now: float | None = None) -> bool:
+    """True when Mailgun's timestamp is within MAX_TIMESTAMP_SKEW_SECONDS of our clock."""
+
+    now = time.time() if now is None else now
+    try:
+        sent_at = float(timestamp)
+    except (TypeError, ValueError):
+        return False
+    return abs(now - sent_at) <= MAX_TIMESTAMP_SKEW_SECONDS
+
+
+async def read_body_within_limit(request: Request) -> bytes:
+    """
+    Read the request body, refusing anything over MAX_BODY_BYTES.
+
+    This runs before request.form() so an oversized upload is dropped without
+    being parsed. A declared Content-Length is checked first; the streaming
+    count then covers chunked bodies and a Content-Length that lies. The body
+    is cached on the request so that request.form() reuses it rather than
+    trying to read the consumed stream again.
+    """
+
+    declared = request.headers.get("content-length")
+    if declared is not None:
+        try:
+            declared_length = int(declared)
+        except ValueError:
+            REJECTED_TOTAL.labels(reason="bad_content_length").inc()
+            raise HTTPException(status_code=400, detail="Invalid Content-Length")
+        if declared_length > MAX_BODY_BYTES:
+            REJECTED_TOTAL.labels(reason="body_too_large").inc()
+            raise HTTPException(status_code=413, detail="Request body too large")
+
+    chunks: list[bytes] = []
+    received = 0
+    async for chunk in request.stream():
+        received += len(chunk)
+        if received > MAX_BODY_BYTES:
+            REJECTED_TOTAL.labels(reason="body_too_large").inc()
+            raise HTTPException(status_code=413, detail="Request body too large")
+        chunks.append(chunk)
+
+    body = b"".join(chunks)
+    request._body = body
+    return body
 
 
 def verify_mailgun_signature(api_key: str, timestamp: str, token: str, signature: str) -> bool:
@@ -113,6 +227,26 @@ def build_fallback_message(
     return message.as_bytes()
 
 
+def login(smtp: smtplib.SMTP) -> None:
+    """STARTTLS, verifying the mailserver's certificate, then SASL login."""
+
+    if MAILSERVER_TLS_FINGERPRINT:
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        smtp.starttls(context=context)
+        presented = hashlib.sha256(smtp.sock.getpeercert(binary_form=True) or b"").hexdigest()
+        if not hmac.compare_digest(presented, MAILSERVER_TLS_FINGERPRINT):
+            raise ssl.SSLError(f"mailserver certificate does not match the pinned fingerprint ({presented})")
+    else:
+        # smtplib verifies the certificate against the host it connected to, which
+        # is the container name. Check it against the mailserver's public name.
+        smtp._host = MAILSERVER_TLS_SERVER_NAME
+        smtp.starttls(context=ssl.create_default_context())
+    smtp.ehlo(MAILSERVER_HELO_DOMAIN)
+    smtp.login(MAILSERVER_SMTP_USER, MAILSERVER_SMTP_PASSWORD)
+
+
 def smtp_forward(envelope_from: str, envelope_to: str, raw_mime: bytes) -> None:
     """
     Blocking SMTP send into docker-mailserver. Retries a few times to avoid transient drops.
@@ -127,12 +261,22 @@ def smtp_forward(envelope_from: str, envelope_to: str, raw_mime: bytes) -> None:
         try:
             with smtplib.SMTP(MAILSERVER_HOST, MAILSERVER_PORT, timeout=SMTP_TIMEOUT) as smtp:
                 smtp.ehlo(MAILSERVER_HELO_DOMAIN)
-                # internal, no TLS/auth needed
+                if MAILSERVER_SMTP_USER:
+                    login(smtp)
                 smtp.mail(envelope_from)
+                refused = {}
                 for rcpt in recipients:
-                    smtp.rcpt(rcpt)
+                    code, resp = smtp.rcpt(rcpt)
+                    if code not in (250, 251):
+                        refused[rcpt] = (code, resp)
+                if len(refused) == len(recipients):
+                    raise smtplib.SMTPRecipientsRefused(refused)
+                if refused:
+                    logger.error("smtp_recipients_partly_refused %s", {"refused": repr(refused)})
                 smtp.data(raw_mime)
             return
+        except smtplib.SMTPRecipientsRefused:
+            raise
         except Exception as exc:  # noqa: PERF203 - we want to surface all SMTP/network issues
             last_exc = exc
             logger.warning(
@@ -164,6 +308,7 @@ async def metrics():
 
 
 @app.post("/mailgun/incoming", response_class=PlainTextResponse)
+@app.post("/mailgun/incoming-mime", response_class=PlainTextResponse)
 async def mailgun_incoming(request: Request):
     """
     Mailgun Route webhook endpoint.
@@ -171,8 +316,16 @@ async def mailgun_incoming(request: Request):
     Expect:
     - timestamp, token, signature
     - sender, recipient
-    - body-mime (if using Store and Notify) OR body-plain/body-html as fallback
+    - body-mime OR body-plain/body-html as fallback
+
+    Mailgun only posts body-mime from a forward() action whose URL ends in
+    "mime", hence the second path. store(notify=...) never includes it, so
+    those messages are rebuilt from body-plain and lose HTML, attachments and
+    their original headers.
     """
+    # Enforce the size cap before the form is parsed.
+    await read_body_within_limit(request)
+
     form = await request.form()
 
     client_ip = request.client.host if request.client else "unknown"
@@ -184,15 +337,33 @@ async def mailgun_incoming(request: Request):
 
     if not verify_mailgun_signature(MAILGUN_WEBHOOK_SIGNING_KEY, timestamp, token, signature):
         logger.warning("invalid_mailgun_signature %s", {"client_ip": client_ip})
+        REJECTED_TOTAL.labels(reason="invalid_signature").inc()
         raise HTTPException(status_code=403, detail="Invalid Mailgun signature")
+
+    # Only signature-verified requests get past this point, so the freshness
+    # and replay checks below cannot be driven by an anonymous caller.
+    if not timestamp_is_fresh(str(timestamp)):
+        logger.warning(
+            "stale_mailgun_timestamp %s",
+            {"client_ip": client_ip, "timestamp": timestamp},
+        )
+        REJECTED_TOTAL.labels(reason="stale_timestamp").inc()
+        raise HTTPException(status_code=403, detail="Stale Mailgun timestamp")
+
+    if not reserve_token(str(token)):
+        logger.warning("replayed_mailgun_token %s", {"client_ip": client_ip})
+        REJECTED_TOTAL.labels(reason="replayed_token").inc()
+        raise HTTPException(status_code=409, detail="Duplicate Mailgun token")
 
     sender = form.get("sender") or form.get("from") or "unknown@localhost"
     from_header = form.get("from") or sender
     recipient = form.get("recipient") or form.get("to") or "unknown@localhost"
     message_id = form.get("Message-Id") or form.get("message-id")
 
-    # Prefer raw MIME if Mailgun provides it (Store and Notify)
+    # Prefer raw MIME if Mailgun provides it (forward() to a "...mime" URL)
     raw_mime = form.get("body-mime")
+    if hasattr(raw_mime, "read"):
+        raw_mime = (await raw_mime.read()).decode("utf-8", errors="replace")
 
     if not raw_mime:
         # Fallback: reconstruct a safe message while retaining reply routing.
@@ -232,6 +403,7 @@ async def mailgun_incoming(request: Request):
             {"duration_seconds": round(duration, 3), "client_ip": client_ip},
         )
     except smtplib.SMTPRecipientsRefused as e:
+        release_token(str(token))
         SMTP_ERRORS.labels(reason="recipient_refused").inc()
         REQUESTS_TOTAL.labels(result="invalid_recipient").inc()
         logger.warning(
@@ -240,6 +412,7 @@ async def mailgun_incoming(request: Request):
         )
         raise HTTPException(status_code=422, detail="No valid recipients")
     except smtplib.SMTPDataError as e:
+        release_token(str(token))
         SMTP_ERRORS.labels(reason="smtp_data_error").inc()
         duration = time.perf_counter() - start
         SMTP_FORWARD_DURATION.observe(duration)
@@ -257,6 +430,7 @@ async def mailgun_incoming(request: Request):
             raise HTTPException(status_code=422, detail=f"SMTP {code}: {message}")
         raise HTTPException(status_code=502, detail="Upstream SMTP rejected message")
     except ValueError as e:
+        release_token(str(token))
         SMTP_ERRORS.labels(reason="parse_error").inc()
         REQUESTS_TOTAL.labels(result="parse_error").inc()
         logger.warning(
@@ -265,6 +439,7 @@ async def mailgun_incoming(request: Request):
         )
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        release_token(str(token))
         SMTP_ERRORS.labels(reason=type(e).__name__).inc()
         duration = time.perf_counter() - start
         SMTP_FORWARD_DURATION.observe(duration)

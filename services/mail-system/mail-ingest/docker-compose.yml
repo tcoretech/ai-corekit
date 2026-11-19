@@ -10,7 +10,12 @@ services:
     environment:
     - MAILGUN_WEBHOOK_SIGNING_KEY=${MAILGUN_WEBHOOK_SIGNING_KEY}
     - MAILSERVER_HOST=mailserver
-    - MAILSERVER_PORT=25
+    # Authenticated, local-delivery-only listener; see mailserver/config/user-patches.sh
+    - MAILSERVER_PORT=10587
+    - MAILSERVER_SMTP_USER=mail-ingest@${BASE_DOMAIN}
+    - MAILSERVER_SMTP_PASSWORD=${MAIL_INGEST_SMTP_PASSWORD:?MAIL_INGEST_SMTP_PASSWORD is unset; run corekit up mailserver first}
+    - MAILSERVER_TLS_SERVER_NAME=${MAILSERVER_WEBMAIL_HOSTNAME}
+    - MAILSERVER_TLS_FINGERPRINT=${MAIL_INGEST_TLS_FINGERPRINT:-}
     - MAILSERVER_HELO_DOMAIN=mail-ingest.${BASE_DOMAIN}
     expose:
     - '3000'

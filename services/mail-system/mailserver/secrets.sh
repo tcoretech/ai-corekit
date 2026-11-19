@@ -14,6 +14,7 @@ declare -A SECRETS=(
     ["SMTP_PASS"]="password:16"
     ["MAIL_NOREPLY_PASSWORD"]="password:32"
     ["MAIL_INFO_PASSWORD"]="password:32"
+    ["MAIL_INGEST_SMTP_PASSWORD"]="password:32"
 )
 
 ############################################

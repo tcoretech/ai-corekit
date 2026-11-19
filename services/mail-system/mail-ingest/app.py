@@ -4,6 +4,7 @@ import hashlib
 import smtplib
 import re
 import json
+import ssl
 import time
 import uuid
 import logging
@@ -25,6 +26,12 @@ MAILGUN_WEBHOOK_SIGNING_KEY = os.getenv("MAILGUN_WEBHOOK_SIGNING_KEY", "").strip
 MAILSERVER_HOST = os.getenv("MAILSERVER_HOST", "mailserver")
 MAILSERVER_PORT = int(os.getenv("MAILSERVER_PORT", "25"))
 MAILSERVER_HELO_DOMAIN = os.getenv("MAILSERVER_HELO_DOMAIN", "mail-ingest.local")
+# When set, log in after STARTTLS. The mailserver then accepts the relay on its
+# mail-ingest listener without re-checking the original sender's SPF.
+MAILSERVER_SMTP_USER = os.getenv("MAILSERVER_SMTP_USER", "").strip()
+MAILSERVER_SMTP_PASSWORD = os.getenv("MAILSERVER_SMTP_PASSWORD", "")
+# The mailserver's certificate carries its public name, not the container name.
+MAILSERVER_TLS_SERVER_NAME = os.getenv("MAILSERVER_TLS_SERVER_NAME", "").strip() or MAILSERVER_HOST
 SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT_SECONDS", "15"))
 SMTP_RETRY_ATTEMPTS = int(os.getenv("SMTP_RETRY_ATTEMPTS", "2"))
 SMTP_RETRY_DELAY = float(os.getenv("SMTP_RETRY_DELAY_SECONDS", "2"))
@@ -216,6 +223,17 @@ def build_fallback_message(
     return message.as_bytes()
 
 
+def login(smtp: smtplib.SMTP) -> None:
+    """STARTTLS, verifying the mailserver's certificate, then SASL login."""
+
+    # smtplib verifies the certificate against the host it connected to, which
+    # is the container name. Check it against the mailserver's public name.
+    smtp._host = MAILSERVER_TLS_SERVER_NAME
+    smtp.starttls(context=ssl.create_default_context())
+    smtp.ehlo(MAILSERVER_HELO_DOMAIN)
+    smtp.login(MAILSERVER_SMTP_USER, MAILSERVER_SMTP_PASSWORD)
+
+
 def smtp_forward(envelope_from: str, envelope_to: str, raw_mime: bytes) -> None:
     """
     Blocking SMTP send into docker-mailserver. Retries a few times to avoid transient drops.
@@ -230,12 +248,22 @@ def smtp_forward(envelope_from: str, envelope_to: str, raw_mime: bytes) -> None:
         try:
             with smtplib.SMTP(MAILSERVER_HOST, MAILSERVER_PORT, timeout=SMTP_TIMEOUT) as smtp:
                 smtp.ehlo(MAILSERVER_HELO_DOMAIN)
-                # internal, no TLS/auth needed
+                if MAILSERVER_SMTP_USER:
+                    login(smtp)
                 smtp.mail(envelope_from)
+                refused = {}
                 for rcpt in recipients:
-                    smtp.rcpt(rcpt)
+                    code, resp = smtp.rcpt(rcpt)
+                    if code not in (250, 251):
+                        refused[rcpt] = (code, resp)
+                if len(refused) == len(recipients):
+                    raise smtplib.SMTPRecipientsRefused(refused)
+                if refused:
+                    logger.error("smtp_recipients_partly_refused %s", {"refused": repr(refused)})
                 smtp.data(raw_mime)
             return
+        except smtplib.SMTPRecipientsRefused:
+            raise
         except Exception as exc:  # noqa: PERF203 - we want to surface all SMTP/network issues
             last_exc = exc
             logger.warning(

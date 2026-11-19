@@ -20,3 +20,12 @@ F2B_DST="${SCRIPT_DIR}/data/dms/config/fail2ban-jail.cf"
 if [ -f "$F2B_SRC" ]; then
     cp -v "$F2B_SRC" "$F2B_DST"
 fi
+
+# ── User patches (mail-ingest listener) ──
+PATCHES_SRC="${SCRIPT_DIR}/config/user-patches.sh"
+PATCHES_DST="${SCRIPT_DIR}/data/dms/config/user-patches.sh"
+
+if [ -f "$PATCHES_SRC" ]; then
+    cp -v "$PATCHES_SRC" "$PATCHES_DST"
+    chmod 755 "$PATCHES_DST"
+fi

@@ -60,6 +60,7 @@ services:
     - RELAY_PASSWORD=${MAILGUN_SMTP_PASSWORD}
     - RELAY_TLS_LEVEL=encrypt
     - ACCOUNT_PROVISIONER=FILE
+    - MAIL_INGEST_SMTP_USER=mail-ingest@${BASE_DOMAIN}
     - ENABLE_UPDATE_CHECK=0
     cap_add:
     - NET_ADMIN

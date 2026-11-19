@@ -297,7 +297,7 @@
 
 # Mailgun Incoming Webhook -> Docker-Mailserver ingest
 {$MAIL_INGEST_HOSTNAME} {
-    @mailgun path /mailgun/incoming
+    @mailgun path /mailgun/incoming /mailgun/incoming-mime
     reverse_proxy @mailgun mail-ingest:3000
 }
 

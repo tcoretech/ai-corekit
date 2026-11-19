@@ -108,6 +108,20 @@ cannot send mail out.
 Do not set `PERMIT_DOCKER` to `network` or `connected-networks` to make inbound
 work: that lets any container on the network relay mail out through Mailgun.
 
+**Mailgun route.** Use a forward to the `-mime` endpoint so Mailgun posts the
+raw message:
+
+```
+forward("https://<MAIL_INGEST_HOSTNAME>/mailgun/incoming-mime")
+store()
+```
+
+Mailgun only includes the raw message (`body-mime`) when the forward URL ends
+in `mime`. `store(notify="…/mailgun/incoming")` never includes it, so
+mail-ingest falls back to rebuilding a plain-text message, which drops HTML,
+attachments and the original headers. `store()` without `notify` keeps a copy
+in Mailgun for three days in case delivery has to be replayed.
+
 ### n8n Integration Setup
 
 **Create SMTP Credentials in n8n:**

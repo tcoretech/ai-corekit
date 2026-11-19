@@ -32,6 +32,10 @@ MAILSERVER_SMTP_USER = os.getenv("MAILSERVER_SMTP_USER", "").strip()
 MAILSERVER_SMTP_PASSWORD = os.getenv("MAILSERVER_SMTP_PASSWORD", "")
 # The mailserver's certificate carries its public name, not the container name.
 MAILSERVER_TLS_SERVER_NAME = os.getenv("MAILSERVER_TLS_SERVER_NAME", "").strip() or MAILSERVER_HOST
+# SHA-256 of the mailserver certificate (DER, hex). When set, the connection is
+# trusted only if the presented certificate matches, whatever its CA, name or
+# dates. Used while the mailserver certificate is expired; see mailserver/secrets.sh.
+MAILSERVER_TLS_FINGERPRINT = os.getenv("MAILSERVER_TLS_FINGERPRINT", "").strip().lower().replace(":", "")
 SMTP_TIMEOUT = float(os.getenv("SMTP_TIMEOUT_SECONDS", "15"))
 SMTP_RETRY_ATTEMPTS = int(os.getenv("SMTP_RETRY_ATTEMPTS", "2"))
 SMTP_RETRY_DELAY = float(os.getenv("SMTP_RETRY_DELAY_SECONDS", "2"))
@@ -226,10 +230,19 @@ def build_fallback_message(
 def login(smtp: smtplib.SMTP) -> None:
     """STARTTLS, verifying the mailserver's certificate, then SASL login."""
 
-    # smtplib verifies the certificate against the host it connected to, which
-    # is the container name. Check it against the mailserver's public name.
-    smtp._host = MAILSERVER_TLS_SERVER_NAME
-    smtp.starttls(context=ssl.create_default_context())
+    if MAILSERVER_TLS_FINGERPRINT:
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        smtp.starttls(context=context)
+        presented = hashlib.sha256(smtp.sock.getpeercert(binary_form=True) or b"").hexdigest()
+        if not hmac.compare_digest(presented, MAILSERVER_TLS_FINGERPRINT):
+            raise ssl.SSLError(f"mailserver certificate does not match the pinned fingerprint ({presented})")
+    else:
+        # smtplib verifies the certificate against the host it connected to, which
+        # is the container name. Check it against the mailserver's public name.
+        smtp._host = MAILSERVER_TLS_SERVER_NAME
+        smtp.starttls(context=ssl.create_default_context())
     smtp.ehlo(MAILSERVER_HELO_DOMAIN)
     smtp.login(MAILSERVER_SMTP_USER, MAILSERVER_SMTP_PASSWORD)
 

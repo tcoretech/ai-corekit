@@ -2,7 +2,7 @@ services:
   n8n:
     # Managed deployments override this with a version+Git-commit candidate
     # tag. The fallback remains exact and contains no moving tag.
-    image: ${N8N_MANAGED_IMAGE:-corekit/n8n:2.34.4-git1.2.3-r1}
+    image: ${N8N_MANAGED_IMAGE:-corekit/n8n:2.39.6-git1.2.3-r1}
     build:
       context: .
       pull: false
@@ -35,7 +35,12 @@ services:
       N8N_RUNNERS_MODE: external
       N8N_RUNNERS_TASK_TIMEOUT: "300"
       N8N_TRUST_PROXY: "true"
-      N8N_UNVERIFIED_PACKAGES_ENABLED: "true"
+      N8N_UNVERIFIED_PACKAGES_ENABLED: "false"
+      # A Code node must not be able to read the process environment: this
+      # container holds N8N_ENCRYPTION_KEY, which decrypts every credential.
+      # Matters wherever a client can author workflows: creating a Code node is
+      # then enough to read the process environment.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "true"
       N8N_USER_MANAGEMENT_JWT_SECRET: ${N8N_USER_MANAGEMENT_JWT_SECRET}
       NODES_EXCLUDE: ${NODES_EXCLUDE:-}
       NODE_ENV: production
@@ -63,7 +68,7 @@ services:
     stop_grace_period: 60s
 
   n8n-runner:
-    image: ${N8N_MANAGED_RUNNER_IMAGE:-corekit/n8n-runners:2.34.4-r1}
+    image: ${N8N_MANAGED_RUNNER_IMAGE:-corekit/n8n-runners:2.39.6-r1}
     build:
       context: ./runner
       pull: false

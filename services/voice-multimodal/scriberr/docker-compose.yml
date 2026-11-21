@@ -1,6 +1,6 @@
 services:
   scriberr:
-    image: ghcr.io/rishikanthc/scriberr:latest
+    image: ghcr.io/rishikanthc/scriberr:latest@sha256:9e36448fb5a6003b28cd3d9ac783e8cbef5ed916936c20ec353a55fa380484f4
     container_name: scriberr
     profiles:
     - scriberr

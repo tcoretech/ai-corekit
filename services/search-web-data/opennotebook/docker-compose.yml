@@ -1,6 +1,6 @@
 services:
   opennotebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest-single@sha256:0763d151f90ca5ddf5ac12a729b5f9ea472ff9e79dbba600840ed8f4349e9b5c
     container_name: opennotebook
     profiles:
     - opennotebook

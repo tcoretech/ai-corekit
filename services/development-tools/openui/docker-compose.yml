@@ -1,6 +1,6 @@
 services:
   openui:
-    image: ghcr.io/wandb/openui:latest
+    image: ghcr.io/wandb/openui:latest@sha256:5495cec13b7212a6b1766df317c3541acecfb8173531ebdfe700689fbb822eac
     container_name: openui
     profiles:
     - openui

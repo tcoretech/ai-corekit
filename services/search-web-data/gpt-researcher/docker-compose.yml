@@ -1,6 +1,6 @@
 services:
   gpt-researcher:
-    image: gptresearcher/gpt-researcher:latest
+    image: gptresearcher/gpt-researcher:latest@sha256:8e0975ec9aaddc49c17c59568a25618c8a5f75b7a5f1fab35bc90e6c6dc950c7
     container_name: gpt-researcher
     profiles:
     - gpt-researcher
@@ -40,7 +40,7 @@ services:
       retries: 5
       start_period: 40s
   gpt-researcher-ui:
-    image: gptresearcher/gptr-nextjs:latest
+    image: gptresearcher/gptr-nextjs:latest@sha256:69e7e2fa02d23666e7c00774faed154af1684ac06dc97d2c29c8b6e77f98710a
     container_name: gpt-researcher-ui
     profiles:
     - gpt-researcher

@@ -1,6 +1,6 @@
 services:
   mailserver:
-    image: ghcr.io/docker-mailserver/docker-mailserver:latest
+    image: ghcr.io/docker-mailserver/docker-mailserver:latest@sha256:6cd2d4dbfb41ce3b8108968d266fb41b950ad27220979c67bda8a31bd1f6611d
     container_name: mailserver
     hostname: ${MAILSERVER_WEBMAIL_HOSTNAME}
     profiles:

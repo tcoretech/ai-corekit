@@ -1,6 +1,6 @@
 services:
   crawl4ai:
-    image: unclecode/crawl4ai:latest
+    image: unclecode/crawl4ai:latest@sha256:4603d7c4d69769673dfa1214fa9abbcac2a874d4d9af07d784782af528b65c68
     container_name: crawl4ai
     profiles:
     - crawl4ai
